@@ -106,39 +106,39 @@ if __name__ == "__main__":
     def test():
         test = Rotation.from_angles(1,3.14,1)
 
-        #a = test.angles
-        #b = test.matrix
-        #c = test.axis_angle
+        a = test.angles
+        b = test.matrix
+        c = test.axis_angle
 
-        print(test.angles)
-        print(test.matrix)
-        print(test.axis_angle)
+        #print(test.angles)
+        #print(test.matrix)
+        #print(test.axis_angle)
         
         test2 = Rotation.from_matrix(test.matrix)
 
-        #a = test2.angles
-        #b = test2.matrix
-        #c = test2.axis_angle
+        a = test2.angles
+        b = test2.matrix
+        c = test2.axis_angle
 
-        print(test2.angles)
-        print(test2.matrix)
-        print(test2.axis_angle)
+        #print(test2.angles)
+        #print(test2.matrix)
+        #print(test2.axis_angle)
 
         test3 = Rotation.from_axis_angle(test.axis_angle[0], test.axis_angle[1])
 
-        #a = test3.angles
-        #b = test3.matrix
-        #c = test3.axis_angle
+        a = test3.angles
+        b = test3.matrix
+        c = test3.axis_angle
 
-        print(test3.angles)
-        print(test3.matrix)
-        print(test3.axis_angle)
+        #print(test3.angles)
+        #print(test3.matrix)
+        #print(test3.axis_angle)
 
     test()
 
-    #execution_time = timeit.repeat(test2, repeat=5, number=1000)
+    execution_time = timeit.repeat(test, repeat=5, number=1000)
 
-    #print(f"Execution time: {execution_time} seconds")
+    print(f"Execution time: {execution_time} seconds")
     
 
 

@@ -5,7 +5,7 @@ import re
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
-from numba import jit, float64, complex128
+from numba import jit, cfunc
 import timeit
 
 
@@ -468,22 +468,22 @@ if __name__ == '__main__':
 
 
     fields = np.linspace(0.001, 7, 64)
-    temperatures1 = np.linspace(1.8, 1.8, 1)
+    temperatures1 = np.linspace(1, 15, 15)
     temperatures2 = np.linspace(1, 300, 300)
     grid = np.loadtxt('grid.txt', usecols = (1,2,3,4))
 
 
 
-    # def mth_function_wrapper():
-    #     mth('.', 'DyCo_nevpt2.hdf5', 2002, fields, grid, temperatures1, 64)
+    def mth_function_wrapper():
+        mth('.', 'DyCo_nevpt2.hdf5', 512, fields, grid, temperatures1, 64)
 
-    # repetitions = 1
+    repetitions = 1
 
 
-    # #Measure execution time
-    # execution_times = timeit.repeat(stmt=mth_function_wrapper, repeat=1, number=repetitions)
+    #Measure execution time
+    execution_times = timeit.repeat(stmt=mth_function_wrapper, repeat=1, number=repetitions)
 
-    # print("Execution times mth:", str(np.array(execution_times)/repetitions), "seconds")
+    print("Execution times mth:", str(np.array(execution_times)/repetitions), "seconds")
 
 
     # def chit_function_wrapper():
@@ -502,15 +502,15 @@ if __name__ == '__main__':
     # mth2 = mth('.', 'DyCo_nevpt2.hdf5', 64, fields, grid, temperatures1, 64)
     # mth3 = mth('.', 'DyCo_nevpt2_trun.hdf5', 64, fields, grid, temperatures1, 64)
     # mth4 = mth('.', 'DyCo_cif.hdf5', 64, fields, grid, temperatures1, 64)
-    mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 64)
+    # mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 64)
 
-    for i in fields:
-        print(i)
+    # for i in fields:
+    #     print(i)
 
-    for mh in mth5:
-        plt.plot(fields, mh, "r-")
-        for i in mh:
-            print(i)
+    # for mh in mth5:
+    #     plt.plot(fields, mh, "r-")
+    #     for i in mh:
+    #         print(i)
     # for mh in mth2:
     #     plt.plot(fields, mh, "b-")
     #     # for i in mh:
@@ -520,7 +520,7 @@ if __name__ == '__main__':
     # for mh in mth4:
     #     plt.plot(fields, mh, "g-")
     #plt.ylim(0,6)
-    plt.show()
+    # plt.show()
 
 
 

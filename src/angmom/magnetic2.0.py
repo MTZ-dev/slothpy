@@ -474,35 +474,35 @@ if __name__ == '__main__':
 
 
 
-    # def mth_function_wrapper():
-    #     mth('.', 'DyCo_nevpt2.hdf5', 2002, fields, grid, temperatures1, 64)
+    def mth_function_wrapper():
+        mth('.', 'DyCo_nevpt2.hdf5', 512, fields, grid, temperatures1, 32)
 
-    # repetitions = 1
-
-
-    # #Measure execution time
-    # execution_times = timeit.repeat(stmt=mth_function_wrapper, repeat=1, number=repetitions)
-
-    # print("Execution times mth:", str(np.array(execution_times)/repetitions), "seconds")
+    repetitions = 1
 
 
-    # def chit_function_wrapper():
-    #     chit('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 2002, temperatures2, 64)
+    #Measure execution time
+    execution_times = timeit.repeat(stmt=mth_function_wrapper, repeat=1, number=repetitions)
 
-    # repetitions = 1
+    print("Execution times mth:", str(np.array(execution_times)/repetitions), "seconds")
 
 
-    # #Measure execution time
-    # execution_times = timeit.repeat(stmt=mth_function_wrapper, repeat=1, number=repetitions)
+    def chit_function_wrapper():
+        chit('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 2002, temperatures2, 32)
 
-    # print("Execution times chit:", str(np.array(execution_times)/repetitions), "seconds")
+    repetitions = 1
+
+
+    #Measure execution time
+    execution_times = timeit.repeat(stmt=mth_function_wrapper, repeat=1, number=repetitions)
+
+    print("Execution times chit:", str(np.array(execution_times)/repetitions), "seconds")
 
 
     # mth1 = mth('.', 'DyCo.hdf5', 64, fields, grid, temperatures1, 64)
     # mth2 = mth('.', 'DyCo_nevpt2.hdf5', 64, fields, grid, temperatures1, 64)
     # mth3 = mth('.', 'DyCo_nevpt2_trun.hdf5', 64, fields, grid, temperatures1, 64)
     # mth4 = mth('.', 'DyCo_cif.hdf5', 64, fields, grid, temperatures1, 64)
-    mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 64)
+    mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 32)
 
     for i in fields:
         print(i)

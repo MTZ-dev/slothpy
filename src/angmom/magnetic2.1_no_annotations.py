@@ -222,7 +222,7 @@ def orca_spin_orbit_to_hdf5(path_orca: str, inp_orca: str, path_out: str, hdf5_o
     output.close()
 
 
-def get_soc_moment_energies_from_hdf5_orca(path: str, hdf5_file: str, states_cutoff: int):
+def get_soc_moment_energies_from_hdf5_orca(path: str, hdf5_file: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
 
     ge = 2.00231930436256 #Electron g factor
 
@@ -273,7 +273,7 @@ def get_soc_moment_energies_from_hdf5_orca(path: str, hdf5_file: str, states_cut
 
 
 @jit('float64(float64[:], float64[:], float64)', nopython=True, cache=True, nogil=True)
-def calculate_magnetization(energies: np.ndarray[np.float64], states_momenta: np.ndarray[np.float64], temperature: np.float64) -> np.float64:
+def calculate_magnetization(energies: np.ndarray, states_momenta: np.ndarray, temperature: np.float64) -> np.float64:
     """
     Calculates the magnetization for a given array of states energies, momenta, and temperature.
 
@@ -301,7 +301,7 @@ def calculate_magnetization(energies: np.ndarray[np.float64], states_momenta: np
 
 
 @jit('float64[:](complex128[:,:,:], float64[:], float64, float64[:,:], float64[:])', nopython=True, cache=True, nogil=True)
-def calculate_mt(magnetic_moment: np.ndarray[np.complex128], soc_energies: np.ndarray[np.float64], field: np.float64, grid: np.ndarray[np.float64], temperatures: np.ndarray[np.float64]) -> np.ndarray[np.float64]:
+def calculate_mt(magnetic_moment: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, temperatures: np.ndarray) -> np.ndarray:
     """
     Calculates the M(T) array for a given array of magnetic moments, SOC energies, directional grid for powder averaging,
     and temperatures for a particular value of magnetic field.
@@ -369,7 +369,7 @@ def calculate_mt_wrapper(args):
 
     return mt
 
-def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray[np.float64], grid: np.ndarray[np.float64], temperatures: np.ndarray[np.float64], num_cpu: int) -> np.ndarray[np.float64]:
+def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int) -> np.ndarray:
     """
     Calculates the M(T,H) array using magnetic moments and SOC energies for given fields, grid (for powder direction averaging), and temperatures.
     The function is parallelized across num_cpu CPUs for simultaneous calculations over different magnetic field values.
@@ -422,7 +422,7 @@ def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray[np.flo
     return mth_array # Returning values in Bohr magnetons
 
 
-def chit(path: str, hdf5_file: str, field: np.ndarray[np.float64], states_cutoff: int, temperatures: np.ndarray[np.float64], num_cpu: int, grid: np.ndarray[np.float64] = None) -> np.ndarray[np.float64]:
+def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, grid: np.ndarray = None) -> np.ndarray:
     """
     Calculates chiT(T) using data from a HDF5 file for given field, states cutoff, temperatures, and optional grid (XYZ if not present).
 
@@ -475,7 +475,7 @@ if __name__ == '__main__':
 
 
     def mth_function_wrapper():
-        mth('.', 'DyCo_nevpt2.hdf5', 512, fields, grid, temperatures1, 32)
+        mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 32)
 
     repetitions = 1
 
@@ -502,13 +502,13 @@ if __name__ == '__main__':
     # mth2 = mth('.', 'DyCo_nevpt2.hdf5', 64, fields, grid, temperatures1, 64)
     # mth3 = mth('.', 'DyCo_nevpt2_trun.hdf5', 64, fields, grid, temperatures1, 64)
     # mth4 = mth('.', 'DyCo_cif.hdf5', 64, fields, grid, temperatures1, 64)
-    # mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 64)
+    mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 32)
 
     # for i in fields:
     #     print(i)
 
-    # for mh in mth5:
-    #     plt.plot(fields, mh, "r-")
+    for mh in mth5:
+        plt.plot(fields, mh, "r-")
     #     for i in mh:
     #         print(i)
     # for mh in mth2:
@@ -519,8 +519,8 @@ if __name__ == '__main__':
     #     plt.plot(fields, mh, "y-")
     # for mh in mth4:
     #     plt.plot(fields, mh, "g-")
-    #plt.ylim(0,6)
-    # plt.show()
+    plt.ylim(0,6)
+    plt.show()
 
 
 

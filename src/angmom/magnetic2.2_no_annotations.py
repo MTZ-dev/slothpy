@@ -7,6 +7,7 @@ import h5py
 import matplotlib.pyplot as plt
 from numba import jit, cfunc
 import timeit
+from mpl_toolkits.mplot3d import Axes3D
 
 
 def grep_to_file(path_inp: str, inp_file: str, pattern: str, path_out: str, out_file: str, lines: int = 1) -> None:
@@ -222,7 +223,7 @@ def orca_spin_orbit_to_hdf5(path_orca: str, inp_orca: str, path_out: str, hdf5_o
     output.close()
 
 
-def get_soc_moment_energies_from_hdf5_orca(path: str, hdf5_file: str, states_cutoff: int):
+def get_soc_moment_energies_from_hdf5_orca(path: str, hdf5_file: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
 
     ge = 2.00231930436256 #Electron g factor
 
@@ -273,7 +274,7 @@ def get_soc_moment_energies_from_hdf5_orca(path: str, hdf5_file: str, states_cut
 
 
 @jit('float64(float64[:], float64[:], float64)', nopython=True, cache=True, nogil=True)
-def calculate_magnetization(energies: np.ndarray[np.float64], states_momenta: np.ndarray[np.float64], temperature: np.float64) -> np.float64:
+def calculate_magnetization(energies: np.ndarray, states_momenta: np.ndarray, temperature: np.float64) -> np.float64:
     """
     Calculates the magnetization for a given array of states energies, momenta, and temperature.
 
@@ -301,7 +302,7 @@ def calculate_magnetization(energies: np.ndarray[np.float64], states_momenta: np
 
 
 @jit('float64[:](complex128[:,:,:], float64[:], float64, float64[:,:], float64[:])', nopython=True, cache=True, nogil=True)
-def calculate_mt(magnetic_moment: np.ndarray[np.complex128], soc_energies: np.ndarray[np.float64], field: np.float64, grid: np.ndarray[np.float64], temperatures: np.ndarray[np.float64]) -> np.ndarray[np.float64]:
+def calculate_mt(magnetic_moment: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, temperatures: np.ndarray) -> np.ndarray:
     """
     Calculates the M(T) array for a given array of magnetic moments, SOC energies, directional grid for powder averaging,
     and temperatures for a particular value of magnetic field.
@@ -369,7 +370,7 @@ def calculate_mt_wrapper(args):
 
     return mt
 
-def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray[np.float64], grid: np.ndarray[np.float64], temperatures: np.ndarray[np.float64], num_cpu: int) -> np.ndarray[np.float64]:
+def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int) -> np.ndarray:
     """
     Calculates the M(T,H) array using magnetic moments and SOC energies for given fields, grid (for powder direction averaging), and temperatures.
     The function is parallelized across num_cpu CPUs for simultaneous calculations over different magnetic field values.
@@ -422,7 +423,7 @@ def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray[np.flo
     return mth_array # Returning values in Bohr magnetons
 
 
-def chit(path: str, hdf5_file: str, field: np.ndarray[np.float64], states_cutoff: int, temperatures: np.ndarray[np.float64], num_cpu: int, grid: np.ndarray[np.float64] = None) -> np.ndarray[np.float64]:
+def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, grid: np.ndarray = None) -> np.ndarray:
     """
     Calculates chiT(T) using data from a HDF5 file for given field, states cutoff, temperatures, and optional grid (XYZ if not present).
 
@@ -464,26 +465,130 @@ def chit(path: str, hdf5_file: str, field: np.ndarray[np.float64], states_cutoff
     return chit * bohr_magneton_to_cm3
 
 
+@jit('float64(complex128[:,:,:], float64[:], float64, float64[:], float64)', nopython=True, cache=True, nogil=True)
+def calculate_mth_grid(magnetic_moment: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, temperature: np.float64) -> np.float64:
+
+    bohr_magneton = 2.127191078656686e-06 # Bohr magneton in a.u./T
+
+    # Initialize arrays as contiguous
+    magnetic_moment = np.ascontiguousarray(magnetic_moment)
+    soc_energies = np.ascontiguousarray(soc_energies)
+
+
+    # Construct Zeeman matrix
+    orient = -field * bohr_magneton * grid[:3]
+    zeeman_matrix = magnetic_moment[0] * orient[0] + magnetic_moment[1] * orient[1] + magnetic_moment[2] * orient[2]
+
+    # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
+    for k in range(zeeman_matrix.shape[0]):
+        zeeman_matrix[k, k] += soc_energies[k]
+
+    # Diagonalize full Hamiltonian matrix
+    eigenvalues, eigenvectors = np.linalg.eigh(zeeman_matrix)
+    eigenvalues = np.ascontiguousarray(eigenvalues)
+    eigenvectors = np.ascontiguousarray(eigenvectors)
+
+    # Transform momenta according to the new eigenvectors
+    states_momenta = eigenvectors.conj().T @ (
+        grid[0] * magnetic_moment[0]
+        + grid[1] * magnetic_moment[1]
+        + grid[2] * magnetic_moment[2]
+    ) @ eigenvectors
+
+    # Get diagonal momenta of the new states
+    states_momenta = np.diag(states_momenta).real.astype(np.float64)
+
+    # Compute partition function and magnetization
+    mth = calculate_magnetization(eigenvalues, states_momenta, temperature)
+
+    return mth
+
+
+def calculate_mth_grid_wrapper(args):
+
+    # Unpack arguments and call the function
+    mth = calculate_mth_grid(*args)
+
+    return mth
+
+
+def mag_3d(path: str, hdf5_file: str, states_cutoff: int, field: np.ndarray, grid: np.ndarray, temperature: np.float64, num_cpu: int) -> np.ndarray:
+
+    # Check CPUs number considering the desired number of threads and assign number of processes
+    if num_cpu < int(os.getenv('OMP_NUM_THREADS')):
+        raise ValueError(f"Insufficient number of CPU cores assigned. Desired threads: {int(os.getenv('OMP_NUM_THREADS'))}, Actual processors: {num_cpu}")
+    else:
+        num_process = num_cpu//int(os.getenv('OMP_NUM_THREADS'))
+
+    # Initialize the result array
+    mag_3d_array = np.zeros((grid.shape[0]), dtype=np.float64)
+
+    #  Allocate grid array as contiguous
+    grid = np.ascontiguousarray(grid)
+
+    # Read data from HDF5 file
+    magnetic_moment, soc_energies = get_soc_moment_energies_from_hdf5_orca(path, hdf5_file, states_cutoff)
+
+    # Iterator generator for arguments with different grid points to be distributed along num_process processes
+    args = [(magnetic_moment, soc_energies, field, grid[i], temperature) for i in range(grid.shape[0])]
+
+    # Parallel M(T,H) calculation over different grid points
+    with multiprocessing.Pool(num_process) as p:
+        mth = p.map(calculate_mth_grid_wrapper, args)
+
+    # Collecting results
+    for i in range(grid.shape[0]):
+        mag_3d_array[i] = mth[i]
+
+    mag_3d_vector_array = grid[:,:3] * mag_3d_array[:, np.newaxis]
+
+    # Generating grid for ploting over the whole sphere
+    mag_3d_vector_array = np.concatenate((mag_3d_vector_array[:,:3], -mag_3d_vector_array[:,:3]), axis=0)
+
+    return mag_3d_vector_array
+
+
+
+
+
 if __name__ == '__main__':
 
 
     fields = np.linspace(0.001, 7, 64)
-    temperatures1 = np.linspace(1, 15, 15)
+    temperatures1 = np.linspace(2, 2, 1)
     temperatures2 = np.linspace(1, 300, 300)
     grid = np.loadtxt('grid.txt', usecols = (1,2,3,4))
 
 
+    # Create the mesh in polar coordinates and compute corresponding Z.
+    r = np.linspace(0, 1.25, 50)
+    p = np.linspace(0, 2*np.pi, 50)
+    R, P = np.meshgrid(r, p)
+    print(R)
+    print(P)
+    Z = ((R**2 - 1)**2)
 
-    def mth_function_wrapper():
-        mth('.', 'DyCo_nevpt2.hdf5', 512, fields, grid, temperatures1, 32)
+    # Express the mesh in the cartesian system.
+    X, Y = R*np.cos(P), R*np.sin(P)
 
-    repetitions = 1
+    mag_3d_vector_array = mag_3d('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16, 0.1, grid, 2.0, 32)
+
+
+    # Separate the x, y, z coordinates
+    x = mag_3d_vector_array[:, 0]
+    y = mag_3d_vector_array[:, 1]
+    z = mag_3d_vector_array[:, 2]
+
+    # def mth_function_wrapper():
+    #     mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 32)
+
+    # repetitions = 1
 
 
     #Measure execution time
-    execution_times = timeit.repeat(stmt=mth_function_wrapper, repeat=1, number=repetitions)
+    # execution_times = timeit.repeat(stmt=mth_function_wrapper, repeat=1, number=repetitions)
 
-    print("Execution times mth:", str(np.array(execution_times)/repetitions), "seconds")
+    # print("Execution times mth:", str(np.array(execution_times)/repetitions), "seconds")
 
 
     # def chit_function_wrapper():
@@ -502,7 +607,7 @@ if __name__ == '__main__':
     # mth2 = mth('.', 'DyCo_nevpt2.hdf5', 64, fields, grid, temperatures1, 64)
     # mth3 = mth('.', 'DyCo_nevpt2_trun.hdf5', 64, fields, grid, temperatures1, 64)
     # mth4 = mth('.', 'DyCo_cif.hdf5', 64, fields, grid, temperatures1, 64)
-    # mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 64)
+    # mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 32)
 
     # for i in fields:
     #     print(i)
@@ -519,7 +624,7 @@ if __name__ == '__main__':
     #     plt.plot(fields, mh, "y-")
     # for mh in mth4:
     #     plt.plot(fields, mh, "g-")
-    #plt.ylim(0,6)
+    # plt.ylim(0,6)
     # plt.show()
 
 

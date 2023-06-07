@@ -9,6 +9,7 @@ from matplotlib import cm
 from numba import jit, cfunc
 import timeit
 from mpl_toolkits.mplot3d import Axes3D
+import math
 
 
 def grep_to_file(path_inp: str, inp_file: str, pattern: str, path_out: str, out_file: str, lines: int = 1) -> None:
@@ -430,7 +431,25 @@ def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray, grid:
     return mth_array # Returning values in Bohr magnetons
 
 
-def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, grid: np.ndarray = None) -> np.ndarray:
+def finite_diff_stencil(diff_order: int, num_of_points: int, step: np.float64):
+
+    stencil_len = 2 * num_of_points + 1
+
+    if diff_order > stencil_len:
+        raise ValueError(f"Insufficient number of points to evaluate coefficients. Provide number of points greater than (derivative order - 1) / 2.")
+    
+    stencil_matrix = np.tile(np.arange(-num_of_points, num_of_points + 1).astype(np.int64), (stencil_len,1))
+    stencil_matrix = stencil_matrix ** np.arange(0, stencil_len).reshape(-1, 1)
+
+    order_vector = np.zeros(stencil_len)
+    order_vector[diff_order] = math.factorial(diff_order)/np.power(step, diff_order)
+
+    stencil_coeff = np.linalg.inv(stencil_matrix) @ order_vector.T
+
+    return stencil_coeff
+
+
+def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, grid: np.ndarray = None) -> np.ndarray:
     """
     Calculates chiT(T) using data from a HDF5 file for given field, states cutoff, temperatures, and optional grid (XYZ if not present).
 
@@ -450,10 +469,9 @@ def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, tempe
 
     bohr_magneton_to_cm3 = 0.5584938904 # Conversion factor for chi in cm3
 
-    delta_h = 0.0001  # Set dH = 1 Oe
-
     # Set fields for finite difference method
-    fields = np.array([field - delta_h, field + delta_h])
+    fields = np.arange(-num_of_points, num_of_points + 1).astype(np.int64) * delta_h + field
+    fields = fields.astype(np.float64)
 
     # Default XYZ grid
     if grid is None:
@@ -465,9 +483,11 @@ def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, tempe
     # Get M(t,H) for two adjacent values of field
     mth_array = mth(path, hdf5_file, states_cutoff, fields, grid, temperatures, num_cpu)
 
+    stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
+
     # Numerical derivative of M(T,H) around given field value 
     for index, temp in enumerate(temperatures):
-        chit[index] = temp * (mth_array[index][1] - mth_array[index][0]) / (2 * delta_h)
+        chit[index] = temp * np.dot(mth_array[index], stencil_coeff)
 
     return chit * bohr_magneton_to_cm3
 
@@ -575,7 +595,6 @@ if __name__ == '__main__':
     temperatures2 = np.linspace(1, 300, 300)
     grid = np.loadtxt('grid.txt', usecols = (1,2,3,4))
 
-
     # x, y, z = mag_3d('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 256, 0.1, 300, 2.0, 32)
 
     # fig = plt.figure()
@@ -614,7 +633,7 @@ if __name__ == '__main__':
     # mth2 = mth('.', 'DyCo_nevpt2.hdf5', 64, fields, grid, temperatures1, 64)
     # mth3 = mth('.', 'DyCo_nevpt2_trun.hdf5', 64, fields, grid, temperatures1, 64)
     # mth4 = mth('.', 'DyCo_cif.hdf5', 64, fields, grid, temperatures1, 64)
-    mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 256, fields, grid, temperatures1, 32)
+    # mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 256, fields, grid, temperatures1, 32)
 
     # for i in fields:
     #     print(i)
@@ -624,20 +643,20 @@ if __name__ == '__main__':
     #     for i in mh:
     #         print(i)
 
-    fields, temperatures1 = np.meshgrid(fields, temperatures1)
+    # fields, temperatures1 = np.meshgrid(fields, temperatures1)
 
-    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
     # Plot the surface.
-    surf = ax.plot_surface(fields, temperatures1, mth5, cmap=cm.coolwarm,
-                        linewidth=0, antialiased=False)
+    # surf = ax.plot_surface(fields, temperatures1, mth5, cmap=cm.coolwarm,
+    #                     linewidth=0, antialiased=False)
 
-    # Add a color bar which maps values to colors.
-    fig.colorbar(surf, shrink=0.5, aspect=5)
+    # # Add a color bar which maps values to colors.
+    # fig.colorbar(surf, shrink=0.5, aspect=5)
 
-    ax.set_box_aspect([1, 1, 1])
+    # ax.set_box_aspect([1, 1, 1])
 
-    plt.show()
+    # plt.show()
 
     # for mh in mth2:
     #     plt.plot(fields, mh, "b-")
@@ -665,14 +684,14 @@ if __name__ == '__main__':
     # chit4 = chit('.', 'DyCo.hdf5', 0.1, 512, temperatures2, 64)
     # chit5 = chit('.', 'DyCo_nevpt2.hdf5', 0.1, 512, temperatures2, 64)
     # chit6 = chit('.', 'DyCo_nevpt2_trun.hdf5', 0.1, 512, temperatures2, 64)
-    #chit7 = chit('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 2002, temperatures2, 64)
+    chit7 = chit('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 2002, temperatures2, 32, 7, 0.0001)
 
     # plt.plot(temperatures2, chit4, "r-")
     # plt.plot(temperatures2, chit5, "b-")
     # plt.plot(temperatures2, chit6, "y-")
-    # plt.plot(temperatures2, chit7, "g-")
-    # plt.ylim(0, 15)
-    # plt.show()
+    plt.plot(temperatures2, chit7, "g-")
+    plt.ylim(0, 15)
+    plt.show()
 
     # for t in temperatures2:
     #     print(t)

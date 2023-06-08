@@ -454,7 +454,7 @@ def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray, grid:
 
     return mth_array # Returning values in Bohr magnetons
 
-
+#add here jit
 def calculate_zeeman_splitting(magnetic_moment: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, num_of_states: int):
 
     bohr_magneton = 2.127191078656686e-06 # Bohr magneton in a.u./T
@@ -540,12 +540,12 @@ def zeeman_splitting(path: str, hdf5_file: str, states_cutoff: int, num_of_state
     return zeeman_array
 
 
-
+#add here jit
 def finite_diff_stencil(diff_order: int, num_of_points: int, step: np.float64):
 
     stencil_len = 2 * num_of_points + 1
 
-    if diff_order > stencil_len:
+    if diff_order >= stencil_len:
         raise ValueError(f"Insufficient number of points to evaluate coefficients. Provide number of points greater than (derivative order - 1) / 2.")
     
     stencil_matrix = np.tile(np.arange(-num_of_points, num_of_points + 1).astype(np.int64), (stencil_len,1))
@@ -559,7 +559,7 @@ def finite_diff_stencil(diff_order: int, num_of_points: int, step: np.float64):
     return stencil_coeff
 
 
-def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, grid: np.ndarray = None) -> np.ndarray:
+def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, grid: np.ndarray = None, exp: bool = False) -> np.ndarray:
     """
     Calculates chiT(T) using data from a HDF5 file for given field, states cutoff, temperatures, and optional grid (XYZ if not present).
 
@@ -589,6 +589,17 @@ def chit(path: str, hdf5_file: str, field: np.ndarray, states_cutoff: int, tempe
 
     # Initialize result array
     chit = np.zeros_like(temperatures)
+
+    # Experimentalist model
+    if (exp == True) or (num_of_points == 0):
+
+        mth_array = mth(path, hdf5_file, states_cutoff, np.array([field]), grid, temperatures, num_cpu)
+
+        for index, temp in enumerate(temperatures):
+            chit[index] = temp * mth_array[index] / field
+        
+        return chit * bohr_magneton_to_cm3
+
 
     # Get M(t,H) for two adjacent values of field
     mth_array = mth(path, hdf5_file, states_cutoff, fields, grid, temperatures, num_cpu)
@@ -693,7 +704,20 @@ def mag_3d(path: str, hdf5_file: str, states_cutoff: int, field: np.ndarray, gri
 
     return x, y, z
 
+# zastanów się czy numerycznie to robić też
+def chi_exp_3d(path: str, hdf5_file: str, states_cutoff: int, field: np.ndarray, grid: int, temperature: np.float64, num_cpu: int) -> np.ndarray:
 
+    x, y, z = mag_3d(path, hdf5_file, states_cutoff, field, grid, temperature, num_cpu)
+
+    x /= field
+    y /= field
+    z /= field
+
+    return x, y, z
+    
+
+# zbuduj funkcje ktora bierze 2 gridy - wlasciwie to zmieni po porostu mth i mt xd - jak jest podany jeden to normalnie jak drugi to zwraca
+#mht obrócony o ten grid zamiast pierwotnego i tyle, zastosuj do wlasciwie to meshgrid [0,0,1][0,1,0][1,0,0] 9 komponentów i masz chit_tensor i kazdy inny jaki chcesz
 def chi_tensor():
     pass
 
@@ -702,33 +726,36 @@ def chi_tensor():
 if __name__ == '__main__':
 
 
-    fields = np.linspace(0.001, 7, 64)
+    fields = np.linspace(0.001, 15, 64)
     temperatures1 = np.linspace(1, 300, 300)
     temperatures2 = np.linspace(1, 300, 300)
     grid = np.loadtxt('grid.txt', usecols = (1,2,3,4))
 
-    #zs = zeeman_splitting('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 32, 16, fields, grid, 32, average = True)
+    #zs = zeeman_splitting('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, 16, fields, grid, 32, average = True)
 
-    zs = zeeman_splitting('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 32, 16, fields, np.array([[0.,0.,1.,1.]]), 32)
+    # zs = zeeman_splitting('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 256, 16, fields, np.array([[0.,0.,1.,1.]]), 32)
 
 
-    plt.plot(fields, zs[0], "-")
-    plt.show()
+    # plt.plot(fields, zs[0], "-")
+    # plt.show()
 
     
 
 
 
-    #print(get_soc_energies_cm_1('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16))
+    # print(get_soc_energies_cm_1('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16))
 
-    # x, y, z = mag_3d('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 256, 0.1, 300, 2.0, 32)
+    x, y, z = mag_3d('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 256, 1., 100, 200.0, 32)
 
-    # fig = plt.figure()
-    # ax = fig.add_subplot(projection='3d')
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
 
-    # ax.plot_wireframe(x, y, z)
-    # ax.set_box_aspect([1, 1, 1])
-    # plt.show()
+    ax.plot_wireframe(x, y, z)
+    ax.set_xlim(-8,8)
+    ax.set_ylim(-8,8)
+    ax.set_zlim(-8,8)
+    #ax.set_box_aspect([1, 1, 1])
+    plt.show()
 
 
     # def mth_function_wrapper():
@@ -759,7 +786,7 @@ if __name__ == '__main__':
     # mth2 = mth('.', 'DyCo_nevpt2.hdf5', 64, fields, grid, temperatures1, 64)
     # mth3 = mth('.', 'DyCo_nevpt2_trun.hdf5', 64, fields, grid, temperatures1, 64)
     # mth4 = mth('.', 'DyCo_cif.hdf5', 64, fields, grid, temperatures1, 64)
-    # mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 256, fields, grid, temperatures1, 32)
+    # mth5 = mth('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 512, fields, grid, temperatures1, 32)
 
     # for i in fields:
     #     print(i)
@@ -773,11 +800,11 @@ if __name__ == '__main__':
 
     # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
-    # Plot the surface.
+    #Plot the surface.
     # surf = ax.plot_surface(fields, temperatures1, mth5, cmap=cm.coolwarm,
     #                     linewidth=0, antialiased=False)
 
-    # # Add a color bar which maps values to colors.
+    # Add a color bar which maps values to colors.
     # fig.colorbar(surf, shrink=0.5, aspect=5)
 
     # ax.set_box_aspect([1, 1, 1])
@@ -810,7 +837,7 @@ if __name__ == '__main__':
     # chit4 = chit('.', 'DyCo.hdf5', 0.1, 512, temperatures2, 64)
     # chit5 = chit('.', 'DyCo_nevpt2.hdf5', 0.1, 512, temperatures2, 64)
     # chit6 = chit('.', 'DyCo_nevpt2_trun.hdf5', 0.1, 512, temperatures2, 64)
-    # chit7 = chit('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 2002, temperatures2, 32, 7, 0.0001)
+    # chit7 = chit('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 2002, temperatures2, 32, 7, 0.00001, exp=True)
 
     # plt.plot(temperatures2, chit4, "r-")
     # plt.plot(temperatures2, chit5, "b-")

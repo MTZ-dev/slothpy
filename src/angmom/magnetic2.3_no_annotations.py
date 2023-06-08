@@ -275,6 +275,30 @@ def get_soc_moment_energies_from_hdf5_orca(path: str, hdf5_file: str, states_cut
     return magnetic_moment, soc_energies
 
 
+def get_soc_energies_cm_1(path: str, hdf5_file: str, num_of_states: int = None) -> np.ndarray:
+
+    hartree_to_cm_1 = 219474.6 #atomic units to wavenumbers
+
+    # Construct input file path
+    input_file = os.path.join(path, hdf5_file)
+
+    # Read data from HDF5 file
+    with h5py.File(input_file, 'r') as file:
+        soc_matrix = file['ORCA']['SOC'][:]
+
+    # Perform diagonalization on SOC matrix
+    soc_energies = np.linalg.eigvalsh(soc_matrix)
+
+    # Set frist state to zero energy
+    soc_energies = (soc_energies - soc_energies[0]) * hartree_to_cm_1
+
+    # Get the first num_of_states
+    if num_of_states is not None:
+        soc_energies = soc_energies[:num_of_states]
+
+    return soc_energies
+
+
 @jit('float64(float64[:], float64[:], float64)', nopython=True, cache=True, nogil=True)
 def calculate_magnetization(energies: np.ndarray, states_momenta: np.ndarray, temperature: np.float64) -> np.float64:
     """
@@ -429,6 +453,13 @@ def mth(path: str, hdf5_file: str, states_cutoff: int, fields: np.ndarray, grid:
         mth_array[:,i] = mt[i]
 
     return mth_array # Returning values in Bohr magnetons
+
+
+def zeeman_splitting(path: str, hdf5_file: str, states_cutoff: int, num_of_states: int, fields: np.ndarray, grid: np.ndarray, num_cpu: int, average: bool = False) -> np.ndarray:
+    
+    magnetic_moment, soc_energies = get_soc_moment_energies_from_hdf5_orca(path, hdf5_file, states_cutoff)
+
+
 
 
 def finite_diff_stencil(diff_order: int, num_of_points: int, step: np.float64):
@@ -595,6 +626,8 @@ if __name__ == '__main__':
     temperatures2 = np.linspace(1, 300, 300)
     grid = np.loadtxt('grid.txt', usecols = (1,2,3,4))
 
+    print(get_soc_energies_cm_1('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16))
+
     # x, y, z = mag_3d('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 256, 0.1, 300, 2.0, 32)
 
     # fig = plt.figure()
@@ -684,14 +717,14 @@ if __name__ == '__main__':
     # chit4 = chit('.', 'DyCo.hdf5', 0.1, 512, temperatures2, 64)
     # chit5 = chit('.', 'DyCo_nevpt2.hdf5', 0.1, 512, temperatures2, 64)
     # chit6 = chit('.', 'DyCo_nevpt2_trun.hdf5', 0.1, 512, temperatures2, 64)
-    chit7 = chit('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 2002, temperatures2, 32, 7, 0.0001)
+    # chit7 = chit('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 2002, temperatures2, 32, 7, 0.0001)
 
     # plt.plot(temperatures2, chit4, "r-")
     # plt.plot(temperatures2, chit5, "b-")
     # plt.plot(temperatures2, chit6, "y-")
-    plt.plot(temperatures2, chit7, "g-")
-    plt.ylim(0, 15)
-    plt.show()
+    # plt.plot(temperatures2, chit7, "g-")
+    # plt.ylim(0, 15)
+    # plt.show()
 
     # for t in temperatures2:
     #     print(t)

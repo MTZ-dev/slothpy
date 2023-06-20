@@ -294,6 +294,36 @@ def get_soc_moment_energies_from_hdf5_orca(path: str, hdf5_file: str, states_cut
     return magnetic_moment, soc_energies
 
 
+@jit('float64(float64, float64)', nopython=True, cache=True, nogil=True)
+def binom(n, k):
+    if k > n - k:
+        k = n - k
+    res = 1
+    for i in range(k):
+        res *= (n - i)
+        res /= (i + 1)
+    return res
+
+
+@jit('float64(float64, float64, float64, float64, float64, float64)', nopython=True, cache=True, nogil=True)
+def Clebsh_Gordan(j1,m1,j2,m2,j3,m3):
+
+    cg_coeff = 0
+
+    if (m1 + m2 != m3) or (j1 < 0.0) or (j2 < 0.0) or (j3 < 0.0) or np.abs(m1) > j1 or np.abs(m2) > j2 or np.abs(m3) > j3 or (np.abs(j1 - j2) > j3) or ((j1 + j2) < j3) or (np.abs(j2 - j3) > j1) or ((j2 + j3) < j1) or (np.abs(j3 - j1) > j2) or ((j3 + j1) < j2) or (np.mod(int(2.0 * j1), 2) != np.mod(int(2.0 * np.abs(m1)), 2)) or (np.mod(int(2.0 * j2), 2) != np.mod(int(2.0 * np.abs(m2)), 2)) or (np.mod(int(2.0 * j3), 2) != np.mod(int(2.0 * np.abs(m3)), 2)):
+        return cg_coeff
+
+    J = j1 + j2 + j3
+    C = np.sqrt(binom(2*j1,J-2*j2)*binom(2*j2,J-2*j3)/(binom(J+1,J-2*j3)*binom(2*j1,j1-m1)*binom(2*j2,j2-m2)*binom(2*j3,j3-m3)))
+    z_min = np.max(np.array([0,j1-m1-J+2*j2,j2+m2-J+2*j1]))
+    z_max = np.min(np.array([J-2*j3,j1-m1,j2+m2]))
+    for z in range(z_min,z_max+1):
+        cg_coeff  += (-1)**z * binom(J-2*j3,z) * binom(J-2*j2,j1-m1-z) * binom(J-2*j1,j2+m2-z)
+    
+    return cg_coeff * C
+
+
+
 def get_soc_energies_cm_1(path: str, hdf5_file: str, num_of_states: int = None) -> np.ndarray:
 
     hartree_to_cm_1 = 219474.6 #atomic units to wavenumbers

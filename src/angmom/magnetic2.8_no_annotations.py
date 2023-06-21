@@ -927,20 +927,26 @@ def calculate_B_k_q(matrix: np.ndarray, k: np.int32, q: np.int32):
     for i in range(int(2*J+1)):
         for j in range(int(2*J+1)):
             numerator += matrix[i,j] * Clebsh_Gordan(J, -J + i, k, -q, J, -J + j)
-            denominator += Clebsh_Gordan(J, -J + j, k, -q, J, -J + i) * Clebsh_Gordan(J, -J + i, k, -q, J, -J + j)
+            denominator += Clebsh_Gordan(J, -J + j, k, q, J, -J + i) * Clebsh_Gordan(J, -J + i, k, -q, J, -J + j)
 
-    return numerator/denominator * 1./np.sqrt(2*J + 1)
+
+    return numerator/denominator
 
 
 def ITO_decomp_matrix(matrix: np.ndarray, order: int):
 
-    for k in range(1,order+1):
+    for k in range(0,order+1):
         for q in range(-k,k+1):
             B_k_q = calculate_B_k_q(matrix, k, q)
-            print(f"{k} {q} {B_k_q}")
+            if q >= 0:
+                print(f"{k} {q} {B_k_q.real}")
+            else:
+                print(f"{k} {q} {B_k_q.imag}")
 
 
 def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
+
+    ge = 2.00231930436256
 
     # Construct input file path
     input_file = os.path.join(path, hdf5_file)
@@ -955,21 +961,40 @@ def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
         sz = 0.5 * file['ORCA']['SZ'][:]
         lz = 1j * file['ORCA']['LZ'][:]
 
+    # Perform diagonalization on SOC matrix
+    soc_energies, eigenvectors = np.linalg.eigh(soc_matrix)
+    soc_energies = np.ascontiguousarray(soc_energies.astype(np.float64))
+    eigenvectors = np.ascontiguousarray(eigenvectors.astype(np.complex128))
+
+    # Apply transformations to spin and orbital operators
+    sx = eigenvectors.conj().T @ sx.astype(np.complex128) @ eigenvectors
+    sy = eigenvectors.conj().T @ sy.astype(np.complex128) @ eigenvectors
+    sz = eigenvectors.conj().T @ sz.astype(np.complex128) @ eigenvectors
+    lx = eigenvectors.conj().T @ lx.astype(np.complex128) @ eigenvectors
+    ly = eigenvectors.conj().T @ ly.astype(np.complex128) @ eigenvectors
+    lz = eigenvectors.conj().T @ lz.astype(np.complex128) @ eigenvectors
+
+    # Slice arrays based on states_cutoff
+    sx = sx[:num_of_states, :num_of_states]
+    sy = sy[:num_of_states, :num_of_states]
+    sz = sz[:num_of_states, :num_of_states]
+    lx = lx[:num_of_states, :num_of_states]
+    ly = ly[:num_of_states, :num_of_states]
+    lz = lz[:num_of_states, :num_of_states]
+    soc_energies = (soc_energies[:num_of_states] - soc_energies[0]) * 219474.6
+
     #TO DO implement rotation of Jz
 
     Jz = lz + sz
 
-    # Perform diagonalization on SOC matrix
+    # Perform diagonalization on Jz matrix
     _, eigenvectors = np.linalg.eigh(Jz)
     eigenvectors = np.ascontiguousarray(eigenvectors.astype(np.complex128))
 
-    # Apply transformations to spin and orbital operators
-    soc_matrix = eigenvectors.conj().T @ soc_matrix.astype(np.complex128) @ eigenvectors
+    # Apply transformations to SOC_matrix
+    soc_matrix = eigenvectors.conj().T @ np.diag(soc_energies).astype(np.complex128) @ eigenvectors
 
-    # Slice arrays based on states_cutoff
-    soc_matrix = soc_matrix[:num_of_states, :num_of_states]
-
-    return soc_matrix
+    return soc_matrix #-(lz + 2 * sz)
 
 
 if __name__ == '__main__':
@@ -978,9 +1003,6 @@ if __name__ == '__main__':
     hamiltonian = get_SOC_matrix_in_J_basis('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16)
 
     ITO_decomp_matrix(hamiltonian, 6)
-
-
-
 
 
     fields = np.linspace(0.001, 7, 64)

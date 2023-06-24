@@ -929,19 +929,30 @@ def calculate_B_k_q(matrix: np.ndarray, k: np.int32, q: np.int32):
             numerator += matrix[i,j] * Clebsh_Gordan(J, -J + i, k, -q, J, -J + j)
             denominator += Clebsh_Gordan(J, -J + j, k, q, J, -J + i) * Clebsh_Gordan(J, -J + i, k, -q, J, -J + j)
 
+    B = 1.0
 
-    return numerator/denominator
+    for i in range(-k, k+1):
+            B = B * (2*J + 1 + i)
+            
+    B = B / ((2**k) * math.factorial(2*k))
+    B = math.sqrt(B)
+    B = (-1)**k * B * math.factorial(k)
+
+    #denominator = (2*J + 1) / (2*k + 1)
+
+    return numerator*np.sqrt(J)/denominator/B
 
 
 def ITO_decomp_matrix(matrix: np.ndarray, order: int):
 
     for k in range(0,order+1):
         for q in range(-k,k+1):
-            B_k_q = calculate_B_k_q(matrix, k, q)
             if q >= 0:
+                B_k_q = ((-1)**q * calculate_B_k_q(matrix, k, q) + calculate_B_k_q(matrix, k, -q))
                 print(f"{k} {q} {B_k_q.real}")
-            else:
-                print(f"{k} {q} {B_k_q.imag}")
+            if q < 0:
+                B_k_q = -1j * (-(-1)**q * calculate_B_k_q(matrix, k, q) + calculate_B_k_q(matrix, k, -q))
+                print(f"{k} {q} {B_k_q.real}")
 
 
 def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
@@ -997,12 +1008,16 @@ def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
     return soc_matrix #-(lz + 2 * sz)
 
 
+def matrix_from_ITO():
+    pass
+
+
 if __name__ == '__main__':
 
 
     hamiltonian = get_SOC_matrix_in_J_basis('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16)
 
-    ITO_decomp_matrix(hamiltonian, 6)
+    ITO_decomp_matrix(hamiltonian, 14)
 
 
     fields = np.linspace(0.001, 7, 64)

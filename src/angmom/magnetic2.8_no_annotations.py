@@ -926,8 +926,8 @@ def calculate_B_k_q(matrix: np.ndarray, k: np.int32, q: np.int32):
 
     for i in range(int(2*J+1)):
         for j in range(int(2*J+1)):
-            numerator += matrix[i,j] * Clebsh_Gordan(J, -J + i, k, -q, J, -J + j)
-            denominator += Clebsh_Gordan(J, -J + j, k, q, J, -J + i) * Clebsh_Gordan(J, -J + i, k, -q, J, -J + j)
+            numerator += matrix[i,j] * ((-1)**(q)) * Clebsh_Gordan(J, J - i, k, -q, J, J - j)
+            denominator += Clebsh_Gordan(J, J - j, k, q, J, J - i) * Clebsh_Gordan(J, J - i, k, -q, J, J - j)
 
     B = 1.0
 
@@ -936,11 +936,27 @@ def calculate_B_k_q(matrix: np.ndarray, k: np.int32, q: np.int32):
             
     B = B / ((2**k) * math.factorial(2*k))
     B = math.sqrt(B)
-    B = (-1)**k * B * math.factorial(k)
+    B = B * math.factorial(k)
 
     #denominator = (2*J + 1) / (2*k + 1)
 
     return numerator*np.sqrt(J)/denominator/B
+
+def denom_check(J: int, k: np.int32, q: np.int32):
+
+    denominator = np.complex128(0)
+
+    for i in range(int(2*J+1)):
+        for j in range(int(2*J+1)):
+            denominator += Clebsh_Gordan(J, J - j, k, q, J, J - i) * Clebsh_Gordan(J, J - i, k, -q, J, J - j)
+
+    print(denominator)
+
+    denominator1 = (2*J + 1) / (2*k + 1)
+
+    print(denominator1)
+
+    return denominator1 - denominator
 
 
 def ITO_decomp_matrix(matrix: np.ndarray, order: int):

@@ -66,44 +66,62 @@ def Clebsh_Gordan2(j1,m1,j2,m2,j3,m3):
     
     return cg_coeff * C
 
-j1,m1,j2,m2,j3,m3 = 29/2,7/2,10,-5,27/2,-3/2 
+# j1,m1,j2,m2,j3,m3 = 29/2,7/2,10,-5,27/2,-3/2 
 
-repetitions = 10000
+# repetitions = 10000
 
-a = Clebsh_Gordan(j1,m1,j2,m2,j3,m3)
-print(a)
-b = Clebsh_Gordan2(j1,m1,j2,m2,j3,m3)
-print(b)
-c = CG(j1, m1, j2, m2, j3, m3).doit().evalf()
-print(c)
-
-
-def Clebsh_Gordan_wrapper():
-    z = Clebsh_Gordan(j1,m1,j2,m2,j3,m3)
+# a = Clebsh_Gordan(j1,m1,j2,m2,j3,m3)
+# print(a)
+# b = Clebsh_Gordan2(j1,m1,j2,m2,j3,m3)
+# print(b)
+# c = CG(j1, m1, j2, m2, j3, m3).doit().evalf()
+# print(c)
 
 
-#Measure execution time
-execution_times = timeit.repeat(stmt=Clebsh_Gordan_wrapper, repeat=5, number=repetitions)
-
-print("Execution times Clebsh_Gordan:", str(np.array(execution_times)/repetitions), "seconds")
+# def Clebsh_Gordan_wrapper():
+#     z = Clebsh_Gordan(j1,m1,j2,m2,j3,m3)
 
 
-def Clebsh_Gordan2_wrapper():
-    z = Clebsh_Gordan2(j1,m1,j2,m2,j3,m3)
+# #Measure execution time
+# execution_times = timeit.repeat(stmt=Clebsh_Gordan_wrapper, repeat=5, number=repetitions)
+
+# print("Execution times Clebsh_Gordan:", str(np.array(execution_times)/repetitions), "seconds")
 
 
-#Measure execution time
-execution_times = timeit.repeat(stmt=Clebsh_Gordan2_wrapper, repeat=5, number=repetitions)
-
-print("Execution times Clebsh_Gordan2:", str(np.array(execution_times)/repetitions), "seconds")
+# def Clebsh_Gordan2_wrapper():
+#     z = Clebsh_Gordan2(j1,m1,j2,m2,j3,m3)
 
 
+# #Measure execution time
+# execution_times = timeit.repeat(stmt=Clebsh_Gordan2_wrapper, repeat=5, number=repetitions)
 
-def Clebsh_Gordan_sympy_wrapper():
-    z = CG(j1, m1, j2, m2, j3, m3).doit().evalf()
+# print("Execution times Clebsh_Gordan2:", str(np.array(execution_times)/repetitions), "seconds")
 
 
-#Measure execution time
-execution_times = timeit.repeat(stmt=Clebsh_Gordan_sympy_wrapper, repeat=5, number=repetitions)
 
-print("Execution times Clebsh_Gordan_sympy:", str(np.array(execution_times)/repetitions), "seconds")
+# def Clebsh_Gordan_sympy_wrapper():
+#     z = CG(j1, m1, j2, m2, j3, m3).doit().evalf()
+
+
+# #Measure execution time
+# execution_times = timeit.repeat(stmt=Clebsh_Gordan_sympy_wrapper, repeat=5, number=repetitions)
+
+# print("Execution times Clebsh_Gordan_sympy:", str(np.array(execution_times)/repetitions), "seconds")
+
+
+
+def denom_check(J: int, k: np.int32, q: np.int32):
+
+    denominator = np.complex128(0)
+
+    for i in range(int(2*J+1)):
+        for j in range(int(2*J+1)):
+            denominator += CG(J, J - j, k, q, J, J - i).doit().evalf() * CG(J, J - i, k, -q, J, J - j).doit().evalf()
+
+    print(denominator)
+
+    denominator1 = (2*J + 1) / (2*k + 1)
+
+    print(denominator1)
+
+    return denominator1 - denominator

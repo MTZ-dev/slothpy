@@ -12,6 +12,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import math
 
 
+#TO DO - print the elipsoid of main magnetic axes
+
+
 def get_num_of_processes(num_cpu):
 
     # Check CPUs number considering the desired number of threads and assign number of processes
@@ -990,9 +993,6 @@ def matrix_from_ITO(filename, J):
     ITO = np.loadtxt(filename, dtype = np.complex128)
 
     for cfp in ITO:
-
-        print(cfp)
-
         for i in range(dim):
             for j in range(dim):
                         B = 1.0
@@ -1007,7 +1007,7 @@ def matrix_from_ITO(filename, J):
     eigenvalues, eigenvectors =  np.linalg.eigh(matrix)
 
     print(eigenvalues)
-    print(eigenvectors)
+    #print(eigenvectors)
     
 
 
@@ -1063,10 +1063,83 @@ def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
 
     eigenvalues, eigenvectors = np.linalg.eigh(soc_matrix)
 
-    print(eigenvalues)
-    print(eigenvectors.T)
-
     return soc_matrix #-(lz + ge * sz)
+
+
+def calculate_g_tensor_and_axes_doublet(path: str, hdf5_file: str, doublets: np.ndarray):
+
+    ge = 2.00231930436256
+
+    # Construct input file path
+    input_file = os.path.join(path, hdf5_file)
+
+    # Read data from HDF5 file
+    with h5py.File(input_file, 'r') as file:
+        soc_matrix = file['ORCA']['SOC'][:]
+        sx = 0.5 * file['ORCA']['SX'][:]
+        lx = 1j * file['ORCA']['LX'][:]
+        sy = 0.5j * file['ORCA']['SY'][:]
+        ly = 1j * file['ORCA']['LY'][:]
+        sz = 0.5 * file['ORCA']['SZ'][:]
+        lz = 1j * file['ORCA']['LZ'][:]
+
+    # Perform diagonalization on SOC matrix
+    soc_energies, eigenvectors = np.linalg.eigh(soc_matrix)
+    soc_energies = np.ascontiguousarray(soc_energies.astype(np.float64))
+    eigenvectors = np.ascontiguousarray(eigenvectors.astype(np.complex128))
+
+    # Apply transformations to spin and orbital operators
+    sx = eigenvectors.conj().T @ sx.astype(np.complex128) @ eigenvectors
+    sy = eigenvectors.conj().T @ sy.astype(np.complex128) @ eigenvectors
+    sz = eigenvectors.conj().T @ sz.astype(np.complex128) @ eigenvectors
+    lx = eigenvectors.conj().T @ lx.astype(np.complex128) @ eigenvectors
+    ly = eigenvectors.conj().T @ ly.astype(np.complex128) @ eigenvectors
+    lz = eigenvectors.conj().T @ lz.astype(np.complex128) @ eigenvectors
+
+    g_tensor_list = []
+    magnetic_axes_list = []
+
+    for doublet in doublets:
+
+        magnetic_moment = np.zeros((3,2,2), dtype=np.complex128)
+        states = 2*doublet
+
+        # Slice arrays based on states_cutoff
+        sx_tmp = sx[states:states+2, states:states+2]
+        sy_tmp = sy[states:states+2, states:states+2]
+        sz_tmp = sz[states:states+2, states:states+2]
+        lx_tmp = lx[states:states+2, states:states+2]
+        ly_tmp = ly[states:states+2, states:states+2]
+        lz_tmp = lz[states:states+2, states:states+2]
+
+        # Compute and save magnetic momenta in a.u.
+        magnetic_moment[0] =  -(ge * sx_tmp + lx_tmp)
+        magnetic_moment[1] =  -(ge * sy_tmp + ly_tmp)
+        magnetic_moment[2] =  -(ge * sz_tmp + lz_tmp)
+
+        A_tensor = np.zeros((3,3), dtype=np.float64)
+
+        for i in range(3):
+            for j in range(3):
+                A_tensor[i,j] = 0.5 * np.trace(magnetic_moment[i] @ magnetic_moment[j]).real
+
+        A_tensor = (A_tensor + A_tensor.T)/2
+
+        g_tensor_squared, magnetic_axes = np.linalg.eigh(A_tensor)
+
+        for i in range(3):
+            if g_tensor_squared[i] < 0:
+                g_tensor_squared[i] = 0
+        g_tensor = 2 * np.sqrt(g_tensor_squared)
+
+        if np.linalg.det(magnetic_axes) < 0:
+            magnetic_axes[:,1] = -magnetic_axes[:,1]
+
+        g_tensor_list.append(g_tensor)
+        magnetic_axes_list.append(magnetic_axes)
+
+    return g_tensor_list, magnetic_axes_list
+
 
 
 # def matrix_from_ITO():
@@ -1075,6 +1148,13 @@ def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
 
 if __name__ == '__main__':
 
+
+    g_tensor, magnetic_axes = calculate_g_tensor_and_axes_doublet('.', 'DyCo_cif_nevpt2_new_basis.hdf5', np.array([0,1,2,3,4,5,6,7,8]))
+
+    print(g_tensor)
+    #print(magnetic_axes)
+
+    # print(np.linalg.det(magnetic_axes[0]))
 
     #print(denom_check(10,4,-1))
 
@@ -1085,7 +1165,7 @@ if __name__ == '__main__':
     #ITO_complex_decomp_matrix(hamiltonian, 14)
 
 
-    matrix_from_ITO('ito_test.txt', 15/2)
+    #matrix_from_ITO('ito_test.txt', 15/2)
 
 
     fields = np.linspace(0.001, 7, 64)

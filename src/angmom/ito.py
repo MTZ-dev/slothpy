@@ -94,7 +94,7 @@ def calculate_B_k_q(matrix: np.ndarray, k: np.int32, q: np.int32):
     return numerator/denominator
 
 
-def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
+def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int, rotation = np.diag(np.array([1.,1.,1.], dtype=np.float64))):
 
     ge = 2.00231930436256
 
@@ -134,8 +134,11 @@ def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
     soc_energies = (soc_energies[:num_of_states] - soc_energies[0]) * 219474.6
 
     #TO DO implement rotation of Jz
-
+    Jx = lx + sx
+    Jy = ly + sy
     Jz = lz + sz
+
+    Jz = rotation[2,0] * Jx + rotation[2,1] * Jy + rotation[2,2] * Jz
 
     # Perform diagonalization on Jz matrix
     _, eigenvectors = np.linalg.eigh(Jz)
@@ -144,13 +147,18 @@ def get_SOC_matrix_in_J_basis(path: str, hdf5_file: str, num_of_states: int):
     # Apply transformations to SOC_matrix
     soc_matrix = eigenvectors.conj().T @ np.diag(soc_energies).astype(np.complex128) @ eigenvectors
 
-    eigenvalues, eigenvectors = np.linalg.eigh(soc_matrix)
+    #eigenvalues, eigenvectors = np.linalg.eigh(soc_matrix)
 
     return soc_matrix #-(lz + ge * sz)
 
 
 
-def ITO_complex_decomp_matrix(matrix: np.ndarray, order: int):
+def ITO_complex_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = True):
+
+    step = 1
+
+    if even_order:
+        step = 2
 
     result = []
 
@@ -162,7 +170,7 @@ def ITO_complex_decomp_matrix(matrix: np.ndarray, order: int):
     return result
 
 
-def matrix_from_ITO(J, coefficients):
+def matrix_from_ITO_complex(J, coefficients):
 
     dim = np.int64(2*J + 1)
 
@@ -174,18 +182,91 @@ def matrix_from_ITO(J, coefficients):
     return matrix
 
 
-hamiltonian = get_SOC_matrix_in_J_basis('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16)
 
-eigenvalues_ham = np.linalg.eigvalsh(hamiltonian)
+def ITO_real_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = True):
 
-decomposition = ITO_complex_decomp_matrix(hamiltonian, 14)
+    step = 1
+
+    if even_order:
+        step = 2
+
+    result = []
+
+    for k in range(0,order+1, step):
+        for q in range(-k,0):
+                B_k_q = 1j * 0.5 * (calculate_B_k_q(matrix, k, -q) - ((-1)**q) * calculate_B_k_q(matrix, k, q))
+                result.append([k, q, B_k_q.real])
+
+        B_k_q = calculate_B_k_q(matrix, k, 0)
+        result.append([k, 0, B_k_q.real])
+
+        for q in range(1,k+1):
+            B_k_q = 0.5 * (((-1)**q) * calculate_B_k_q(matrix, k, -q) + calculate_B_k_q(matrix, k, q))
+            result.append([k, q, B_k_q.real])
+
+    return result
+
+
+
+def matrix_from_ITO_real(J, coefficients):
+
+    dim = np.int64(2*J + 1)
+
+    matrix = np.zeros((dim, dim), dtype=np.complex128)
+
+    for i in coefficients:
+        if i[1] < 0:
+            matrix += (ITO_matrix(J, i[0], -i[1]) - ((-1)**i[1]) * ITO_matrix(J, i[0], i[1])) * i[2]
+        if i[1] > 0:
+            matrix += (((-1)**i[1]) * ITO_matrix(J, i[0], -i[1]) +  ITO_matrix(J, i[0], i[1])) * i[2]
+        else:
+            matrix += ITO_matrix(J, i[0], i[1]) * i[2]
+
+    return matrix
+
+
+
+
+hamiltonian = get_SOC_matrix_in_J_basis('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16, rotation=np.array([[0.99981643, -0.01859542, -0.00461716],[ 0.01860164,  0.99982612,  0.00130977],[ 0.004592  , -0.00139541,  0.99998848]]))
+
+eigenvalues_ham, eigenvectors_ham = np.linalg.eigh(hamiltonian)
+
+decomposition = ITO_real_decomp_matrix(hamiltonian, 14)
+
+for j in decomposition:
+    print(j)
+
+matrix = matrix_from_ITO_real(15/2, decomposition)
+
+eigenvalues_mat, eigenvectors_mat = np.linalg.eigh(matrix)
+
+eigenvalues_mat = eigenvalues_mat - eigenvalues_mat[0]
+
+print(eigenvalues_ham)
+
+print(eigenvalues_mat)
+
+print((abs(eigenvalues_ham - eigenvalues_mat))/eigenvalues_ham * 100)
+
+# print(hamiltonian - matrix)
+
+
+
+# decomposition = ITO_complex_decomp_matrix(hamiltonian, 8)
 
 # print(decomposition)
 
-matrix = matrix_from_ITO(15/2, decomposition)
+# matrix = matrix_from_ITO_complex(15/2, decomposition)
 
-eigenvalues_mat = np.linalg.eigvalsh(matrix)
+# eigenvalues_mat, eigenvectors_mat = np.linalg.eigh(matrix)
 
-print(eigenvalues_ham - eigenvalues_mat)
+# print(eigenvalues_ham - eigenvalues_mat)
 
-print(hamiltonian - matrix)
+# print(hamiltonian - matrix)
+
+# j_basis_mat = eigenvectors_mat.T * eigenvectors_mat.conj().T
+# j_basis_ham = eigenvectors_ham.T * eigenvectors_ham.conj().T
+
+# print(j_basis_ham.real)
+
+# print(j_basis_mat.real)

@@ -80,9 +80,9 @@ def get_orca_so_blocks_size(path: str, orca_file: str) -> tuple[int, int, int]:
 
     return so_dim, block_size, num_of_whole_blocks, remaining_columns
 
-def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_output: str, name: str, pt2: bool = False) -> None:
+def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_output: str, name: str, pt2: bool = False) -> None: #tutaj with open raczej dla hdf5, żeby zabezpieczyć plik! juz raz się zepsuł
     """
-    Converts spin-orbit calculations from an ORCA file to a HDF5 file format.
+    Converts spin-orbit calculations from an ORCA .out file to a HDF5 file format.
 
     Args:
         path_orca (str): Path to the ORCA file.
@@ -95,16 +95,18 @@ def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_ou
         ValueError: If the spin-orbit dimension is not found in the ORCA file.
         ValueError: If the pattern is not found in the input file.
     """
+    hdf5_file = os.path.join(path_out, hdf5_output)
+
     # Retrieve dimensions and block sizes for spin-orbit calculations
     so_dim, block_size, num_of_whole_blocks, remaining_columns = get_orca_so_blocks_size(path_orca, inp_orca)
 
     # Create HDF5 file and ORCA group
-    output = h5py.File(f'{hdf5_output}.slt', 'a')
+    output = h5py.File(f'{hdf5_file}.slt', 'a')
     orca = output.create_group(str(name))
     orca.attrs['Description'] = f'Group({name}) containing results of relativistic SOC ORCA calculations - angular momenta and SOC matrix in CI basis'
 
     # Extract and process matrices (SX, SY, SZ, LX, LY, LZ)
-    matrices = ['SX', 'SY', 'SZ', 'LX', 'LY', 'LZ']
+    matrices = ['SF_SX', 'SF_SY', 'SF_SZ', 'SF_LX', 'SF_LY', 'SF_LZ']
     descriptions = ['real part', 'imaginary part', 'real part', 'real part', 'real part', 'real part']
 
     for matrix_name, description in zip(matrices, descriptions):
@@ -140,7 +142,7 @@ def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_ou
             # Create dataset in HDF5 file and assign the matrix
             dataset = orca.create_dataset(matrix_name, shape=(so_dim, so_dim), dtype=np.float64)
             dataset[:, :] = matrix[:, :]
-            dataset.attrs['Description'] = f'Dataset containing {description} of {matrix_name} matrix in CI basis'
+            dataset.attrs['Description'] = f'Dataset containing {description} of {matrix_name} matrix in CI basis (spin-free)'
 
         # Remove the temporary file
         os.remove(out_file)
@@ -205,7 +207,7 @@ def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_ou
     dataset = orca.create_dataset('SOC', shape=(so_dim, so_dim), dtype=np.complex128)
     complex_matrix = np.array(matrix_real + 1j * matrix_imag, dtype=np.complex128)
     dataset[:, :] = complex_matrix[:, :]
-    dataset.attrs['Description'] = 'Dataset containing complex SOC matrix in CI basis'
+    dataset.attrs['Description'] = 'Dataset containing complex SOC matrix in CI basis (spin-free)'
 
     # Remove the temporary file
     os.remove('SOC.tmp')
@@ -213,31 +215,99 @@ def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_ou
     # Close the HDF5 file
     output.close()
 
+def molcas_spin_orbit_to_slt(path_molcas: str, inp_molcas: str, path_out: str, hdf5_output: str, name: str) -> None:
+   
+   rassi_path_name = os.path.join(path_molcas, inp_molcas)
+
+   with h5py.File(f'{rassi_path_name}.rassi.h5', 'a') as rassi:
+       
+       soc_energies = rassi['SOS_ENERGIES'][:]
+   
+   hdf5_file = os.path.join(path_out, hdf5_output)
+
+   with h5py.File(f'{hdf5_file}.slt', 'a') as output:
+       
+        molcas = output.create_group(str(name))
+        molcas.attrs['Description'] = f'Group({name}) containing results of relativistic SOC MOLCAS calculations - angular momenta, spin in SOC basis and SOC energies'
+
+        rassi_soc = molcas.create_dataset('SOC_energies', shape=(soc_energies.shape[0],), dtype=np.float64)
+        rassi_soc[:] = soc_energies[:]
+        rassi_soc.attrs['Description'] = f'Dataset containing SOC energies from MOLCAS RASSI calculation'
+
+        matrices = ['SOC_SX', 'SOC_SY', 'SOC_SZ', 'SOC_LX', 'SOC_LY', 'SOC_LZ']
+        files_names = ['spin-1.txt', 'spin-2.txt', 'spin-3.txt', 'angmom-1.txt', 'angmom-2.txt', 'angmom-3.txt']
+
+        for matrix_name, file in zip(matrices, files_names):
+
+            file_path_name = os.path.join(path_molcas, file)
+            
+            data = np.loadtxt(file_path_name, dtype=np.float64, skiprows=1)
+            data_dim = np.int64(np.sqrt(data.shape[0]))
+            data_to_save = np.zeros((data_dim, data_dim), dtype=np.complex128)
+
+            for row in data:
+                data_to_save[np.int64(row[0] - 1),np.int64(row[1] - 1)] = row[2] + 1j * row[3]
+
+            dataset = molcas.create_dataset(matrix_name, shape=(data_dim, data_dim), dtype=np.complex128)
+            if file in ['angmom-1.txt', 'angmom-2.txt', 'angmom-3.txt']:
+                dataset[:, :] = 1j * data_to_save[:, :]
+            else:
+                dataset[:, :] = data_to_save[:, :]
+            dataset.attrs['Description'] = f'Dataset containing {matrix_name} matrix in SOC basis'
+
 def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str) -> tuple: #named tuple, see numpy for example linalg.eig, they return class from typing
 
-    # Read data from HDF5 file
-    with h5py.File(filename, 'r') as file:
-        soc_matrix = file[str(group)]['SOC'][:]
-        sx = 0.5 * file[str(group)]['SX'][:]
-        lx = 1j * file[str(group)]['LX'][:]
-        sy = 0.5j * file[str(group)]['SY'][:]
-        ly = 1j * file[str(group)]['LY'][:]
-        sz = 0.5 * file[str(group)]['SZ'][:]
-        lz = 1j * file[str(group)]['LZ'][:]
+    error_print_1 = ''
+    
+    try:
+        # Read data from HDF5 file
+        with h5py.File(filename, 'r') as file:
+            soc_matrix = file[str(group)]['SOC'][:]
+            sx = 0.5 * file[str(group)]['SF_SX'][:]
+            lx = 1j * file[str(group)]['SF_LX'][:]
+            sy = 0.5j * file[str(group)]['SF_SY'][:]
+            ly = 1j * file[str(group)]['SF_LY'][:]
+            sz = 0.5 * file[str(group)]['SF_SZ'][:]
+            lz = 1j * file[str(group)]['SF_LZ'][:]
 
-    # Perform diagonalization on SOC matrix
-    soc_energies, eigenvectors = np.linalg.eigh(soc_matrix)
-    soc_energies = np.ascontiguousarray(soc_energies.astype(np.float64))
-    eigenvectors = np.ascontiguousarray(eigenvectors.astype(np.complex128))
+        # Perform diagonalization on SOC matrix
+        soc_energies, eigenvectors = np.linalg.eigh(soc_matrix)
+        soc_energies = np.ascontiguousarray(soc_energies.astype(np.float64))
+        eigenvectors = np.ascontiguousarray(eigenvectors.astype(np.complex128))
 
-    # Apply transformations to spin and orbital operators
-    sx = eigenvectors.conj().T @ sx.astype(np.complex128) @ eigenvectors
-    sy = eigenvectors.conj().T @ sy.astype(np.complex128) @ eigenvectors
-    sz = eigenvectors.conj().T @ sz.astype(np.complex128) @ eigenvectors
-    lx = eigenvectors.conj().T @ lx.astype(np.complex128) @ eigenvectors
-    ly = eigenvectors.conj().T @ ly.astype(np.complex128) @ eigenvectors
-    lz = eigenvectors.conj().T @ lz.astype(np.complex128) @ eigenvectors
+        # Apply transformations to spin and orbital operators
+        sx = eigenvectors.conj().T @ sx.astype(np.complex128) @ eigenvectors
+        sy = eigenvectors.conj().T @ sy.astype(np.complex128) @ eigenvectors
+        sz = eigenvectors.conj().T @ sz.astype(np.complex128) @ eigenvectors
+        lx = eigenvectors.conj().T @ lx.astype(np.complex128) @ eigenvectors
+        ly = eigenvectors.conj().T @ ly.astype(np.complex128) @ eigenvectors
+        lz = eigenvectors.conj().T @ lz.astype(np.complex128) @ eigenvectors
 
-    # Return operators in SOC basis
-    return soc_energies, sx, sy, sz, lx, ly, lz
+        # Return operators in SOC basis
+        return soc_energies, sx, sy, sz, lx, ly, lz
+
+    except Exception as e:
+        error_type_1 = type(e).__name__
+        error_message_1 = str(e)
+        error_print_1 = f"{error_type_1}: {error_message_1}"
+
+    try: 
+        with h5py.File(filename, 'r') as file:
+            soc_energies = file[str(group)]['SOC_energies'][:]
+            sx = file[str(group)]['SOC_SX'][:]
+            lx = file[str(group)]['SOC_LX'][:]
+            sy = file[str(group)]['SOC_SY'][:]
+            ly = file[str(group)]['SOC_LY'][:]
+            sz = file[str(group)]['SOC_SZ'][:]
+            lz = file[str(group)]['SOC_LZ'][:]
+
+        return soc_energies, sx, sy, sz, lx, ly, lz
+
+    except Exception as e:
+        error_type_2 = type(e).__name__
+        error_message_2 = str(e)
+        error_print_2 = f"{error_type_2}: {error_message_2}"
+
+    raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
+
 

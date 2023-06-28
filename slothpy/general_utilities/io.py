@@ -310,4 +310,53 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
 
     raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
 
+def get_soc_moment_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
 
+    shape = -1
+
+    # Check matrix size
+    with h5py.File(filename, 'r') as file:
+        try:
+            dataset = file[group]['SOC']
+        except Exception as e:
+            error_type_1 = type(e).__name__
+            error_message_1 = str(e)
+            error_print_1 = f"{error_type_1}: {error_message_1}"
+
+        try:
+            dataset = file[group]['SOC_energies']
+        except Exception as e:
+            error_type_2 = type(e).__name__
+            error_message_2 = str(e)
+            error_print_2 = f"{error_type_2}: {error_message_2}"
+        
+        shape = dataset.shape[0]
+
+    if shape < 0:
+        raise Exception(f'Failed to read size of SOC matrix from file {filename} due to the following errors:\n {error_print_1}, {error_print_2}')
+    
+    if states_cutoff > shape:
+        raise ValueError(f'States cutoff is larger than the number of SO-states ({shape}). Please set it less or equal.')
+
+    ge = 2.00231930436256 #Electron g factor
+
+    #  Initialize the result array
+    magnetic_moment = np.ascontiguousarray(np.zeros((3,states_cutoff,states_cutoff), dtype=np.complex128))
+
+    soc_energies, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+
+    # Slice arrays based on states_cutoff
+    sx = sx[:states_cutoff, :states_cutoff]
+    sy = sy[:states_cutoff, :states_cutoff]
+    sz = sz[:states_cutoff, :states_cutoff]
+    lx = lx[:states_cutoff, :states_cutoff]
+    ly = ly[:states_cutoff, :states_cutoff]
+    lz = lz[:states_cutoff, :states_cutoff]
+    soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
+
+    # Compute and save magnetic momenta in a.u.
+    magnetic_moment[0] =  -(ge * sx + lx)
+    magnetic_moment[1] =  -(ge * sy + ly)
+    magnetic_moment[2] =  -(ge * sz + lz)
+
+    return magnetic_moment, soc_energies

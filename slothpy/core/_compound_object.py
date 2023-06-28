@@ -1,8 +1,9 @@
 from os import path
 from typing import Any
 import h5py
-from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
 import numpy as np
+from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
+from slothpy.magnetism.magnetisation import mth
 
 class Compound:
 
@@ -72,10 +73,11 @@ class Compound:
         try:
             with h5py.File(self._hdf5, 'r+') as file:
                 del file[group]
+
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to delete group {group} from .slt file {self._hdf5}: {error_type}: {error_message}')
+            print(f'Error encountered while trying to delete group {group} from .slt file: {self._hdf5}: {error_type}: {error_message}')
             return
 
         self.get_hdf5_groups_and_attributes()
@@ -84,26 +86,73 @@ class Compound:
         
         try:
             g_tensor_list, magnetic_axes_list = calculate_g_tensor_and_axes_doublet(self._hdf5, group, doublets)
+
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to compute g-tensors and main magnetic axes from file {self._hdf5} - group {group}: {error_type}: {error_message}')
+            print(f'Error encountered while trying to compute g-tensors and main magnetic axes from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
             return
 
         if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_g_tensors_axes')
+                    new_group.attrs['Description'] = f'Group({slt}) containing g-tensors of doublets and their magnetic axes calulated from group: {group}.'
+                    tensors = new_group.create_dataset(f'{slt}_g_tensors', shape=(g_tensor_list.shape[0], g_tensor_list.shape[1]), dtype=np.float64)
+                    tensors.attrs['Description'] = f'Dataset containing number of doublet and respective g-tensors from group {group}.'
+                    axes = new_group.create_dataset(f'{slt}_axes', shape=(magnetic_axes_list.shape[0], magnetic_axes_list.shape[1], magnetic_axes_list.shape[2]), dtype=np.float64)
+                    axes.attrs['Description'] = f'Dataset containing rotation matrices from initial coordinate system to magnetic axes of respective g-tensors from group: {group}.'
+                    tensors[:,:] = g_tensor_list[:,:]
+                    axes[:,:,:] = magnetic_axes_list[:,:,:]
+            
+                self.get_hdf5_groups_and_attributes()
 
-            with h5py.File(self._hdf5, 'r+') as file:
-                new_group = file.create_group(f'{slt}_g_tensors_axes')
-                new_group.attrs['Description'] = f'Group({slt}) containing g-tensors of doublets and their magnetic axes calulated from group {group}.'
-                tensors = new_group.create_dataset(f'{slt}_g_tensors', shape=(g_tensor_list.shape[0], g_tensor_list.shape[1]), dtype=np.float64)
-                tensors.attrs['Description'] = f'Dataset containing number of doublet and respective g-tensors from group {group}.'
-                axes = new_group.create_dataset(f'{slt}_axes', shape=(magnetic_axes_list.shape[0], magnetic_axes_list.shape[1], magnetic_axes_list.shape[2]), dtype=np.float64)
-                axes.attrs['Description'] = f'Dataset containing rotation matrices from initial coordinate system to magnetic axes of respective g-tensors from group {group}.'
-                tensors[:,:] = g_tensor_list[:,:]
-                axes[:,:,:] = magnetic_axes_list[:,:,:]
-        
-            self.get_hdf5_groups_and_attributes()
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save g-tensors and magnetic axes to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
 
         return g_tensor_list, magnetic_axes_list
 
+
+    def calculate_mth(self, group: str, states_cutoff: np.int64, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, slt: str = None):
+
+        fields = np.array(fields)
+        temperatures = np.array(temperatures)
+        grid = np.array(grid)
+
+        try:
+            mth_array = mth(self._hdf5, group, states_cutoff, fields, grid, temperatures, num_cpu)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to compute M(T,H) from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_magnetisation')
+                    new_group.attrs['Description'] = f'Group({slt}) containing M(T,H) magnetisation calulated from group: {group}.'
+                    mth_dataset = new_group.create_dataset(f'{slt}_mth', shape=(mth_array.shape[0], mth_array.shape[1]), dtype=np.float64)
+                    mth_dataset.attrs['Description'] = f'Dataset containing M(T,H) magnetisation (T - rows, H - columns) calulated from group: {group}.'
+                    fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
+                    fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of M(T,H) from group: {group}.'
+                    temperatures_dataset = new_group.create_dataset(f'{slt}_temperatures', shape=(temperatures.shape[0],), dtype=np.float64)
+                    temperatures_dataset.attrs['Description'] = f'Dataset containing temperature T values used in simulation of M(T,H) from group: {group}.'
+
+                    mth_dataset[:,:] = mth_array[:,:]
+                    fields_dataset[:] = fields[:]
+                    temperatures_dataset[:] = temperatures[:]
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save M(T,H) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+        return mth_array 
         

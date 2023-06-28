@@ -1149,7 +1149,7 @@ def calculate_g_tensor_and_axes_doublet(path: str, hdf5_file: str, doublets: np.
 if __name__ == '__main__':
 
 
-    g_tensor, magnetic_axes = calculate_g_tensor_and_axes_doublet('.', 'DyCo_cif_nevpt2_new_basis.hdf5', np.array([0,1,2,3,4,5,6,7,8]))
+    g_tensor, magnetic_axes = calculate_g_tensor_and_axes_doublet('.', 'NdCoNO2_cas_super_tight_cas.hdf5', np.array([0,1,2,3,4]))
 
     print(g_tensor)
     #print(magnetic_axes)

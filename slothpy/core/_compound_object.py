@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
 from slothpy.magnetism.magnetisation import mth
+from slothpy.magnetism.susceptibility import chitht
 
 class Compound:
 
@@ -81,8 +82,9 @@ class Compound:
             return
 
         self.get_hdf5_groups_and_attributes()
+        
 
-    def g_tensor_and_axes_doublet(self, group: str, doublets: np.ndarray, slt: str = None):
+    def calculate_g_tensor_and_axes_doublet(self, group: str, doublets: np.ndarray, slt: str = None):
         
         try:
             g_tensor_list, magnetic_axes_list = calculate_g_tensor_and_axes_doublet(self._hdf5, group, doublets)
@@ -154,5 +156,46 @@ class Compound:
                 print(f'Error encountered while trying to save M(T,H) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
 
-        return mth_array 
+        return mth_array
+     
+        
+    def calculate_chitht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, grid: np.ndarray = None, exp: bool = False, slt: str = None) -> np.ndarray:
+
+        fields = np.array(fields)
+        temperatures = np.array(temperatures)
+        grid = np.array(grid)
+
+        try:
+            chitht_array = chitht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_of_points, delta_h, grid, exp)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to compute chiT(H,T) from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_susceptibility')
+                    new_group.attrs['Description'] = f'Group({slt}) containing chiT(H,T) magnetic susceptibility calulated from group: {group}.'
+                    chitht_dataset = new_group.create_dataset(f'{slt}_chitht', shape=(chitht_array.shape[0], chitht_array.shape[1]), dtype=np.float64)
+                    chitht_dataset.attrs['Description'] = f'Dataset containing chiT(H,T) magnetic susceptibility (H - rows, T - columns) calulated from group: {group}.'
+                    fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
+                    fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of chiT(H,T) from group: {group}.'
+                    temperatures_dataset = new_group.create_dataset(f'{slt}_temperatures', shape=(temperatures.shape[0],), dtype=np.float64)
+                    temperatures_dataset.attrs['Description'] = f'Dataset containing temperature T values used in simulation of chiT(H,T) from group: {group}.'
+
+                    chitht_dataset[:,:] = chitht_array[:,:]
+                    fields_dataset[:] = fields[:]
+                    temperatures_dataset[:] = temperatures[:]
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save chiT(H,T) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+        return chitht_array 
         

@@ -6,6 +6,7 @@ from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
 from slothpy.magnetism.magnetisation import mth
 from slothpy.magnetism.susceptibility import (chitht, chit_tensorht)
 from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
+from slothpy.general_utilities.io import get_soc_energies_cm_1
 
 class Compound:
 
@@ -168,7 +169,7 @@ class Compound:
 
         fields = np.array(fields)
         temperatures = np.array(temperatures)
-        
+
         if isinstance(grid, int):
             grid = lebedev_laikov_grid(grid)
         else:
@@ -246,4 +247,9 @@ class Compound:
                 print(f'Error encountered while trying to save chiT(H,T) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
 
-        return chit_tensorht_array 
+        return chit_tensorht_array
+    
+
+    def soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) -> np.ndarray:
+         
+        pass

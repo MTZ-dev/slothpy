@@ -2,7 +2,7 @@ import numpy as np
 from numba import jit
 import multiprocessing
 from slothpy.general_utilities.system import get_num_of_processes
-from slothpy.general_utilities.io import get_soc_moment_energies_from_hdf5
+from slothpy.general_utilities.io import get_soc_momenta_and_energies_from_hdf5
 
 @jit('float64(float64[:], float64[:], float64)', nopython=True, cache=True, nogil=True)
 def calculate_magnetization(energies: np.ndarray, states_momenta: np.ndarray, temperature: np.float64) -> np.float64:
@@ -33,7 +33,7 @@ def calculate_magnetization(energies: np.ndarray, states_momenta: np.ndarray, te
 
 
 @jit('float64[:](complex128[:,:,:], float64[:], float64, float64[:,:], float64[:])', nopython=True, cache=True, nogil=True)
-def calculate_mt(magnetic_moment: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, temperatures: np.ndarray) -> np.ndarray:
+def calculate_mt(magnetic_momenta: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, temperatures: np.ndarray) -> np.ndarray:
     """
     Calculates the M(T) array for a given array of magnetic moments, SOC energies, directional grid for powder averaging,
     and temperatures for a particular value of magnetic field.
@@ -53,14 +53,14 @@ def calculate_mt(magnetic_moment: np.ndarray, soc_energies: np.ndarray, field: n
 
     # Initialize arrays
     mt_array = np.ascontiguousarray(np.zeros((temperatures.shape[0]), dtype=np.float64))
-    magnetic_moment = np.ascontiguousarray(magnetic_moment)
+    magnetic_momenta = np.ascontiguousarray(magnetic_momenta)
     soc_energies = np.ascontiguousarray(soc_energies)
 
     # Perform calculations for each magnetic field orientation
     for j in range(grid.shape[0]):
         # Construct Zeeman matrix
         orient = -field * bohr_magneton * grid[j, :3]
-        zeeman_matrix = magnetic_moment[0] * orient[0] + magnetic_moment[1] * orient[1] + magnetic_moment[2] * orient[2]
+        zeeman_matrix = magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2]
 
         # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
         for k in range(zeeman_matrix.shape[0]):
@@ -73,9 +73,9 @@ def calculate_mt(magnetic_moment: np.ndarray, soc_energies: np.ndarray, field: n
 
         # Transform momenta according to the new eigenvectors
         states_momenta = eigenvectors.conj().T @ (
-            grid[j, 0] * magnetic_moment[0]
-            + grid[j, 1] * magnetic_moment[1]
-            + grid[j, 2] * magnetic_moment[2]
+            grid[j, 0] * magnetic_momenta[0]
+            + grid[j, 1] * magnetic_momenta[1]
+            + grid[j, 2] * magnetic_momenta[2]
         ) @ eigenvectors
 
         # Get diagonal momenta of the new states
@@ -103,11 +103,11 @@ def calculate_mt_wrapper(args):
     return mt
 
 
-def arg_iter_mth(magnetic_moment, soc_energies, fields, grid, temperatures):
+def arg_iter_mth(magnetic_momenta, soc_energies, fields, grid, temperatures):
     
     # Iterator generator for arguments with different field values to be distributed along num_process processes
     for i in range(fields.shape[0]):
-      yield (magnetic_moment, soc_energies, fields[i], grid, temperatures)
+      yield (magnetic_momenta, soc_energies, fields[i], grid, temperatures)
 
 
 def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int) -> np.ndarray:
@@ -144,11 +144,11 @@ def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid:
     temperatures = np.ascontiguousarray(temperatures)
 
     # Read data from HDF5 file
-    magnetic_moment, soc_energies = get_soc_moment_energies_from_hdf5(filename, group, states_cutoff)
+    magnetic_momenta, soc_energies = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
     # Parallel M(T) calculation over different field values
     with multiprocessing.Pool(num_process) as p:
-        mt = p.map(calculate_mt_wrapper, arg_iter_mth(magnetic_moment, soc_energies, fields, grid, temperatures))
+        mt = p.map(calculate_mt_wrapper, arg_iter_mth(magnetic_momenta, soc_energies, fields, grid, temperatures))
 
     # Collecting results in plotting-friendly convention for M(H)
     for i in range(fields.shape[0]):

@@ -4,7 +4,8 @@ import h5py
 import numpy as np
 from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
 from slothpy.magnetism.magnetisation import mth
-from slothpy.magnetism.susceptibility import chitht
+from slothpy.magnetism.susceptibility import (chitht, chit_tensorht)
+from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
 
 class Compound:
 
@@ -122,7 +123,11 @@ class Compound:
 
         fields = np.array(fields)
         temperatures = np.array(temperatures)
-        grid = np.array(grid)
+
+        if isinstance(grid, int):
+            grid = lebedev_laikov_grid(grid)
+        else:
+            grid = np.array(grid)
 
         try:
             mth_array = mth(self._hdf5, group, states_cutoff, fields, grid, temperatures, num_cpu)
@@ -159,14 +164,18 @@ class Compound:
         return mth_array
      
         
-    def calculate_chitht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, grid: np.ndarray = None, exp: bool = False, slt: str = None) -> np.ndarray:
+    def calculate_chitht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = False, grid: np.ndarray = None, slt: str = None) -> np.ndarray:
 
         fields = np.array(fields)
         temperatures = np.array(temperatures)
-        grid = np.array(grid)
+        
+        if isinstance(grid, int):
+            grid = lebedev_laikov_grid(grid)
+        else:
+            grid = np.array(grid)
 
         try:
-            chitht_array = chitht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_of_points, delta_h, grid, exp)
+            chitht_array = chitht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_of_points, delta_h, exp, T, grid)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -199,3 +208,42 @@ class Compound:
 
         return chitht_array 
         
+    
+    def calculate_chit_tensorht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, T: bool = True, slt: str = None):
+
+        fields = np.array(fields)
+        temperatures = np.array(temperatures)
+
+        try:
+            chit_tensorht_array = chit_tensorht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_of_points, delta_h, T)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to compute chi_tensor(H,T) from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_susceptibility_tensor')
+                    new_group.attrs['Description'] = f'Group({slt}) containing chiT_tensor(H,T) Van Vleck susceptibility tensor calulated from group: {group}.'
+                    chit_tensorht_dataset = new_group.create_dataset(f'{slt}_chit_tensorht', shape=(chit_tensorht_array.shape[0], chit_tensorht_array.shape[1],3,3), dtype=np.float64)
+                    chit_tensorht_dataset.attrs['Description'] = f'Dataset containing chiT_tensor(H,T) Van Vleck susceptibility tensor (H, T, 3, 3) calulated from group: {group}.'
+                    fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
+                    fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of chiT_tensor(H,T) Van Vleck susceptibility tensor from group: {group}.'
+                    temperatures_dataset = new_group.create_dataset(f'{slt}_temperatures', shape=(temperatures.shape[0],), dtype=np.float64)
+                    temperatures_dataset.attrs['Description'] = f'Dataset containing temperature T values used in simulation of chiT_tensor(H,T) Van Vleck susceptibility tensor from group: {group}.'
+
+                    chit_tensorht_dataset[:,:] = chit_tensorht_array[:,:]
+                    fields_dataset[:] = fields[:]
+                    temperatures_dataset[:] = temperatures[:]
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save chiT(H,T) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+        return chit_tensorht_array 

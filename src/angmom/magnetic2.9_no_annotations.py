@@ -898,8 +898,8 @@ def arg_iter_chi_tensor(magnetic_moment, soc_energies, field, temperatures, num_
 
 def chi_tensor(path: str, hdf5_file: str, field: np.float64, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64):
 
-    # Initialize the result array
-    sus_tensor = np.zeros((3,3,temperatures.shape[0]), dtype=np.float64)
+    # # Initialize the result array
+    # sus_tensor = np.zeros((3,3,temperatures.shape[0]), dtype=np.float64)
 
     # Get number of parallel proceses to be used
     num_process = get_num_of_processes(num_cpu)
@@ -1149,9 +1149,9 @@ def calculate_g_tensor_and_axes_doublet(path: str, hdf5_file: str, doublets: np.
 if __name__ == '__main__':
 
 
-    g_tensor, magnetic_axes = calculate_g_tensor_and_axes_doublet('.', 'NdCoNO2_cas_super_tight_cas.hdf5', np.array([0,1,2,3,4]))
+    # g_tensor, magnetic_axes = calculate_g_tensor_and_axes_doublet('.', 'NdCoNO2_cas_super_tight_cas.hdf5', np.array([0,1,2,3,4]))
 
-    print(g_tensor)
+    # print(g_tensor)
     #print(magnetic_axes)
 
     # print(np.linalg.det(magnetic_axes[0]))
@@ -1179,9 +1179,9 @@ if __name__ == '__main__':
     #print("\033[90mTitle") #kolory w terminalu
 
     #print(get_states_magnetic_momenta('.', 'DyCo_cif_nevpt2_new_basis.hdf5', np.arange(16), J_moment=True))
-    # sus_tensor = chi_tensor('.', 'DyCo_cif.hdf5', 0.1, 2003, temperatures3, 32, 7, 0.0001)
+    sus_tensor = chi_tensor('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 252, temperatures3, 6, 1, 0.0001)
 
-    # print(sus_tensor * temperatures3[:, np.newaxis, np.newaxis])
+    print(sus_tensor * temperatures3[:, np.newaxis, np.newaxis])
 
     # zs = zeeman_splitting('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16, 16, fields, grid, 2, average = True)
 

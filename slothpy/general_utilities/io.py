@@ -256,8 +256,6 @@ def molcas_spin_orbit_to_slt(path_molcas: str, inp_molcas: str, path_out: str, h
             dataset.attrs['Description'] = f'Dataset containing {matrix_name} matrix in SOC basis'
 
 def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str) -> tuple: #named tuple, see numpy for example linalg.eig, they return class from typing
-
-    error_print_1 = ''
     
     try:
         # Read data from HDF5 file
@@ -310,7 +308,7 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
 
     raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
 
-def get_soc_moment_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
+def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
 
     shape = -1
 
@@ -335,13 +333,16 @@ def get_soc_moment_energies_from_hdf5(filename: str, group: str, states_cutoff: 
     if shape < 0:
         raise Exception(f'Failed to read size of SOC matrix from file {filename} due to the following errors:\n {error_print_1}, {error_print_2}')
     
+    if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
+        raise ValueError(f'Invalid states cutoff. Set it to positive integer less or equal to the number of SO-states')
+
     if states_cutoff > shape:
         raise ValueError(f'States cutoff is larger than the number of SO-states ({shape}). Please set it less or equal.')
 
     ge = 2.00231930436256 #Electron g factor
 
     #  Initialize the result array
-    magnetic_moment = np.ascontiguousarray(np.zeros((3,states_cutoff,states_cutoff), dtype=np.complex128))
+    magnetic_momenta = np.ascontiguousarray(np.zeros((3,states_cutoff,states_cutoff), dtype=np.complex128))
 
     soc_energies, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
 
@@ -355,8 +356,48 @@ def get_soc_moment_energies_from_hdf5(filename: str, group: str, states_cutoff: 
     soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
 
     # Compute and save magnetic momenta in a.u.
-    magnetic_moment[0] =  -(ge * sx + lx)
-    magnetic_moment[1] =  -(ge * sy + ly)
-    magnetic_moment[2] =  -(ge * sz + lz)
+    magnetic_momenta[0] =  -(ge * sx + lx)
+    magnetic_momenta[1] =  -(ge * sy + ly)
+    magnetic_momenta[2] =  -(ge * sz + lz)
 
-    return magnetic_moment, soc_energies
+    return magnetic_momenta, soc_energies
+
+
+def get_soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) -> np.ndarray:
+
+    hartree_to_cm_1 = 219474.6
+
+    try:
+        # Read data from HDF5 file
+        with h5py.File(filename, 'r') as file:
+            soc_matrix = file[str(group)]['SOC'][:]
+
+        # Perform diagonalization on SOC matrix
+        soc_energies = np.linalg.eigvalsh(soc_matrix)
+
+        if isinstance(num_of_states, int) and num_of_states >= 0 and num_of_states <= soc_energies.shape[0]:
+            soc_energies = soc_energies[:num_of_states]
+
+        # Return operators in SOC basis
+        return (soc_energies - soc_energies[0]) * hartree_to_cm_1
+
+    except Exception as e:
+        error_type_1 = type(e).__name__
+        error_message_1 = str(e)
+        error_print_1 = f"{error_type_1}: {error_message_1}"
+
+    try: 
+        with h5py.File(filename, 'r') as file:
+            soc_energies = file[str(group)]['SOC_energies'][:]
+        
+        if isinstance(num_of_states, int) and num_of_states >= 0 and num_of_states <= soc_energies.shape[0]:
+            soc_energies = soc_energies[:num_of_states]
+
+        return (soc_energies - soc_energies[0]) * hartree_to_cm_1
+
+    except Exception as e:
+        error_type_2 = type(e).__name__
+        error_message_2 = str(e)
+        error_print_2 = f"{error_type_2}: {error_message_2}"
+
+    raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 

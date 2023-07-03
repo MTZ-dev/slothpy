@@ -6,7 +6,10 @@ from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
 from slothpy.magnetism.magnetisation import mth
 from slothpy.magnetism.susceptibility import (chitht, chit_tensorht)
 from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
-from slothpy.general_utilities.io import (get_soc_energies_cm_1, get_states_magnetic_momenta, get_states_total_angular_momneta)
+from slothpy.general_utilities.io import (get_soc_energies_cm_1, get_states_magnetic_momenta, get_states_total_angular_momneta,
+                                           get_total_angular_momneta_matrix, get_magnetic_momenta_matrix, get_soc_momenta_and_energies_from_hdf5)
+from slothpy.magnetism.zeeman import zeeman_splitting
+from slothpy.general_utilities.math_expresions import hermitian_x_in_basis_of_hermitian_y, decomposition_of_hermitian_matrix
 
 class Compound:
 
@@ -326,7 +329,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get states total_angular momenta from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            print(f'Error encountered while trying to get states total angular momenta from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
             return
         
         if slt is not None:
@@ -351,3 +354,146 @@ class Compound:
                 return
 
         return states, total_angular_momenta_array
+    
+
+    def calculate_zeeman_splitting(self, group: str, states_cutoff: int, num_of_states: int, fields: np.ndarray, grid: np.ndarray, num_cpu: int, average: bool = False, slt: str = None):
+
+        fields = np.array(fields)
+
+        if isinstance(grid, int):
+            grid = lebedev_laikov_grid(grid)
+            average = True
+
+        grid = np.array(grid)
+
+        try:
+            zeeman_array = zeeman_splitting(self._hdf5, group, states_cutoff, num_of_states, fields, grid, num_cpu, average)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to compute Zeeman splitting from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_zeeman_splitting')
+                    new_group.attrs['Description'] = f'Group({slt}) containing Zeeman splitting calulated from group: {group}.'
+                    zeeman_splitting_dataset = new_group.create_dataset(f'{slt}_zeeman', shape=zeeman_array.shape, dtype=np.float64)
+                    if average:
+                        zeeman_splitting_dataset.attrs['Description'] = f'Dataset containing Zeeman splitting averaged over grid of directions with shape: (field, energy) calulated from group: {group}.'
+                    else:
+                        zeeman_splitting_dataset.attrs['Description'] = f'Dataset containing Zeeman splitting with shape: (orientation, field, energy) calulated from group: {group}.'
+                    fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
+                    fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of Zeeman splitting from group: {group}.'
+                    if average:
+                        orientations_dataset = new_group.create_dataset(f'{slt}_orientations', shape=(grid.shape[0], grid.shape[1]), dtype=np.float64)
+                        orientations_dataset.attrs['Description'] = f'Dataset containing magnetic field orientation grid with weights used in simulation of averaged Zeeman splitting from group: {group}.'
+                        orientations_dataset[:] = grid[:]
+                    else:
+                        orientations_dataset = new_group.create_dataset(f'{slt}_orientations', shape=(grid.shape[0], 3), dtype=np.float64)
+                        orientations_dataset.attrs['Description'] = f'Dataset containing orientations of magnetic field used in simulation of Zeeman splitting from group: {group}.'
+                        orientations_dataset[:] = grid[:,:3]
+
+                    zeeman_splitting_dataset[:,:] = zeeman_array[:,:]
+                    fields_dataset[:] = fields[:]
+                    
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save Zeeman splitting to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+        return zeeman_array
+    
+
+    def total_angular_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, slt: str = None):
+
+        if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0):
+            raise ValueError(f'Invalid states cutoff, set it to positive integer or 0 for all states.')
+
+        try:
+            total_angular_momenta_matrix_array = get_total_angular_momneta_matrix(self._hdf5, group, states_cutoff)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to get total angular momenta matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_total_angular_momenta_matrix')
+                    new_group.attrs['Description'] = f'Group({slt}) containing total angular momenta calulated from group: {group}.'
+                    total_angular_momenta_matrix_dataset = new_group.create_dataset(f'{slt}_total_angular_momenta_matrix', shape=total_angular_momenta_matrix_array.shape, dtype=np.complex128)
+                    total_angular_momenta_matrix_dataset.attrs['Description'] = f'Dataset containing total angular momenta matrix (0-x, 1-y, 2-z) calulated from group: {group}.'
+                    states_dataset = new_group.create_dataset(f'{slt}_states', shape=(total_angular_momenta_matrix_array.shape[1],), dtype=np.int64)
+                    states_dataset.attrs['Description'] = f'Dataset containing states indexes of total angular momenta matrix from group: {group}.'
+
+                    print(total_angular_momenta_matrix_array)
+                    total_angular_momenta_matrix_dataset[:] = total_angular_momenta_matrix_array[:]
+                    states_dataset[:] = np.arange(total_angular_momenta_matrix_array.shape[1], dtype=np.int64)
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save total angular momenta matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+            
+
+    def magnetic_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, slt: str = None):
+
+        if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0):
+            raise ValueError(f'Invalid states cutoff, set it to positive integer or 0 for all states.')
+
+        try:
+            magnetic_momenta_matrix_array = get_magnetic_momenta_matrix(self._hdf5, group, states_cutoff)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to get total angular momenta matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_magnetic_momenta_matrix')
+                    new_group.attrs['Description'] = f'Group({slt}) containing magnetic momenta calulated from group: {group}.'
+                    magnetic_momenta_matrix_dataset = new_group.create_dataset(f'{slt}_magnetic_momenta_matrix', shape=magnetic_momenta_matrix_array.shape, dtype=np.complex128)
+                    magnetic_momenta_matrix_dataset.attrs['Description'] = f'Dataset containing magnetic momenta matrix (0-x, 1-y, 2-z) calulated from group: {group}.'
+                    states_dataset = new_group.create_dataset(f'{slt}_states', shape=(magnetic_momenta_matrix_array.shape[1],), dtype=np.int64)
+                    states_dataset.attrs['Description'] = f'Dataset containing states indexes of magnetic momenta matrix from group: {group}.'
+
+                    magnetic_momenta_matrix_dataset[:] = magnetic_momenta_matrix_array[:]
+                    states_dataset[:] = np.arange(magnetic_momenta_matrix_array.shape[1], dtype=np.int64)
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save magnetic momenta matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+            
+    
+    def decomposition_in_z_magnetic_momentum_basis(self, group, number_of_states, slt: str = None):
+
+        magnetic_momenta, soc_energies  = get_soc_momenta_and_energies_from_hdf5(self._hdf5, group, number_of_states)
+
+        soc_matrix = np.diag(soc_energies)
+
+        soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, magnetic_momenta[2])
+
+        decopmosition = decomposition_of_hermitian_matrix(soc_matrix)
+
+        return decopmosition
+
+
+    def decomposition_in_z_angular_momentum_basis():
+        
+        pass

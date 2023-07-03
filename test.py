@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 #b = slt.compound_from_orca(".", "CeCoN3", "CeCoN3_nevpt2_TVZP", ".", "CeCoN3_TZVP_cas_nevpt2.out", pt2=True)
 
-b = slt.compound_from_slt(".", "CeCoN3")
+b = slt.compound_from_slt(".", "DyCo_test_hdf5")
 
 # print(b)
 
@@ -41,11 +41,19 @@ temperatures3 = np.linspace(1,5,5)
 
 # b.soc_energies_cm_1("CeCoN3_nevpt2_TVZP", 0, slt = "test_energy")
 
-b.states_magnetic_momenta("CeCoN3_nevpt2_TVZP", slt = "test6")
+# b.states_magnetic_momenta("CeCoN3_nevpt2_TVZP", slt = "test6")
 
-b.states_total_angular_momenta("CeCoN3_nevpt2_TVZP", slt = "test6")
+# b.states_total_angular_momenta("CeCoN3_nevpt2_TVZP", slt = "test6")
 
-print(b)
+# b.calculate_zeeman_splitting("CeCoN3_nevpt2_TVZP", 0, 13, fields1, 2, 2, slt="test3")
+
+# print(b)
+
+# b.magnetic_momenta_matrix("CeCoN3_nevpt2_TVZP", 0, slt = "test15")
+
+decomposition = b.decomposition_in_z_magnetic_momentum_basis("molcas_test1234", 16)
+
+print(decomposition)
 
 # mth = b.calculate_mth("CeCoN3_nevpt2_TVZP", 0, fields1, 6, temperatures1, 2)
 

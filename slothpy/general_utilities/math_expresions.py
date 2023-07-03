@@ -50,3 +50,22 @@ def finite_diff_stencil(diff_order: int, num_of_points: int, step: np.float64):
     stencil_coeff = np.linalg.inv(stencil_matrix) @ order_vector.T
 
     return stencil_coeff
+
+
+def hermitian_x_in_basis_of_hermitian_y(x_matrix, y_matrix):
+   
+   _, eigenvectors = np.linalg.eigh(y_matrix)
+
+   return eigenvectors.conj().T @ x_matrix @ eigenvectors
+
+
+def decomposition_of_hermitian_matrix(matrix):
+
+    _, eigenvectors = np.linalg.eigh(matrix)
+
+    return (eigenvectors * eigenvectors.conj()).real.T * 100
+
+
+def rotate_vector_operator(vector_operator, rotation):
+
+    pass

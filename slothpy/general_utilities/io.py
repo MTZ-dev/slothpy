@@ -417,8 +417,8 @@ def get_states_magnetic_momenta(filename: str, group: str, states: np.ndarray = 
 
     if (np.all(states is not None)) and (np.all(states != None)):
 
-        if np.any(states < 0) or not np.issubdtype(states.dtype, np.integer):
-            raise ValueError("States list contains negative values or non-integer elements!")
+        if np.any(states < 0) or not np.issubdtype(states.dtype, np.integer) or np.any(states > sx.shape[0]):
+            raise ValueError(f'States list contains negative values, non-integer elements or indexes greater than the number of states: {sx.shape[0]}!')
 
         # Convert states to ndarray without repetitions
         states = np.unique(np.array(states).astype(np.int64))
@@ -463,8 +463,8 @@ def get_states_total_angular_momneta(filename: str, group: str, states: np.ndarr
 
     if (np.all(states is not None)) and (np.all(states != None)):
 
-        if np.any(states < 0) or not np.issubdtype(states.dtype, np.integer):
-            raise ValueError("States list contains negative values or non-integer elements!")
+        if np.any(states < 0) or not np.issubdtype(states.dtype, np.integer) or np.any(states > sx.shape[0]):
+            raise ValueError(f'States list contains negative values, non-integer elements or indexes greater than the number of states: {sx.shape[0]}!')
 
         # Convert states to ndarray without repetitions
         states = np.unique(np.array(states).astype(np.int64))
@@ -503,3 +503,43 @@ def get_states_total_angular_momneta(filename: str, group: str, states: np.ndarr
 
 
     return states, total_angular_momenta.real
+
+
+def get_magnetic_momenta_matrix(filename: str, group: str, states_cutoff: np.ndarray):
+
+    magnetic_momenta, _ = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
+
+    return magnetic_momenta
+
+
+def get_total_angular_momneta_matrix(filename: str, group: str, states_cutoff: np.ndarray):
+
+    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+
+    if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0) or (states_cutoff > sx.shape[0]):
+        raise ValueError(f'Invalid states cutoff, set it to positive integer less than the number of states: {sx.shape[0]} or 0 for all states.') 
+
+    if states_cutoff != 0:
+
+        #  Initialize the result array
+        total_angular_momenta = np.ascontiguousarray(np.zeros((3, states_cutoff, states_cutoff), dtype=np.complex128))
+
+        # Slice arrays based on states_cutoff
+        sx = sx[:states_cutoff, :states_cutoff]
+        sy = sy[:states_cutoff, :states_cutoff]
+        sz = sz[:states_cutoff, :states_cutoff]
+        lx = lx[:states_cutoff, :states_cutoff]
+        ly = ly[:states_cutoff, :states_cutoff]
+        lz = lz[:states_cutoff, :states_cutoff]
+
+    elif states_cutoff == 0:
+
+        #  Initialize the result array
+        total_angular_momenta = np.ascontiguousarray(np.zeros((3, sx.shape[0], sx.shape[1]), dtype=np.complex128))
+
+    # Compute and save magnetic momenta in a.u.
+    total_angular_momenta[0] =  sx + lx
+    total_angular_momenta[1] =  sy + ly
+    total_angular_momenta[2] =  sz + lz
+
+    return total_angular_momenta

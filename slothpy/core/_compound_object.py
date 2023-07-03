@@ -6,7 +6,7 @@ from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
 from slothpy.magnetism.magnetisation import mth
 from slothpy.magnetism.susceptibility import (chitht, chit_tensorht)
 from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
-from slothpy.general_utilities.io import get_soc_energies_cm_1
+from slothpy.general_utilities.io import (get_soc_energies_cm_1, get_states_magnetic_momenta, get_states_total_angular_momneta)
 
 class Compound:
 
@@ -165,7 +165,7 @@ class Compound:
         return mth_array
      
         
-    def calculate_chitht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = False, grid: np.ndarray = None, slt: str = None) -> np.ndarray:
+    def calculate_chitht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = True, grid: np.ndarray = None, slt: str = None) -> np.ndarray:
 
         fields = np.array(fields)
         temperatures = np.array(temperatures)
@@ -250,6 +250,104 @@ class Compound:
         return chit_tensorht_array
     
 
-    def soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) -> np.ndarray:
-         
-        pass
+    def soc_energies_cm_1(self, group: str, num_of_states: int = None, slt: str = None) -> np.ndarray:
+
+        try:
+            soc_energies_array = get_soc_energies_cm_1(self._hdf5, group, num_of_states)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to get SOC energies from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_soc_energies')
+                    new_group.attrs['Description'] = f'Group({slt}) containing SOC (Spin-Orbit Coupling) energies calulated from group: {group}.'
+                    soc_energies_dataset = new_group.create_dataset(f'{slt}_soc_energies', shape=(soc_energies_array.shape[0],), dtype=np.float64)
+                    soc_energies_dataset.attrs['Description'] = f'Dataset containing SOC (Spin-Orbit Coupling) energies calulated from group: {group}.'
+
+                    soc_energies_dataset[:] = soc_energies_array[:]
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save SOC (Spin-Orbit Coupling) energies to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+        return soc_energies_array
+    
+
+    def states_magnetic_momenta(self, group: str, states: np.ndarray = None, slt: str = None):
+
+        states = np.array(states)
+
+        try:
+            states, magnetic_momenta_array = get_states_magnetic_momenta(self._hdf5, group, states)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to get states magnetic momenta from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_states_magnetic_momenta')
+                    new_group.attrs['Description'] = f'Group({slt}) containing states magnetic momenta calulated from group: {group}.'
+                    magnetic_momenta_dataset = new_group.create_dataset(f'{slt}_magnetic_momenta', shape=(magnetic_momenta_array.shape[0],magnetic_momenta_array.shape[1]), dtype=np.float64)
+                    magnetic_momenta_dataset.attrs['Description'] = f'Dataset containing states magnetic momenta (0-x,1-y,2-z) calulated from group: {group}.'
+                    states_dataset = new_group.create_dataset(f'{slt}_states', shape=(states.shape[0],), dtype=np.int64)
+                    states_dataset.attrs['Description'] = f'Dataset containing indexes of states used in simulation of magnetic momenta from group: {group}.'
+
+                    magnetic_momenta_dataset[:] = magnetic_momenta_array[:]
+                    states_dataset[:] = states[:]
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save states magnetic momenta to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+        return states, magnetic_momenta_array
+    
+
+    def states_total_angular_momenta(self, group: str, states: np.ndarray = None, slt: str = None):
+
+        states = np.array(states)
+
+        try:
+            states, total_angular_momenta_array = get_states_total_angular_momneta(self._hdf5, group, states)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to get states total_angular momenta from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_states_total_angular_momenta')
+                    new_group.attrs['Description'] = f'Group({slt}) containing states total angular momenta calulated from group: {group}.'
+                    total_angular_momenta_dataset = new_group.create_dataset(f'{slt}_total_angular_momenta', shape=(total_angular_momenta_array.shape[0],total_angular_momenta_array.shape[1]), dtype=np.float64)
+                    total_angular_momenta_dataset.attrs['Description'] = f'Dataset containing states total angular momenta (0-x,1-y,2-z) calulated from group: {group}.'
+                    states_dataset = new_group.create_dataset(f'{slt}_states', shape=(states.shape[0],), dtype=np.int64)
+                    states_dataset.attrs['Description'] = f'Dataset containing indexes of states used in simulation of total angular momenta from group: {group}.'
+
+                    total_angular_momenta_dataset[:] = total_angular_momenta_array[:]
+                    states_dataset[:] = states[:]
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save states total angular momenta to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+        return states, total_angular_momenta_array

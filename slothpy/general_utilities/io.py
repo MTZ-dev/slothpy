@@ -106,7 +106,7 @@ def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_ou
     orca.attrs['Description'] = f'Group({name}) containing results of relativistic SOC ORCA calculations - angular momenta and SOC matrix in CI basis'
 
     # Extract and process matrices (SX, SY, SZ, LX, LY, LZ)
-    matrices = ['SF_SX', 'SF_SY', 'SF_SZ', 'SF_LX', 'SF_LY', 'SF_LZ']
+    matrices = ['SX', 'SY', 'SZ', 'LX', 'LY', 'LZ']
     descriptions = ['real part', 'imaginary part', 'real part', 'real part', 'real part', 'real part']
 
     for matrix_name, description in zip(matrices, descriptions):
@@ -140,9 +140,9 @@ def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_ou
                         matrix[i, l + j] = np.float64(line[j + 1])
 
             # Create dataset in HDF5 file and assign the matrix
-            dataset = orca.create_dataset(matrix_name, shape=(so_dim, so_dim), dtype=np.float64)
+            dataset = orca.create_dataset(f'SF_{matrix_name}', shape=(so_dim, so_dim), dtype=np.float64)
             dataset[:, :] = matrix[:, :]
-            dataset.attrs['Description'] = f'Dataset containing {description} of {matrix_name} matrix in CI basis (spin-free)'
+            dataset.attrs['Description'] = f'Dataset containing {description} of SF_{matrix_name} matrix in CI basis (spin-free)'
 
         # Remove the temporary file
         os.remove(out_file)
@@ -338,6 +338,9 @@ def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cut
 
     if states_cutoff > shape:
         raise ValueError(f'States cutoff is larger than the number of SO-states ({shape}). Please set it less or equal.')
+    
+    if states_cutoff == 0:
+        states_cutoff = shape
 
     ge = 2.00231930436256 #Electron g factor
 
@@ -367,6 +370,9 @@ def get_soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) 
 
     hartree_to_cm_1 = 219474.6
 
+    if num_of_states < 0 or (not isinstance(num_of_states, int)):
+        raise ValueError(f'Invalid number of states. Set it to positive integer or 0 for all states.')
+
     try:
         # Read data from HDF5 file
         with h5py.File(filename, 'r') as file:
@@ -375,7 +381,7 @@ def get_soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) 
         # Perform diagonalization on SOC matrix
         soc_energies = np.linalg.eigvalsh(soc_matrix)
 
-        if isinstance(num_of_states, int) and num_of_states >= 0 and num_of_states <= soc_energies.shape[0]:
+        if isinstance(num_of_states, int) and num_of_states > 0 and num_of_states <= soc_energies.shape[0]:
             soc_energies = soc_energies[:num_of_states]
 
         # Return operators in SOC basis
@@ -390,7 +396,7 @@ def get_soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) 
         with h5py.File(filename, 'r') as file:
             soc_energies = file[str(group)]['SOC_energies'][:]
         
-        if isinstance(num_of_states, int) and num_of_states >= 0 and num_of_states <= soc_energies.shape[0]:
+        if isinstance(num_of_states, int) and num_of_states > 0 and num_of_states <= soc_energies.shape[0]:
             soc_energies = soc_energies[:num_of_states]
 
         return (soc_energies - soc_energies[0]) * hartree_to_cm_1
@@ -400,4 +406,100 @@ def get_soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) 
         error_message_2 = str(e)
         error_print_2 = f"{error_type_2}: {error_message_2}"
 
-    raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
+    raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}')
+
+
+def get_states_magnetic_momenta(filename: str, group: str, states: np.ndarray = None):
+    
+    ge = 2.00231930436256 #Electron g factor
+
+    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+
+    if (np.all(states is not None)) and (np.all(states != None)):
+
+        if np.any(states < 0) or not np.issubdtype(states.dtype, np.integer):
+            raise ValueError("States list contains negative values or non-integer elements!")
+
+        # Convert states to ndarray without repetitions
+        states = np.unique(np.array(states).astype(np.int64))
+
+        # Number of states desired
+        num_of_states = states.size
+
+        #  Initialize the result array
+        magnetic_momenta = np.ascontiguousarray(np.zeros((3, num_of_states), dtype=np.complex128))
+
+        # Slice arrays based on states_cutoff
+        sx = sx[states, states]
+        sy = sy[states, states]
+        sz = sz[states, states]
+        lx = lx[states, states]
+        ly = ly[states, states]
+        lz = lz[states, states]
+
+        # Compute and save magnetic momenta in a.u.
+        magnetic_momenta[0] =  -(ge * sx + lx)
+        magnetic_momenta[1] =  -(ge * sy + ly)
+        magnetic_momenta[2] =  -(ge * sz + lz)
+
+    else:
+
+        states = np.arange(sx.shape[0], dtype=np.int64)
+
+        #  Initialize the result array
+        magnetic_momenta = np.ascontiguousarray(np.zeros((3, sx.shape[0]), dtype=np.complex128))
+
+        # Compute and save magnetic momenta in a.u.
+        magnetic_momenta[0] =  np.diagonal(-(ge * sx + lx))
+        magnetic_momenta[1] =  np.diagonal(-(ge * sy + ly))
+        magnetic_momenta[2] =  np.diagonal(-(ge * sz + lz))
+
+    return states, magnetic_momenta.real
+
+
+def get_states_total_angular_momneta(filename: str, group: str, states: np.ndarray = None):
+
+    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+
+    if (np.all(states is not None)) and (np.all(states != None)):
+
+        if np.any(states < 0) or not np.issubdtype(states.dtype, np.integer):
+            raise ValueError("States list contains negative values or non-integer elements!")
+
+        # Convert states to ndarray without repetitions
+        states = np.unique(np.array(states).astype(np.int64))
+
+        # Number of states desired
+        num_of_states = states.size
+
+        #  Initialize the result array
+        total_angular_momenta = np.ascontiguousarray(np.zeros((3, num_of_states), dtype=np.complex128))
+
+        # Slice arrays based on states_cutoff
+        sx = sx[states, states]
+        sy = sy[states, states]
+        sz = sz[states, states]
+        lx = lx[states, states]
+        ly = ly[states, states]
+        lz = lz[states, states]
+
+
+        # Compute and save magnetic momenta in a.u.
+        total_angular_momenta[0] =  sx + lx
+        total_angular_momenta[1] =  sy + ly
+        total_angular_momenta[2] =  sz + lz
+
+    else:
+
+        states = np.arange(sx.shape[0], dtype=np.int64)
+
+        #  Initialize the result array
+        total_angular_momenta = np.ascontiguousarray(np.zeros((3, sx.shape[0]), dtype=np.complex128))
+
+        # Compute and save magnetic momenta in a.u.
+        total_angular_momenta[0] =  np.diagonal(sx + lx)
+        total_angular_momenta[1] =  np.diagonal(sy + ly)
+        total_angular_momenta[2] =  np.diagonal(sz + lz)
+
+
+    return states, total_angular_momenta.real

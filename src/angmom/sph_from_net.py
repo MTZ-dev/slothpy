@@ -7,8 +7,8 @@ from scipy.special import sph_harm
 #plt.rc('text', usetex=True)
 
 # Grids of polar and azimuthal angles
-theta = np.linspace(0, np.pi, 200)
-phi = np.linspace(0, 2*np.pi, 200)
+theta = np.linspace(0, np.pi, 500)
+phi = np.linspace(0, 2*np.pi, 500)
 # Create a 2-D meshgrid of (theta, phi) angles.
 theta, phi = np.meshgrid(theta, phi)
 # Calculate the Cartesian coordinates of each point in the mesh.
@@ -53,7 +53,7 @@ def plot_Y(ax, el, m):
 
 fig = plt.figure(figsize=plt.figaspect(1.))
 ax = fig.add_subplot(projection='3d')
-l, m = 16, 5
+l, m = 19, 0
 plot_Y(ax, l, m)
 #plt.savefig('Y{}_{}.png'.format(l, m))
 plt.show()

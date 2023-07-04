@@ -337,7 +337,7 @@ def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cut
         raise ValueError(f'Invalid states cutoff. Set it to positive integer less or equal to the number of SO-states')
 
     if states_cutoff > shape:
-        raise ValueError(f'States cutoff is larger than the number of SO-states ({shape}). Please set it less or equal.')
+        raise ValueError(f'States cutoff is larger than the number of SO-states ({shape}). Please set it less or equal (or zero) for all states.')
     
     if states_cutoff == 0:
         states_cutoff = shape
@@ -364,6 +364,62 @@ def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cut
     magnetic_momenta[2] =  -(ge * sz + lz)
 
     return magnetic_momenta, soc_energies
+
+
+def get_soc_total_angular_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
+
+    shape = -1
+
+    # Check matrix size
+    with h5py.File(filename, 'r') as file:
+        try:
+            dataset = file[group]['SOC']
+        except Exception as e:
+            error_type_1 = type(e).__name__
+            error_message_1 = str(e)
+            error_print_1 = f"{error_type_1}: {error_message_1}"
+
+        try:
+            dataset = file[group]['SOC_energies']
+        except Exception as e:
+            error_type_2 = type(e).__name__
+            error_message_2 = str(e)
+            error_print_2 = f"{error_type_2}: {error_message_2}"
+        
+        shape = dataset.shape[0]
+
+    if shape < 0:
+        raise Exception(f'Failed to read size of SOC matrix from file {filename} due to the following errors:\n {error_print_1}, {error_print_2}')
+    
+    if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
+        raise ValueError(f'Invalid states cutoff. Set it to positive integer less or equal to the number of SO-states')
+
+    if states_cutoff > shape:
+        raise ValueError(f'States cutoff is larger than the number of SO-states ({shape}). Please set it less or equal (or zero) for all states.')
+    
+    if states_cutoff == 0:
+        states_cutoff = shape
+
+    #  Initialize the result array
+    total_angular_momenta = np.ascontiguousarray(np.zeros((3,states_cutoff,states_cutoff), dtype=np.complex128))
+
+    soc_energies, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+
+    # Slice arrays based on states_cutoff
+    sx = sx[:states_cutoff, :states_cutoff]
+    sy = sy[:states_cutoff, :states_cutoff]
+    sz = sz[:states_cutoff, :states_cutoff]
+    lx = lx[:states_cutoff, :states_cutoff]
+    ly = ly[:states_cutoff, :states_cutoff]
+    lz = lz[:states_cutoff, :states_cutoff]
+    soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
+
+    # Compute and save magnetic momenta in a.u.
+    total_angular_momenta[0] =  sx + lx
+    total_angular_momenta[1] =  sy + ly
+    total_angular_momenta[2] =  sz + lz
+
+    return total_angular_momenta, soc_energies
 
 
 def get_soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) -> np.ndarray:

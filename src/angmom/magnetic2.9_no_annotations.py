@@ -1179,9 +1179,9 @@ if __name__ == '__main__':
     #print("\033[90mTitle") #kolory w terminalu
 
     #print(get_states_magnetic_momenta('.', 'DyCo_cif_nevpt2_new_basis.hdf5', np.arange(16), J_moment=True))
-    sus_tensor = chi_tensor('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 252, temperatures3, 6, 1, 0.0001)
+    # sus_tensor = chi_tensor('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 0.1, 252, temperatures3, 6, 1, 0.0001)
 
-    print(sus_tensor * temperatures3[:, np.newaxis, np.newaxis])
+    # print(sus_tensor * temperatures3[:, np.newaxis, np.newaxis])
 
     # zs = zeeman_splitting('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16, 16, fields, grid, 2, average = True)
 
@@ -1197,17 +1197,17 @@ if __name__ == '__main__':
 
     #print(get_soc_energies_cm_1('.', 'DyCo_cif_nevpt2_new_basis.hdf5', 16))
 
-    # x, y, z = mag_3d('.', 'NdCoNO2_cas_super_tight_cas.hdf5', 364, 1., 100, 2., 32)
+    x, y, z = mag_3d('.', 'NdCoNO2_cas_super_tight_cas.hdf5', 32, 1., 100, 2., 4)
 
-    # fig = plt.figure()
-    # ax = fig.add_subplot(projection='3d')
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
 
-    # ax.plot_wireframe(x, y, z)
-    # ax.set_xlim(-2,2)
-    # ax.set_ylim(-2,2)
-    # ax.set_zlim(-2,2)
-    # ax.set_box_aspect([1, 1, 1])
-    # plt.show()
+    ax.plot_wireframe(x, y, z)
+    ax.set_xlim(-2,2)
+    ax.set_ylim(-2,2)
+    ax.set_zlim(-2,2)
+    ax.set_box_aspect([1, 1, 1])
+    plt.show()
 
 
     # def mth_function_wrapper():

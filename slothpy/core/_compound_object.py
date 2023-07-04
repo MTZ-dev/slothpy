@@ -9,7 +9,8 @@ from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
 from slothpy.general_utilities.io import (get_soc_energies_cm_1, get_states_magnetic_momenta, get_states_total_angular_momneta,
                                            get_total_angular_momneta_matrix, get_magnetic_momenta_matrix, get_soc_momenta_and_energies_from_hdf5)
 from slothpy.magnetism.zeeman import zeeman_splitting
-from slothpy.general_utilities.math_expresions import hermitian_x_in_basis_of_hermitian_y, decomposition_of_hermitian_matrix
+from slothpy.angular_momentum.pseudo_spin_ito import (get_decomposition_in_z_total_angular_momentum_basis, get_decomposition_in_z_magnetic_momentum_basis, ito_real_decomp_matrix, 
+                                                      ito_complex_decomp_matrix, get_soc_matrix_in_z_magnetic_momentum_basis, get_soc_matrix_in_z_total_angular_momentum_basis)
 
 class Compound:
 
@@ -483,17 +484,143 @@ class Compound:
     
     def decomposition_in_z_magnetic_momentum_basis(self, group, number_of_states, slt: str = None):
 
-        magnetic_momenta, soc_energies  = get_soc_momenta_and_energies_from_hdf5(self._hdf5, group, number_of_states)
+        if (not isinstance(number_of_states, np.int)) or (number_of_states < 0):
+            raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')
 
-        soc_matrix = np.diag(soc_energies)
-
-        soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, magnetic_momenta[2])
-
-        decopmosition = decomposition_of_hermitian_matrix(soc_matrix)
-
-        return decopmosition
-
-
-    def decomposition_in_z_angular_momentum_basis():
+        try:
+            decomposition = get_decomposition_in_z_magnetic_momentum_basis(self._hdf5, group, number_of_states)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to get decomposition in "z" magnetic momentum basis of SOC matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
         
-        pass
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_magnetic_decomposition')
+                    new_group.attrs['Description'] = f'Group({slt}) containing decomposition in "z" magnetic momentum basis of SOC matrix calulated from group: {group}.'
+                    decomposition_dataset = new_group.create_dataset(f'{slt}_magnetic_momenta_matrix', shape=decomposition.shape, dtype=np.float64)
+                    decomposition_dataset.attrs['Description'] = f'Dataset containing % decomposition (rows - SO-states, columns - basis) in "z" magnetic momentum basis of SOC matrix from group: {group}.'
+                    states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(decomposition.shape[0],), dtype=np.float64)
+                    states_dataset.attrs['Description'] = f'Dataset containing Sz pseudo-spin states corresponding to the decomposition of SOC matrix from group: {group}.'
+
+                    decomposition_dataset[:] = decomposition[:]
+                    dim = (decomposition.shape[1] - 1)/2
+                    states_dataset[:] = np.arange(-dim, dim+1, step=1, dtype=np.float64)
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save decomposition in "z" magnetic momentum basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+
+    def decomposition_in_z_angular_momentum_basis(self, group, number_of_states, slt: str = None):
+
+        if (not isinstance(number_of_states, np.int)) or (number_of_states < 0):
+            raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')
+
+        try:
+            decomposition = get_decomposition_in_z_total_angular_momentum_basis(self._hdf5, group, number_of_states)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            print(f'Error encountered while trying to get decomposition in "z" total angular momentum basis of SOC matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            return
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_total angular_decomposition')
+                    new_group.attrs['Description'] = f'Group({slt}) containing decomposition in "z" total angular momentum basis of SOC matrix calulated from group: {group}.'
+                    decomposition_dataset = new_group.create_dataset(f'{slt}_magnetic_momenta_matrix', shape=decomposition.shape, dtype=np.float64)
+                    decomposition_dataset.attrs['Description'] = f'Dataset containing % decomposition (rows SO-states, columns - basis) in "z" total angular momentum basis of SOC matrix from group: {group}.'
+                    states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(decomposition.shape[0],), dtype=np.float64)
+                    states_dataset.attrs['Description'] = f'Dataset containing Sz pseudo-spin states corresponding to the decomposition of SOC matrix from group: {group}.'
+
+                    decomposition_dataset[:] = decomposition[:]
+                    dim = (decomposition.shape[1] - 1)/2
+                    states_dataset[:] = np.arange(-dim, dim+1, step=1, dtype=np.float64)
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save decomposition in "z" total angular momentum basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+            
+
+    def soc_crystal_field_parameters(self, group, number_of_states, order, even_order: bool = True, imaginary: bool = False, magnetic: bool = False, slt: str = None):
+
+        if magnetic:
+            try:
+                soc_matrix = get_soc_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, number_of_states)
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to get SOC matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+                return
+        else:
+            try:
+                soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, number_of_states)
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to get SOC matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+                return
+            
+        dim = (soc_matrix.shape[1] - 1)/2
+
+        if order > 2*dim:
+            raise ValueError(f'Order of ITO parameters exeeds 2S. Set it less or equal.')
+        
+        if imaginary:
+            try:
+                cfp = ito_complex_decomp_matrix(soc_matrix, order, even_order)
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to ITO decompose SOC matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+                return
+        else:
+            try:
+                cfp = ito_real_decomp_matrix(soc_matrix, order, even_order)
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to ITO decompose SOC matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+                return
+            
+        if slt is not None:
+
+            cfp = np.array(cfp)
+
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_ito_decomposition')
+                    new_group.attrs['Description'] = f'Group({slt}) containing ITO decomposition in "z" pseudo-spin basis of SOC matrix calulated from group: {group}.'
+                    cfp_dataset = new_group.create_dataset(f'{slt}_ito_parameters', shape=cfp.shape, dtype=cfp.dtype)
+                    cfp_dataset.attrs['Description'] = f'Dataset containing ITO decomposition in "z" pseudo-spin basis of SOC matrix from group: {group}.'
+                    states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(1,), dtype=np.float64)
+                    states_dataset.attrs['Description'] = f'Dataset containing S pseudo-spin number corresponding to the decomposition of SOC matrix from group: {group}.'
+
+                    cfp_dataset[:] = cfp[:]
+                    states_dataset[:] = dim
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save ITO decomposition in "z" pseudo-spin basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return        
+            
+        
+
+
+
+

@@ -2,24 +2,51 @@ import numpy as np
 import math
 from slothpy.general_utilities.io import (get_soc_momenta_and_energies_from_hdf5, get_soc_total_angular_momenta_and_energies_from_hdf5)
 from slothpy.general_utilities.math_expresions import (hermitian_x_in_basis_of_hermitian_y, decomposition_of_hermitian_matrix, Wigner_3j)
+from slothpy.magnetism.zeeman import calculate_zeeman_matrix
 
 
-def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, number_of_states):
+def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, stop_state):
 
-    magnetic_momenta, soc_energies  = get_soc_momenta_and_energies_from_hdf5(filename, group, number_of_states)
+    magnetic_momenta, soc_energies  = get_soc_momenta_and_energies_from_hdf5(filename, group, stop_state+1)
+    magnetic_momenta = magnetic_momenta[:][start_state:, start_state:]
+    soc_energies = soc_energies[start_state:]
     soc_matrix = np.diag(soc_energies)
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, magnetic_momenta[2])
 
     return soc_matrix 
 
 
-def get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, number_of_states):
+def get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, start_state, stop_state):
 
-    total_angular_momenta, soc_energies  = get_soc_total_angular_momenta_and_energies_from_hdf5(filename, group, number_of_states)
+    total_angular_momenta, soc_energies  = get_soc_total_angular_momenta_and_energies_from_hdf5(filename, group, stop_state+1)
+    magnetic_momenta = magnetic_momenta[:][start_state:, start_state:]
+    soc_energies = soc_energies[start_state:]
     soc_matrix = np.diag(soc_energies)
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, total_angular_momenta[2])
     
     return soc_matrix 
+
+
+def get_zeeman_matrix_in_z_magnetic_momentum_basis(filename, group, field, orientation, start_state, stop_state):
+
+    magnetic_momenta, soc_energies  = get_soc_momenta_and_energies_from_hdf5(filename, group, stop_state+1)
+    magnetic_momenta = magnetic_momenta[:][start_state:, start_state:]
+    soc_energies = soc_energies[start_state:]
+    zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
+    zeeman_matrix = hermitian_x_in_basis_of_hermitian_y(zeeman_matrix, magnetic_momenta[2])
+
+    return zeeman_matrix
+
+
+def get_zeeman_matrix_in_z_total_angular_momentum_basis(filename, group, field, orientation, start_state, stop_state):
+
+    total_angular_momenta, soc_energies  = get_soc_total_angular_momenta_and_energies_from_hdf5(filename, group, stop_state+1)
+    magnetic_momenta = magnetic_momenta[:][start_state:, start_state:]
+    soc_energies = soc_energies[start_state:]
+    zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
+    zeeman_matrix = hermitian_x_in_basis_of_hermitian_y(zeeman_matrix, total_angular_momenta[2])
+    
+    return zeeman_matrix 
 
 
 def get_decomposition_in_z_magnetic_momentum_basis(filename, group, number_of_states):
@@ -84,7 +111,7 @@ def calculate_b_k_q(matrix: np.ndarray, k: np.int32, q: np.int32):
     return numerator/denominator
 
 
-def ito_complex_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = True):
+def ito_complex_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = False):
 
     step = 1
 
@@ -114,7 +141,7 @@ def matrix_from_ito_complex(J, coefficients):
 
 
 
-def ito_real_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = True):
+def ito_real_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = False):
 
     step = 1
 

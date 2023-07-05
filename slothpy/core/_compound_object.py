@@ -7,12 +7,14 @@ from slothpy.magnetism.magnetisation import mth
 from slothpy.magnetism.susceptibility import (chitht, chit_tensorht)
 from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
 from slothpy.general_utilities.io import (get_soc_energies_cm_1, get_states_magnetic_momenta, get_states_total_angular_momneta,
-                                           get_total_angular_momneta_matrix, get_magnetic_momenta_matrix, get_soc_momenta_and_energies_from_hdf5)
+                                           get_total_angular_momneta_matrix, get_magnetic_momenta_matrix)
 from slothpy.magnetism.zeeman import zeeman_splitting
 from slothpy.angular_momentum.pseudo_spin_ito import (get_decomposition_in_z_total_angular_momentum_basis, get_decomposition_in_z_magnetic_momentum_basis, ito_real_decomp_matrix, 
-                                                      ito_complex_decomp_matrix, get_soc_matrix_in_z_magnetic_momentum_basis, get_soc_matrix_in_z_total_angular_momentum_basis)
+                                                      ito_complex_decomp_matrix, get_soc_matrix_in_z_magnetic_momentum_basis, get_soc_matrix_in_z_total_angular_momentum_basis, 
+                                                      get_zeeman_matrix_in_z_magnetic_momentum_basis, get_zeeman_matrix_in_z_total_angular_momentum_basis)
 
 class Compound:
+
 
     @classmethod
     def _new(cls, filepath: str, filename: str):
@@ -28,9 +30,11 @@ class Compound:
 
         return obj
 
+
     def __new__(cls, *args, **kwargs):
         raise TypeError("The Compound object should not be instantiated directly. Use a Compound creation function instead.")
     
+
     def __repr__(self) -> str:
 
         representation = f"Compound from {self._hdf5} with the following groups of data:\n"
@@ -39,6 +43,7 @@ class Compound:
             representation += f"{group}: {attributes}\n"
 
         return representation
+
 
     def __str__(self) -> str:
       
@@ -49,17 +54,90 @@ class Compound:
 
         return string
         
-    # def __setitem__(self) -> None:
-    #     pass
+    
+    def __setitem__(self, key, value) -> None:
 
-    # def __getitem__(self) -> Any:
-    #     pass
+        value = np.array(value)
+
+        if isinstance(key, str):
+
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_dataset = file.create_dataset(key, shape=value.shape, dtype=value.dtype)
+                    new_dataset[:] = value[:]
+                
+                self.get_hdf5_groups_and_attributes()
+                return
+                    
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to set dataset {key} in .slt file: {self._hdf5}: {error_type}: {error_message}')
+                return
+        
+        elif isinstance(key, tuple) and len(key) == 2 and isinstance(key[0], str) and isinstance(key[1], str):
+            
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(key[0])
+                    new_dataset = new_group.create_dataset(key[1], shape=value.shape, dtype=value.dtype)
+                    new_dataset[:] = value[:]
+                
+                self.get_hdf5_groups_and_attributes()
+                return
+                    
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to set group "{key[0]}" and dataset "{key[1]}" in .slt file: {self._hdf5}: {error_type}: {error_message}')
+                return
+        
+        else:
+            raise KeyError("Invalid key type. It has to be str or 2-tuple of str.")
+        
+
+
+    def __getitem__(self, key) -> Any:
+
+        if isinstance(key, str):
+
+            try:
+                with h5py.File(self._hdf5, 'r') as file:
+
+                    value = file[key][:]
+                
+                return value
+                    
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to get dataset {key} in .slt file: {self._hdf5}: {error_type}: {error_message}')
+                return
+        
+        elif isinstance(key, tuple) and len(key) == 2 and isinstance(key[0], str) and isinstance(key[1], str):
+            
+            try:
+                with h5py.File(self._hdf5, 'r') as file:
+
+                    value = file[key[0]][key[1]][:]
+                
+                return value
+                    
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to get group "{key[0]}" and dataset "{key[1]}" in .slt file: {self._hdf5}: {error_type}: {error_message}')
+                return
+        
+        else:
+            raise KeyError("Invalid key type. It has to be str or 2-tuple of str.")
 
     # def __getattr__(self, __name: str) -> Any:
     #     pass
 
     # def __setattr__(self, __name: str, __value: Any) -> None:
     #     pass
+
 
     def get_hdf5_groups_and_attributes(self):
 
@@ -74,6 +152,7 @@ class Compound:
             file.visititems(collect_groups)
 
         self._groups = groups_dict
+
 
     def delete_group(self, group: str) -> None:
 
@@ -318,7 +397,7 @@ class Compound:
                 print(f'Error encountered while trying to save states magnetic momenta to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
 
-        return states, magnetic_momenta_array
+        return magnetic_momenta_array
     
 
     def states_total_angular_momenta(self, group: str, states: np.ndarray = None, slt: str = None):
@@ -354,7 +433,7 @@ class Compound:
                 print(f'Error encountered while trying to save states total angular momenta to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
 
-        return states, total_angular_momenta_array
+        return total_angular_momenta_array
     
 
     def calculate_zeeman_splitting(self, group: str, states_cutoff: int, num_of_states: int, fields: np.ndarray, grid: np.ndarray, num_cpu: int, average: bool = False, slt: str = None):
@@ -446,6 +525,8 @@ class Compound:
                 print(f'Error encountered while trying to save total angular momenta matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
             
+        return total_angular_momenta_matrix_array
+            
 
     def magnetic_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, slt: str = None):
 
@@ -480,6 +561,8 @@ class Compound:
                 error_message = str(e)
                 print(f'Error encountered while trying to save magnetic momenta matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
+            
+        return magnetic_momenta_matrix_array
             
     
     def decomposition_in_z_magnetic_momentum_basis(self, group, number_of_states, slt: str = None):
@@ -516,6 +599,8 @@ class Compound:
                 error_message = str(e)
                 print(f'Error encountered while trying to save decomposition in "z" magnetic momentum basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
+    
+        return decomposition
 
 
     def decomposition_in_z_angular_momentum_basis(self, group, number_of_states, slt: str = None):
@@ -553,12 +638,14 @@ class Compound:
                 print(f'Error encountered while trying to save decomposition in "z" total angular momentum basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
             
+        return decomposition
+            
 
-    def soc_crystal_field_parameters(self, group, number_of_states, order, even_order: bool = True, imaginary: bool = False, magnetic: bool = False, slt: str = None):
+    def soc_crystal_field_parameters(self, group,  start_state, stop_state, order, even_order: bool = True, imaginary: bool = False, magnetic: bool = False, slt: str = None):
 
         if magnetic:
             try:
-                soc_matrix = get_soc_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, number_of_states)
+                soc_matrix = get_soc_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, start_state, stop_state)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -566,7 +653,7 @@ class Compound:
                 return
         else:
             try:
-                soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, number_of_states)
+                soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -594,14 +681,16 @@ class Compound:
                 error_message = str(e)
                 print(f'Error encountered while trying to ITO decompose SOC matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
                 return
-            
+        
+        cfp_return = cfp
+
         if slt is not None:
 
             cfp = np.array(cfp)
 
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
-                    new_group = file.create_group(f'{slt}_ito_decomposition')
+                    new_group = file.create_group(f'{slt}_soc_ito_decomposition')
                     new_group.attrs['Description'] = f'Group({slt}) containing ITO decomposition in "z" pseudo-spin basis of SOC matrix calulated from group: {group}.'
                     cfp_dataset = new_group.create_dataset(f'{slt}_ito_parameters', shape=cfp.shape, dtype=cfp.dtype)
                     cfp_dataset.attrs['Description'] = f'Dataset containing ITO decomposition in "z" pseudo-spin basis of SOC matrix from group: {group}.'
@@ -617,9 +706,85 @@ class Compound:
                 error_type = type(e).__name__
                 error_message = str(e)
                 print(f'Error encountered while trying to save ITO decomposition in "z" pseudo-spin basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return        
+                return
+
+        return cfp_return        
             
+
+    def zeeman_matrix_ito_decpomosition(self, group,  start_state, stop_state, field, orientation, order, imaginary: bool = False, magnetic: bool = False, slt: str = None):
+
+        if magnetic:
+            try:
+                zeeman_matrix = get_zeeman_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state)
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to get Zeeman matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+                return
+        else:
+            try:
+                zeeman_matrix = get_zeeman_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state)
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to get Zeeman matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+                return
+            
+        dim = (zeeman_matrix.shape[1] - 1)/2
+
+        if order > 2*dim:
+            raise ValueError(f'Order of ITO parameters exeeds 2S. Set it less or equal.')
         
+        if imaginary:
+            try:
+                cfp = ito_complex_decomp_matrix(zeeman_matrix, order)
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to ITO decompose Zeeman matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+                return
+        else:
+            try:
+                cfp = ito_real_decomp_matrix(zeeman_matrix, order)
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to ITO decompose Zeeman matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+                return
+        
+        cfp_return = cfp
+
+        if slt is not None:
+
+            cfp = np.array(cfp)
+
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_zeeman_ito_decomposition')
+                    new_group.attrs['Description'] = f'Group({slt}) containing ITO decomposition in "z" pseudo-spin basis of Zeeman matrix calulated from group: {group}.'
+                    cfp_dataset = new_group.create_dataset(f'{slt}_ito_parameters', shape=cfp.shape, dtype=cfp.dtype)
+                    cfp_dataset.attrs['Description'] = f'Dataset containing ITO decomposition in "z" pseudo-spin basis of Zeeman matrix from group: {group}.'
+                    states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(1,), dtype=np.float64)
+                    states_dataset.attrs['Description'] = f'Dataset containing S pseudo-spin number corresponding to the decomposition of Zeeman matrix from group: {group}.'
+
+                    cfp_dataset[:] = cfp[:]
+                    states_dataset[:] = dim
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                print(f'Error encountered while trying to save ITO decomposition in "z" pseudo-spin basis of Zeeman matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                return
+
+        return cfp_return
+
+
+    def matrix_from_ito(self, group, pseudo_spin, imaginary: bool = False):
+        pass
+        
+                  
 
 
 

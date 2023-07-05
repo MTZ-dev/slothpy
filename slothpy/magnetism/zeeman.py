@@ -1,14 +1,28 @@
-# zeeman over grid with none passing
 import numpy as np
 import multiprocessing
 from numba import jit
 from slothpy.general_utilities.system import get_num_of_processes
 from slothpy.general_utilities.io import get_soc_momenta_and_energies_from_hdf5
 
+
+@jit('complex128[:,:](complex128[:,:,:], float64[:], float64, float64[:])', cache=True, nogil=True)
+def calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation):
+
+    bohr_magneton = 2.127191078656686e-06 # Bohr magneton in a.u./T
+
+    orientation = -field * bohr_magneton * orientation
+    zeeman_matrix = magnetic_momenta[0] * orientation[0] + magnetic_momenta[1] * orientation[1] + magnetic_momenta[2] * orientation[2]
+
+    # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
+    for k in range(zeeman_matrix.shape[0]):
+        zeeman_matrix[k, k] += soc_energies[k]
+
+    return zeeman_matrix
+
+
 @jit('float64[:,:](complex128[:,:,:], float64[:], float64, float64[:,:], int64)', nopython=True, cache=True, nogil=True)
 def calculate_zeeman_splitting(magnetic_momenta: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, num_of_states: int) -> np.ndarray:
 
-    bohr_magneton = 2.127191078656686e-06 # Bohr magneton in a.u./T
     hartree_to_cm_1 = 219474.6 #atomic units to wavenumbers
 
     # Initialize arrays and scale energy to the ground SOC state
@@ -18,13 +32,10 @@ def calculate_zeeman_splitting(magnetic_momenta: np.ndarray, soc_energies: np.nd
 
     # Perform calculations for each magnetic field orientation
     for j in range(grid.shape[0]):
-        # Construct Zeeman matrix
-        orient = -field * bohr_magneton * grid[j, :3]
-        zeeman_matrix = magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2]
 
-        # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
-        for k in range(zeeman_matrix.shape[0]):
-            zeeman_matrix[k, k] += soc_energies[k]
+        orientation = grid[j, :3]
+
+        zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
 
         # Diagonalize full Zeeman Hamiltonian
         energies = np.linalg.eigvalsh(zeeman_matrix)

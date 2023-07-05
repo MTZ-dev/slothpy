@@ -3,6 +3,7 @@ from numba import jit
 import multiprocessing
 from slothpy.general_utilities.system import get_num_of_processes
 from slothpy.general_utilities.io import get_soc_momenta_and_energies_from_hdf5
+from slothpy.magnetism.zeeman import calculate_zeeman_matrix
 
 @jit('float64(float64[:], float64[:], float64)', nopython=True, cache=True, nogil=True)
 def calculate_magnetization(energies: np.ndarray, states_momenta: np.ndarray, temperature: np.float64) -> np.float64:
@@ -49,7 +50,6 @@ def calculate_mt(magnetic_momenta: np.ndarray, soc_energies: np.ndarray, field: 
         np.ndarray[np.float64]: M(T) array.
 
     """
-    bohr_magneton = 2.127191078656686e-06 # Bohr magneton in a.u./T
 
     # Initialize arrays
     mt_array = np.ascontiguousarray(np.zeros((temperatures.shape[0]), dtype=np.float64))
@@ -58,13 +58,11 @@ def calculate_mt(magnetic_momenta: np.ndarray, soc_energies: np.ndarray, field: 
 
     # Perform calculations for each magnetic field orientation
     for j in range(grid.shape[0]):
-        # Construct Zeeman matrix
-        orient = -field * bohr_magneton * grid[j, :3]
-        zeeman_matrix = magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2]
 
-        # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
-        for k in range(zeeman_matrix.shape[0]):
-            zeeman_matrix[k, k] += soc_energies[k]
+        # Construct Zeeman matrix
+        orientation = grid[j, :3]
+        
+        zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
 
         # Diagonalize full Hamiltonian matrix
         eigenvalues, eigenvectors = np.linalg.eigh(zeeman_matrix)

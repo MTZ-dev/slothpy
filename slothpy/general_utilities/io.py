@@ -3,6 +3,7 @@ import re
 import numpy as np
 import h5py
 
+
 def grep_to_file(path_inp: str, inp_file: str, pattern: str, path_out: str, out_file: str, lines: int = 1) -> None:
     """
     Extracts lines from an input file that match a specified pattern and saves them to an output file.
@@ -307,6 +308,7 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
         error_print_2 = f"{error_type_2}: {error_message_2}"
 
     raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
+
 
 def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
 

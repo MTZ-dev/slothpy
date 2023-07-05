@@ -18,6 +18,15 @@ temperatures = np.linspace(1.8, 1.8, 1)
 
 b = slt.compound_from_slt(".", "CeCoN3")
 
+b["super_data_set3"] = [1,2,3]
+b["super_grupa3", "z super datasetem3"] = [1.,3.,4.5]
+
+c = b["super_data_set3"]
+d = b["super_grupa3", "z super datasetem3"]
+
+print(c)
+print(d)
+
 # alfa = b.calculate_zeeman_splitting("TZVP", 16, 8, fields, np.array([[1.,0.,0.], [0.,0.,1.]]), 4, slt = "TZVP_1")
 
 # beta = b.calculate_chitht("TZVP", fields, 252, temperatures, 4, 3, 0.0001, slt = 'chit')
@@ -27,7 +36,7 @@ b = slt.compound_from_slt(".", "CeCoN3")
 # plt.plot(fields, alfa[0], "-")
 # plt.show()
 
-lol = b.soc_crystal_field_parameters("TZVP", 6, 4, slt="cfpp")
+#lol = b.soc_crystal_field_parameters("TZVP", 6, 4, slt="cfpp")
 
 #te = b.decomposition_in_z_angular_momentum_basis("TZVP", 14, slt="TVZP")
 

@@ -153,14 +153,14 @@ def ito_real_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = Fa
 
     for k in range(0,order+1, step):
         for q in range(-k,0):
-                B_k_q = 1j * 1/np.sqrt(2) * (calculate_b_k_q(matrix, k, q) + ((-1)**(q+1)) * calculate_b_k_q(matrix, k, -q))
+                B_k_q = -1j * (calculate_b_k_q(matrix, k, q) - ((-1)**(-q)) * calculate_b_k_q(matrix, k, -q))
                 result.append([k, q, B_k_q.real])
 
         B_k_q = calculate_b_k_q(matrix, k, 0)
         result.append([k, 0, B_k_q.real])
 
         for q in range(1,k+1):
-            B_k_q = 1/np.sqrt(2) * (calculate_b_k_q(matrix, k, -q) + ((-1)**q) * calculate_b_k_q(matrix, k, q))
+            B_k_q = (calculate_b_k_q(matrix, k, -q) + ((-1)**q) * calculate_b_k_q(matrix, k, q))
             result.append([k, q, B_k_q.real])
 
     return result
@@ -174,11 +174,15 @@ def matrix_from_ito_real(J, coefficients):
     matrix = np.zeros((dim, dim), dtype=np.complex128)
 
     for i in coefficients:
-        if i[1] < 0:
-            matrix += 1j * 1/np.sqrt(2) * (((-1)**(i[1]+1)) * ito_matrix(J, i[0], -i[1]) +  ito_matrix(J, i[0], i[1])) * i[2]
-        if i[1] > 0:
-            matrix += 1/np.sqrt(2) * (ito_matrix(J, i[0], -i[1]) +  ((-1)**i[1]) * ito_matrix(J, i[0], i[1])) * i[2]
-        else:
-            matrix += ito_matrix(J, i[0], i[1]) * i[2]
+
+        k = np.int64(i[0])
+        q = np.int64(i[1])
+        
+        if q < 0:
+            matrix += 1j * 0.5 * (((-1)**(-q+1)) * ito_matrix(J, k, -q) +  ito_matrix(J, k, q)) * i[2]
+        if q > 0:
+            matrix += 0.5 * (ito_matrix(J, k, -q) +  ((-1)**q) * ito_matrix(J, k, q)) * i[2]
+        if q == 0:
+            matrix += ito_matrix(J, k, q) * i[2]
 
     return matrix

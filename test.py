@@ -5,20 +5,25 @@ import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 
-a = slt.compound_from_orca(".", "CeCoN3", "TZVP_nevpt22", ".", "CeCoN3_TZVP_cas_nevpt2_restart.out")
+# a = slt.compound_from_orca(".", "CeCoN3", "TZVP_nevpt22", ".", "CeCoN3_TZVP_cas_nevpt2_restart.out")
 
-# a = slt.compound_from_slt(".", "NdCoNO2_test")
+a = slt.compound_from_slt(".", "NdCoNO2_test")
 
-# #a.zeeman_matrix("TZVP", 10, 1, np.array([0.,0.,1.]), slt="TZVP_from_real")
-# matrix2 = a.soc_zeem_in_angular_magnetic_momentum_basis("TZVP", 0, 9, 'zeeman', 'magnetic', 1, np.array([0.,0.,1.]), slt="final")
-# coeff = a.zeeman_matrix_ito_decpomosition("TZVP", 0, 9, 1, np.array([0.,0.,1.]), 9, slt="final", magnetic=True)
-# matrix1 = a.matrix_from_ito("final", slt="final")
+#a.zeeman_matrix("TZVP", 10, 1, np.array([0.,0.,1.]), slt="TZVP_from_real")
+matrix2 = a.soc_zeem_in_angular_magnetic_momentum_basis("TZVP", 0, 9, 'zeeman', 'angular', 1, np.array([0.,0.,1.]))
+#coeff = a.soc_crystal_field_parameters("TZVP", 0, 9, 9, magnetic=True, even_order=True, slt="megaaasssss", imaginary=True)
+coeff = a.zeeman_matrix_ito_decpomosition("TZVP", 0, 9, 1, np.array([0.,0.,1.]), 9, slt="fraq", magnetic=False, imaginary=True)
+matrix1 = a.matrix_from_ito("fraq")
 
-# eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
-# eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)
+# print(matrix1-matrix2)
 
-# print(eigenvalues1)
-# print(eigenvalues2)
+eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
+eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)
+
+print(eigenvalues1*219474.6)
+print(eigenvalues2*219474.6)
+
+# print(coeff)
 
 # print(matrix1-matrix2)
 # print(eigenvectors1-eigenvectors2)
@@ -29,8 +34,8 @@ a = slt.compound_from_orca(".", "CeCoN3", "TZVP_nevpt22", ".", "CeCoN3_TZVP_cas_
 
 #b = slt.compound_from_orca(".", "CeCoN3", "TZVP", ".", "CeCoN3_TZVP_cas_restart.out")
 
-fields = np.linspace(0.0001, 7, 50)
-temperatures = np.linspace(1.8, 1.8, 1)
+# fields = np.linspace(0.0001, 7, 50)
+# temperatures = np.linspace(1.8, 1.8, 1)
 
 # b = slt.compound_from_slt(".", "CeCoN3")
 
@@ -57,15 +62,15 @@ temperatures = np.linspace(1.8, 1.8, 1)
 #te = b.decomposition_in_z_angular_momentum_basis("TZVP", 14, slt="TVZP")
 
 
-mth = a.calculate_mth("TZVP_nevpt22", 14, fields, 5, temperatures, 4)
+# mth = a.calculate_mth("TZVP_nevpt22", 14, fields, 5, temperatures, 4)
 
-for mh in mth:
-    plt.plot(fields, mh)
-    for i in mh:
-        print(i)
-plt.show()
+# for mh in mth:
+#     plt.plot(fields, mh)
+#     for i in mh:
+#         print(i)
+# plt.show()
 
-print(a)
+# print(a)
 
 
 # with h5py.File("NdCoNO2.slt", 'r+') as file:

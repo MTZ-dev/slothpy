@@ -73,8 +73,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to set dataset {key} in .slt file: {self._hdf5}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to set dataset {key} in .slt file: {self._hdf5}: {error_type}: {error_message}')
         
         elif isinstance(key, tuple) and len(key) == 2 and isinstance(key[0], str) and isinstance(key[1], str):
             
@@ -90,8 +89,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to set group "{key[0]}" and dataset "{key[1]}" in .slt file: {self._hdf5}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to set group "{key[0]}" and dataset "{key[1]}" in .slt file: {self._hdf5}: {error_type}: {error_message}')
         
         else:
             raise KeyError("Invalid key type. It has to be str or 2-tuple of str.")
@@ -112,8 +110,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to get dataset {key} from .slt file: {self._hdf5}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to get dataset {key} from .slt file: {self._hdf5}: {error_type}: {error_message}')
         
         elif isinstance(key, tuple) and len(key) == 2 and isinstance(key[0], str) and isinstance(key[1], str):
             
@@ -127,8 +124,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to get group "{key[0]}" and dataset "{key[1]}" from .slt file: {self._hdf5}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to get group "{key[0]}" and dataset "{key[1]}" from .slt file: {self._hdf5}: {error_type}: {error_message}')
         
         else:
             raise KeyError("Invalid key type. It has to be str or 2-tuple of str.")
@@ -877,7 +873,6 @@ class Compound:
                     raise Exception(f'Failed to form matrix from ITO parameters.\n Error(s) encountered while trying compute the matrix: {error_print_2}, {error_print_3}')
 
                 else:
-                    print("I shouldnt be here")
                     J_result = J[0]
                     if imaginary:
                         matrix = matrix_from_ito_complex(J[0], coefficients)
@@ -909,7 +904,7 @@ class Compound:
 
 
     def soc_zeem_in_angular_magnetic_momentum_basis(self, group, start_state, stop_state, matrix_type, basis_type, field = None, orientation = None, slt: str = None):
-        
+
         if (matrix_type not in ['zeeman', 'soc']) or (basis_type not in ['angular', 'magnetic']):
             raise ValueError(f'Only valid matrix_type are "soc" or "zeeman" and basis_type are "angular" or "magnetic"')
         

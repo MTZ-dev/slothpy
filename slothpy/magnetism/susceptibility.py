@@ -72,7 +72,7 @@ def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, te
                 for index, temp in enumerate(temperatures):
                     chit[index] = temp * np.dot(mth_array[index], stencil_coeff)
             else:
-                for index, in range(temperatures.shape[0]):
+                for index in range(temperatures.shape[0]):
                     chit[index] = np.dot(mth_array[index], stencil_coeff)
             
             chitht_array[index_field, :] = chit * bohr_magneton_to_cm3

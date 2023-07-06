@@ -5,7 +5,7 @@ from slothpy.general_utilities.system import get_num_of_processes
 from slothpy.general_utilities.io import get_soc_momenta_and_energies_from_hdf5
 
 
-@jit('complex128[:,:](complex128[:,:,:], float64[:], float64, float64[:])', cache=True, nogil=True)
+@jit('complex128[:,:](complex128[:,:,:], float64[:], float64, float64[:])', nopython=True, cache=True, nogil=True)
 def calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation):
 
     bohr_magneton = 2.127191078656686e-06 # Bohr magneton in a.u./T

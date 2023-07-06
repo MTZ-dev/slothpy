@@ -254,6 +254,13 @@ class Compound:
         fields = np.array(fields)
         temperatures = np.array(temperatures)
 
+        if T:
+            chi_name = 'chiT(H,T)'
+            chi_file = 'chit'
+        else:
+            chi_name = 'chi(H,T)'
+            chi_file = 'chi'            
+
         if isinstance(grid, int):
             grid = lebedev_laikov_grid(grid)
         else:
@@ -264,20 +271,20 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to compute chiT(H,T) from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+            print(f'Error encountered while trying to compute {chi_name} from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
             return
         
         if slt is not None:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_susceptibility')
-                    new_group.attrs['Description'] = f'Group({slt}) containing chiT(H,T) magnetic susceptibility calulated from group: {group}.'
-                    chitht_dataset = new_group.create_dataset(f'{slt}_chitht', shape=(chitht_array.shape[0], chitht_array.shape[1]), dtype=np.float64)
-                    chitht_dataset.attrs['Description'] = f'Dataset containing chiT(H,T) magnetic susceptibility (H - rows, T - columns) calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing {chi_name} magnetic susceptibility calulated from group: {group}.'
+                    chitht_dataset = new_group.create_dataset(f'{slt}_{chi_file}ht', shape=(chitht_array.shape[0], chitht_array.shape[1]), dtype=np.float64)
+                    chitht_dataset.attrs['Description'] = f'Dataset containing {chi_name} magnetic susceptibility (H - rows, T - columns) calulated from group: {group}.'
                     fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
-                    fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of chiT(H,T) from group: {group}.'
+                    fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of {chi_name} from group: {group}.'
                     temperatures_dataset = new_group.create_dataset(f'{slt}_temperatures', shape=(temperatures.shape[0],), dtype=np.float64)
-                    temperatures_dataset.attrs['Description'] = f'Dataset containing temperature T values used in simulation of chiT(H,T) from group: {group}.'
+                    temperatures_dataset.attrs['Description'] = f'Dataset containing temperature T values used in simulation of {chi_name} from group: {group}.'
 
                     chitht_dataset[:,:] = chitht_array[:,:]
                     fields_dataset[:] = fields[:]
@@ -288,7 +295,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save chiT(H,T) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+                print(f'Error encountered while trying to save {chi_name} to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
                 return
 
         return chitht_array 
@@ -884,7 +891,7 @@ class Compound:
                     new_group.attrs['Description'] = f'Group({slt}) containing matrix from ITO calulated from group: {name}.'
                     matrix_dataset = new_group.create_dataset(f'{slt}_matrix', shape=matrix.shape, dtype=np.complex128)
                     matrix_dataset.attrs['Description'] = f'Dataset containing matrix from ITO calulated from group: {name}.'
-                    states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(1,), dtype=np.int64)
+                    states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(1,), dtype=np.float64)
                     states_dataset.attrs['Description'] = f'Dataset containing S pseudo-spin number corresponding to the matrix from group: {name}.'
 
                     matrix_dataset[:] = matrix[:]

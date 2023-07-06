@@ -41,6 +41,7 @@ def get_zeeman_matrix_in_z_magnetic_momentum_basis(filename, group, field, orien
 def get_zeeman_matrix_in_z_total_angular_momentum_basis(filename, group, field, orientation, start_state, stop_state):
 
     total_angular_momenta, soc_energies  = get_soc_total_angular_momenta_and_energies_from_hdf5(filename, group, stop_state+1)
+    magnetic_momenta, _ = get_soc_momenta_and_energies_from_hdf5(filename, group, stop_state+1)
     magnetic_momenta = magnetic_momenta[:][start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
     zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
@@ -82,7 +83,7 @@ def ito_matrix(J,k,q):
 
     coeff = np.float64(1.0)
 
-    for i in range(-k, k+1):
+    for i in range(int(-k), int(k+1)):
             coeff *= (2*J + 1 + i)
             
     coeff /= math.factorial(2*k)
@@ -135,7 +136,7 @@ def matrix_from_ito_complex(J, coefficients):
     matrix = np.zeros((dim, dim), dtype=np.complex128)
 
     for i in coefficients:
-        matrix += ito_matrix(J, i[0], i[1]) * i[2]
+        matrix += ito_matrix(J, int(i[0].real), int(i[1].real)) * i[2]
 
     return matrix
 
@@ -152,14 +153,14 @@ def ito_real_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = Fa
 
     for k in range(0,order+1, step):
         for q in range(-k,0):
-                B_k_q = 1j * 0.5 * (calculate_b_k_q(matrix, k, -q) - ((-1)**q) * calculate_b_k_q(matrix, k, q))
+                B_k_q = 1j * 1/np.sqrt(2) * (calculate_b_k_q(matrix, k, q) + ((-1)**(q+1)) * calculate_b_k_q(matrix, k, -q))
                 result.append([k, q, B_k_q.real])
 
         B_k_q = calculate_b_k_q(matrix, k, 0)
         result.append([k, 0, B_k_q.real])
 
         for q in range(1,k+1):
-            B_k_q = 0.5 * (((-1)**q) * calculate_b_k_q(matrix, k, -q) + calculate_b_k_q(matrix, k, q))
+            B_k_q = 1/np.sqrt(2) * (calculate_b_k_q(matrix, k, -q) + ((-1)**q) * calculate_b_k_q(matrix, k, q))
             result.append([k, q, B_k_q.real])
 
     return result
@@ -174,9 +175,9 @@ def matrix_from_ito_real(J, coefficients):
 
     for i in coefficients:
         if i[1] < 0:
-            matrix += (ito_matrix(J, i[0], -i[1]) - ((-1)**i[1]) * ito_matrix(J, i[0], i[1])) * i[2]
+            matrix += 1j * 1/np.sqrt(2) * (((-1)**(i[1]+1)) * ito_matrix(J, i[0], -i[1]) +  ito_matrix(J, i[0], i[1])) * i[2]
         if i[1] > 0:
-            matrix += (((-1)**i[1]) * ito_matrix(J, i[0], -i[1]) +  ito_matrix(J, i[0], i[1])) * i[2]
+            matrix += 1/np.sqrt(2) * (ito_matrix(J, i[0], -i[1]) +  ((-1)**i[1]) * ito_matrix(J, i[0], i[1])) * i[2]
         else:
             matrix += ito_matrix(J, i[0], i[1]) * i[2]
 

@@ -97,3 +97,11 @@ def zeeman_splitting(filename: str, group: str, states_cutoff: int, num_of_state
         return zeeman_array_av
 
     return zeeman_array
+
+
+def get_zeeman_matrix(filename: str, group: str, states_cutoff: int, field: np.float64, orientation: np.ndarray) -> np.ndarray:
+
+    magnetic_momenta, soc_energies  = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
+    zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
+
+    return zeeman_matrix

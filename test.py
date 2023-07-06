@@ -5,7 +5,23 @@ import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 
-#a = slt.compound_from_orca(".", "NdCoNO2", "TZVP", ".", "NdCoNO2_TZVP_cas.out")
+# a = slt.compound_from_orca(".", "NdCoNO2_test", "TZVP", ".", "NdCoNO2_TZVP_cas.out")
+
+a = slt.compound_from_slt(".", "NdCoNO2_test")
+
+#a.zeeman_matrix("TZVP", 10, 1, np.array([0.,0.,1.]), slt="TZVP_from_real")
+matrix2 = a.soc_zeem_in_angular_magnetic_momentum_basis("TZVP", 0, 9, 'zeeman', 'magnetic', 1, np.array([0.,0.,1.]))
+coeff = a.zeeman_matrix_ito_decpomosition("TZVP", 0, 9, 1, np.array([0.,0.,1.]), 9, slt="TZVP_magnetoooooooooooooooo", magnetic=True)
+matrix1 = a.matrix_from_ito("TZVP_magnetoooooooooooooooo")
+
+eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
+eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)
+
+print(eigenvalues1)
+print(eigenvalues2)
+
+print(matrix1-matrix2)
+print(eigenvectors1-eigenvectors2)
 
 # a = slt.compound_from_molcas(".", "DyCo_test_hdf5", "molcas_test1234", ".", "DyCo_test_hdf5_bas0")
 
@@ -13,19 +29,19 @@ import matplotlib.pyplot as plt
 
 #b = slt.compound_from_orca(".", "CeCoN3", "TZVP", ".", "CeCoN3_TZVP_cas_restart.out")
 
-fields = np.linspace(0.0001, 7, 50)
-temperatures = np.linspace(1.8, 1.8, 1)
+# fields = np.linspace(0.0001, 7, 50)
+# temperatures = np.linspace(1.8, 1.8, 1)
 
-b = slt.compound_from_slt(".", "CeCoN3")
+# b = slt.compound_from_slt(".", "CeCoN3")
 
-b["super_data_set3"] = [1,2,3]
-b["super_grupa3", "z super datasetem3"] = [1.,3.,4.5]
+# b["super_data_set3"] = [1,2,3]
+# b["super_grupa3", "z super datasetem3"] = [1.,3.,4.5]
 
-c = b["super_data_set3"]
-d = b["super_grupa3", "z super datasetem3"]
+# c = b["super_data_set3"]
+# d = b["TZVP_magnetisation", "z super datasetem3"]
 
-print(c)
-print(d)
+# print(c)
+# print(d)
 
 # alfa = b.calculate_zeeman_splitting("TZVP", 16, 8, fields, np.array([[1.,0.,0.], [0.,0.,1.]]), 4, slt = "TZVP_1")
 
@@ -76,13 +92,13 @@ print(d)
 # b.delete_group("third_g_tensors_axes")
 
 
-temperatures1 = np.linspace(1.8, 1.8, 1)
-temperatures2 = np.linspace(0.0001, 300, 150)
-fields2 = np.linspace(0.1,0.1,1)
+# temperatures1 = np.linspace(1.8, 1.8, 1)
+# temperatures2 = np.linspace(0.0001, 300, 150)
+# fields2 = np.linspace(0.1,0.1,1)
 #grid = np.loadtxt('grid.txt', usecols = (1,2,3,4))
 # grid2 = np.loadtxt('grid2.txt', usecols = (1,2,3,4))
 # grid3 = np.loadtxt('grid3.txt', usecols = (1,2,3,4))
-temperatures3 = np.linspace(1,5,5)
+# temperatures3 = np.linspace(1,5,5)
 
 
 # for i in fields1:

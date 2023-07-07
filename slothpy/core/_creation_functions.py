@@ -9,8 +9,7 @@ def compound_from_orca(hdf5_filepath: str, hdf5_filename: str, name: str, orca_f
         error_type = type(e).__name__
         error_message = str(e)
         print(f'Failed to create a HDF5 file from the ORCA output file or acces the exsiting one.')
-        print(f'Error encountered while trying to create Compound: {error_type}: {error_message}')
-        return
+        raise Exception(f'Error encountered while trying to create Compound: {error_type}: {error_message}')
     
     obj = Compound._new(hdf5_filepath, hdf5_filename)
 
@@ -24,8 +23,7 @@ def compound_from_molcas(hdf5_filepath: str, hdf5_filename: str, name: str, molc
         error_type = type(e).__name__
         error_message = str(e)
         print(f'Failed to create a HDF5 file from the MOLCAS files or acces the exsiting one.')
-        print(f'Error encountered while trying to create Compound: {error_type}: {error_message}')
-        return
+        raise Exception(f'Error encountered while trying to create Compound: {error_type}: {error_message}')
     
     obj = Compound._new(hdf5_filepath, hdf5_filename)
 
@@ -39,8 +37,7 @@ def compound_from_slt(hdf5_filepath, hdf5_filename):
         error_type = type(e).__name__
         error_message = str(e)
         print(f'Failed to load data from a HDF5 file.')
-        print(f'Error encountered while trying to create Compound: {error_type}: {error_message}')
-        return
+        raise Exception(f'Error encountered while trying to create Compound: {error_type}: {error_message}')
     
     return obj
 

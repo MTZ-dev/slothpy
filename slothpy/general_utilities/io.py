@@ -283,7 +283,7 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
         lz = eigenvectors.conj().T @ lz.astype(np.complex128) @ eigenvectors
 
         # Return operators in SOC basis
-        return soc_energies, sx, sy, sz, lx, ly, lz
+        return soc_energies, sx, sy, sz, lx, ly, lz #rotation to implement everywhere
 
     except Exception as e:
         error_type_1 = type(e).__name__
@@ -300,14 +300,13 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
             sz = file[str(group)]['SOC_SZ'][:]
             lz = file[str(group)]['SOC_LZ'][:]
 
-        return soc_energies, sx, sy, sz, lx, ly, lz
+        return soc_energies, sx, sy, sz, lx, ly, lz #rotation implement everywhere
 
     except Exception as e:
         error_type_2 = type(e).__name__
         error_message_2 = str(e)
         error_print_2 = f"{error_type_2}: {error_message_2}"
-
-    raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
+        raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
 
 
 def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
@@ -364,6 +363,17 @@ def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cut
     magnetic_momenta[0] =  -(ge * sx + lx)
     magnetic_momenta[1] =  -(ge * sy + ly)
     magnetic_momenta[2] =  -(ge * sz + lz)
+
+#to do implement rotation but better in the function above ang_mom using custom rotate vector operators, taking sx, sy, sz etc.
+    rot = np.array([[-0.50117407,  0.13460855, -0.8548129 ],
+  [ 0.74915045, -0.42693886, -0.50645515],
+  [-0.43312604, -0.89420565,  0.11312863]])
+
+    rot_inv = np.linalg.inv(rot)
+
+    magnetic_momenta[0] = magnetic_momenta[0] * rot_inv[0,0] + magnetic_momenta[1] * rot_inv[0,1] + magnetic_momenta[2] * rot_inv[0,2]
+    magnetic_momenta[1] = magnetic_momenta[1] * rot_inv[1,0] + magnetic_momenta[1] * rot_inv[1,1] + magnetic_momenta[2] * rot_inv[1,2]
+    magnetic_momenta[2] = magnetic_momenta[0] * rot_inv[2,0] + magnetic_momenta[1] * rot_inv[2,1] + magnetic_momenta[2] * rot_inv[2,2]
 
     return magnetic_momenta, soc_energies
 

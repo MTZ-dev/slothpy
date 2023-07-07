@@ -160,8 +160,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to delete group {group} from .slt file: {self._hdf5}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to delete group {group} from .slt file: {self._hdf5}: {error_type}: {error_message}')
 
         self.get_hdf5_groups_and_attributes()
         
@@ -174,8 +173,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to compute g-tensors and main magnetic axes from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to compute g-tensors and main magnetic axes from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
 
         if slt is not None:
             try:
@@ -194,8 +192,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save g-tensors and magnetic axes to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save g-tensors and magnetic axes to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return g_tensor_list, magnetic_axes_list
 
@@ -215,8 +212,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to compute M(T,H) from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to compute M(T,H) from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -239,8 +235,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save M(T,H) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save M(T,H) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return mth_array
      
@@ -267,8 +262,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to compute {chi_name} from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to compute {chi_name} from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -291,8 +285,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save {chi_name} to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save {chi_name} to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return chitht_array 
         
@@ -307,8 +300,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to compute chi_tensor(H,T) from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to compute chi_tensor(H,T) from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -331,8 +323,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save chiT(H,T) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save chiT(H,T) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return chit_tensorht_array
     
@@ -344,8 +335,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get SOC energies from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get SOC energies from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -362,8 +352,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save SOC (Spin-Orbit Coupling) energies to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save SOC (Spin-Orbit Coupling) energies to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return soc_energies_array
     
@@ -377,8 +366,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get states magnetic momenta from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get states magnetic momenta from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -398,8 +386,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save states magnetic momenta to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save states magnetic momenta to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return magnetic_momenta_array
     
@@ -413,8 +400,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get states total angular momenta from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get states total angular momenta from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -434,8 +420,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save states total angular momenta to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save states total angular momenta to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return total_angular_momenta_array
     
@@ -455,8 +440,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to compute Zeeman splitting from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to compute Zeeman splitting from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -488,8 +472,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save Zeeman splitting to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save Zeeman splitting to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return zeeman_array
     
@@ -504,8 +487,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get total angular momenta matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get total angular momenta matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -542,8 +524,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get total angular momenta matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get total angular momenta matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -563,8 +544,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save magnetic momenta matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save magnetic momenta matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
             
         return magnetic_momenta_matrix_array
             
@@ -579,8 +559,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get decomposition in "z" magnetic momentum basis of SOC matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get decomposition in "z" magnetic momentum basis of SOC matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -601,8 +580,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save decomposition in "z" magnetic momentum basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save decomposition in "z" magnetic momentum basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
     
         return decomposition
 
@@ -617,8 +595,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get decomposition in "z" total angular momentum basis of SOC matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get decomposition in "z" total angular momentum basis of SOC matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -639,8 +616,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save decomposition in "z" total angular momentum basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save decomposition in "z" total angular momentum basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
             
         return decomposition
             
@@ -653,16 +629,15 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to get SOC matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to get SOC matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+
         else:
             try:
                 soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to get SOC matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to get SOC matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
             
         dim = (soc_matrix.shape[1] - 1)/2
 
@@ -675,16 +650,14 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to ITO decompose SOC matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to ITO decompose SOC matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         else:
             try:
                 cfp = ito_real_decomp_matrix(soc_matrix, order, even_order)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to ITO decompose SOC matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to ITO decompose SOC matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         cfp_return = cfp
 
@@ -709,8 +682,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save ITO decomposition in "z" pseudo-spin basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save ITO decomposition in "z" pseudo-spin basis of SOC matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return cfp_return        
             
@@ -723,16 +695,14 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to get Zeeman matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to get Zeeman matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         else:
             try:
                 zeeman_matrix = get_zeeman_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to get Zeeman matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to get Zeeman matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
             
         dim = (zeeman_matrix.shape[1] - 1)/2
 
@@ -745,16 +715,14 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to ITO decompose Zeeman matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to ITO decompose Zeeman matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         else:
             try:
                 cfp = ito_real_decomp_matrix(zeeman_matrix, order)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to ITO decompose Zeeman matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to ITO decompose Zeeman matrix in "z" total angular momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         cfp_return = cfp
 
@@ -779,8 +747,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save ITO decomposition in "z" pseudo-spin basis of Zeeman matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save ITO decomposition in "z" pseudo-spin basis of Zeeman matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return cfp_return
 
@@ -795,8 +762,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get Zeeman matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get Zeeman matrix from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -816,13 +782,12 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save Zeeman matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
-            
+                raise Exception(f'Error encountered while trying to save Zeeman matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+     
         return zeeman_matrix_array
 
 
-    def matrix_from_ito(self, name, imaginary: bool = False, dataset: str = None, pseudo_spin: str = None, slt: str = None):
+    def matrix_from_ito(self, name, imaginary: bool = False, dataset: str = None, pseudo_spin: str = None, slt: str = None, matrix_type: str = None):
         
         continue_flag = False
 
@@ -841,7 +806,7 @@ class Compound:
                 error_message_1 = str(e)
                 error_print_1 = f"{error_type_1}: {error_message_1}"
                 raise Exception(f'Failed to form matrix from ITO parameters.\n Error(s) encountered while trying compute the matrix: {error_print_1}')
-        
+    
         else:
 
             try:
@@ -852,16 +817,6 @@ class Compound:
                 error_type_2 = type(e).__name__
                 error_message_2 = str(e)
                 error_print_2 = f"{error_type_2}: {error_message_2}"
-                continue_flag = True
-            
-            else:
-                J_result = J[0]
-                if imaginary:
-                    matrix = matrix_from_ito_complex(J[0], coefficients)
-                else:
-                    matrix = matrix_from_ito_real(J[0], coefficients)
-
-            if continue_flag:
                 try:
                     J = self[f'{name}_soc_ito_decomposition', f'{name}_pseudo_spin_states']
                     coefficients = self[f'{name}_soc_ito_decomposition', f'{name}_ito_parameters']
@@ -878,6 +833,13 @@ class Compound:
                         matrix = matrix_from_ito_complex(J[0], coefficients)
                     else:
                         matrix = matrix_from_ito_real(J[0], coefficients)
+         
+            else:
+                J_result = J[0]
+                if imaginary:
+                    matrix = matrix_from_ito_complex(J[0], coefficients)
+                else:
+                    matrix = matrix_from_ito_real(J[0], coefficients)
 
         if slt is not None:
             try:
@@ -897,8 +859,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save matrix from ITO to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save matrix from ITO to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return matrix
 
@@ -925,8 +886,7 @@ class Compound:
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
-            print(f'Error encountered while trying to get {matrix_type} matrix from file in {basis_type} momentum basis: {self._hdf5} - group {group}: {error_type}: {error_message}')
-            return
+            raise Exception(f'Error encountered while trying to get {matrix_type} matrix from file in {basis_type} momentum basis: {self._hdf5} - group {group}: {error_type}: {error_message}')
         
         if slt is not None:
             try:
@@ -946,8 +906,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save {matrix_type} matrix in {basis_type} momentum "z" basis to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save {matrix_type} matrix in {basis_type} momentum "z" basis to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
             
         return matrix
     

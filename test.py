@@ -5,23 +5,95 @@ import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 
-# a = slt.compound_from_orca(".", "CeCoN3", "TZVP_nevpt22", ".", "CeCoN3_TZVP_cas_nevpt2_restart.out")
+#a = slt.compound_from_orca(".", "aniso_test", "SVP", ".", "CeCoN3_SVP_cas_aniso.out")
+a = slt.compound_from_slt(".", "aniso_test")
 
-a = slt.compound_from_slt(".", "NdCoNO2_test")
+# fields = np.linspace(0,10,11)
+# temperatures = np.linspace(2,2,1)
+# magnetisation = a.calculate_mth("SVP", 14, fields, 4, temperatures, 8)
+# print(fields)
+# print(magnetisation)
 
-#a.zeeman_matrix("TZVP", 10, 1, np.array([0.,0.,1.]), slt="TZVP_from_real")
-matrix2 = a.soc_zeem_in_angular_magnetic_momentum_basis("TZVP", 0, 9, 'zeeman', 'angular', 1, np.array([0.,0.,1.]))
-#coeff = a.soc_crystal_field_parameters("TZVP", 0, 9, 9, magnetic=True, even_order=True, slt="megaaasssss", imaginary=True)
-coeff = a.zeeman_matrix_ito_decpomosition("TZVP", 0, 9, 1, np.array([0.,0.,1.]), 9, slt="fraq", magnetic=False, imaginary=True)
-matrix1 = a.matrix_from_ito("fraq")
+# magn_momenta = a.states_magnetic_momenta("SVP", np.arange(14))
+# print(magn_momenta)
+
+#total_momenta = a.states_total_angular_momenta("SVP", np.arange(14))
+#print(total_momenta)
+
+magn_matrix = a.magnetic_momenta_matrix("SVP", 14)
+print(magn_matrix)
+
+# energy = a.soc_energies_cm_1("SVP", 14)
+# print(energy)
+
+# g_ten, axes = a.calculate_g_tensor_and_axes_doublet("SVP", np.array([0]),)
+# print(axes)
+# print(g_ten)
+
+# sus = a.calculate_chitht("SVP", np.array([0.1]), 14, np.linspace(1,300,10), 4, 3, 0.0001)
+# print(sus)
+
+# sus_tensor = a.calculate_chit_tensorht("SVP", np.array([0.1]), 14, np.linspace(1,300,10), 4, 3, 0.0001)
+# print(sus_tensor)
+
+# b_k_q = a.soc_crystal_field_parameters("SVP", 0, 13, 6, slt="forsen_rot", magnetic = True)
+# for i in b_k_q:
+#     print(i)
+
+# matrix1 = a.soc_zeem_in_angular_magnetic_momentum_basis("SVP", 0, 13, 'soc', 'magnetic')
+# matrix2 = a.matrix_from_ito("forsen")
 
 # print(matrix1-matrix2)
 
-eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
-eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)
+# eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
+# eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)
 
-print(eigenvalues1*219474.6)
-print(eigenvalues2*219474.6)
+# eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
+# eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)
+
+# print(eigenvalues1*219474.6)
+# print(eigenvalues2*219474.6)
+
+# rot = np.array([[-0.50117407,  0.13460855, -0.8548129 ],
+#   [ 0.74915045, -0.42693886, -0.50645515],
+#   [-0.43312604, -0.89420565,  0.11312863]])
+
+# rot_inv = np.linalg.inv(rot)
+
+# print(rot_inv)
+
+
+
+
+
+
+
+
+
+
+
+
+
+#a = slt.compound_from_slt(".", "DyCo")
+
+#a = slt.compound_from_molcas(".", "DyrCffodrfB", "TZVP", ".", "DyCo_test_hdf5_bas0")
+
+
+#a.zeeman_matrix("TZVP", 10, 1, np.array([0.,0.,1.]), slt="TZVP_from_real")
+# matrix2 = a.soc_zeem_in_angular_magnetic_momentum_basis("TZVP", 0, 9, 'soc', 'angular', 1, np.array([0.,0.,1.]))
+# coeff = a.soc_crystal_field_parameters("TZVP", 0, 9, 9, magnetic=False, even_order=True, slt="1200", imaginary=False)
+#coeff = a.zeeman_matrix_ito_decpomosition("TZVP", 0, 9, 1, np.array([0.,0.,1.]), 9, slt="fraqes", magnetic=False, imaginary=True)
+# matrix1 = a.matrix_from_ito("1200", imaginary=False, matrix_type='soc')
+
+# print(matrix1-matrix2)
+
+# eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
+# eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)
+
+# print(eigenvalues1*219474.6)
+# print(eigenvalues2*219474.6)
+
+# print(coeff)
 
 # print(coeff)
 

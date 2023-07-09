@@ -4,13 +4,48 @@ import slothpy as slt
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
-#a = slt.compound_from_orca(".", "aniso_test", "SVP", ".", "CeCoN3_SVP_cas_aniso.out")
+#a = slt.compound_from_molcas(".", "aniso_test_molcas", "bas0", ".", "DyCo_test_hdf5_bas0")
 a = slt.compound_from_slt(".", "aniso_test")
 
-# fields = np.linspace(0,10,11)
-# temperatures = np.linspace(2,2,1)
-# magnetisation = a.calculate_mth("SVP", 14, fields, 4, temperatures, 8)
+# fields = np.linspace(0,7,10)
+# temperatures = np.linspace(2,5,4)
+
+x, y, z = a.calculate_chit_3d("SVP", 20, 14, 100, 24, 5, 0.0001, 200, slt="test_zapisu_chittt")
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
+max_array = np.array([np.max(x), np.max(y), np.max(z)])
+max = np.max(max_array)
+
+ax.plot_wireframe(x, y, z)
+ax.set_xlim(-max,max)
+ax.set_ylim(-max,max)
+ax.set_zlim(-max,max)
+ax.set_box_aspect([1, 1, 1])
+plt.show()
+
+# x, y, z = a.calculate_mag_3d("SVP", 14, 1, 200, 400, 4)
+
+# fig = plt.figure()
+# ax = fig.add_subplot(projection='3d')
+
+# max_array = np.array([np.max(x), np.max(y), np.max(z)])
+# max = np.max(max_array)
+
+# ax.plot_wireframe(x, y, z)
+# ax.set_xlim(-max,max)
+# ax.set_ylim(-max,max)
+# ax.set_zlim(-max,max)
+# ax.set_box_aspect([1, 1, 1])
+# plt.show()
+
+# decomposition = a.decomposition_in_z_angular_momentum_basis("bas0", 0, 15)
+# print(decomposition)
+
+# magnetisation = a.calculate_mth("bas0", 64, fields, np.array([[0.,0.,1.,1]]), temperatures, 4)
 # print(fields)
 # print(magnetisation)
 
@@ -20,33 +55,31 @@ a = slt.compound_from_slt(".", "aniso_test")
 #total_momenta = a.states_total_angular_momenta("SVP", np.arange(14))
 #print(total_momenta)
 
-magn_matrix = a.magnetic_momenta_matrix("SVP", 14)
-print(magn_matrix)
+# magn_matrix = a.magnetic_momenta_matrix("SVP", 14)
+# print(magn_matrix)
 
-# energy = a.soc_energies_cm_1("SVP", 14)
+# energy = a.soc_energies_cm_1("bas0", 25)
 # print(energy)
 
-# g_ten, axes = a.calculate_g_tensor_and_axes_doublet("SVP", np.array([0]),)
+# g_ten, axes = a.calculate_g_tensor_and_axes_doublet("bas0", np.array([0,1,2]),)
 # print(axes)
 # print(g_ten)
 
-# sus = a.calculate_chitht("SVP", np.array([0.1]), 14, np.linspace(1,300,10), 4, 3, 0.0001)
+# sus = a.calculate_chitht("bas0", np.array([0.1]), 64, np.linspace(1,300,10), 4, 3, 0.0001, exp=True)
 # print(sus)
 
-# sus_tensor = a.calculate_chit_tensorht("SVP", np.array([0.1]), 14, np.linspace(1,300,10), 4, 3, 0.0001)
+# print(np.linspace(1,300,10))
+# sus_tensor = a.calculate_chit_tensorht("bas0", np.array([0.1]), 64, np.linspace(1,300,10), 4, 2, 0.0001)
 # print(sus_tensor)
 
-# b_k_q = a.soc_crystal_field_parameters("SVP", 0, 13, 6, slt="forsen_rot", magnetic = True)
+# b_k_q = a.soc_crystal_field_parameters("SVP", 0, 5, 5, slt="fforsednsnnnnnnnnn", even_order=False, magnetic = False, imaginary=True)
 # for i in b_k_q:
 #     print(i)
 
-# matrix1 = a.soc_zeem_in_angular_magnetic_momentum_basis("SVP", 0, 13, 'soc', 'magnetic')
-# matrix2 = a.matrix_from_ito("forsen")
+# matrix1 = a.soc_zeem_in_angular_magnetic_momentum_basis("SVP", 0, 5, 'soc', 'angular', field=1)
+# matrix2 = a.matrix_from_ito("fforsednsnnnnnnnnn", imaginary=True)
 
 # print(matrix1-matrix2)
-
-# eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
-# eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)
 
 # eigenvalues1, eigenvectors1 = np.linalg.eigh(matrix1)
 # eigenvalues2, eigenvectors2 = np.linalg.eigh(matrix2)

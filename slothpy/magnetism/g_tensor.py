@@ -44,8 +44,13 @@ def calculate_g_tensor_and_axes_doublet(filename: str, group: str, doublets: np.
                 g_tensor_squared[i] = 0
         g_tensor = 2 * np.sqrt(g_tensor_squared)
 
+        print(np.linalg.det(magnetic_axes))
+
+        # Flip new "z" axis if wrong handednes
         if np.linalg.det(magnetic_axes) < 0:
-            magnetic_axes[:,1] = -magnetic_axes[:,1]
+            magnetic_axes[:,2] = -magnetic_axes[:,2]
+        
+        print(np.linalg.det(magnetic_axes))
 
         g_tensor_list[index, 0] = doublet
         g_tensor_list[index, 1:4] = g_tensor

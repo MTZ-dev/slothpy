@@ -3,8 +3,8 @@ from typing import Any
 import h5py
 import numpy as np
 from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
-from slothpy.magnetism.magnetisation import mth
-from slothpy.magnetism.susceptibility import (chitht, chit_tensorht)
+from slothpy.magnetism.magnetisation import (mth, mag_3d)
+from slothpy.magnetism.susceptibility import (chitht, chit_tensorht, chit_3d)
 from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
 from slothpy.general_utilities.io import (get_soc_energies_cm_1, get_states_magnetic_momenta, get_states_total_angular_momneta,
                                            get_total_angular_momneta_matrix, get_magnetic_momenta_matrix)
@@ -499,7 +499,6 @@ class Compound:
                     states_dataset = new_group.create_dataset(f'{slt}_states', shape=(total_angular_momenta_matrix_array.shape[1],), dtype=np.int64)
                     states_dataset.attrs['Description'] = f'Dataset containing states indexes of total angular momenta matrix from group: {group}.'
 
-                    print(total_angular_momenta_matrix_array)
                     total_angular_momenta_matrix_dataset[:] = total_angular_momenta_matrix_array[:]
                     states_dataset[:] = np.arange(total_angular_momenta_matrix_array.shape[1], dtype=np.int64)
             
@@ -508,8 +507,7 @@ class Compound:
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
-                print(f'Error encountered while trying to save total angular momenta matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
-                return
+                raise Exception(f'Error encountered while trying to save total angular momenta matrix to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
             
         return total_angular_momenta_matrix_array
             
@@ -549,13 +547,13 @@ class Compound:
         return magnetic_momenta_matrix_array
             
     
-    def decomposition_in_z_magnetic_momentum_basis(self, group, number_of_states, slt: str = None):
+    def decomposition_in_z_magnetic_momentum_basis(self, group, start_state, stop_state, slt: str = None):
 
-        if (not isinstance(number_of_states, np.int)) or (number_of_states < 0):
+        if (not isinstance(stop_state, np.int)) or (stop_state < 0):
             raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')
 
         try:
-            decomposition = get_decomposition_in_z_magnetic_momentum_basis(self._hdf5, group, number_of_states)
+            decomposition = get_decomposition_in_z_magnetic_momentum_basis(self._hdf5, group, start_state, stop_state)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -585,13 +583,13 @@ class Compound:
         return decomposition
 
 
-    def decomposition_in_z_angular_momentum_basis(self, group, number_of_states, slt: str = None):
+    def decomposition_in_z_angular_momentum_basis(self, group, start_state, stop_state, slt: str = None):
 
-        if (not isinstance(number_of_states, np.int)) or (number_of_states < 0):
+        if (not isinstance(stop_state, np.int)) or (stop_state < 0):
             raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')
 
         try:
-            decomposition = get_decomposition_in_z_total_angular_momentum_basis(self._hdf5, group, number_of_states)
+            decomposition = get_decomposition_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -910,8 +908,73 @@ class Compound:
             
         return matrix
     
-    def mag_3d():
-        pass
+
+    def calculate_mag_3d(self, group: str, states_cutoff: int, field: np.ndarray, spherical_grid: int, temperature: np.float64, num_cpu: int, slt: str = None):
+
+        try:
+            x, y, z = mag_3d(self._hdf5, group, states_cutoff, field, spherical_grid, temperature, num_cpu)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            raise Exception(f'Error encountered while trying to compute 3D magnetisation from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+        
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_3d_magnetisation')
+                    new_group.attrs['Description'] = f'Group({slt}) containing 3D magnetisation calulated from group: {group}.'
+                    mag_3d_dataset = new_group.create_dataset(f'{slt}_mag_3d', shape=(3,x.shape[0],x.shape[1]), dtype=np.float64)
+                    mag_3d_dataset.attrs['Description'] = f'Dataset containing 3D magnetisation as meshgird (0-x,1-y,2-z) arrays over sphere (T: {temperature} K, H: {field} T) calulated from group: {group}.'
+
+                    mag_3d_dataset[0,:,:] = x
+                    mag_3d_dataset[1,:,:] = y
+                    mag_3d_dataset[2,:,:] = z
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                raise Exception(f'Error encountered while trying to save 3D magnetisation to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+
+        return x, y, z
+    
+
+    def calculate_chit_3d(self, group: str, field: np.float64, states_cutoff: int, temperature: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True, slt: str = None):
+
+        try:
+            x, y, z = chit_3d(self._hdf5, group, field, states_cutoff, temperature, num_cpu, num_of_points, delta_h, spherical_grid, exp, T)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            raise Exception(f'Error encountered while trying to compute 3D magnetic susceptibility from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
+        
+        if slt is not None:
+
+            if T:
+                chi_file = 'chit'
+            else:
+                chi_file = 'chi'
+
+            try:
+                with h5py.File(self._hdf5, 'r+') as file:
+                    new_group = file.create_group(f'{slt}_3d_susceptibility')
+                    new_group.attrs['Description'] = f'Group({slt}) containing 3D magnetic susceptibility calulated from group: {group}.'
+                    chit_3d_dataset = new_group.create_dataset(f'{slt}_{chi_file}_3d', shape=(3,x.shape[0],x.shape[1]), dtype=np.float64)
+                    chit_3d_dataset.attrs['Description'] = f'Dataset containing 3D magnetic susceptibility as meshgird (0-x,1-y,2-z) arrays over sphere (T: {temperature} K, H: {field} T) calulated from group: {group}.'
+
+                    chit_3d_dataset[0,:,:] = x
+                    chit_3d_dataset[1,:,:] = y
+                    chit_3d_dataset[2,:,:] = z
+            
+                self.get_hdf5_groups_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                raise Exception(f'Error encountered while trying to save 3D magneic susceptibility to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
+
+        return x, y, z
 
 
         

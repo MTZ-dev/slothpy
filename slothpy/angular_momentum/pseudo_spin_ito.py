@@ -51,17 +51,17 @@ def get_zeeman_matrix_in_z_total_angular_momentum_basis(filename, group, field, 
     return zeeman_matrix 
 
 
-def get_decomposition_in_z_magnetic_momentum_basis(filename, group, number_of_states):
+def get_decomposition_in_z_magnetic_momentum_basis(filename, group, start_state, stop_state):
 
-    soc_matrix = get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, number_of_states)
+    soc_matrix = get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, stop_state)
     decopmosition = decomposition_of_hermitian_matrix(soc_matrix)
 
     return decopmosition
 
 
-def get_decomposition_in_z_total_angular_momentum_basis(filename, group, number_of_states):
+def get_decomposition_in_z_total_angular_momentum_basis(filename, group, start_state, stop_state):
     
-    soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, number_of_states)
+    soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, start_state, stop_state)
     decopmosition = decomposition_of_hermitian_matrix(soc_matrix)
 
     return decopmosition

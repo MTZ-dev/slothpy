@@ -289,24 +289,23 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
         error_type_1 = type(e).__name__
         error_message_1 = str(e)
         error_print_1 = f"{error_type_1}: {error_message_1}"
+        try: 
+            with h5py.File(filename, 'r') as file:
+                soc_energies = file[str(group)]['SOC_energies'][:]
+                sx = file[str(group)]['SOC_SX'][:]
+                lx = file[str(group)]['SOC_LX'][:]
+                sy = file[str(group)]['SOC_SY'][:]
+                ly = file[str(group)]['SOC_LY'][:]
+                sz = file[str(group)]['SOC_SZ'][:]
+                lz = file[str(group)]['SOC_LZ'][:]
 
-    try: 
-        with h5py.File(filename, 'r') as file:
-            soc_energies = file[str(group)]['SOC_energies'][:]
-            sx = file[str(group)]['SOC_SX'][:]
-            lx = file[str(group)]['SOC_LX'][:]
-            sy = file[str(group)]['SOC_SY'][:]
-            ly = file[str(group)]['SOC_LY'][:]
-            sz = file[str(group)]['SOC_SZ'][:]
-            lz = file[str(group)]['SOC_LZ'][:]
+            return soc_energies, sx, sy, sz, lx, ly, lz #rotation implement everywhere
 
-        return soc_energies, sx, sy, sz, lx, ly, lz #rotation implement everywhere
-
-    except Exception as e:
-        error_type_2 = type(e).__name__
-        error_message_2 = str(e)
-        error_print_2 = f"{error_type_2}: {error_message_2}"
-        raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
+        except Exception as e:
+            error_type_2 = type(e).__name__
+            error_message_2 = str(e)
+            error_print_2 = f"{error_type_2}: {error_message_2}"
+            raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
 
 
 def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
@@ -322,12 +321,13 @@ def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cut
             error_message_1 = str(e)
             error_print_1 = f"{error_type_1}: {error_message_1}"
 
-        try:
-            dataset = file[group]['SOC_energies']
-        except Exception as e:
-            error_type_2 = type(e).__name__
-            error_message_2 = str(e)
-            error_print_2 = f"{error_type_2}: {error_message_2}"
+            try:
+                dataset = file[group]['SOC_energies']
+            except Exception as e:
+                error_type_2 = type(e).__name__
+                error_message_2 = str(e)
+                error_print_2 = f'{error_type_2}: {error_message_2}'
+                raise Exception(f'Failed to acces SOC data sets due to the following errors: {error_print_1}, {error_print_2}')
         
         shape = dataset.shape[0]
 
@@ -365,15 +365,15 @@ def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cut
     magnetic_momenta[2] =  -(ge * sz + lz)
 
 #to do implement rotation but better in the function above ang_mom using custom rotate vector operators, taking sx, sy, sz etc.
-    rot = np.array([[-0.50117407,  0.13460855, -0.8548129 ],
-  [ 0.74915045, -0.42693886, -0.50645515],
-  [-0.43312604, -0.89420565,  0.11312863]])
+#     rot = np.array([[-8.63108591e-01, -5.05018110e-01, -5.18749693e-04],
+#   [ 5.05018041e-01, -8.63108746e-01,  2.65399398e-04],
+#   [-5.81768900e-04, -3.29094532e-05,  9.99999830e-01]])
 
-    rot_inv = np.linalg.inv(rot)
+#     rot_inv = rot #np.linalg.inv(rot)
 
-    magnetic_momenta[0] = magnetic_momenta[0] * rot_inv[0,0] + magnetic_momenta[1] * rot_inv[0,1] + magnetic_momenta[2] * rot_inv[0,2]
-    magnetic_momenta[1] = magnetic_momenta[1] * rot_inv[1,0] + magnetic_momenta[1] * rot_inv[1,1] + magnetic_momenta[2] * rot_inv[1,2]
-    magnetic_momenta[2] = magnetic_momenta[0] * rot_inv[2,0] + magnetic_momenta[1] * rot_inv[2,1] + magnetic_momenta[2] * rot_inv[2,2]
+#     magnetic_momenta[0] = magnetic_momenta[0] * rot_inv[0,0] + magnetic_momenta[1] * rot_inv[0,1] + magnetic_momenta[2] * rot_inv[0,2]
+#     magnetic_momenta[1] = magnetic_momenta[1] * rot_inv[1,0] + magnetic_momenta[1] * rot_inv[1,1] + magnetic_momenta[2] * rot_inv[1,2]
+#     magnetic_momenta[2] = magnetic_momenta[0] * rot_inv[2,0] + magnetic_momenta[1] * rot_inv[2,1] + magnetic_momenta[2] * rot_inv[2,2]
 
     return magnetic_momenta, soc_energies
 

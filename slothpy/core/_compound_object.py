@@ -357,12 +357,12 @@ class Compound:
         return soc_energies_array
     
 
-    def states_magnetic_momenta(self, group: str, states: np.ndarray = None, slt: str = None):
+    def states_magnetic_momenta(self, group: str, states: np.ndarray = None, rotation = None, slt: str = None):
 
         states = np.array(states)
 
         try:
-            states, magnetic_momenta_array = get_states_magnetic_momenta(self._hdf5, group, states)
+            states, magnetic_momenta_array = get_states_magnetic_momenta(self._hdf5, group, states, rotation)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -391,12 +391,12 @@ class Compound:
         return magnetic_momenta_array
     
 
-    def states_total_angular_momenta(self, group: str, states: np.ndarray = None, slt: str = None):
+    def states_total_angular_momenta(self, group: str, states: np.ndarray = None, rotation = None, slt: str = None):
 
         states = np.array(states)
 
         try:
-            states, total_angular_momenta_array = get_states_total_angular_momneta(self._hdf5, group, states)
+            states, total_angular_momenta_array = get_states_total_angular_momneta(self._hdf5, group, states, rotation)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -477,13 +477,13 @@ class Compound:
         return zeeman_array
     
 
-    def total_angular_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, slt: str = None):
+    def total_angular_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, rotation = None, slt: str = None):
 
         if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0):
             raise ValueError(f'Invalid states cutoff, set it to positive integer or 0 for all states.')
 
         try:
-            total_angular_momenta_matrix_array = get_total_angular_momneta_matrix(self._hdf5, group, states_cutoff)
+            total_angular_momenta_matrix_array = get_total_angular_momneta_matrix(self._hdf5, group, states_cutoff, rotation)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -512,13 +512,13 @@ class Compound:
         return total_angular_momenta_matrix_array
             
 
-    def magnetic_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, slt: str = None):
+    def magnetic_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, rotation = None, slt: str = None):
 
         if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0):
             raise ValueError(f'Invalid states cutoff, set it to positive integer or 0 for all states.')
 
         try:
-            magnetic_momenta_matrix_array = get_magnetic_momenta_matrix(self._hdf5, group, states_cutoff)
+            magnetic_momenta_matrix_array = get_magnetic_momenta_matrix(self._hdf5, group, states_cutoff, rotation)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -547,13 +547,13 @@ class Compound:
         return magnetic_momenta_matrix_array
             
     
-    def decomposition_in_z_magnetic_momentum_basis(self, group, start_state, stop_state, slt: str = None):
+    def decomposition_in_z_magnetic_momentum_basis(self, group, start_state, stop_state, rotation = None, slt: str = None):
 
         if (not isinstance(stop_state, np.int)) or (stop_state < 0):
             raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')
 
         try:
-            decomposition = get_decomposition_in_z_magnetic_momentum_basis(self._hdf5, group, start_state, stop_state)
+            decomposition = get_decomposition_in_z_magnetic_momentum_basis(self._hdf5, group, start_state, stop_state, rotation)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -583,13 +583,13 @@ class Compound:
         return decomposition
 
 
-    def decomposition_in_z_angular_momentum_basis(self, group, start_state, stop_state, slt: str = None):
+    def decomposition_in_z_angular_momentum_basis(self, group, start_state, stop_state, rotation = None, slt: str = None):
 
         if (not isinstance(stop_state, np.int)) or (stop_state < 0):
             raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')
 
         try:
-            decomposition = get_decomposition_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state)
+            decomposition = get_decomposition_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state, rotation)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -619,11 +619,11 @@ class Compound:
         return decomposition
             
 
-    def soc_crystal_field_parameters(self, group,  start_state, stop_state, order, even_order: bool = True, imaginary: bool = False, magnetic: bool = False, slt: str = None):
+    def soc_crystal_field_parameters(self, group,  start_state, stop_state, order, even_order: bool = True, imaginary: bool = False, magnetic: bool = False, rotation = None, slt: str = None):
 
         if magnetic:
             try:
-                soc_matrix = get_soc_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, start_state, stop_state)
+                soc_matrix = get_soc_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, start_state, stop_state, rotation)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -631,7 +631,7 @@ class Compound:
 
         else:
             try:
-                soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state)
+                soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state, rotation)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -685,18 +685,18 @@ class Compound:
         return cfp_return        
             
 
-    def zeeman_matrix_ito_decpomosition(self, group,  start_state, stop_state, field, orientation, order, imaginary: bool = False, magnetic: bool = False, slt: str = None):
+    def zeeman_matrix_ito_decpomosition(self, group,  start_state, stop_state, field, orientation, order, imaginary: bool = False, magnetic: bool = False, rotation = None, slt: str = None):
 
         if magnetic:
             try:
-                zeeman_matrix = get_zeeman_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state)
+                zeeman_matrix = get_zeeman_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state, rotation)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
                 raise Exception(f'Error encountered while trying to get Zeeman matrix in "z" magnetic momentum basis from file: {self._hdf5} - group {group}: {error_type}: {error_message}')
         else:
             try:
-                zeeman_matrix = get_zeeman_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state)
+                zeeman_matrix = get_zeeman_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state, rotation)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -786,8 +786,6 @@ class Compound:
 
 
     def matrix_from_ito(self, name, imaginary: bool = False, dataset: str = None, pseudo_spin: str = None, slt: str = None, matrix_type: str = None):
-        
-        continue_flag = False
 
         if (dataset is not None) and (pseudo_spin is not None) and pseudo_spin > 0:
 
@@ -862,7 +860,7 @@ class Compound:
         return matrix
 
 
-    def soc_zeem_in_angular_magnetic_momentum_basis(self, group, start_state, stop_state, matrix_type, basis_type, field = None, orientation = None, slt: str = None):
+    def soc_zeem_in_angular_magnetic_momentum_basis(self, group, start_state, stop_state, matrix_type, basis_type, rotation = None, field = None, orientation = None, slt: str = None):
 
         if (matrix_type not in ['zeeman', 'soc']) or (basis_type not in ['angular', 'magnetic']):
             raise ValueError(f'Only valid matrix_type are "soc" or "zeeman" and basis_type are "angular" or "magnetic"')
@@ -873,14 +871,14 @@ class Compound:
         try:
             if matrix_type == 'zeeman':
                 if basis_type == 'angular':
-                    matrix = get_zeeman_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state)
+                    matrix = get_zeeman_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state, rotation)
                 elif basis_type == 'magnetic':
-                    matrix = get_zeeman_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state)
+                    matrix = get_zeeman_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, field, orientation, start_state, stop_state, rotation)
             elif matrix_type == 'soc':
                 if basis_type == 'angular':
-                    matrix = get_soc_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state)
+                    matrix = get_soc_matrix_in_z_total_angular_momentum_basis(self._hdf5, group, start_state, stop_state, rotation)
                 elif basis_type == 'magnetic':
-                    matrix = get_soc_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, start_state, stop_state)                
+                    matrix = get_soc_matrix_in_z_magnetic_momentum_basis(self._hdf5, group, start_state, stop_state, rotation)                
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)

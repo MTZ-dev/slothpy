@@ -2,7 +2,7 @@ import numpy as np
 import multiprocessing
 from numba import jit
 from slothpy.general_utilities.system import get_num_of_processes
-from slothpy.general_utilities.io import get_soc_momenta_and_energies_from_hdf5
+from slothpy.general_utilities.io import get_soc_magnetic_momenta_and_energies_from_hdf5
 
 
 @jit('complex128[:,:](complex128[:,:,:], float64[:], float64, float64[:])', nopython=True, cache=True, nogil=True)
@@ -76,7 +76,7 @@ def zeeman_splitting(filename: str, group: str, states_cutoff: int, num_of_state
     grid = np.ascontiguousarray(grid)
 
     # Read data from HDF5 file
-    magnetic_moment, soc_energies = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
+    magnetic_moment, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
     # Parallel M(T) calculation over different field values
     with multiprocessing.Pool(num_process) as p:
@@ -101,7 +101,7 @@ def zeeman_splitting(filename: str, group: str, states_cutoff: int, num_of_state
 
 def get_zeeman_matrix(filename: str, group: str, states_cutoff: int, field: np.float64, orientation: np.ndarray) -> np.ndarray:
 
-    magnetic_momenta, soc_energies  = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
+    magnetic_momenta, soc_energies  = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
     zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
 
     return zeeman_matrix

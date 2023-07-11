@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 import h5py
+from slothpy.angular_momentum.rotation import rotate_vector_operator
 
 
 def grep_to_file(path_inp: str, inp_file: str, pattern: str, path_out: str, out_file: str, lines: int = 1) -> None:
@@ -256,7 +257,7 @@ def molcas_spin_orbit_to_slt(path_molcas: str, inp_molcas: str, path_out: str, h
                 dataset[:, :] = data_to_save[:, :]
             dataset.attrs['Description'] = f'Dataset containing {matrix_name} matrix in SOC basis'
 
-def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str) -> tuple: #named tuple, see numpy for example linalg.eig, they return class from typing
+def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str, rotation = None) -> tuple: #named tuple, see numpy for example linalg.eig, they return class from typing and class type of rotation
     
     try:
         # Read data from HDF5 file
@@ -282,6 +283,10 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
         ly = eigenvectors.conj().T @ ly.astype(np.complex128) @ eigenvectors
         lz = eigenvectors.conj().T @ lz.astype(np.complex128) @ eigenvectors
 
+        if (rotation is not None) or (rotation != None): #then is istnace of Rotation class
+            sx, sy, sz = rotate_vector_operator(sx, sy, sz, rotation)
+            lx, ly, lz = rotate_vector_operator(lx, ly, lz, rotation)
+
         # Return operators in SOC basis
         return soc_energies, sx, sy, sz, lx, ly, lz #rotation to implement everywhere
 
@@ -299,6 +304,10 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
                 sz = file[str(group)]['SOC_SZ'][:]
                 lz = file[str(group)]['SOC_LZ'][:]
 
+                if (rotation is not None) or (rotation != None): #then is istnace of Rotation class
+                    sx, sy, sz = rotate_vector_operator(sx, sy, sz, rotation)
+                    lx, ly, lz = rotate_vector_operator(lx, ly, lz, rotation)
+
             return soc_energies, sx, sy, sz, lx, ly, lz #rotation implement everywhere
 
         except Exception as e:
@@ -308,7 +317,7 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
             raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}') 
 
 
-def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
+def get_soc_magnetic_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int, rotation = None) -> tuple[np.ndarray, np.ndarray]:
 
     shape = -1
 
@@ -348,7 +357,7 @@ def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cut
     #  Initialize the result array
     magnetic_momenta = np.ascontiguousarray(np.zeros((3,states_cutoff,states_cutoff), dtype=np.complex128))
 
-    soc_energies, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+    soc_energies, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group, rotation)
 
     # Slice arrays based on states_cutoff
     sx = sx[:states_cutoff, :states_cutoff]
@@ -364,21 +373,10 @@ def get_soc_momenta_and_energies_from_hdf5(filename: str, group: str, states_cut
     magnetic_momenta[1] =  -(ge * sy + ly)
     magnetic_momenta[2] =  -(ge * sz + lz)
 
-#to do implement rotation but better in the function above ang_mom using custom rotate vector operators, taking sx, sy, sz etc.
-#     rot = np.array([[-8.63108591e-01, -5.05018110e-01, -5.18749693e-04],
-#   [ 5.05018041e-01, -8.63108746e-01,  2.65399398e-04],
-#   [-5.81768900e-04, -3.29094532e-05,  9.99999830e-01]])
-
-#     rot_inv = rot #np.linalg.inv(rot)
-
-#     magnetic_momenta[0] = magnetic_momenta[0] * rot_inv[0,0] + magnetic_momenta[1] * rot_inv[0,1] + magnetic_momenta[2] * rot_inv[0,2]
-#     magnetic_momenta[1] = magnetic_momenta[1] * rot_inv[1,0] + magnetic_momenta[1] * rot_inv[1,1] + magnetic_momenta[2] * rot_inv[1,2]
-#     magnetic_momenta[2] = magnetic_momenta[0] * rot_inv[2,0] + magnetic_momenta[1] * rot_inv[2,1] + magnetic_momenta[2] * rot_inv[2,2]
-
     return magnetic_momenta, soc_energies
 
 
-def get_soc_total_angular_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int) -> tuple[np.ndarray, np.ndarray]:
+def get_soc_total_angular_momenta_and_energies_from_hdf5(filename: str, group: str, states_cutoff: int, rotation = None) -> tuple[np.ndarray, np.ndarray]:
 
     shape = -1
 
@@ -415,7 +413,7 @@ def get_soc_total_angular_momenta_and_energies_from_hdf5(filename: str, group: s
     #  Initialize the result array
     total_angular_momenta = np.ascontiguousarray(np.zeros((3,states_cutoff,states_cutoff), dtype=np.complex128))
 
-    soc_energies, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+    soc_energies, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group, rotation)
 
     # Slice arrays based on states_cutoff
     sx = sx[:states_cutoff, :states_cutoff]
@@ -477,11 +475,11 @@ def get_soc_energies_cm_1(filename: str, group: str, num_of_states: int = None) 
     raise Exception(f'Failed to load SOC, spin and angular momenta data from HDF5 file.\n Error(s) encountered while trying read the data: {error_print_1}, {error_print_2}')
 
 
-def get_states_magnetic_momenta(filename: str, group: str, states: np.ndarray = None):
+def get_states_magnetic_momenta(filename: str, group: str, states: np.ndarray = None, rotation = None):
     
     ge = 2.00231930436256 #Electron g factor
 
-    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group, rotation)
 
     if (np.all(states is not None)) and (np.all(states != None)):
 
@@ -525,9 +523,9 @@ def get_states_magnetic_momenta(filename: str, group: str, states: np.ndarray = 
     return states, magnetic_momenta.real
 
 
-def get_states_total_angular_momneta(filename: str, group: str, states: np.ndarray = None):
+def get_states_total_angular_momneta(filename: str, group: str, states: np.ndarray = None, rotation = None):
 
-    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group, rotation)
 
     if (np.all(states is not None)) and (np.all(states != None)):
 
@@ -573,16 +571,16 @@ def get_states_total_angular_momneta(filename: str, group: str, states: np.ndarr
     return states, total_angular_momenta.real
 
 
-def get_magnetic_momenta_matrix(filename: str, group: str, states_cutoff: np.ndarray):
+def get_magnetic_momenta_matrix(filename: str, group: str, states_cutoff: np.ndarray, rotation = None):
 
-    magnetic_momenta, _ = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
+    magnetic_momenta, _ = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff, rotation)
 
     return magnetic_momenta
 
 
-def get_total_angular_momneta_matrix(filename: str, group: str, states_cutoff: np.ndarray):
+def get_total_angular_momneta_matrix(filename: str, group: str, states_cutoff: np.ndarray, rotation = None):
 
-    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group)
+    _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group, rotation)
 
     if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0) or (states_cutoff > sx.shape[0]):
         raise ValueError(f'Invalid states cutoff, set it to positive integer less than the number of states: {sx.shape[0]} or 0 for all states.') 

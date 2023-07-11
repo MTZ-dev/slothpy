@@ -3,7 +3,7 @@ import multiprocessing
 from slothpy.magnetism.magnetisation import (mth, calculate_magnetization, mag_3d)
 from slothpy.general_utilities.math_expresions import finite_diff_stencil
 from slothpy.general_utilities.system import get_num_of_processes
-from slothpy.general_utilities.io import get_soc_momenta_and_energies_from_hdf5
+from slothpy.general_utilities.io import get_soc_magnetic_momenta_and_energies_from_hdf5
 
 def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = True, grid: np.ndarray = None) -> np.ndarray:
     """
@@ -159,7 +159,7 @@ def chit_tensorht(filename: str, group: str, fields: np.ndarray, states_cutoff: 
         num_process = get_num_of_processes(num_cpu)
 
         # Read data from HDF5 file
-        magnetic_momenta, soc_energies = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
+        magnetic_momenta, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
         # Parallel M(T,H) calculation over different grid points
         with multiprocessing.Pool(num_process) as p:

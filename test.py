@@ -6,26 +6,27 @@ import h5py
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+#a = slt.compound_from_orca(".", "aniso", "SVP", ".", "CeCoN3_SVP_cas_aniso.out")
 #a = slt.compound_from_molcas(".", "aniso_test_molcas", "bas0", ".", "DyCo_test_hdf5_bas0")
-a = slt.compound_from_slt(".", "aniso_test")
+a = slt.compound_from_slt(".", "aniso")
 
-# fields = np.linspace(0,7,10)
-# temperatures = np.linspace(2,5,4)
+fields = np.linspace(0,7,10)
+temperatures = np.linspace(2,2,1)
 
-x, y, z = a.calculate_chit_3d("SVP", 20, 14, 100, 24, 5, 0.0001, 200, slt="test_zapisu_chittt")
+# x, y, z = a.calculate_chit_3d("SVP", 20, 14, 100, 24, 5, 0.0001, 200, slt="test_zapisu_chittt")
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
+# fig = plt.figure()
+# ax = fig.add_subplot(projection='3d')
 
-max_array = np.array([np.max(x), np.max(y), np.max(z)])
-max = np.max(max_array)
+# max_array = np.array([np.max(x), np.max(y), np.max(z)])
+# max = np.max(max_array)
 
-ax.plot_wireframe(x, y, z)
-ax.set_xlim(-max,max)
-ax.set_ylim(-max,max)
-ax.set_zlim(-max,max)
-ax.set_box_aspect([1, 1, 1])
-plt.show()
+# ax.plot_wireframe(x, y, z)
+# ax.set_xlim(-max,max)
+# ax.set_ylim(-max,max)
+# ax.set_zlim(-max,max)
+# ax.set_box_aspect([1, 1, 1])
+# plt.show()
 
 # x, y, z = a.calculate_mag_3d("SVP", 14, 1, 200, 400, 4)
 
@@ -42,26 +43,80 @@ plt.show()
 # ax.set_box_aspect([1, 1, 1])
 # plt.show()
 
-# decomposition = a.decomposition_in_z_angular_momentum_basis("bas0", 0, 15)
+
+
+g_ten, axes = a.calculate_g_tensor_and_axes_doublet("SVP", np.array([0,1,2]))
+print(axes)
+print(g_ten)
+
+rotation1 = axes[0,:,:].T
+
+# decomposition = a.decomposition_in_z_magnetic_momentum_basis("SVP", 0, 5, rotation1)
 # print(decomposition)
 
-# magnetisation = a.calculate_mth("bas0", 64, fields, np.array([[0.,0.,1.,1]]), temperatures, 4)
+# magn_momenta = a.states_magnetic_momenta("SVP", np.arange(2), rotation1)
+# print(magn_momenta)
+
+
+
+# magnetisation = a.calculate_mth("SVP", 14, fields, 5, temperatures, 4)
 # print(fields)
 # print(magnetisation)
 
-# magn_momenta = a.states_magnetic_momenta("SVP", np.arange(14))
-# print(magn_momenta)
-
-#total_momenta = a.states_total_angular_momenta("SVP", np.arange(14))
-#print(total_momenta)
-
-# magn_matrix = a.magnetic_momenta_matrix("SVP", 14)
+magn_matrix = a.total_angular_momenta_matrix("SVP", 6)
 # print(magn_matrix)
+
+eigenvalues, eigenvectors = np.linalg.eigh(magn_matrix[2,:,:])
+
+print(eigenvalues)
+
+for i in range(3):
+    magn_matrix[i,:,:] = eigenvectors.conj().T @ magn_matrix[i,:,:] @ eigenvectors
+    # print(magn_matrix[i])
+
+J_plus = magn_matrix[0,:,:] + 1j * magn_matrix[1,:,:]
+J_minus = magn_matrix[0,:,:] - 1j * magn_matrix[1,:,:]
+J_z = magn_matrix[2,:,:]
+
+# print(J_minus)
+# print(J_plus)
+# print(J_z)
+
+c = np.zeros(magn_matrix.shape[1], dtype=np.complex128)
+c[0] = 1.
+
+for i in range(magn_matrix[1,:,:].shape[0]-1):
+    if np.abs(np.real(magn_matrix[1,i,i+1])).any() > 1e-12:
+        c[i+1] = 1j*magn_matrix[1,i,i+1].conj()/np.abs(magn_matrix[1,i,i+1])/c[i].conj()
+    else:
+        c[i+1] = 1.
+
+phase_magn_matrix = magn_matrix
+
+for index in range(3):
+    for i in range(phase_magn_matrix.shape[1]):
+        for j in range(phase_magn_matrix.shape[1]):
+            phase_magn_matrix[index,i,j] = phase_magn_matrix[index,i,j] * c[i].conj() * c[j]
+    
+    # print(phase_magn_matrix[index])
+
+
+eigenvalues, eigenvectors = np.linalg.eigh(phase_magn_matrix[2,:,:])
+
+print(eigenvalues)
+
+J_plus = phase_magn_matrix[0,:,:] + 1j * phase_magn_matrix[1,:,:]
+J_minus = phase_magn_matrix[0,:,:] - 1j * phase_magn_matrix[1,:,:]
+J_z = phase_magn_matrix[2,:,:]
+
+# print(J_minus)
+# print(J_plus)
+# print(J_z)
 
 # energy = a.soc_energies_cm_1("bas0", 25)
 # print(energy)
 
-# g_ten, axes = a.calculate_g_tensor_and_axes_doublet("bas0", np.array([0,1,2]),)
+# g_ten, axes = a.calculate_g_tensor_and_axes_doublet("SVP", np.array([0,1,2]))
 # print(axes)
 # print(g_ten)
 
@@ -76,8 +131,19 @@ plt.show()
 # for i in b_k_q:
 #     print(i)
 
-# matrix1 = a.soc_zeem_in_angular_magnetic_momentum_basis("SVP", 0, 5, 'soc', 'angular', field=1)
+# rotation1 = axes[0,:,:].T
+
+
+# total_momenta = a.states_total_angular_momenta("SVP", np.arange(6))
+# print(total_momenta)
+
+# magn_momenta = a.states_magnetic_momenta("SVP", np.arange(14))
+# print(magn_momenta)
+
+# matrix1 = a.soc_zeem_in_angular_magnetic_momentum_basis("SVP", 0, 5, 'zeeman', 'magnetic', field=1, orientation=np.array([0.,0.,1.]))
 # matrix2 = a.matrix_from_ito("fforsednsnnnnnnnnn", imaginary=True)
+
+# print(matrix1 * 219474.6)
 
 # print(matrix1-matrix2)
 

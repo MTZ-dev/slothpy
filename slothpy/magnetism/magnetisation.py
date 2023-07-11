@@ -2,7 +2,7 @@ import numpy as np
 from numba import jit
 import multiprocessing
 from slothpy.general_utilities.system import get_num_of_processes
-from slothpy.general_utilities.io import get_soc_momenta_and_energies_from_hdf5
+from slothpy.general_utilities.io import get_soc_magnetic_momenta_and_energies_from_hdf5
 from slothpy.magnetism.zeeman import calculate_zeeman_matrix
 
 @jit('float64(float64[:], float64[:], float64)', nopython=True, cache=True, nogil=True)
@@ -142,7 +142,7 @@ def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid:
     temperatures = np.ascontiguousarray(temperatures)
 
     # Read data from HDF5 file
-    magnetic_momenta, soc_energies = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
+    magnetic_momenta, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
     # Parallel M(T) calculation over different field values
     with multiprocessing.Pool(num_process) as p:
@@ -179,7 +179,7 @@ def mag_3d(filename: str, group: str, states_cutoff: int, field: np.ndarray, sph
     mag_3d_array = np.zeros_like(phi, dtype=np.float64)
 
     # Read data from HDF5 file
-    magnetic_moment, soc_energies = get_soc_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
+    magnetic_moment, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
     # Parallel M(T,H) calculation over different grid points
     with multiprocessing.Pool(num_process) as p:

@@ -179,7 +179,7 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_g_tensors_axes')
-                    new_group.attrs['Description'] = f'Group({slt}) containing g-tensors of doublets and their magnetic axes calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing g-tensors of doublets and their magnetic axes calculated from group: {group}.'
                     tensors = new_group.create_dataset(f'{slt}_g_tensors', shape=(g_tensor_list.shape[0], g_tensor_list.shape[1]), dtype=np.float64)
                     tensors.attrs['Description'] = f'Dataset containing number of doublet and respective g-tensors from group {group}.'
                     axes = new_group.create_dataset(f'{slt}_axes', shape=(magnetic_axes_list.shape[0], magnetic_axes_list.shape[1], magnetic_axes_list.shape[2]), dtype=np.float64)
@@ -218,9 +218,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_magnetisation')
-                    new_group.attrs['Description'] = f'Group({slt}) containing M(T,H) magnetisation calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing M(T,H) magnetisation calculated from group: {group}.'
                     mth_dataset = new_group.create_dataset(f'{slt}_mth', shape=(mth_array.shape[0], mth_array.shape[1]), dtype=np.float64)
-                    mth_dataset.attrs['Description'] = f'Dataset containing M(T,H) magnetisation (T - rows, H - columns) calulated from group: {group}.'
+                    mth_dataset.attrs['Description'] = f'Dataset containing M(T,H) magnetisation (T - rows, H - columns) calculated from group: {group}.'
                     fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
                     fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of M(T,H) from group: {group}.'
                     temperatures_dataset = new_group.create_dataset(f'{slt}_temperatures', shape=(temperatures.shape[0],), dtype=np.float64)
@@ -268,9 +268,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_susceptibility')
-                    new_group.attrs['Description'] = f'Group({slt}) containing {chi_name} magnetic susceptibility calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing {chi_name} magnetic susceptibility calculated from group: {group}.'
                     chitht_dataset = new_group.create_dataset(f'{slt}_{chi_file}ht', shape=(chitht_array.shape[0], chitht_array.shape[1]), dtype=np.float64)
-                    chitht_dataset.attrs['Description'] = f'Dataset containing {chi_name} magnetic susceptibility (H - rows, T - columns) calulated from group: {group}.'
+                    chitht_dataset.attrs['Description'] = f'Dataset containing {chi_name} magnetic susceptibility (H - rows, T - columns) calculated from group: {group}.'
                     fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
                     fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of {chi_name} from group: {group}.'
                     temperatures_dataset = new_group.create_dataset(f'{slt}_temperatures', shape=(temperatures.shape[0],), dtype=np.float64)
@@ -306,9 +306,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_susceptibility_tensor')
-                    new_group.attrs['Description'] = f'Group({slt}) containing chiT_tensor(H,T) Van Vleck susceptibility tensor calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing chiT_tensor(H,T) Van Vleck susceptibility tensor calculated from group: {group}.'
                     chit_tensorht_dataset = new_group.create_dataset(f'{slt}_chit_tensorht', shape=(chit_tensorht_array.shape[0], chit_tensorht_array.shape[1],3,3), dtype=np.float64)
-                    chit_tensorht_dataset.attrs['Description'] = f'Dataset containing chiT_tensor(H,T) Van Vleck susceptibility tensor (H, T, 3, 3) calulated from group: {group}.'
+                    chit_tensorht_dataset.attrs['Description'] = f'Dataset containing chiT_tensor(H,T) Van Vleck susceptibility tensor (H, T, 3, 3) calculated from group: {group}.'
                     fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
                     fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of chiT_tensor(H,T) Van Vleck susceptibility tensor from group: {group}.'
                     temperatures_dataset = new_group.create_dataset(f'{slt}_temperatures', shape=(temperatures.shape[0],), dtype=np.float64)
@@ -341,9 +341,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_soc_energies')
-                    new_group.attrs['Description'] = f'Group({slt}) containing SOC (Spin-Orbit Coupling) energies calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing SOC (Spin-Orbit Coupling) energies calculated from group: {group}.'
                     soc_energies_dataset = new_group.create_dataset(f'{slt}_soc_energies', shape=(soc_energies_array.shape[0],), dtype=np.float64)
-                    soc_energies_dataset.attrs['Description'] = f'Dataset containing SOC (Spin-Orbit Coupling) energies calulated from group: {group}.'
+                    soc_energies_dataset.attrs['Description'] = f'Dataset containing SOC (Spin-Orbit Coupling) energies calculated from group: {group}.'
 
                     soc_energies_dataset[:] = soc_energies_array[:]
             
@@ -372,9 +372,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_states_magnetic_momenta')
-                    new_group.attrs['Description'] = f'Group({slt}) containing states magnetic momenta calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing states magnetic momenta calculated from group: {group}.'
                     magnetic_momenta_dataset = new_group.create_dataset(f'{slt}_magnetic_momenta', shape=(magnetic_momenta_array.shape[0],magnetic_momenta_array.shape[1]), dtype=np.float64)
-                    magnetic_momenta_dataset.attrs['Description'] = f'Dataset containing states magnetic momenta (0-x,1-y,2-z) calulated from group: {group}.'
+                    magnetic_momenta_dataset.attrs['Description'] = f'Dataset containing states magnetic momenta (0-x,1-y,2-z) calculated from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_states', shape=(states.shape[0],), dtype=np.int64)
                     states_dataset.attrs['Description'] = f'Dataset containing indexes of states used in simulation of magnetic momenta from group: {group}.'
 
@@ -406,9 +406,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_states_total_angular_momenta')
-                    new_group.attrs['Description'] = f'Group({slt}) containing states total angular momenta calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing states total angular momenta calculated from group: {group}.'
                     total_angular_momenta_dataset = new_group.create_dataset(f'{slt}_total_angular_momenta', shape=(total_angular_momenta_array.shape[0],total_angular_momenta_array.shape[1]), dtype=np.float64)
-                    total_angular_momenta_dataset.attrs['Description'] = f'Dataset containing states total angular momenta (0-x,1-y,2-z) calulated from group: {group}.'
+                    total_angular_momenta_dataset.attrs['Description'] = f'Dataset containing states total angular momenta (0-x,1-y,2-z) calculated from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_states', shape=(states.shape[0],), dtype=np.int64)
                     states_dataset.attrs['Description'] = f'Dataset containing indexes of states used in simulation of total angular momenta from group: {group}.'
 
@@ -446,12 +446,12 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_zeeman_splitting')
-                    new_group.attrs['Description'] = f'Group({slt}) containing Zeeman splitting calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing Zeeman splitting calculated from group: {group}.'
                     zeeman_splitting_dataset = new_group.create_dataset(f'{slt}_zeeman', shape=zeeman_array.shape, dtype=np.float64)
                     if average:
-                        zeeman_splitting_dataset.attrs['Description'] = f'Dataset containing Zeeman splitting averaged over grid of directions with shape: (field, energy) calulated from group: {group}.'
+                        zeeman_splitting_dataset.attrs['Description'] = f'Dataset containing Zeeman splitting averaged over grid of directions with shape: (field, energy) calculated from group: {group}.'
                     else:
-                        zeeman_splitting_dataset.attrs['Description'] = f'Dataset containing Zeeman splitting with shape: (orientation, field, energy) calulated from group: {group}.'
+                        zeeman_splitting_dataset.attrs['Description'] = f'Dataset containing Zeeman splitting with shape: (orientation, field, energy) calculated from group: {group}.'
                     fields_dataset = new_group.create_dataset(f'{slt}_fields', shape=(fields.shape[0],), dtype=np.float64)
                     fields_dataset.attrs['Description'] = f'Dataset containing magnetic field H values used in simulation of Zeeman splitting from group: {group}.'
                     if average:
@@ -477,7 +477,7 @@ class Compound:
         return zeeman_array
     
 
-    def total_angular_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, rotation = None, slt: str = None):
+    def total_angular_momenta_matrix(self, group: str, states_cutoff: np.int64 = None, rotation = None, slt: str = None):
 
         if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0):
             raise ValueError(f'Invalid states cutoff, set it to positive integer or 0 for all states.')
@@ -493,9 +493,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_total_angular_momenta_matrix')
-                    new_group.attrs['Description'] = f'Group({slt}) containing total angular momenta calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing total angular momenta calculated from group: {group}.'
                     total_angular_momenta_matrix_dataset = new_group.create_dataset(f'{slt}_total_angular_momenta_matrix', shape=total_angular_momenta_matrix_array.shape, dtype=np.complex128)
-                    total_angular_momenta_matrix_dataset.attrs['Description'] = f'Dataset containing total angular momenta matrix (0-x, 1-y, 2-z) calulated from group: {group}.'
+                    total_angular_momenta_matrix_dataset.attrs['Description'] = f'Dataset containing total angular momenta matrix (0-x, 1-y, 2-z) calculated from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_states', shape=(total_angular_momenta_matrix_array.shape[1],), dtype=np.int64)
                     states_dataset.attrs['Description'] = f'Dataset containing states indexes of total angular momenta matrix from group: {group}.'
 
@@ -528,9 +528,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_magnetic_momenta_matrix')
-                    new_group.attrs['Description'] = f'Group({slt}) containing magnetic momenta calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing magnetic momenta calculated from group: {group}.'
                     magnetic_momenta_matrix_dataset = new_group.create_dataset(f'{slt}_magnetic_momenta_matrix', shape=magnetic_momenta_matrix_array.shape, dtype=np.complex128)
-                    magnetic_momenta_matrix_dataset.attrs['Description'] = f'Dataset containing magnetic momenta matrix (0-x, 1-y, 2-z) calulated from group: {group}.'
+                    magnetic_momenta_matrix_dataset.attrs['Description'] = f'Dataset containing magnetic momenta matrix (0-x, 1-y, 2-z) calculated from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_states', shape=(magnetic_momenta_matrix_array.shape[1],), dtype=np.int64)
                     states_dataset.attrs['Description'] = f'Dataset containing states indexes of magnetic momenta matrix from group: {group}.'
 
@@ -549,7 +549,7 @@ class Compound:
     
     def decomposition_in_z_magnetic_momentum_basis(self, group, start_state, stop_state, rotation = None, slt: str = None):
 
-        if (not isinstance(stop_state, np.int)) or (stop_state < 0):
+        if (not isinstance(stop_state, int)) or (stop_state < 0):
             raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')
 
         try:
@@ -563,7 +563,7 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_magnetic_decomposition')
-                    new_group.attrs['Description'] = f'Group({slt}) containing decomposition in "z" magnetic momentum basis of SOC matrix calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing decomposition in "z" magnetic momentum basis of SOC matrix calculated from group: {group}.'
                     decomposition_dataset = new_group.create_dataset(f'{slt}_magnetic_momenta_matrix', shape=decomposition.shape, dtype=np.float64)
                     decomposition_dataset.attrs['Description'] = f'Dataset containing % decomposition (rows - SO-states, columns - basis) in "z" magnetic momentum basis of SOC matrix from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(decomposition.shape[0],), dtype=np.float64)
@@ -585,7 +585,7 @@ class Compound:
 
     def decomposition_in_z_angular_momentum_basis(self, group, start_state, stop_state, rotation = None, slt: str = None):
 
-        if (not isinstance(stop_state, np.int)) or (stop_state < 0):
+        if (not isinstance(stop_state, int)) or (stop_state < 0):
             raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')
 
         try:
@@ -598,8 +598,8 @@ class Compound:
         if slt is not None:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
-                    new_group = file.create_group(f'{slt}_total angular_decomposition')
-                    new_group.attrs['Description'] = f'Group({slt}) containing decomposition in "z" total angular momentum basis of SOC matrix calulated from group: {group}.'
+                    new_group = file.create_group(f'{slt}_total_angular_decomposition')
+                    new_group.attrs['Description'] = f'Group({slt}) containing decomposition in "z" total angular momentum basis of SOC matrix calculated from group: {group}.'
                     decomposition_dataset = new_group.create_dataset(f'{slt}_magnetic_momenta_matrix', shape=decomposition.shape, dtype=np.float64)
                     decomposition_dataset.attrs['Description'] = f'Dataset containing % decomposition (rows SO-states, columns - basis) in "z" total angular momentum basis of SOC matrix from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(decomposition.shape[0],), dtype=np.float64)
@@ -666,7 +666,7 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_soc_ito_decomposition')
-                    new_group.attrs['Description'] = f'Group({slt}) containing ITO decomposition in "z" pseudo-spin basis of SOC matrix calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing ITO decomposition in "z" pseudo-spin basis of SOC matrix calculated from group: {group}.'
                     cfp_dataset = new_group.create_dataset(f'{slt}_ito_parameters', shape=cfp.shape, dtype=cfp.dtype)
                     cfp_dataset.attrs['Description'] = f'Dataset containing ITO decomposition in "z" pseudo-spin basis of SOC matrix from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(1,), dtype=np.float64)
@@ -731,7 +731,7 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_zeeman_ito_decomposition')
-                    new_group.attrs['Description'] = f'Group({slt}) containing ITO decomposition in "z" pseudo-spin basis of Zeeman matrix calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing ITO decomposition in "z" pseudo-spin basis of Zeeman matrix calculated from group: {group}.'
                     cfp_dataset = new_group.create_dataset(f'{slt}_ito_parameters', shape=cfp.shape, dtype=cfp.dtype)
                     cfp_dataset.attrs['Description'] = f'Dataset containing ITO decomposition in "z" pseudo-spin basis of Zeeman matrix from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(1,), dtype=np.float64)
@@ -766,9 +766,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_zeeman_matrix')
-                    new_group.attrs['Description'] = f'Group({slt}) containing Zeeman matrix calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing Zeeman matrix calculated from group: {group}.'
                     zeeman_matrix_dataset = new_group.create_dataset(f'{slt}_zeeman_matrix', shape=zeeman_matrix_array.shape, dtype=np.complex128)
-                    zeeman_matrix_dataset.attrs['Description'] = f'Dataset containing Zeeman matrix calulated from group: {group}.'
+                    zeeman_matrix_dataset.attrs['Description'] = f'Dataset containing Zeeman matrix calculated from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_states', shape=(zeeman_matrix_array.shape[1],), dtype=np.int64)
                     states_dataset.attrs['Description'] = f'Dataset containing states indexes of Zeeman matrix from group: {group}.'
 
@@ -841,9 +841,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_matrix')
-                    new_group.attrs['Description'] = f'Group({slt}) containing matrix from ITO calulated from group: {name}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing matrix from ITO calculated from group: {name}.'
                     matrix_dataset = new_group.create_dataset(f'{slt}_matrix', shape=matrix.shape, dtype=np.complex128)
-                    matrix_dataset.attrs['Description'] = f'Dataset containing matrix from ITO calulated from group: {name}.'
+                    matrix_dataset.attrs['Description'] = f'Dataset containing matrix from ITO calculated from group: {name}.'
                     states_dataset = new_group.create_dataset(f'{slt}_pseudo_spin_states', shape=(1,), dtype=np.float64)
                     states_dataset.attrs['Description'] = f'Dataset containing S pseudo-spin number corresponding to the matrix from group: {name}.'
 
@@ -888,9 +888,9 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_{matrix_type}_matrix_in_{basis_type}_basis')
-                    new_group.attrs['Description'] = f'Group({slt}) containing {matrix_type} matrix in {basis_type} momentum "z" basis calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing {matrix_type} matrix in {basis_type} momentum "z" basis calculated from group: {group}.'
                     matrix_dataset = new_group.create_dataset(f'{slt}_matrix', shape=matrix.shape, dtype=np.complex128)
-                    matrix_dataset.attrs['Description'] = f'Dataset containing {matrix_type} matrix in {basis_type} momentum "z" basis calulated from group: {group}.'
+                    matrix_dataset.attrs['Description'] = f'Dataset containing {matrix_type} matrix in {basis_type} momentum "z" basis calculated from group: {group}.'
                     states_dataset = new_group.create_dataset(f'{slt}_states', shape=(matrix.shape[1],), dtype=np.int64)
                     states_dataset.attrs['Description'] = f'Dataset containing states indexes of {matrix_type} matrix in {basis_type} momentum "z" basis from group: {group}.'
 
@@ -909,6 +909,8 @@ class Compound:
 
     def calculate_mag_3d(self, group: str, states_cutoff: int, field: np.ndarray, spherical_grid: int, temperature: np.float64, num_cpu: int, slt: str = None):
 
+        temperature = np.array([temperature],dtype=np.float64)
+
         try:
             x, y, z = mag_3d(self._hdf5, group, states_cutoff, field, spherical_grid, temperature, num_cpu)
         except Exception as e:
@@ -920,13 +922,13 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_3d_magnetisation')
-                    new_group.attrs['Description'] = f'Group({slt}) containing 3D magnetisation calulated from group: {group}.'
-                    mag_3d_dataset = new_group.create_dataset(f'{slt}_mag_3d', shape=(3,x.shape[0],x.shape[1]), dtype=np.float64)
-                    mag_3d_dataset.attrs['Description'] = f'Dataset containing 3D magnetisation as meshgird (0-x,1-y,2-z) arrays over sphere (T: {temperature} K, H: {field} T) calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing 3D magnetisation calculated from group: {group}.'
+                    mag_3d_dataset = new_group.create_dataset(f'{slt}_mag_3d', shape=(3,x.shape[1],x.shape[2]), dtype=np.float64)
+                    mag_3d_dataset.attrs['Description'] = f'Dataset containing 3D magnetisation as meshgird (0-x,1-y,2-z) arrays over sphere (T: {temperature} K, H: {field} T) calculated from group: {group}.'
 
-                    mag_3d_dataset[0,:,:] = x
-                    mag_3d_dataset[1,:,:] = y
-                    mag_3d_dataset[2,:,:] = z
+                    mag_3d_dataset[0,:,:] = x[0]
+                    mag_3d_dataset[1,:,:] = y[0]
+                    mag_3d_dataset[2,:,:] = z[0]
             
                 self.get_hdf5_groups_and_attributes()
 
@@ -938,7 +940,9 @@ class Compound:
         return x, y, z
     
 
-    def calculate_chit_3d(self, group: str, field: np.float64, states_cutoff: int, temperature: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True, slt: str = None):
+    def calculate_chit_3d(self, group: str, field: np.float64, states_cutoff: int, temperature: np.float64, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True, slt: str = None):
+
+        temperature = np.array([temperature], dtype=np.float64)
 
         try:
             x, y, z = chit_3d(self._hdf5, group, field, states_cutoff, temperature, num_cpu, num_of_points, delta_h, spherical_grid, exp, T)
@@ -957,13 +961,13 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
                     new_group = file.create_group(f'{slt}_3d_susceptibility')
-                    new_group.attrs['Description'] = f'Group({slt}) containing 3D magnetic susceptibility calulated from group: {group}.'
-                    chit_3d_dataset = new_group.create_dataset(f'{slt}_{chi_file}_3d', shape=(3,x.shape[0],x.shape[1]), dtype=np.float64)
-                    chit_3d_dataset.attrs['Description'] = f'Dataset containing 3D magnetic susceptibility as meshgird (0-x,1-y,2-z) arrays over sphere (T: {temperature} K, H: {field} T) calulated from group: {group}.'
+                    new_group.attrs['Description'] = f'Group({slt}) containing 3D magnetic susceptibility calculated from group: {group}.'
+                    chit_3d_dataset = new_group.create_dataset(f'{slt}_{chi_file}_3d', shape=(3,x.shape[1],x.shape[2]), dtype=np.float64)
+                    chit_3d_dataset.attrs['Description'] = f'Dataset containing 3D magnetic susceptibility as meshgird (0-x,1-y,2-z) arrays over sphere (T: {temperature} K, H: {field} T) calculated from group: {group}.'
 
-                    chit_3d_dataset[0,:,:] = x
-                    chit_3d_dataset[1,:,:] = y
-                    chit_3d_dataset[2,:,:] = z
+                    chit_3d_dataset[0,:,:] = x[0]
+                    chit_3d_dataset[1,:,:] = y[0]
+                    chit_3d_dataset[2,:,:] = z[0]
             
                 self.get_hdf5_groups_and_attributes()
 

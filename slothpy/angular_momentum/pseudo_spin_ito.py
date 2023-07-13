@@ -9,10 +9,10 @@ from sympy.physics.quantum.cg import (CG, Wigner3j)
 def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, stop_state, rotation = None):
 
     magnetic_momenta, soc_energies  = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, stop_state+1, rotation)
-    magnetic_momenta = magnetic_momenta[:][start_state:, start_state:]
+    magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
     soc_matrix = np.diag(soc_energies)
-    soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, magnetic_momenta[2])
+    soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, magnetic_momenta[2,:,:])
 
     return soc_matrix 
 
@@ -20,10 +20,10 @@ def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, st
 def get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, start_state, stop_state, rotation = None):
 
     total_angular_momenta, soc_energies  = get_soc_total_angular_momenta_and_energies_from_hdf5(filename, group, stop_state+1, rotation)
-    total_angular_momenta = total_angular_momenta[:][start_state:, start_state:]
+    total_angular_momenta = total_angular_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
     soc_matrix = np.diag(soc_energies)
-    soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, total_angular_momenta[2])
+    soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, total_angular_momenta[2,:,:])
     
     return soc_matrix 
 
@@ -31,7 +31,7 @@ def get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, start_stat
 def get_zeeman_matrix_in_z_magnetic_momentum_basis(filename, group, field, orientation, start_state, stop_state, rotation = None):
 
     magnetic_momenta, soc_energies  = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, stop_state+1, rotation)
-    magnetic_momenta = magnetic_momenta[:][start_state:, start_state:]
+    magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
     zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
     zeeman_matrix = hermitian_x_in_basis_of_hermitian_y(zeeman_matrix, magnetic_momenta[2,:,:])
@@ -43,7 +43,7 @@ def get_zeeman_matrix_in_z_total_angular_momentum_basis(filename, group, field, 
 
     total_angular_momenta, soc_energies  = get_soc_total_angular_momenta_and_energies_from_hdf5(filename, group, stop_state+1)
     magnetic_momenta, _ = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, stop_state+1, rotation)
-    magnetic_momenta = magnetic_momenta[:][start_state:, start_state:]
+    magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
     zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
     zeeman_matrix = hermitian_x_in_basis_of_hermitian_y(zeeman_matrix, total_angular_momenta[2,:,:])

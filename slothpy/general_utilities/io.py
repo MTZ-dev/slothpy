@@ -578,7 +578,7 @@ def get_magnetic_momenta_matrix(filename: str, group: str, states_cutoff: np.nda
     return magnetic_momenta
 
 
-def get_total_angular_momneta_matrix(filename: str, group: str, states_cutoff: np.ndarray, rotation = None):
+def get_total_angular_momneta_matrix(filename: str, group: str, states_cutoff: np.int64, rotation = None):
 
     _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group, rotation)
 

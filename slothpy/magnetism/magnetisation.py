@@ -157,7 +157,6 @@ def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid:
 
 def arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperature):
 
-    temperature = np.array([temperature], dtype=np.float64)
     field = np.float64(field)
     
     for i in range(phi.shape[0]):
@@ -165,7 +164,7 @@ def arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatur
             yield (magnetic_moment, soc_energies, field, np.array([[np.sin(phi[i, j]) * np.cos(theta[i, j]), np.sin(phi[i, j]) * np.sin(theta[i, j]), np.cos(phi[i, j]), 1.]]), temperature)
 
 
-def mag_3d(filename: str, group: str, states_cutoff: int, field: np.ndarray, spherical_grid: int, temperature: np.float64, num_cpu: int) -> np.ndarray:
+def mag_3d(filename: str, group: str, states_cutoff: int, field: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int) -> np.ndarray:
 
     # Get number of parallel proceses to be used
     num_process = get_num_of_processes(num_cpu)
@@ -176,25 +175,26 @@ def mag_3d(filename: str, group: str, states_cutoff: int, field: np.ndarray, sph
     theta, phi = np.meshgrid(theta, phi)
 
     # Initialize the result array
-    mag_3d_array = np.zeros_like(phi, dtype=np.float64)
+    mag_3d_array = np.zeros((temperatures.shape[0], phi.shape[0], phi.shape[1]), dtype=np.float64)
 
     # Read data from HDF5 file
     magnetic_moment, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
     # Parallel M(T,H) calculation over different grid points
     with multiprocessing.Pool(num_process) as p:
-        mth = p.map(calculate_mt_wrapper, arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperature))
+        mth = p.map(calculate_mt_wrapper, arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures))
+
 
     index = 0
 
-    # Collecting results
     for i in range(phi.shape[0]):
         for j in range(phi.shape[1]):
-            mag_3d_array[i, j] = mth[index][0]
+            mag_3d_array[:,i,j] = mth[index][:]
             index += 1
 
-    x = np.sin(phi) * np.cos(theta) * mag_3d_array
-    y = np.sin(phi) * np.sin(theta) * mag_3d_array
-    z = np.cos(phi) * mag_3d_array
+
+    x = (np.sin(phi) * np.cos(theta))[np.newaxis,:,:] * mag_3d_array
+    y = (np.sin(phi) * np.sin(theta))[np.newaxis,:,:] * mag_3d_array
+    z = (np.cos(phi))[np.newaxis,:,:] * mag_3d_array
 
     return x, y, z

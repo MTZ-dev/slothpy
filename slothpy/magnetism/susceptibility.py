@@ -177,7 +177,7 @@ def chit_tensorht(filename: str, group: str, fields: np.ndarray, states_cutoff: 
     return chi_tensor_array
 
 
-def chit_3d(filename: str, group: str, field: np.float64, states_cutoff: int, temperature: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True):
+def chit_3d(filename: str, group: str, field: np.float64, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True):
 
     if num_of_points < 0 or (not isinstance(num_of_points, int)):
 
@@ -188,16 +188,18 @@ def chit_3d(filename: str, group: str, field: np.float64, states_cutoff: int, te
     # Experimentalist model
     if (exp == True) or (num_of_points == 0):
 
-        x, y, z = mag_3d(filename, group, states_cutoff, field, spherical_grid, temperature, num_cpu)
+        x, y, z = mag_3d(filename, group, states_cutoff, field, spherical_grid, temperatures, num_cpu)
 
         x = x / field * bohr_magneton_to_cm3
         y = y / field * bohr_magneton_to_cm3
         z = z / field * bohr_magneton_to_cm3
 
         if T:
-            x = x * temperature
-            y = y * temperature
-            z = z * temperature
+
+            for index, temp in enumerate(temperatures):
+                x[index] = x[index] * temp
+                y[index] = y[index] * temp
+                z[index] = z[index] * temp
 
     else:
 
@@ -208,32 +210,33 @@ def chit_3d(filename: str, group: str, field: np.float64, states_cutoff: int, te
         fields_diff = fields_diff.astype(np.float64)
 
         # Comments here modyfied!!!!
-        mag_x = np.zeros((dim, spherical_grid, 2 * spherical_grid))
-        mag_y = np.zeros((dim, spherical_grid, 2 * spherical_grid))
-        mag_z = np.zeros((dim, spherical_grid, 2 * spherical_grid))
-        x = np.zeros((spherical_grid, 2 * spherical_grid))
-        y = np.zeros((spherical_grid, 2 * spherical_grid))
-        z = np.zeros((spherical_grid, 2 * spherical_grid))
+        mag_x = np.zeros((dim, temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        mag_y = np.zeros((dim, temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        mag_z = np.zeros((dim, temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        x = np.zeros((temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        y = np.zeros((temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        z = np.zeros((temperatures.shape[0], spherical_grid, 2 * spherical_grid))
 
         for index, f in enumerate(fields_diff):
 
             # Get M(t,H) for two adjacent values of field
-            mag_x[index,:,:], mag_y[index,:,:], mag_z[index,:,:] = mag_3d(filename, group, states_cutoff, f, spherical_grid, temperature, num_cpu)
+            mag_x[index,:,:], mag_y[index,:,:], mag_z[index,:,:] = mag_3d(filename, group, states_cutoff, f, spherical_grid, temperatures, num_cpu)
 
         stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
 
         if T:
-            for i in range(spherical_grid):
-                for j in range(2 * spherical_grid):
-                    x[i,j] = temperature * np.dot(mag_x[:,i,j], stencil_coeff)
-                    y[i,j] = temperature * np.dot(mag_y[:,i,j], stencil_coeff)
-                    z[i,j] = temperature * np.dot(mag_z[:,i,j], stencil_coeff)
+            for index, temp in enumerate(temperatures):
+                for i in range(spherical_grid):
+                    for j in range(2 * spherical_grid):
+                        x[index,i,j] = temp * np.dot(mag_x[:,index,i,j], stencil_coeff)
+                        y[index,i,j] = temp * np.dot(mag_y[:,index,i,j], stencil_coeff)
+                        z[index,i,j] = temp * np.dot(mag_z[:,index,i,j], stencil_coeff)
         else:
             for i in range(spherical_grid):
                 for j in range(2* spherical_grid):
-                    x[i,j] = np.dot(mag_x[:,i,j], stencil_coeff)
-                    y[i,j] = np.dot(mag_y[:,i,j], stencil_coeff)
-                    z[i,j] = np.dot(mag_z[:,i,j], stencil_coeff)
+                    x[index,i,j] = np.dot(mag_x[:,index,i,j], stencil_coeff)
+                    y[index,i,j] = np.dot(mag_y[:,index,i,j], stencil_coeff)
+                    z[index,i,j] = np.dot(mag_z[:,index,i,j], stencil_coeff)
             
     return x, y, z
 

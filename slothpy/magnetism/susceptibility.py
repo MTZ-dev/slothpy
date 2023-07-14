@@ -1,11 +1,12 @@
-import numpy as np
+import threadpoolctl
 import multiprocessing
+import numpy as np
 from slothpy.magnetism.magnetisation import (mth, calculate_magnetization, mag_3d)
 from slothpy.general_utilities.math_expresions import finite_diff_stencil
 from slothpy.general_utilities.system import get_num_of_processes
 from slothpy.general_utilities.io import get_soc_magnetic_momenta_and_energies_from_hdf5
 
-def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = True, grid: np.ndarray = None) -> np.ndarray:
+def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = True, grid: np.ndarray = None) -> np.ndarray:
     """
     Calculates chiT(H,T) using data from a HDF5 file for given field, states cutoff, temperatures, and optional grid (XYZ if not present).
 
@@ -44,7 +45,7 @@ def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, te
 
         for index_field, field in enumerate(fields):
 
-            mth_array = mth(filename, group, states_cutoff, np.array([field]), grid, temperatures, num_cpu)
+            mth_array = mth(filename, group, states_cutoff, np.array([field]), grid, temperatures, num_cpu, num_threads)
 
             if T:
                 for index, temp in enumerate(temperatures):
@@ -66,7 +67,7 @@ def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, te
             chit = np.zeros_like(temperatures)
 
             # Get M(T,H) for adjacent values of field
-            mth_array = mth(filename, group, states_cutoff, fields_diff, grid, temperatures, num_cpu)
+            mth_array = mth(filename, group, states_cutoff, fields_diff, grid, temperatures, num_cpu, num_threads)
 
             stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
 
@@ -148,21 +149,23 @@ def arg_iter_chi_tensor(magnetic_momenta, soc_energies, field, temperatures, num
             yield (np.array([magnetic_momenta[i], magnetic_momenta[j]]), soc_energies, field, temperatures, num_of_points, delta_h)
 
 
-def chit_tensorht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, T: bool = True):
+def chit_tensorht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_threads:int, num_of_points: int, delta_h: np.float64, T: bool = True):
+
+    # Get number of parallel proceses to be used
+    num_process = get_num_of_processes(num_cpu, num_threads)
+
+    # Read data from HDF5 file
+    magnetic_momenta, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
     chi_tensor_array = np.zeros((fields.shape[0],temperatures.shape[0],3,3), dtype=np.float64)
 
     for index, field in enumerate(fields):
 
-        # Get number of parallel proceses to be used
-        num_process = get_num_of_processes(num_cpu)
-
-        # Read data from HDF5 file
-        magnetic_momenta, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
-
-        # Parallel M(T,H) calculation over different grid points
-        with multiprocessing.Pool(num_process) as p:
-            chi = p.map(calculate_chi_grid_wrapper, arg_iter_chi_tensor(magnetic_momenta, soc_energies, field, temperatures, num_of_points, delta_h))
+        with threadpoolctl.threadpool_limits(limits=num_threads, user_api='blas'):
+            with threadpoolctl.threadpool_limits(limits=num_threads, user_api='openmp'):
+                # Parallel M(T,H) calculation over different grid points
+                with multiprocessing.Pool(num_process) as p:
+                    chi = p.map(calculate_chi_grid_wrapper, arg_iter_chi_tensor(magnetic_momenta, soc_energies, field, temperatures, num_of_points, delta_h))
 
         # Collect results in (3,3) tensor
         chi_reshape = np.array(chi).reshape((3,3,temperatures.shape[0]))
@@ -176,7 +179,7 @@ def chit_tensorht(filename: str, group: str, fields: np.ndarray, states_cutoff: 
     return chi_tensor_array
 
 
-def chit_3d(filename: str, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True):
+def chit_3d(filename: str, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True):
 
     if num_of_points < 0 or (not isinstance(num_of_points, int)):
 
@@ -187,7 +190,7 @@ def chit_3d(filename: str, group: str, fields: np.ndarray, states_cutoff: int, t
     # Experimentalist model
     if (exp == True) or (num_of_points == 0):
 
-        x, y, z = mag_3d(filename, group, states_cutoff, fields, spherical_grid, temperatures, num_cpu)
+        x, y, z = mag_3d(filename, group, states_cutoff, fields, spherical_grid, temperatures, num_cpu, num_threads)
 
         for field_index, field in enumerate(fields):
 
@@ -223,7 +226,7 @@ def chit_3d(filename: str, group: str, fields: np.ndarray, states_cutoff: int, t
             for diff_index, fields_diff in enumerate(fields_diffs):
 
                 # Get M(t,H) for two adjacent values of field
-                mag_x[:,:,:,:,diff_index], mag_y[:,:,:,:,diff_index], mag_z[:,:,:,:,diff_index] = mag_3d(filename, group, states_cutoff, fields_diff, spherical_grid, temperatures, num_cpu)
+                mag_x[:,:,:,:,diff_index], mag_y[:,:,:,:,diff_index], mag_z[:,:,:,:,diff_index] = mag_3d(filename, group, states_cutoff, fields_diff, spherical_grid, temperatures, num_cpu, num_threads)
 
             stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
 

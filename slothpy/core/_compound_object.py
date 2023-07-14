@@ -14,14 +14,6 @@ from slothpy.angular_momentum.pseudo_spin_ito import (get_decomposition_in_z_tot
                                                       get_zeeman_matrix_in_z_magnetic_momentum_basis, get_zeeman_matrix_in_z_total_angular_momentum_basis, 
                                                       matrix_from_ito_complex, matrix_from_ito_real)
 
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator, MultipleLocator
-import matplotlib.colors
-import matplotlib.cm
-import matplotlib.gridspec
-from matplotlib.animation import PillowWriter
-from cycler import cycler
-
 class Compound:
 
 
@@ -205,7 +197,7 @@ class Compound:
         return g_tensor_list, magnetic_axes_list
 
 
-    def calculate_mth(self, group: str, states_cutoff: np.int64, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, slt: str = None):
+    def calculate_mth(self, group: str, states_cutoff: np.int64, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, num_threads: int, slt: str = None):
 
         fields = np.array(fields)
         temperatures = np.array(temperatures)
@@ -216,7 +208,7 @@ class Compound:
             grid = np.array(grid)
 
         try:
-            mth_array = mth(self._hdf5, group, states_cutoff, fields, grid, temperatures, num_cpu)
+            mth_array = mth(self._hdf5, group, states_cutoff, fields, grid, temperatures, num_cpu, num_threads)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -248,7 +240,7 @@ class Compound:
         return mth_array
      
         
-    def calculate_chitht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = True, grid: np.ndarray = None, slt: str = None) -> np.ndarray:
+    def calculate_chitht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = True, grid: np.ndarray = None, slt: str = None) -> np.ndarray:
 
         fields = np.array(fields)
         temperatures = np.array(temperatures)
@@ -266,7 +258,7 @@ class Compound:
             grid = np.array(grid)
 
         try:
-            chitht_array = chitht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_of_points, delta_h, exp, T, grid)
+            chitht_array = chitht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_threads, num_of_points, delta_h, exp, T, grid)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -298,13 +290,13 @@ class Compound:
         return chitht_array 
         
     
-    def calculate_chit_tensorht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, T: bool = True, slt: str = None):
+    def calculate_chit_tensorht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, num_of_points: int, delta_h: np.float64, T: bool = True, slt: str = None):
 
         fields = np.array(fields)
         temperatures = np.array(temperatures)
 
         try:
-            chit_tensorht_array = chit_tensorht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_of_points, delta_h, T)
+            chit_tensorht_array = chit_tensorht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_threads, num_of_points, delta_h, T)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -433,7 +425,7 @@ class Compound:
         return total_angular_momenta_array
     
 
-    def calculate_zeeman_splitting(self, group: str, states_cutoff: int, num_of_states: int, fields: np.ndarray, grid: np.ndarray, num_cpu: int, average: bool = False, slt: str = None):
+    def calculate_zeeman_splitting(self, group: str, states_cutoff: int, num_of_states: int, fields: np.ndarray, grid: np.ndarray, num_cpu: int, num_threads: int, average: bool = False, slt: str = None):
 
         fields = np.array(fields)
 
@@ -444,7 +436,7 @@ class Compound:
         grid = np.array(grid)
 
         try:
-            zeeman_array = zeeman_splitting(self._hdf5, group, states_cutoff, num_of_states, fields, grid, num_cpu, average)
+            zeeman_array = zeeman_splitting(self._hdf5, group, states_cutoff, num_of_states, fields, grid, num_cpu, num_threads, average)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -915,13 +907,13 @@ class Compound:
         return matrix
     
 
-    def calculate_mag_3d(self, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, slt: str = None):
+    def calculate_mag_3d(self, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, slt: str = None):
 
         temperatures = np.array(temperatures, dtype=np.float64)
         fields = np.array(fields, dtype=np.float64)
 
         try:
-            x, y, z = mag_3d(self._hdf5, group, states_cutoff, fields, spherical_grid, temperatures, num_cpu)
+            x, y, z = mag_3d(self._hdf5, group, states_cutoff, fields, spherical_grid, temperatures, num_cpu, num_threads)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -955,13 +947,13 @@ class Compound:
         return x, y, z
     
 
-    def calculate_chit_3d(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True, slt: str = None):
+    def calculate_chit_3d(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True, slt: str = None):
 
         temperatures = np.array(temperatures, dtype=np.float64)
         fields = np.array(fields, dtype=np.float64)
 
         try:
-            x, y, z = chit_3d(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_of_points, delta_h, spherical_grid, exp, T)
+            x, y, z = chit_3d(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_threads, num_of_points, delta_h, spherical_grid, exp, T)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -1002,13 +994,13 @@ class Compound:
         return x, y, z
     
     
-    def calculate_hemholtz_energy_3d(self, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, slt: str = None):
+    def calculate_hemholtz_energy_3d(self, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, internal_energy: False, slt: str = None):
 
         temperatures = np.array(temperatures, dtype=np.float64)
         fields = np.array(fields, dtype=np.float64)
 
         try:
-            x, y, z = hemholtz_energy_3d(self._hdf5, group, states_cutoff, fields, spherical_grid, temperatures, num_cpu)
+            x, y, z = hemholtz_energy_3d(self._hdf5, group, states_cutoff, fields, spherical_grid, temperatures, num_cpu, num_threads, internal_energy)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -1042,7 +1034,7 @@ class Compound:
         return x, y, z
 
 
-    def calculate_hemholtz_energyth(self, group: str, states_cutoff: np.int64, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, internal_energy: False, slt: str = None):
+    def calculate_hemholtz_energyth(self, group: str, states_cutoff: np.int64, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, num_threads: int, internal_energy: False, slt: str = None):
 
         fields = np.array(fields)
         temperatures = np.array(temperatures)
@@ -1053,7 +1045,7 @@ class Compound:
             grid = np.array(grid)
 
         try:
-            hemholtz_energyth_array = hemholtz_energyth(self._hdf5, group, states_cutoff, fields, grid, temperatures, num_cpu)
+            hemholtz_energyth_array = hemholtz_energyth(self._hdf5, group, states_cutoff, fields, grid, temperatures, num_cpu, num_threads, internal_energy)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
@@ -1083,211 +1075,6 @@ class Compound:
                 raise Exception(f'Error encountered while trying to save E(T,H) to file: {self._hdf5} - group {slt}: {error_type}: {error_message}')
 
         return hemholtz_energyth_array
-    
-
-    @staticmethod
-    def colour_map(name):
-        """
-        :param name: name of recognized by this function colour map or list of colours that can be used to create custom
-        colour map
-        :return: returns normalized matplotlib colour map object without name
-        """
-        cmap_list = []
-        reverse = False
-        loop = False
-        if name[-2:] == '_l':
-            name = name[:-2]
-            loop = True
-        try:
-            if name[-2:] == '_r':
-                reverse = True
-                name = name[:-2]
-            if type(name) == list:
-                cmap_list = name
-            elif name == 'BuPi':
-                cmap_list = ['#0091ad', '#1780a1', '#2e6f95', '#455e89', '#5c4d7d', '#723c70', '#a01a58',
-                             '#b7094c']
-            elif name == 'rainbow':
-                cmap_list = ['#ff0000', '#ff8700', '#ffd300', '#deff0a', '#a1ff0a', '#0aff99', '#0aefff', '#147df5',
-                             '#580aff', '#be0aff']
-            elif name == 'dark_rainbow':
-                cmap_list = ['#F94144', '#F3722C', '#F8961E', '#F9844A', '#F9C74F', '#90BE6D', '#43AA8B', '#4D908E',
-                             '#577590', '#277DA1']
-            elif name == 'light_rainbow':
-                cmap_list = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF']
-            elif name == 'light_rainbow_alt':
-                cmap_list = ['#FBF8CC', '#FDE4CF', '#FFCFD2', '#F1C0E8', '#CFBAF0', '#A3C4F3', '#90DBF4', '#8EECF5',
-                             '#98F5E1', '#B9FBC0']
-            elif name == 'light_rainbow_alt2':
-                cmap_list = ['#FBF8CC', '#FDE4CF', '#FFCFD2', '#F1C0E8', '#CFBAF0', '#A3C4F3', '#90DBF4', '#8EECF5',
-                             '#98F5E1', '#B9FBC0', '#98F5E1', '#8EECF5', '#90DBF4', '#A3C4F3', '#CFBAF0', '#F1C0E8',
-                             '#FFCFD2', '#FDE4CF', '#FBF8CC']
-            elif name == 'BuOr':
-                cmap_list = ['#03045e', '#023e8a', '#0077b6', '#0096c7',
-                             '#00b4d8', '#ff9e00',
-                             '#ff9100', '#ff8500', '#ff6d00',
-                             '#ff5400']
-            elif name == 'BuRd':
-                cmap_list = ['#033270', '#1368aa', '#4091c9', '#9dcee2',
-                             '#fedfd4', '#f29479', '#ef3c2d', '#cb1b16',
-                             '#65010c']
-            elif name == 'BuYl':
-                cmap_list = ['#184e77', '#1e6091', '#1a759f', '#168aad',
-                             '#34a0a4',
-                             '#52b69a', '#76c893', '#99d98c', '#b5e48c',
-                             '#d9ed92']
-            elif name == 'GnYl':
-                cmap_list = ['#007f5f', '#2b9348', '#55a630', '#80b918',
-                             '#aacc00', '#bfd200', '#d4d700', '#dddf00',
-                             '#eeef20', '#ffff3f']
-            elif name == 'PrOr':
-                cmap_list = ['#240046', '#3c096c', '#5a189a', '#7b2cbf',
-                             '#9d4edd', '#ff9e00', '#ff9100', '#ff8500',
-                             '#ff7900', '#ff6d00']
-            elif name == 'GnRd':
-                cmap_list = ['#005C00', '#2D661B', '#2A850E', '#27A300',
-                             '#A9FFA5', '#FFA5A5', '#FF0000', '#BA0C0C',
-                             '#751717', '#5C0000']
-            elif name == 'funmat':
-                cmap_list = ['#1f6284', '#277ba5', '#2f94c6', '#49a6d4',
-                             '#6ab6dc', '#ffe570', '#ffe15c', '#ffda33',
-                             '#ffd20a', '#e0b700']
-            elif name == 'NdCoN322bpdo':
-                cmap_list = ['#00268f', '#0046ff', '#009cf4', '#E5E4E2', '#ede76d',
-                             '#ffb900', '#b88700']
-            elif name == 'NdCoNO222bpdo':
-                cmap_list = ['#A90F97', '#E114C9', '#f9bbf2', '#77f285',
-                             '#11BB25', '#0C831A']
-            elif name == 'NdCoI22bpdo':
-                cmap_list = ['#075F5F', '#0B9898', '#0fd1d1', '#FAB3B3',
-                             '#d10f0f', '#720808']
-            if cmap_list:
-                if reverse:
-                    cmap_list.reverse()
-                if loop:
-                    new_cmap_list = cmap_list.copy()
-                    for i in range(len(cmap_list)):
-                        new_cmap_list.append(cmap_list[-(i + 1)])
-                    cmap_list = new_cmap_list
-                cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", cmap_list)
-            elif name == 'viridis':
-                cmap = matplotlib.cm.viridis
-                if reverse:
-                    cmap = matplotlib.cm.viridis_r
-            elif name == 'plasma':
-                cmap = matplotlib.cm.plasma
-                if reverse:
-                    cmap = matplotlib.cm.plasma_r
-            elif name == 'inferno':
-                cmap = matplotlib.cm.inferno
-                if reverse:
-                    cmap = matplotlib.cm.inferno_r
-            elif name == 'magma':
-                cmap = matplotlib.cm.magma
-                if reverse:
-                    cmap = matplotlib.cm.magma_r
-            elif name == 'cividis':
-                cmap = matplotlib.cm.cividis
-                if reverse:
-                    cmap = matplotlib.cm.cividis_r
-            else:
-                print(f'There is no such colour map as {name}')
-            return cmap
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                f'Error encountered while trying to find palette/colour map: {error_type}: {error_message}')
-
-    @staticmethod
-    def custom_colour_cycler(number_of_colours: int, cmap1: str, cmap2: str):
-        """
-        :param number_of_colours: number of colors that are needed to complete cycle
-        :param cmap1: name of colour map used to fill even indexed spaces of colour list
-        :param cmap2: name of colour map used to fill odd indexed spaces of colour list
-        :return: cycler of colours inheriting from two color maps
-        """
-        if number_of_colours % 2 == 0:
-            increment = 0
-            lst1 = Compound.colour_map(cmap1)(np.linspace(0, 1, int(number_of_colours / 2)))
-            lst2 = Compound.colour_map(cmap2)(np.linspace(0, 1, int(number_of_colours / 2)))
-            colour_cycler_list = []
-            while increment < number_of_colours:
-                if increment % 2 == 0:
-                    colour_cycler_list.append(lst1[int(increment / 2)])
-                else:
-                    colour_cycler_list.append(lst2[int((increment - 1) / 2)])
-                increment += 1
-        else:
-            increment = 0
-            lst1 = Compound.colour_map(cmap1)(np.linspace(0, 1, int((number_of_colours / 2) + 1)))
-            lst2 = Compound.colour_map(cmap2)(np.linspace(0, 1, int(number_of_colours / 2)))
-            colour_cycler_list = []
-            while increment < number_of_colours:
-                if increment % 2 == 0:
-                    colour_cycler_list.append(lst1[int(increment / 2)])
-                else:
-                    colour_cycler_list.append(lst2[int((increment - 1) / 2)])
-                increment += 1
-        return cycler(color=colour_cycler_list)
-    
-
-    def animate_mag_3d(self, group: str, states_cutoff: int, field: np.ndarray, spherical_grid: int,
-                       temperature_start: np.float64, temperature_stop: np.float64, frames: int, num_cpu: int,
-                       colour_map_name='dark_rainbow', lim_scalar=1, ticks=1, axis_off=False, r_density=0, c_density=0,
-                       filename='mag_3d', fps=15):
-
-        temps = np.linspace(temperature_start, temperature_stop, frames)
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-
-        writer = PillowWriter(fps=fps)
-        xo, yo, zo = self.calculate_hemholtz_energy_3d(group, states_cutoff, field, spherical_grid,
-                                           temps, num_cpu)
-        with writer.saving(fig, f'{filename}.gif', 200):
-            for temp in range(temps.shape[0]):
-                x, y, z = xo[0][temp], yo[0][temp], zo[0][temp]
-                max_array = np.array([np.max(x), np.max(y), np.max(z)])
-                lim = np.max(max_array)
-                norm = plt.Normalize(z.min(), z.max())
-                colors = Compound.colour_map(colour_map_name)(norm(z))
-                rcount, ccount, _ = colors.shape
-                if not r_density:
-                    r_density = rcount
-                if not c_density:
-                    c_density = ccount
-                surface = ax.plot_surface(x, y, z, rcount=r_density, ccount=c_density, facecolors=colors, shade=False, )
-                surface.set_facecolor((0, 0, 0, 0))
-                ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
-                ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
-                ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
-                if ticks == 0:
-                    for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                        axis.set_ticklabels([])
-                        axis._axinfo['axisline']['linewidth'] = 1
-                        axis._axinfo['axisline']['color'] = (0, 0, 0)
-                        axis._axinfo['grid']['linewidth'] = 0.5
-                        axis._axinfo['grid']['linestyle'] = "-"
-                        axis._axinfo['grid']['color'] = (0, 0, 0)
-                        axis._axinfo['tick']['inward_factor'] = 0.0
-                        axis._axinfo['tick']['outward_factor'] = 0.0
-                        axis.set_pane_color((0.95, 0.95, 0.95))
-                else:
-                    ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-                    ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-                    ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                    ax.xaxis.set_major_locator(MultipleLocator(ticks))
-                    ax.yaxis.set_major_locator(MultipleLocator(ticks))
-                    ax.zaxis.set_major_locator(MultipleLocator(ticks))
-                ax.grid(False)
-                ax.set_xlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-                ax.set_ylabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-                ax.set_zlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-                ax.set_box_aspect([1, 1, 1])
-                if axis_off:
-                    plt.axis('off')
-                writer.grab_frame()
-                plt.cla()
 
         
                   

@@ -1,26 +1,38 @@
+import time
 import os
-os.environ['OMP_NUM_THREADS'] = '2'
+#os.environ['OMP_NUM_THREADS'] = '2'
 import slothpy as slt
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-#a = slt.compound_from_orca(".", "Nd_dupa", "SVP", ".", "NdCoNO2_TZVP_cas.out")
+#a = slt.compound_from_orca(".", "DyCo", "bas0", ".", "DyCo_supercell_1800_0_0_cas.out")
 #a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
 #a = slt.compound_from_molcas(".", "aniso_test_molcas", "bas0", ".", "DyCo_test_hdf5_bas0")
-a = slt.compound_from_slt(".", "aniso")
+a = slt.compound_from_slt(".", "DyCo")
 
 fields = np.linspace(0,7,50)
 temperatures = np.linspace(2,5,2)
 
-mth = a.calculate_mth("SVP", 14, fields, 5, temperatures, 4)
+start_time = time.perf_counter()
+
+mth = a.calculate_mth("bas0", 512, fields, 5, temperatures, 24, 2)
+
+end_time = time.perf_counter()
+
+
+
+elapsed_time = (end_time - start_time) * 1000
+
+# Print the elapsed time
+print(f"Elapsed time: {elapsed_time} ms")
 
 for mh in mth:
     plt.plot(fields, mh)
-    for i in mh:
-        print(i)
 plt.show()
+
+#a.plot_mth("test")
 
 # a.animate_mag_3d('SVP',6,1,100,1,600,24, colour_map_name='NdCoNO222bpdo_l', lim_scalar=0.75, ticks=0)
 
@@ -51,7 +63,7 @@ plt.show()
 # ax.set_box_aspect([1, 1, 1])
 # plt.show()
 
-# x, y, z = a.calculate_mag_3d("SVP", 14, [1,2], 50, [1.,2], 4, slt="save_that_bitchh")
+# x, y, z = a.calculate_mag_3d("SVP", 14, [1,2], 50, [1.,2], 4)
 
 # fig = plt.figure()
 # ax = fig.add_subplot(projection='3d')

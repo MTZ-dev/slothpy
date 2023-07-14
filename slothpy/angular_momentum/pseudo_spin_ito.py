@@ -3,7 +3,7 @@ import math
 from slothpy.general_utilities.io import (get_soc_magnetic_momenta_and_energies_from_hdf5, get_soc_total_angular_momenta_and_energies_from_hdf5)
 from slothpy.general_utilities.math_expresions import (hermitian_x_in_basis_of_hermitian_y, decomposition_of_hermitian_matrix, Wigner_3j)
 from slothpy.magnetism.zeeman import calculate_zeeman_matrix
-from sympy.physics.quantum.cg import (CG, Wigner3j)
+#from sympy.physics.quantum.cg import (CG, Wigner3j)
 
 
 def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, stop_state, rotation = None):

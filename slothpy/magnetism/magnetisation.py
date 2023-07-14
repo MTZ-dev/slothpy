@@ -1,6 +1,7 @@
+import threadpoolctl
+import multiprocessing
 import numpy as np
 from numba import jit
-import multiprocessing
 from slothpy.general_utilities.system import get_num_of_processes
 from slothpy.general_utilities.io import get_soc_magnetic_momenta_and_energies_from_hdf5
 from slothpy.magnetism.zeeman import calculate_zeeman_matrix
@@ -108,7 +109,7 @@ def arg_iter_mth(magnetic_momenta, soc_energies, fields, grid, temperatures):
       yield (magnetic_momenta, soc_energies, fields[i], grid, temperatures)
 
 
-def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int) -> np.ndarray:
+def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, num_threads: int) -> np.ndarray:
     """
     Calculates the M(T,H) array using magnetic moments and SOC energies for given fields, grid (for powder direction averaging), and temperatures.
     The function is parallelized across num_cpu CPUs for simultaneous calculations over different magnetic field values.
@@ -129,9 +130,9 @@ def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid:
         np.ndarray[np.float64]: M(T,H) array.
 
     """
-    
+
     # Get number of parallel proceses to be used
-    num_process = get_num_of_processes(num_cpu)
+    num_process = get_num_of_processes(num_cpu, num_threads)
 
     # Initialize the result array
     mth_array = np.zeros((temperatures.shape[0], fields.shape[0]), dtype=np.float64)
@@ -144,9 +145,10 @@ def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid:
     # Read data from HDF5 file
     magnetic_momenta, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
-    # Parallel M(T) calculation over different field values
-    with multiprocessing.Pool(num_process) as p:
-        mt = p.map(calculate_mt_wrapper, arg_iter_mth(magnetic_momenta, soc_energies, fields, grid, temperatures))
+    with threadpoolctl.threadpool_limits(limits=num_threads, user_api='blas'):
+        with threadpoolctl.threadpool_limits(limits=num_threads, user_api='openmp'):
+            with multiprocessing.Pool(num_process) as p:
+                mt = p.map(calculate_mt_wrapper, arg_iter_mth(magnetic_momenta, soc_energies, fields, grid, temperatures))
 
     # Collecting results in plotting-friendly convention for M(H)
     for i in range(fields.shape[0]):
@@ -164,10 +166,10 @@ def arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatur
             yield (magnetic_moment, soc_energies, field, np.array([[np.sin(phi[i, j]) * np.cos(theta[i, j]), np.sin(phi[i, j]) * np.sin(theta[i, j]), np.cos(phi[i, j]), 1.]]), temperatures)
 
 
-def mag_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int) -> np.ndarray:
+def mag_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, num_threads: int) -> np.ndarray:
 
     # Get number of parallel proceses to be used
-    num_process = get_num_of_processes(num_cpu)
+    num_process = get_num_of_processes(num_cpu, num_threads)
 
     # Create a gird
     theta = np.linspace(0, 2*np.pi, 2 * spherical_grid)
@@ -182,9 +184,11 @@ def mag_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, sp
 
     for field_index, field in enumerate(fields):
 
-        # Parallel M(T,H) calculation over different grid points
-        with multiprocessing.Pool(num_process) as p:
-            mth = p.map(calculate_mt_wrapper, arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures))
+        with threadpoolctl.threadpool_limits(limits=num_threads, user_api='blas'):
+            with threadpoolctl.threadpool_limits(limits=num_threads, user_api='openmp'):
+                # Parallel M(T,H) calculation over different grid points
+                with multiprocessing.Pool(num_process) as p:
+                    mth = p.map(calculate_mt_wrapper, arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures))
 
         pool_index = 0
 

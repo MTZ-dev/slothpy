@@ -64,3 +64,7 @@ def decomposition_of_hermitian_matrix(matrix):
     _, eigenvectors = np.linalg.eigh(matrix)
 
     return (eigenvectors * eigenvectors.conj()).real.T * 100
+
+
+def normalize_grid_vectors(grid):
+    pass

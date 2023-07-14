@@ -1,5 +1,6 @@
-import numpy as np
+import threadpoolctl
 import multiprocessing
+import numpy as np
 from numba import jit
 from slothpy.general_utilities.system import get_num_of_processes
 from slothpy.general_utilities.io import get_soc_magnetic_momenta_and_energies_from_hdf5
@@ -63,10 +64,10 @@ def arg_iter_zeeman(magnetic_moment, soc_energies, fields, grid, num_of_states):
       yield (magnetic_moment, soc_energies, fields[i], grid, num_of_states)
 
 
-def zeeman_splitting(filename: str, group: str, states_cutoff: int, num_of_states: int, fields: np.ndarray, grid: np.ndarray, num_cpu: int, average: bool = False) -> np.ndarray:
+def zeeman_splitting(filename: str, group: str, states_cutoff: int, num_of_states: int, fields: np.ndarray, grid: np.ndarray, num_cpu: int, num_threads: int, average: bool = False) -> np.ndarray:
     
     # Get number of parallel proceses to be used
-    num_process = get_num_of_processes(num_cpu)
+    num_process = get_num_of_processes(num_cpu, num_threads)
 
     # Initialize the result array
     zeeman_array = np.zeros((grid.shape[0], fields.shape[0], num_of_states), dtype=np.float64)
@@ -78,9 +79,11 @@ def zeeman_splitting(filename: str, group: str, states_cutoff: int, num_of_state
     # Read data from HDF5 file
     magnetic_moment, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
-    # Parallel M(T) calculation over different field values
-    with multiprocessing.Pool(num_process) as p:
-        zeeman = p.map(caculate_zeeman_splitting_wrapper, arg_iter_zeeman(magnetic_moment, soc_energies, fields, grid, num_of_states))
+    with threadpoolctl.threadpool_limits(limits=num_threads, user_api='blas'):
+        with threadpoolctl.threadpool_limits(limits=num_threads, user_api='openmp'):
+            # Parallel M(T) calculation over different field values
+            with multiprocessing.Pool(num_process) as p:
+                zeeman = p.map(caculate_zeeman_splitting_wrapper, arg_iter_zeeman(magnetic_moment, soc_energies, fields, grid, num_of_states))
 
     # Collecting results
     for i in range(fields.shape[0]):
@@ -177,10 +180,10 @@ def arg_iter_hemholtz_energyth(magnetic_momenta, soc_energies, fields, grid, tem
       yield (magnetic_momenta, soc_energies, fields[i], grid, temperatures, internal_energy)
 
 
-def hemholtz_energyth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, internal_energy: False) -> np.ndarray:
+def hemholtz_energyth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, num_threads: int, internal_energy: False) -> np.ndarray:
 
     # Get number of parallel proceses to be used
-    num_process = get_num_of_processes(num_cpu)
+    num_process = get_num_of_processes(num_cpu, num_threads)
 
     # Initialize the result array
     eth_array = np.zeros((temperatures.shape[0], fields.shape[0]), dtype=np.float64)
@@ -193,9 +196,11 @@ def hemholtz_energyth(filename: str, group: str, states_cutoff: int, fields: np.
     # Read data from HDF5 file
     magnetic_momenta, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
-    # Parallel M(T) calculation over different field values
-    with multiprocessing.Pool(num_process) as p:
-        et = p.map(calculate_hemholtz_energyt_wrapper, arg_iter_hemholtz_energyth(magnetic_momenta, soc_energies, fields, grid, temperatures, internal_energy))
+    with threadpoolctl.threadpool_limits(limits=num_threads, user_api='blas'):
+        with threadpoolctl.threadpool_limits(limits=num_threads, user_api='openmp'):
+            # Parallel M(T) calculation over different field values
+            with multiprocessing.Pool(num_process) as p:
+                et = p.map(calculate_hemholtz_energyt_wrapper, arg_iter_hemholtz_energyth(magnetic_momenta, soc_energies, fields, grid, temperatures, internal_energy))
 
     # Collecting results in plotting-friendly convention for M(H)
     for i in range(fields.shape[0]):
@@ -213,10 +218,10 @@ def arg_iter_hemholtz_energy_3d(magnetic_moment, soc_energies, field, theta, phi
             yield (magnetic_moment, soc_energies, field, np.array([[np.sin(phi[i, j]) * np.cos(theta[i, j]), np.sin(phi[i, j]) * np.sin(theta[i, j]), np.cos(phi[i, j]), 1.]]), temperatures, internal_energy)
 
 
-def hemholtz_energy_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, internal_energy: False) -> np.ndarray:
+def hemholtz_energy_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, internal_energy: False) -> np.ndarray:
 
     # Get number of parallel proceses to be used
-    num_process = get_num_of_processes(num_cpu)
+    num_process = get_num_of_processes(num_cpu, num_threads)
 
     # Create a gird
     theta = np.linspace(0, 2*np.pi, 2 * spherical_grid)
@@ -231,9 +236,11 @@ def hemholtz_energy_3d(filename: str, group: str, states_cutoff: int, fields: np
 
     for field_index, field in enumerate(fields):
 
-        # Parallel M(T,H) calculation over different grid points
-        with multiprocessing.Pool(num_process) as p:
-            eth = p.map(calculate_hemholtz_energyt_wrapper, arg_iter_hemholtz_energy_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures, internal_energy))
+        with threadpoolctl.threadpool_limits(limits=num_threads, user_api='blas'):
+            with threadpoolctl.threadpool_limits(limits=num_threads, user_api='openmp'):
+                # Parallel M(T,H) calculation over different grid points
+                with multiprocessing.Pool(num_process) as p:
+                    eth = p.map(calculate_hemholtz_energyt_wrapper, arg_iter_hemholtz_energy_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures, internal_energy))
 
         pool_index = 0
 

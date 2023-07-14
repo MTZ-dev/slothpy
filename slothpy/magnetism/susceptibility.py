@@ -65,7 +65,7 @@ def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, te
             # Initialize result array
             chit = np.zeros_like(temperatures)
 
-            # Get M(t,H) for two adjacent values of field
+            # Get M(T,H) for adjacent values of field
             mth_array = mth(filename, group, states_cutoff, fields_diff, grid, temperatures, num_cpu)
 
             stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
@@ -75,8 +75,7 @@ def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, te
                 for index, temp in enumerate(temperatures):
                     chit[index] = temp * np.dot(mth_array[index], stencil_coeff)
             else:
-                for index in range(temperatures.shape[0]):
-                    chit[index] = np.dot(mth_array[index], stencil_coeff)
+                chit = np.dot(mth_array, stencil_coeff)
             
             chitht_array[index_field, :] = chit * bohr_magneton_to_cm3
 
@@ -177,7 +176,7 @@ def chit_tensorht(filename: str, group: str, fields: np.ndarray, states_cutoff: 
     return chi_tensor_array
 
 
-def chit_3d(filename: str, group: str, field: np.float64, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True):
+def chit_3d(filename: str, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_of_points: int, delta_h: np.float64, spherical_grid: int, exp: bool = False, T: bool = True):
 
     if num_of_points < 0 or (not isinstance(num_of_points, int)):
 
@@ -188,56 +187,56 @@ def chit_3d(filename: str, group: str, field: np.float64, states_cutoff: int, te
     # Experimentalist model
     if (exp == True) or (num_of_points == 0):
 
-        x, y, z = mag_3d(filename, group, states_cutoff, field, spherical_grid, temperatures, num_cpu)
+        x, y, z = mag_3d(filename, group, states_cutoff, fields, spherical_grid, temperatures, num_cpu)
 
-        x = x / field * bohr_magneton_to_cm3
-        y = y / field * bohr_magneton_to_cm3
-        z = z / field * bohr_magneton_to_cm3
+        for field_index, field in enumerate(fields):
 
-        if T:
+            x[field_index] = x[field_index] / field * bohr_magneton_to_cm3
+            y[field_index] = y[field_index] / field * bohr_magneton_to_cm3
+            z[field_index] = z[field_index] / field * bohr_magneton_to_cm3
 
-            for index, temp in enumerate(temperatures):
-                x[index] = x[index] * temp
-                y[index] = y[index] * temp
-                z[index] = z[index] * temp
+            if T:
+
+                for temp_index, temp in enumerate(temperatures):
+                    x[field_index,temp_index] = x[field_index,temp_index] * temp
+                    y[field_index,temp_index] = y[field_index,temp_index] * temp
+                    z[field_index,temp_index] = z[field_index,temp_index] * temp
 
     else:
 
         dim = 2 * num_of_points + 1
-
-        # Set fields for finite difference method
-        fields_diff = np.arange(-num_of_points, num_of_points + 1).astype(np.int64) * delta_h + field
-        fields_diff = fields_diff.astype(np.float64)
-
         # Comments here modyfied!!!!
-        mag_x = np.zeros((dim, temperatures.shape[0], spherical_grid, 2 * spherical_grid))
-        mag_y = np.zeros((dim, temperatures.shape[0], spherical_grid, 2 * spherical_grid))
-        mag_z = np.zeros((dim, temperatures.shape[0], spherical_grid, 2 * spherical_grid))
-        x = np.zeros((temperatures.shape[0], spherical_grid, 2 * spherical_grid))
-        y = np.zeros((temperatures.shape[0], spherical_grid, 2 * spherical_grid))
-        z = np.zeros((temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        mag_x = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim))
+        mag_y = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim))
+        mag_z = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim))
+        x = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        y = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        z = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid))
 
-        for index, f in enumerate(fields_diff):
 
-            # Get M(t,H) for two adjacent values of field
-            mag_x[index,:,:], mag_y[index,:,:], mag_z[index,:,:] = mag_3d(filename, group, states_cutoff, f, spherical_grid, temperatures, num_cpu)
+        for field_index, field in enumerate(fields):
 
-        stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
+            # Set fields for finite difference method
+            fields_diffs = (np.arange(-num_of_points, num_of_points + 1).astype(np.int64) * delta_h)[:, np.newaxis] + fields
+            fields_diffs = fields_diffs.astype(np.float64)
 
-        if T:
-            for index, temp in enumerate(temperatures):
-                for i in range(spherical_grid):
-                    for j in range(2 * spherical_grid):
-                        x[index,i,j] = temp * np.dot(mag_x[:,index,i,j], stencil_coeff)
-                        y[index,i,j] = temp * np.dot(mag_y[:,index,i,j], stencil_coeff)
-                        z[index,i,j] = temp * np.dot(mag_z[:,index,i,j], stencil_coeff)
-        else:
-            for i in range(spherical_grid):
-                for j in range(2* spherical_grid):
-                    x[index,i,j] = np.dot(mag_x[:,index,i,j], stencil_coeff)
-                    y[index,i,j] = np.dot(mag_y[:,index,i,j], stencil_coeff)
-                    z[index,i,j] = np.dot(mag_z[:,index,i,j], stencil_coeff)
-            
+            for diff_index, fields_diff in enumerate(fields_diffs):
+
+                # Get M(t,H) for two adjacent values of field
+                mag_x[:,:,:,:,diff_index], mag_y[:,:,:,:,diff_index], mag_z[:,:,:,:,diff_index] = mag_3d(filename, group, states_cutoff, fields_diff, spherical_grid, temperatures, num_cpu)
+
+            stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
+
+            if T:
+                for temp_index, temp in enumerate(temperatures):
+                    x[:,temp_index,:,:] = temp * np.dot(mag_x[:,temp_index,:,:,:], stencil_coeff)
+                    y[:,temp_index,:,:] = temp * np.dot(mag_y[:,temp_index,:,:,:], stencil_coeff)
+                    z[:,temp_index,:,:] = temp * np.dot(mag_z[:,temp_index,:,:,:], stencil_coeff)
+            else:
+                x[:,:,:,:] = np.dot(mag_x[:,:,:,:,:], stencil_coeff)
+                y[:,:,:,:] = np.dot(mag_y[:,:,:,:,:], stencil_coeff)
+                z[:,:,:,:] = np.dot(mag_z[:,:,:,:,:], stencil_coeff)
+    
     return x, y, z
 
 

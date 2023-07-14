@@ -9,42 +9,79 @@ from mpl_toolkits.mplot3d import Axes3D
 #a = slt.compound_from_orca(".", "Nd_dupa", "SVP", ".", "NdCoNO2_TZVP_cas.out")
 #a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
 #a = slt.compound_from_molcas(".", "aniso_test_molcas", "bas0", ".", "DyCo_test_hdf5_bas0")
-a = slt.compound_from_slt(".", "Nd_dupa")
+a = slt.compound_from_slt(".", "aniso")
+
+fields = np.linspace(0,7,50)
+temperatures = np.linspace(2,5,2)
+
+mth = a.calculate_mth("SVP", 14, fields, 5, temperatures, 4)
+
+for mh in mth:
+    plt.plot(fields, mh)
+    for i in mh:
+        print(i)
+plt.show()
 
 # a.animate_mag_3d('SVP',6,1,100,1,600,24, colour_map_name='NdCoNO222bpdo_l', lim_scalar=0.75, ticks=0)
 
-# fields = np.linspace(0,7,10)
-# temperatures = np.linspace(2,2,1)
 
-x, y, z = a.calculate_chit_3d("SVP", 60, 14, 50, 24, 7, 0.00001, 100, slt="test_zapisu_chittttekoro")
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
+# energy = a.calculate_hemholtz_energyth("molcas_test", 128, fields, 0, temperatures, 24)
+# print(fields)
+# print(energy)
 
-max_array = np.array([np.max(x[0]), np.max(y[0]), np.max(z[0])])
-max = np.max(max_array)
+# for eh in energy:
+#     plt.plot(fields, eh)
+#     for i in eh:
+#         print(i)
+# plt.show()
 
-ax.plot_wireframe(x[0], y[0], z[0])
-ax.set_xlim(-max,max)
-ax.set_ylim(-max,max)
-ax.set_zlim(-max,max)
-ax.set_box_aspect([1, 1, 1])
-plt.show()
-
-# x, y, z = a.calculate_mag_3d("SVP", 14, 1, 50, 1., 4)
+# x, y, z = a.calculate_chit_3d("SVP", [500,2], 14, [300,2], 24, 7, 0.00001, 100)
 
 # fig = plt.figure()
 # ax = fig.add_subplot(projection='3d')
 
-# max_array = np.array([np.max(x), np.max(y), np.max(z)])
+# max_array = np.array([np.max(x[0][0]), np.max(y[0][0]), np.max(z[0][0])])
 # max = np.max(max_array)
 
-# ax.plot_wireframe(x[0], y[0], z[0])
+# ax.plot_wireframe(x[0][0], y[0][0], z[0][0])
 # ax.set_xlim(-max,max)
 # ax.set_ylim(-max,max)
 # ax.set_zlim(-max,max)
 # ax.set_box_aspect([1, 1, 1])
 # plt.show()
+
+# x, y, z = a.calculate_mag_3d("SVP", 14, [1,2], 50, [1.,2], 4, slt="save_that_bitchh")
+
+# fig = plt.figure()
+# ax = fig.add_subplot(projection='3d')
+
+# max_array = np.array([np.max(x[0][0]), np.max(y[0][0]), np.max(z[0][0])])
+# max = np.max(max_array)
+
+# ax.plot_wireframe(x[0][1], y[0][1], z[0][1])
+# ax.set_xlim(-max,max)
+# ax.set_ylim(-max,max)
+# ax.set_zlim(-max,max)
+# ax.set_box_aspect([1, 1, 1])
+# plt.show()
+
+
+# x, y, z = a.calculate_hemholtz_energy_3d("molcas_test", 32, [0.1], 100, [1], 24)
+
+# fig = plt.figure()
+# ax = fig.add_subplot(projection='3d')
+
+# max_array = np.array([np.max(x[0][0]), np.max(y[0][0]), np.max(z[0][0])])
+# max = np.max(max_array)
+
+# ax.plot_wireframe(x[0][0], y[0][0], z[0][0])
+# ax.set_xlim(-max,max)
+# ax.set_ylim(-max,max)
+# ax.set_zlim(-max,max)
+# ax.set_box_aspect([1, 1, 1])
+# plt.show()
+
 
 
 
@@ -133,7 +170,7 @@ plt.show()
 # print(axes)
 # print(g_ten)
 
-# sus = a.calculate_chitht("bas0", np.array([0.1]), 64, np.linspace(1,300,10), 4, 3, 0.0001, exp=True)
+# sus = a.calculate_chitht("SVP", np.array([20]), 64, np.linspace(1,300,10), 24, 5, 0.0001, exp=False, T = False)
 # print(sus)
 
 # print(np.linspace(1,300,10))

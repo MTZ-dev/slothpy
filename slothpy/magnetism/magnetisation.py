@@ -155,16 +155,16 @@ def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid:
     return mth_array # Returning values in Bohr magnetons
 
 
-def arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperature):
+def arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures):
 
     field = np.float64(field)
     
     for i in range(phi.shape[0]):
         for j in range(phi.shape[1]):
-            yield (magnetic_moment, soc_energies, field, np.array([[np.sin(phi[i, j]) * np.cos(theta[i, j]), np.sin(phi[i, j]) * np.sin(theta[i, j]), np.cos(phi[i, j]), 1.]]), temperature)
+            yield (magnetic_moment, soc_energies, field, np.array([[np.sin(phi[i, j]) * np.cos(theta[i, j]), np.sin(phi[i, j]) * np.sin(theta[i, j]), np.cos(phi[i, j]), 1.]]), temperatures)
 
 
-def mag_3d(filename: str, group: str, states_cutoff: int, field: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int) -> np.ndarray:
+def mag_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int) -> np.ndarray:
 
     # Get number of parallel proceses to be used
     num_process = get_num_of_processes(num_cpu)
@@ -175,26 +175,27 @@ def mag_3d(filename: str, group: str, states_cutoff: int, field: np.ndarray, sph
     theta, phi = np.meshgrid(theta, phi)
 
     # Initialize the result array
-    mag_3d_array = np.zeros((temperatures.shape[0], phi.shape[0], phi.shape[1]), dtype=np.float64)
+    mag_3d_array = np.zeros((fields.shape[0], temperatures.shape[0], phi.shape[0], phi.shape[1]), dtype=np.float64)
 
     # Read data from HDF5 file
     magnetic_moment, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
-    # Parallel M(T,H) calculation over different grid points
-    with multiprocessing.Pool(num_process) as p:
-        mth = p.map(calculate_mt_wrapper, arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures))
+    for field_index, field in enumerate(fields):
+
+        # Parallel M(T,H) calculation over different grid points
+        with multiprocessing.Pool(num_process) as p:
+            mth = p.map(calculate_mt_wrapper, arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures))
+
+        pool_index = 0
+
+        for i in range(phi.shape[0]):
+            for j in range(phi.shape[1]):
+                mag_3d_array[field_index,:,i,j] = mth[pool_index][:]
+                pool_index += 1
 
 
-    index = 0
-
-    for i in range(phi.shape[0]):
-        for j in range(phi.shape[1]):
-            mag_3d_array[:,i,j] = mth[index][:]
-            index += 1
-
-
-    x = (np.sin(phi) * np.cos(theta))[np.newaxis,:,:] * mag_3d_array
-    y = (np.sin(phi) * np.sin(theta))[np.newaxis,:,:] * mag_3d_array
-    z = (np.cos(phi))[np.newaxis,:,:] * mag_3d_array
+    x = (np.sin(phi) * np.cos(theta))[np.newaxis,np.newaxis,:,:] * mag_3d_array
+    y = (np.sin(phi) * np.sin(theta))[np.newaxis,np.newaxis,:,:] * mag_3d_array
+    z = (np.cos(phi))[np.newaxis,np.newaxis,:,:] * mag_3d_array
 
     return x, y, z

@@ -4,7 +4,7 @@ from slothpy.general_utilities.io import get_soc_energies_and_soc_angular_moment
 def calculate_g_tensor_and_axes_doublet(filename: str, group: str, doublets: np.ndarray):
 
     ge = 2.00231930436256
-    doublets = doublets.astype(np.int64)
+    doublets = np.array(doublets, dtype=np.int64)
     g_tensor_list = np.zeros((doublets.size,4), dtype=np.float64)
     magnetic_axes_list = np.zeros((doublets.size,3,3), dtype=np.float64)
     index = 0
@@ -14,7 +14,7 @@ def calculate_g_tensor_and_axes_doublet(filename: str, group: str, doublets: np.
     for doublet in doublets:
 
         magnetic_moment = np.zeros((3,2,2), dtype=np.complex128)
-        states = 2*doublet
+        states = doublets #changed convention from number of states to number of doublet: states = 2*doublets
 
         # Slice arrays based on states_cutoff
         sx_tmp = sx[states:states+2, states:states+2]

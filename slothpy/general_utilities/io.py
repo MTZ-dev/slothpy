@@ -388,13 +388,13 @@ def get_soc_total_angular_momenta_and_energies_from_hdf5(filename: str, group: s
             error_type_1 = type(e).__name__
             error_message_1 = str(e)
             error_print_1 = f"{error_type_1}: {error_message_1}"
-
-        try:
-            dataset = file[group]['SOC_energies']
-        except Exception as e:
-            error_type_2 = type(e).__name__
-            error_message_2 = str(e)
-            error_print_2 = f"{error_type_2}: {error_message_2}"
+            try:
+                dataset = file[group]['SOC_energies']
+            except Exception as e:
+                error_type_2 = type(e).__name__
+                error_message_2 = str(e)
+                error_print_2 = f"{error_type_2}: {error_message_2}"
+                raise Exception(f'Failed to acces SOC data sets due to the following errors: {error_print_1}, {error_print_2}')
         
         shape = dataset.shape[0]
 

@@ -67,4 +67,10 @@ def decomposition_of_hermitian_matrix(matrix):
 
 
 def normalize_grid_vectors(grid):
-    pass
+    
+    grid = np.array(grid, dtype=np.float64)
+
+    for vector_index in range(grid.shape[0]):
+        grid[vector_index][:3] = grid[vector_index][:3]/np.sqrt(grid[vector_index][0]**2 + grid[vector_index][1]**2 + grid[vector_index][2]**2)
+    
+    return grid

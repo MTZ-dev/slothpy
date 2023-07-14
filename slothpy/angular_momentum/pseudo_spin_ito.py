@@ -6,6 +6,39 @@ from slothpy.magnetism.zeeman import calculate_zeeman_matrix
 #from sympy.physics.quantum.cg import (CG, Wigner3j)
 
 
+def set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(momenta_matrix, matrix):
+    """Convention:
+     Jx[i,i+1] = real, negative
+     Jy[i,i+1] = imag, positive
+     J+/- = real (Condon_Shortley)
+     Jz = real, diag"""
+    
+    # Transform momenta to "z" basis
+    _, eigenvectors = np.linalg.eigh(momenta_matrix[2,:,:])
+    for i in range(3):
+        momenta_matrix[i,:,:] = eigenvectors.conj().T @ momenta_matrix[i,:,:] @ eigenvectors
+
+    # Initialize phases of vectors with the first one = 1
+    c = np.zeros(momenta_matrix.shape[1], dtype=np.complex128)
+    c[0] = 1.
+
+    # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
+    for i in range(momenta_matrix[1,:,:].shape[0]-1):
+        if np.real(momenta_matrix[1,i,i+1]).any() > 1e-12 or np.abs(np.imag(momenta_matrix[1,i,i+1])).any() > 1e-12:
+            c[i+1] = 1j*momenta_matrix[1,i,i+1].conj()/np.abs(momenta_matrix[1,i,i+1])/c[i].conj()
+        else:
+            c[i+1] = 1.
+
+    phase_matrix = matrix
+
+    # Transform matrices applying new phase factors
+    for i in range(phase_matrix.shape[1]):
+        for j in range(phase_matrix.shape[1]):
+            phase_matrix[i,j] = matrix[i,j] * c[i].conj() * c[j]
+    
+    return phase_matrix
+
+
 def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, stop_state, rotation = None):
 
     magnetic_momenta, soc_energies  = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, stop_state+1, rotation)
@@ -13,6 +46,7 @@ def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, st
     soc_energies = soc_energies[start_state:]
     soc_matrix = np.diag(soc_energies)
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, magnetic_momenta[2,:,:])
+    soc_matrix = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(magnetic_momenta, soc_matrix)
 
     return soc_matrix 
 
@@ -24,6 +58,7 @@ def get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, start_stat
     soc_energies = soc_energies[start_state:]
     soc_matrix = np.diag(soc_energies)
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, total_angular_momenta[2,:,:])
+    soc_matrix = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(total_angular_momenta, soc_matrix)
     
     return soc_matrix 
 
@@ -35,6 +70,7 @@ def get_zeeman_matrix_in_z_magnetic_momentum_basis(filename, group, field, orien
     soc_energies = soc_energies[start_state:]
     zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
     zeeman_matrix = hermitian_x_in_basis_of_hermitian_y(zeeman_matrix, magnetic_momenta[2,:,:])
+    zeeman_matrix = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(magnetic_momenta, zeeman_matrix)
 
     return zeeman_matrix
 
@@ -47,6 +83,7 @@ def get_zeeman_matrix_in_z_total_angular_momentum_basis(filename, group, field, 
     soc_energies = soc_energies[start_state:]
     zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
     zeeman_matrix = hermitian_x_in_basis_of_hermitian_y(zeeman_matrix, total_angular_momenta[2,:,:])
+    zeeman_matrix = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(total_angular_momenta, zeeman_matrix)
     
     return zeeman_matrix 
 

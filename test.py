@@ -6,31 +6,33 @@ import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from slothpy.general_utilities.math_expresions import normalize_grid_vectors
+
 
 #a = slt.compound_from_orca(".", "DyCo", "bas0", ".", "DyCo_supercell_1800_0_0_cas.out")
 #a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
 #a = slt.compound_from_molcas(".", "aniso_test_molcas", "bas0", ".", "DyCo_test_hdf5_bas0")
-a = slt.compound_from_slt(".", "DyCo")
+a = slt.compound_from_slt(".", "aniso")
 
-fields = np.linspace(0,7,50)
-temperatures = np.linspace(2,5,2)
+# fields = np.linspace(0,7,2)
+# temperatures = np.linspace(2,5,2)
 
-start_time = time.perf_counter()
+# start_time = time.perf_counter()
 
-mth = a.calculate_mth("bas0", 512, fields, 5, temperatures, 24, 2)
+# mth = a.calculate_mth("bas0", 16, fields, 5, temperatures, 4, 2)
 
-end_time = time.perf_counter()
+# end_time = time.perf_counter()
 
 
 
-elapsed_time = (end_time - start_time) * 1000
+# elapsed_time = (end_time - start_time) * 1000
 
-# Print the elapsed time
-print(f"Elapsed time: {elapsed_time} ms")
+# # Print the elapsed time
+# print(f"Elapsed time: {elapsed_time} ms")
 
-for mh in mth:
-    plt.plot(fields, mh)
-plt.show()
+# for mh in mth:
+#     plt.plot(fields, mh)
+# plt.show()
 
 #a.plot_mth("test")
 
@@ -111,8 +113,8 @@ plt.show()
 # print(eigenvalues)
 
 
-# decomposition = a.decomposition_in_z_magnetic_momentum_basis("SVP", 0, 5, rotation1)
-# print(decomposition)
+decomposition = a.decomposition_in_z_total_angular_momentum_basis("SVP", 0, 5)
+print(decomposition)
 
 # magn_momenta = a.states_total_angular_momenta("SVP", np.arange(6), rotation1)
 # print(magn_momenta)
@@ -123,8 +125,8 @@ plt.show()
 # print(fields)
 # print(magnetisation)
 
-# magn_matrix = a.magnetic_momenta_matrix("SVP", 14)
-# print(magn_matrix)
+# magn_matrix = a.total_angular_momenta_matrix("bas0", 16)
+# # print(magn_matrix)
 
 # eigenvalues, eigenvectors = np.linalg.eigh(magn_matrix[2,:,:])
 
@@ -148,7 +150,7 @@ plt.show()
 # c[0] = 1.
 
 # for i in range(magn_matrix[1,:,:].shape[0]-1):
-#     if np.abs(np.real(magn_matrix[1,i,i+1])).any() > 1e-12:
+#     if np.real(magn_matrix[1,i,i+1]).any() > 1e-12:
 #         c[i+1] = 1j*magn_matrix[1,i,i+1].conj()/np.abs(magn_matrix[1,i,i+1])/c[i].conj()
 #     else:
 #         c[i+1] = 1.
@@ -158,14 +160,14 @@ plt.show()
 # for index in range(3):
 #     for i in range(phase_magn_matrix.shape[1]):
 #         for j in range(phase_magn_matrix.shape[1]):
-#             phase_magn_matrix[index,i,j] = phase_magn_matrix[index,i,j] * c[i].conj() * c[j]
+#             phase_magn_matrix[index,i,j] = magn_matrix[index,i,j] * c[i].conj() * c[j]
     
-    # print(phase_magn_matrix[index])
+#     # print(phase_magn_matrix[index])
 
 
 # eigenvalues, eigenvectors = np.linalg.eigh(phase_magn_matrix[2,:,:])
 
-# print(eigenvalues)
+# # print(eigenvalues)
 
 # J_plus = phase_magn_matrix[0,:,:] + 1j * phase_magn_matrix[1,:,:]
 # J_minus = phase_magn_matrix[0,:,:] - 1j * phase_magn_matrix[1,:,:]

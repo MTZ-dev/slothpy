@@ -13,6 +13,8 @@ from slothpy.angular_momentum.pseudo_spin_ito import (get_decomposition_in_z_tot
                                                       ito_complex_decomp_matrix, get_soc_matrix_in_z_magnetic_momentum_basis, get_soc_matrix_in_z_total_angular_momentum_basis, 
                                                       get_zeeman_matrix_in_z_magnetic_momentum_basis, get_zeeman_matrix_in_z_total_angular_momentum_basis, 
                                                       matrix_from_ito_complex, matrix_from_ito_real)
+from slothpy.general_utilities.math_expresions import normalize_grid_vectors
+
 
 class Compound:
 
@@ -205,7 +207,7 @@ class Compound:
         if isinstance(grid, int):
             grid = lebedev_laikov_grid(grid)
         else:
-            grid = np.array(grid)
+            grid = normalize_grid_vectors(grid)
 
         try:
             mth_array = mth(self._hdf5, group, states_cutoff, fields, grid, temperatures, num_cpu, num_threads)
@@ -255,7 +257,7 @@ class Compound:
         if isinstance(grid, int):
             grid = lebedev_laikov_grid(grid)
         else:
-            grid = np.array(grid)
+            grid = normalize_grid_vectors(grid)
 
         try:
             chitht_array = chitht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_threads, num_of_points, delta_h, exp, T, grid)
@@ -432,8 +434,8 @@ class Compound:
         if isinstance(grid, int):
             grid = lebedev_laikov_grid(grid)
             average = True
-
-        grid = np.array(grid)
+        else:
+            grid = normalize_grid_vectors(grid)
 
         try:
             zeeman_array = zeeman_splitting(self._hdf5, group, states_cutoff, num_of_states, fields, grid, num_cpu, num_threads, average)
@@ -583,7 +585,7 @@ class Compound:
         return decomposition
 
 
-    def decomposition_in_z_angular_momentum_basis(self, group, start_state, stop_state, rotation = None, slt: str = None):
+    def decomposition_in_z_total_angular_momentum_basis(self, group, start_state, stop_state, rotation = None, slt: str = None):
 
         if (not isinstance(stop_state, int)) or (stop_state < 0):
             raise ValueError(f'Invalid states number, set it to positive integer or 0 for all states.')

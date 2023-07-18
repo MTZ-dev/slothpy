@@ -60,7 +60,7 @@ def get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, start_stat
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, total_angular_momenta[2,:,:])
     soc_matrix = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(total_angular_momenta, soc_matrix)
     
-    return soc_matrix * 219474.6
+    return soc_matrix
 
 
 def get_zeeman_matrix_in_z_magnetic_momentum_basis(filename, group, field, orientation, start_state, stop_state, rotation = None):

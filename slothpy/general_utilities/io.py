@@ -217,45 +217,72 @@ def orca_spin_orbit_to_slt(path_orca: str, inp_orca: str, path_out: str, hdf5_ou
     # Close the HDF5 file
     output.close()
 
+
 def molcas_spin_orbit_to_slt(path_molcas: str, inp_molcas: str, path_out: str, hdf5_output: str, name: str) -> None:
    
    rassi_path_name = os.path.join(path_molcas, inp_molcas)
 
    with h5py.File(f'{rassi_path_name}.rassi.h5', 'a') as rassi:
        
-       soc_energies = rassi['SOS_ENERGIES'][:]
+    soc_energies = rassi['SOS_ENERGIES'][:]
+    sx = rassi['SOS_SPIN_REAL'][0,:,:] + 1j * rassi['SOS_SPIN_IMAG'][0,:,:]
+    sy = rassi['SOS_SPIN_REAL'][1,:,:] + 1j * rassi['SOS_SPIN_IMAG'][1,:,:]
+    sz = rassi['SOS_SPIN_REAL'][2,:,:] + 1j * rassi['SOS_SPIN_IMAG'][2,:,:]
+    lx = 1j * rassi['SOS_ANGMOM_REAL'][0,:,:] - rassi['SOS_ANGMOM_IMAG'][0,:,:]
+    ly = 1j * rassi['SOS_ANGMOM_REAL'][1,:,:] - rassi['SOS_ANGMOM_IMAG'][1,:,:]
+    lz = 1j * rassi['SOS_ANGMOM_REAL'][2,:,:] - rassi['SOS_ANGMOM_IMAG'][2,:,:]
    
    hdf5_file = os.path.join(path_out, hdf5_output)
 
    with h5py.File(f'{hdf5_file}.slt', 'a') as output:
        
-        molcas = output.create_group(str(name))
-        molcas.attrs['Description'] = f'Group({name}) containing results of relativistic SOC MOLCAS calculations - angular momenta, spin in SOC basis and SOC energies'
+    molcas = output.create_group(str(name))
+    molcas.attrs['Description'] = f'Group({name}) containing results of relativistic SOC MOLCAS calculations - angular momenta, spin in SOC basis and SOC energies'
 
-        rassi_soc = molcas.create_dataset('SOC_energies', shape=(soc_energies.shape[0],), dtype=np.float64)
-        rassi_soc[:] = soc_energies[:]
-        rassi_soc.attrs['Description'] = f'Dataset containing SOC energies from MOLCAS RASSI calculation'
+    rassi_soc = molcas.create_dataset('SOC_energies', shape=(soc_energies.shape[0],), dtype=np.float64)
+    rassi_soc[:] = soc_energies[:]
+    rassi_soc.attrs['Description'] = f'Dataset containing SOC energies from MOLCAS RASSI calculation'
+    rassi_sx = molcas.create_dataset('SOC_SX', shape=sx.shape, dtype=np.complex128)
+    rassi_sx[:] = sx[:]
+    rassi_sx.attrs['Description'] = f'Dataset containing Sx matrix in SOC basis'
+    rassi_sy = molcas.create_dataset('SOC_SY', shape=sy.shape, dtype=np.complex128)
+    rassi_sy[:] = sy[:]
+    rassi_sy.attrs['Description'] = f'Dataset containing Sy matrix in SOC basis'
+    rassi_sz = molcas.create_dataset('SOC_SZ', shape=sz.shape, dtype=np.complex128)
+    rassi_sz[:] = sz[:]
+    rassi_sz.attrs['Description'] = f'Dataset containing Sz matrix in SOC basis'
+    rassi_lx = molcas.create_dataset('SOC_LX', shape=lx.shape, dtype=np.complex128)
+    rassi_lx[:] = lx[:]
+    rassi_lx.attrs['Description'] = f'Dataset containing Lx matrix in SOC basis'
+    rassi_ly = molcas.create_dataset('SOC_LY', shape=ly.shape, dtype=np.complex128)
+    rassi_ly[:] = ly[:]
+    rassi_ly.attrs['Description'] = f'Dataset containing Ly matrix in SOC basis'
+    rassi_lz = molcas.create_dataset('SOC_LZ', shape=lz.shape, dtype=np.complex128)
+    rassi_lz[:] = lz[:]
+    rassi_lz.attrs['Description'] = f'Dataset containing Lz matrix in SOC basis'
+    
+        # Old alternative with PRPR keyword from files spin and angmom
 
-        matrices = ['SOC_SX', 'SOC_SY', 'SOC_SZ', 'SOC_LX', 'SOC_LY', 'SOC_LZ']
-        files_names = ['spin-1.txt', 'spin-2.txt', 'spin-3.txt', 'angmom-1.txt', 'angmom-2.txt', 'angmom-3.txt']
+        # matrices = ['SOC_SX', 'SOC_SY', 'SOC_SZ', 'SOC_LX', 'SOC_LY', 'SOC_LZ']
+        # files_names = ['spin-1.txt', 'spin-2.txt', 'spin-3.txt', 'angmom-1.txt', 'angmom-2.txt', 'angmom-3.txt']
 
-        for matrix_name, file in zip(matrices, files_names):
+        # for matrix_name, file in zip(matrices, files_names):
 
-            file_path_name = os.path.join(path_molcas, file)
+        #     file_path_name = os.path.join(path_molcas, file)
             
-            data = np.loadtxt(file_path_name, dtype=np.float64, skiprows=1)
-            data_dim = np.int64(np.sqrt(data.shape[0]))
-            data_to_save = np.zeros((data_dim, data_dim), dtype=np.complex128)
+        #     data = np.loadtxt(file_path_name, dtype=np.float64, skiprows=1)
+        #     data_dim = np.int64(np.sqrt(data.shape[0]))
+        #     data_to_save = np.zeros((data_dim, data_dim), dtype=np.complex128)
 
-            for row in data:
-                data_to_save[np.int64(row[0] - 1),np.int64(row[1] - 1)] = row[2] + 1j * row[3]
+        #     for row in data:
+        #         data_to_save[np.int64(row[0] - 1),np.int64(row[1] - 1)] = row[2] + 1j * row[3]
 
-            dataset = molcas.create_dataset(matrix_name, shape=(data_dim, data_dim), dtype=np.complex128)
-            if file in ['angmom-1.txt', 'angmom-2.txt', 'angmom-3.txt']:
-                dataset[:, :] = 1j * data_to_save[:, :]
-            else:
-                dataset[:, :] = data_to_save[:, :]
-            dataset.attrs['Description'] = f'Dataset containing {matrix_name} matrix in SOC basis'
+        #     dataset = molcas.create_dataset(matrix_name, shape=(data_dim, data_dim), dtype=np.complex128)
+        #     if file in ['angmom-1.txt', 'angmom-2.txt', 'angmom-3.txt']:
+        #         dataset[:, :] = 1j * data_to_save[:, :]
+        #     else:
+        #         dataset[:, :] = data_to_save[:, :]
+        #     dataset.attrs['Description'] = f'Dataset containing {matrix_name} matrix in SOC basis'
 
 def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str, rotation = None) -> tuple: #named tuple, see numpy for example linalg.eig, they return class from typing and class type of rotation
     

@@ -11,24 +11,37 @@ from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 
 #a = slt.compound_from_orca(".", "DyCo", "bas0", ".", "DyCo_supercell_1800_0_0_cas.out")
 #a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
-#a = slt.compound_from_molcas(".", "aniso_test_molcas", "bas0", ".", "DyCo_test_hdf5_bas0")
-a = slt.compound_from_slt(".", "aniso")
+#a = slt.compound_from_molcas(".", "aniso_benchmark", "bas0", ".", "DyCo_benchmark_aniso")
+a = slt.compound_from_slt(".", "aniso_benchmark")
 
-# fields = np.linspace(0,7,2)
-# temperatures = np.linspace(2,5,2)
+# fields = np.linspace(0,7,64)
+# temperatures = np.linspace(2,8,3)
 
 # start_time = time.perf_counter()
 
-# mth = a.calculate_mth("bas0", 16, fields, 5, temperatures, 4, 2)
+# mth = a.calculate_mth("bas0", 1000, fields, 5, temperatures, 32, 2)
 
 # end_time = time.perf_counter()
 
 
 
-# elapsed_time = (end_time - start_time) * 1000
+# elapsed_time = (end_time - start_time)
 
 # # Print the elapsed time
-# print(f"Elapsed time: {elapsed_time} ms")
+# print(f"Elapsed time: {elapsed_time} s")
+
+b_k_q = a.soc_crystal_field_parameters("bas0", 0, 15, 14, slt="wololol", even_order=False)
+
+for k in b_k_q:
+    print(f'{k[1]} {k[2]}')
+
+matrix = a.matrix_from_ito('wololo')
+
+eigenvalues, eigenvectors = np.linalg.eigh(matrix)
+print(eigenvalues)
+
+print(a.soc_energies_cm_1("bas0", 16))
+
 
 # for mh in mth:
 #     plt.plot(fields, mh)
@@ -44,7 +57,7 @@ a = slt.compound_from_slt(".", "aniso")
 # print(fields)
 # print(energy)
 
-# for eh in energy:
+# for eh in mth:
 #     plt.plot(fields, eh)
 #     for i in eh:
 #         print(i)
@@ -113,8 +126,8 @@ a = slt.compound_from_slt(".", "aniso")
 # print(eigenvalues)
 
 
-decomposition = a.decomposition_in_z_total_angular_momentum_basis("SVP", 0, 5)
-print(decomposition)
+# decomposition = a.decomposition_in_z_total_angular_momentum_basis("SVP", 0, 5)
+# print(decomposition)
 
 # magn_momenta = a.states_total_angular_momenta("SVP", np.arange(6), rotation1)
 # print(magn_momenta)

@@ -621,7 +621,7 @@ class Compound:
         return decomposition
             
 
-    def soc_crystal_field_parameters(self, group,  start_state, stop_state, order, even_order: bool = True, imaginary: bool = False, magnetic: bool = False, rotation = None, slt: str = None):
+    def soc_crystal_field_parameters(self, group,  start_state, stop_state, order, even_order: bool = True, complex: bool = False, magnetic: bool = False, rotation = None, slt: str = None):
 
         if magnetic:
             try:
@@ -644,7 +644,7 @@ class Compound:
         if order > 2*dim:
             raise ValueError(f'Order of ITO parameters exeeds 2S. Set it less or equal.')
         
-        if imaginary:
+        if complex:
             try:
                 cfp = ito_complex_decomp_matrix(soc_matrix, order, even_order)
             except Exception as e:

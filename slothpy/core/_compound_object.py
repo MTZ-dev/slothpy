@@ -1,5 +1,6 @@
 from os import path
-from typing import Any
+from typing import Any, Tuple, Union
+from numpy.typing import ArrayLike
 import h5py
 import numpy as np
 from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
@@ -35,6 +36,7 @@ class Compound:
 
 
     def __new__(cls, *args, **kwargs):
+
         raise TypeError("The Compound object should not be instantiated directly. Use a Compound creation function instead.")
     
 
@@ -131,14 +133,8 @@ class Compound:
         else:
             raise KeyError("Invalid key type. It has to be str or 2-tuple of str.")
 
-    # def __getattr__(self, __name: str) -> Any:
-    #     pass
 
-    # def __setattr__(self, __name: str, __value: Any) -> None:
-    #     pass
-
-
-    def get_hdf5_groups_and_attributes(self):
+    def _get_hdf5_groups_and_attributes(self):
 
         def collect_groups(name, obj):
 
@@ -154,6 +150,14 @@ class Compound:
 
 
     def delete_group(self, group: str) -> None:
+        """Deletes a group provided its full name from the .slt file.
+
+        Args:
+            group (str): The full group name to delete.
+
+        Raises:
+            Exception: If the deletion is unsuccessful, for example when the provided group name does not exist.
+        """
 
         try:
             with h5py.File(self._hdf5, 'r+') as file:
@@ -164,10 +168,30 @@ class Compound:
             error_message = str(e)
             raise Exception(f'Error encountered while trying to delete group {group} from .slt file: {self._hdf5}: {error_type}: {error_message}')
 
-        self.get_hdf5_groups_and_attributes()
+        self._get_hdf5_groups_and_attributes()
         
 
-    def calculate_g_tensor_and_axes_doublet(self, group: str, doublets: np.ndarray, slt: str = None):
+    def calculate_g_tensor_and_axes_doublet(self, group: str, doublets: ArrayLike[int], slt: str = None) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]:
+        """Calculates pseudo-g-tensor components (for S = 1/2) and main magnetic axes for a given list of doublet states.
+
+        Magnetic axes are returned in the form of rotation matrices that diagonalise Abragam-Bleaney tensor (G = gg.T) - coordinates
+        of the main axes XYZ in the initial xzy frame are columns of such matrices (0-X, 1-Y, 2-Z) .
+
+        Args:
+            group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of g-tensors.
+            doublets (ArrayLike[int]): Arraylike structure (can be converted to numpy.NDArray) of integers corresponding to doublet labels (numbers).
+            slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _g_tensors_axes. Defaults to None.
+
+        Raises:
+            Exception: If the calculation of g-tensors is unsuccessful.
+            Exception: If the program is unable to correctly save the results to .slt file.
+
+        Returns:
+            Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]: The first array (g_tensor_list) contains a list g-tensors in a format
+              [doublet_number, gx, gy, gz], the second one (magnetic_axes_list) contains respective rotation matrices.
+        """
+
+        doublets = np.array(doublets)
         
         try:
             g_tensor_list, magnetic_axes_list = calculate_g_tensor_and_axes_doublet(self._hdf5, group, doublets)
@@ -199,10 +223,33 @@ class Compound:
         return g_tensor_list, magnetic_axes_list
 
 
-    def calculate_mth(self, group: str, states_cutoff: np.int64, fields: np.ndarray, grid: np.ndarray, temperatures: np.ndarray, num_cpu: int, num_threads: int, slt: str = None):
+    def calculate_mth(self, group: str, states_cutoff: int, fields: np.ArrayLike[np.float64], grid: Union[int, np.ndarray[np.float64]], temperatures: np.ArrayLike[np.float64], num_cpu: int, num_threads: int, slt: str = None) -> np.ndarray[np.float64]:
+        """Calculates powder-averaged/directional molar magnetisation M(T,H) for a list of field and temperatures values.
 
-        fields = np.array(fields)
-        temperatures = np.array(temperatures)
+        Args:
+            group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of magnetisation.
+            states_cutoff (int): Number of states that will be taken into account for construction of Zeeman Hamiltonian.
+            fields (ArrayLike[np.float64]): Arraylike structure (can be converted to numpy.NDArray) of field values at which magnetisation will be computed.
+            grid (Union[int, np.ndarray[np.float64]): If the grid is set to integer from 0-11 then the prescribed Lebedev-Laikov grids over hemisphere will be used
+                (see grids_over_hemisphere documentation), otherwise, user can provide an Arraylike structure (can be converted to numpy.NDArray) of the structure:
+                [[direction_x, direction_y, direction_z, weight],...] for powder-averaging. If one wants a calculation for a single, particular direction the list
+                has to contain one entry like this: [[direction_x, direction_y, direction_z, 1.]]
+            temperatures (Arraylike[np.float64]): Arraylike structure (can be converted to numpy.NDArray) of temeperature values at which magnetisation will be computed.
+            num_cpu (int): Number of physical CPUs to be assigned to perform calculation. 
+            num_threads (int): Number of threads used in multithreaded implementation of the linear algebra libraries used during calculation (values higher than 2 benefit
+                with the increasing size of matrices - states_cutoff over the MPI parallelization over field and temperature values).
+            slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _magnetisation. Defaults to None.
+
+        Raises:
+            Exception: If the calculation of M(T,H) is unsuccessful.
+            Exception: If the program is unable to correctly save the results to .slt file.
+
+        Returns:
+            np.ndarray[np.float64]: The resulting array is in the form (temperatures, fields) - the first dimension is over temperature values, the second over fields.
+        """
+
+        fields = np.array(fields, dtype=np.float64)
+        temperatures = np.array(temperatures, dtype=np.float64)
 
         if isinstance(grid, int):
             grid = lebedev_laikov_grid(grid)
@@ -242,10 +289,10 @@ class Compound:
         return mth_array
      
         
-    def calculate_chitht(self, group: str, fields: np.ndarray, states_cutoff: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, num_of_points: int, delta_h: np.float64, exp: bool = False, T: bool = True, grid: np.ndarray = None, slt: str = None) -> np.ndarray:
-
-        fields = np.array(fields)
-        temperatures = np.array(temperatures)
+    def calculate_chitht(self, group: str, states_cutoff: int, temperatures: np.ArrayLike[np.float64], fields: np.ArrayLike[np.float64], num_of_points: int, delta_h: np.float64, num_cpu: int, num_threads: int, exp: bool = False, T: bool = True, grid: Union[int, np.ndarray[np.float64]] = None, slt: str = None) -> np.ndarray[np.float64]:
+        
+        fields = np.array(fields, dtype=np.float64)
+        temperatures = np.array(temperatures, dtype=np.float64)
 
         if T:
             chi_name = 'chiT(H,T)'

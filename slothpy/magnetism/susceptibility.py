@@ -40,20 +40,16 @@ def chitht(filename: str, group: str, fields: np.ndarray, states_cutoff: int, te
     # Experimentalist model
     if (exp == True) or (num_of_points == 0):
 
-        # Initialize result array
-        chit = np.zeros_like(temperatures)
+        mth_array = mth(filename, group, states_cutoff, fields, grid, temperatures, num_cpu, num_threads)
 
-        for index_field, field in enumerate(fields):
-
-            mth_array = mth(filename, group, states_cutoff, np.array([field]), grid, temperatures, num_cpu, num_threads)
+        for index_field, field in enumerate(fields):  
 
             if T:
-                for index, temp in enumerate(temperatures):
-                    chit[index] = temp * mth_array[index] / field
+                for index_temp, temp in enumerate(temperatures):
+                   chitht_array[index_field, index_temp] = temp * mth_array[index_temp, index_field] * bohr_magneton_to_cm3 / field
             else:
-                chit = mth_array / field
+                chitht_array[index_field, :] = mth_array[:, index_field] * bohr_magneton_to_cm3 / field
             
-            chitht_array[index_field, :] = chit * bohr_magneton_to_cm3
 
     else:
 

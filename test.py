@@ -14,8 +14,22 @@ from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 #a = slt.compound_from_molcas(".", "aniso_benchmark", "bas0", ".", "DyCo_benchmark_aniso")
 a = slt.compound_from_slt(".", "aniso_benchmark")
 
-# fields = np.linspace(0,7,64)
-# temperatures = np.linspace(2,8,3)
+fields = np.linspace(0,0.3,3)
+temperatures = np.linspace(1,300,300)
+
+chitht = a.calculate_chitht("bas0", 512, temperatures, fields, 3, 0.0001, 1, 1, exp=False)
+chitht2 = a.calculate_chitht("bas0", 512, temperatures, fields, 3, 0.0001, 1, 1, exp=True)
+
+for chitt in chitht:
+    plt.plot(temperatures, chitt)
+
+for chitt2 in chitht2:
+    plt.plot(temperatures, chitt2)
+
+
+plt.show()
+
+
 
 # start_time = time.perf_counter()
 
@@ -30,17 +44,17 @@ a = slt.compound_from_slt(".", "aniso_benchmark")
 # # Print the elapsed time
 # print(f"Elapsed time: {elapsed_time} s")
 
-b_k_q = a.soc_crystal_field_parameters("bas0", 0, 15, 14, slt="wololol", even_order=False)
+# b_k_q = a.soc_crystal_field_parameters("bas0", 0, 15, 14, slt="wololol", even_order=False)
 
-for k in b_k_q:
-    print(f'{k[1]} {k[2]}')
+# for k in b_k_q:
+#     print(f'{k[1]} {k[2]}')
 
-matrix = a.matrix_from_ito('wololo')
+# matrix = a.matrix_from_ito('wololo')
 
-eigenvalues, eigenvectors = np.linalg.eigh(matrix)
-print(eigenvalues)
+# eigenvalues, eigenvectors = np.linalg.eigh(matrix)
+# print(eigenvalues)
 
-print(a.soc_energies_cm_1("bas0", 16))
+# print(a.soc_energies_cm_1("bas0", 16))
 
 
 # for mh in mth:

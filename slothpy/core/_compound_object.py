@@ -1,6 +1,5 @@
 from os import path
 from typing import Any, Tuple, Union
-from numpy.typing import ArrayLike
 import h5py
 import numpy as np
 from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
@@ -171,7 +170,7 @@ class Compound:
         self._get_hdf5_groups_and_attributes()
         
 
-    def calculate_g_tensor_and_axes_doublet(self, group: str, doublets: ArrayLike[int], slt: str = None) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]:
+    def calculate_g_tensor_and_axes_doublet(self, group: str, doublets: np.ndarray[int], slt: str = None) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]:
         """Calculates pseudo-g-tensor components (for S = 1/2) and main magnetic axes for a given list of doublet states.
 
         Magnetic axes are returned in the form of rotation matrices that diagonalise Abragam-Bleaney tensor (G = gg.T) - coordinates
@@ -179,7 +178,7 @@ class Compound:
 
         Args:
             group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of g-tensors.
-            doublets (ArrayLike[int]): Arraylike structure (can be converted to numpy.NDArray) of integers corresponding to doublet labels (numbers).
+            doublets (np.ndarray[int]): ArrayLike structure (can be converted to numpy.NDArray) of integers corresponding to doublet labels (numbers).
             slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _g_tensors_axes. Defaults to None.
 
         Raises:
@@ -223,18 +222,18 @@ class Compound:
         return g_tensor_list, magnetic_axes_list
 
 
-    def calculate_mth(self, group: str, states_cutoff: int, fields: np.ArrayLike[np.float64], grid: Union[int, np.ndarray[np.float64]], temperatures: np.ArrayLike[np.float64], num_cpu: int, num_threads: int, slt: str = None) -> np.ndarray[np.float64]:
+    def calculate_mth(self, group: str, states_cutoff: int, fields: np.ndarray[np.float64], grid: Union[int, np.ndarray[np.float64]], temperatures: np.ndarray[np.float64], num_cpu: int, num_threads: int, slt: str = None) -> np.ndarray[np.float64]:
         """Calculates powder-averaged or directional molar magnetisation M(T,H) for a list of temeprature and field values.
 
         Args:
             group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of magnetisation.
             states_cutoff (int): Number of states that will be taken into account for construction of Zeeman Hamiltonian.
-            fields (ArrayLike[np.float64]): Arraylike structure (can be converted to numpy.NDArray) of field values (T) at which magnetisation will be computed.
+            fields (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of field values (T) at which magnetisation will be computed.
             grid (Union[int, np.ndarray[np.float64]): If the grid is set to integer from 0-11 then the prescribed Lebedev-Laikov grids over hemisphere will be used
-                (see grids_over_hemisphere documentation), otherwise, user can provide an Arraylike structure (can be converted to numpy.NDArray) of the structure:
+                (see grids_over_hemisphere documentation), otherwise, user can provide an ArrayLike structure (can be converted to numpy.NDArray) of the structure:
                 [[direction_x, direction_y, direction_z, weight],...] for powder-averaging. If one wants a calculation for a single, particular direction the list
                 has to contain one entry like this: [[direction_x, direction_y, direction_z, 1.]].
-            temperatures (Arraylike[np.float64]): Arraylike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetisation will be computed.
+            temperatures (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetisation will be computed.
             num_cpu (int): Number of physical CPUs to be assigned to perform calculation. 
             num_threads (int): Number of threads used in multithreaded implementation of the linear algebra libraries used during calculation. Values higher than 2 benefit
                 with the increasing size of matrices (states_cutoff) over the MPI parallelization over field and temperature values.
@@ -290,14 +289,14 @@ class Compound:
         return mth_array
      
         
-    def calculate_chitht(self, group: str, states_cutoff: int, temperatures: np.ArrayLike[np.float64], fields: np.ArrayLike[np.float64], num_of_points: int, delta_h: np.float64, num_cpu: int, num_threads: int, exp: bool = False, T: bool = True, grid: Union[int, np.ndarray[np.float64]] = None, slt: str = None) -> np.ndarray[np.float64]:
+    def calculate_chitht(self, group: str, states_cutoff: int, temperatures: np.ndarray[np.float64], fields: np.ndarray[np.float64], num_of_points: int, delta_h: np.float64, num_cpu: int, num_threads: int, exp: bool = False, T: bool = True, grid: Union[int, np.ndarray[np.float64]] = None, slt: str = None) -> np.ndarray[np.float64]:
         """Calculates powder-averaged or directional molar magnetic susceptibility chi(H,T) for a list of field and temperatures values.
 
         Args:
             group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of magnetic susceptibility.
             states_cutoff (int): Number of states that will be taken into account for construction of Zeeman Hamiltonian.
-            temperatures (np.ArrayLike[np.float64]): Arraylike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetic susceptibility will be computed.
-            fields (np.ArrayLike[np.float64]): Arraylike structure (can be converted to numpy.NDArray) of field values (T) at which magnetic susceptibility will be computed.
+            temperatures (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetic susceptibility will be computed.
+            fields (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of field values (T) at which magnetic susceptibility will be computed.
             num_of_points (int): Number of points for numerical differentiation over magnetic field values using symmetrical stencil (finite difference method). The total number of
                 used points = (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain the first derivative using 3 points - including the value at the point at which the derivative is taken
                 (for details see finite_diff_stencil documentation). Following that, the value 0 triggers experimentalist model for susceptibility.
@@ -308,7 +307,7 @@ class Compound:
             exp (bool, optional): Turns on the experimentalis model for magnetic susceptibility. Defaults to False.
             T (bool, optional): Results are returned as product with temperature chiT(H,T). Defaults to True.
             grid (Union[int, np.ndarray[np.float64]], optional): If the grid is set to integer from 0-11 then the prescribed Lebedev-Laikov grids over hemisphere will be used
-                (see grids_over_hemisphere documentation), otherwise, user can provide an Arraylike structure (can be converted to numpy.NDArray) of the structure:
+                (see grids_over_hemisphere documentation), otherwise, user can provide an ArrayLike structure (can be converted to numpy.NDArray) of the structure:
                 [[direction_x, direction_y, direction_z, weight],...] for powder-averaging. If one wants a calculation for a single, particular direction the list
                 has to contain one entry like this: [[direction_x, direction_y, direction_z, 1.]]. If not provided average is taken over xyz directions, which is sufficent
                 for second rank tensor. Defaults to None.
@@ -371,14 +370,14 @@ class Compound:
         return chitht_array 
         
     
-    def calculate_chit_tensorht(self, group: str,  states_cutoff: int, temperatures: np.ArrayLike[np.float64], fields: np.ArrayLike[np.float64], num_of_points: int, delta_h: np.float64, num_cpu: int, num_threads: int, T: bool = True, slt: str = None) -> np.ndarray[np.float64]:
+    def calculate_chit_tensorht(self, group: str,  states_cutoff: int, temperatures: np.ndarray[np.float64], fields: np.ndarray[np.float64], num_of_points: int, delta_h: np.float64, num_cpu: int, num_threads: int, exp: bool = False, T: bool = True, slt: str = None) -> np.ndarray[np.float64]:
         """Calculates magnetic susceptibility (Van Vleck) tensor chi(H,T) for a list of field and temperatures values in the initial corrdinate's frame.
 
         Args:
             group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of magnetic susceptibility (Van Vleck) tensor.
             states_cutoff (int): Number of states that will be taken into account for construction of Zeeman Hamiltonian.
-            temperatures (np.ArrayLike[np.float64]): Arraylike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetic susceptibility tensor will be computed.
-            fields (np.ArrayLike[np.float64]): Arraylike structure (can be converted to numpy.NDArray) of field values (T) at which magnetic susceptibility tensor will be computed.
+            temperatures (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetic susceptibility tensor will be computed.
+            fields (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of field values (T) at which magnetic susceptibility tensor will be computed.
             num_of_points (int): Number of points for numerical differentiation over magnetic field values using symmetrical stencil (finite difference method). The total number of
                 used points = (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain the first derivative using 3 points - including the value at the point at which the derivative is taken
                 (for details see finite_diff_stencil documentation). Following that, the value 0 triggers experimentalist model for susceptibility.
@@ -387,6 +386,7 @@ class Compound:
             delta_h (np.float64): _description_
             num_cpu (int): _description_
             num_threads (int): _description_
+            exp (bool, optional): Turns on the experimentalis model for magnetic susceptibility tensor. Defaults to False
             T (bool, optional): _description_. Defaults to True.
             slt (str, optional): _description_. Defaults to None.
 
@@ -402,7 +402,7 @@ class Compound:
         temperatures = np.array(temperatures, dtype=np.float64)
 
         try:
-            chit_tensorht_array = chit_tensorht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_threads, num_of_points, delta_h, T)
+            chit_tensorht_array = chit_tensorht(self._hdf5, group, fields, states_cutoff, temperatures, num_cpu, num_threads, num_of_points, delta_h, exp, T)
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)

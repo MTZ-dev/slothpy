@@ -14,20 +14,22 @@ from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 #a = slt.compound_from_molcas(".", "aniso_benchmark", "bas0", ".", "DyCo_benchmark_aniso")
 a = slt.compound_from_slt(".", "aniso_benchmark")
 
-fields = np.linspace(0,0.3,3)
+fields = np.linspace(0.1,0.1,1)
 temperatures = np.linspace(1,300,300)
 
-chitht = a.calculate_chitht("bas0", 512, temperatures, fields, 3, 0.0001, 1, 1, exp=False)
-chitht2 = a.calculate_chitht("bas0", 512, temperatures, fields, 3, 0.0001, 1, 1, exp=True)
+print(a.calculate_chit_tensorht("bas0", 252, temperatures, fields, 1, 0.0001, 8, 2, exp=True))
 
-for chitt in chitht:
-    plt.plot(temperatures, chitt)
+# chitht = a.calculate_chitht("bas0", 512, temperatures, fields, 3, 0.0001, 1, 1, exp=False)
+# chitht2 = a.calculate_chitht("bas0", 512, temperatures, fields, 3, 0.0001, 1, 1, exp=True)
 
-for chitt2 in chitht2:
-    plt.plot(temperatures, chitt2)
+# for chitt in chitht:
+#     plt.plot(temperatures, chitt)
+
+# for chitt2 in chitht2:
+#     plt.plot(temperatures, chitt2)
 
 
-plt.show()
+# plt.show()
 
 
 

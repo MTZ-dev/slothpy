@@ -12,12 +12,14 @@ from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 #a = slt.compound_from_orca(".", "DyCo", "bas0", ".", "DyCo_supercell_1800_0_0_cas.out")
 #a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
 #a = slt.compound_from_molcas(".", "aniso_benchmark", "bas0", ".", "DyCo_benchmark_aniso")
-a = slt.compound_from_slt(".", "aniso_benchmark")
+a = slt.compound_from_slt(".", "DyCo_demo")
 
-fields = np.linspace(0.1,0.1,1)
-temperatures = np.linspace(1,300,300)
+a.plot_mag_3d("QZVPPP", colour_map_name="dark_rainbow", r_density = 50, c_density = 50,  ticks=2)
 
-print(a.calculate_chit_tensorht("bas0", 252, temperatures, fields, 1, 0.0001, 8, 2, exp=True))
+# fields = np.linspace(0.1,0.1,1)
+# temperatures = np.linspace(1,300,300)
+
+# print(a.calculate_chit_tensorht("molcas_test", 64, temperatures, fields, 1, 0.0001, 1, 1, exp=False))
 
 # chitht = a.calculate_chitht("bas0", 512, temperatures, fields, 3, 0.0001, 1, 1, exp=False)
 # chitht2 = a.calculate_chitht("bas0", 512, temperatures, fields, 3, 0.0001, 1, 1, exp=True)

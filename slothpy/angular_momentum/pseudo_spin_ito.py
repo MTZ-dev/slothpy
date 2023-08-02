@@ -221,7 +221,7 @@ def ito_real_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = Fa
             ITO_plus = np.ascontiguousarray(ITO_plus).astype(np.complex128)
             ITO_minus = ito_matrix(J, k, -q)
             ITO_minus = np.ascontiguousarray(ITO_minus).astype(np.complex128)
-            B_k_q = -1j * (np.trace(matrix @ ITO_plus) - ((-1)**(-q)) * np.trace(matrix @ ITO_minus))/np.trace(ITO_plus @ ITO_minus)
+            B_k_q = -1j * (np.trace(matrix @ ITO_plus) - ((-1)**(-q)) * np.trace(matrix @ ITO_minus))/np.trace(ITO_plus @ ITO_minus)  #1/np.sqrt(2) *
 
             result.append([k, -q, B_k_q.real])
 
@@ -234,7 +234,7 @@ def ito_real_decomp_matrix(matrix: np.ndarray, order: int, even_order: bool = Fa
             ITO_plus = np.ascontiguousarray(ITO_plus).astype(np.complex128)
             ITO_minus = ito_matrix(J, k, -q)
             ITO_minus = np.ascontiguousarray(ITO_minus).astype(np.complex128)
-            B_k_q = (np.trace(matrix @ ITO_plus) + ((-1)**(-q)) * np.trace(matrix @ ITO_minus))/np.trace(ITO_plus @ ITO_minus)
+            B_k_q = (np.trace(matrix @ ITO_plus) + ((-1)**(-q)) * np.trace(matrix @ ITO_minus))/np.trace(ITO_plus @ ITO_minus) #1/np.sqrt(2) *
 
             result.append([k, q, B_k_q.real])
 

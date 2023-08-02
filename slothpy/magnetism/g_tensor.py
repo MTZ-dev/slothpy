@@ -14,7 +14,7 @@ def calculate_g_tensor_and_axes_doublet(filename: str, group: str, doublets: np.
     for doublet in doublets:
 
         magnetic_moment = np.zeros((3,2,2), dtype=np.complex128)
-        states = doublets #changed convention from number of states to number of doublet: states = 2*doublets
+        states = doublet #changed convention from number of states to number of doublet: states = 2*doublets
 
         # Slice arrays based on states_cutoff
         sx_tmp = sx[states:states+2, states:states+2]

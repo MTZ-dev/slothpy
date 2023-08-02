@@ -131,7 +131,7 @@ def calculate_hemholtz_energy(energies: np.ndarray, temperature: np.float64, int
 
 
 @jit('float64[:](complex128[:,:,:], float64[:], float64, float64[:,:], float64[:], boolean)', nopython=True, cache=True, nogil=True)
-def calculate_hemholtz_energyt(magnetic_momenta: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, temperatures: np.ndarray, internal_energy: False) -> np.ndarray:
+def calculate_hemholtz_energyt(magnetic_momenta: np.ndarray, soc_energies: np.ndarray, field: np.float64, grid: np.ndarray, temperatures: np.ndarray, internal_energy: bool = False) -> np.ndarray:
 
     # Initialize arrays
     energyt_array = np.ascontiguousarray(np.zeros((temperatures.shape[0]), dtype=np.float64))
@@ -218,7 +218,7 @@ def arg_iter_hemholtz_energy_3d(magnetic_moment, soc_energies, field, theta, phi
             yield (magnetic_moment, soc_energies, field, np.array([[np.sin(phi[i, j]) * np.cos(theta[i, j]), np.sin(phi[i, j]) * np.sin(theta[i, j]), np.cos(phi[i, j]), 1.]]), temperatures, internal_energy)
 
 
-def hemholtz_energy_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, internal_energy: False) -> np.ndarray:
+def hemholtz_energy_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, num_threads: int, internal_energy: bool = False) -> np.ndarray:
 
     # Get number of parallel proceses to be used
     num_process = get_num_of_processes(num_cpu, num_threads)

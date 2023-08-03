@@ -8,13 +8,17 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 
+fields = np.linspace(0.01, 14, 100)
+temperatures = np.linspace(0.1,700, 100)
+
+CeCoN3 = slt.compound_from_orca(".", "CeCoN3", "TZVP", ".", "CeCoN3_TZVP_cas_nevpt2_restart.out", pt2 = True)
 
 #a = slt.compound_from_orca(".", "DyCo", "bas0", ".", "DyCo_supercell_1800_0_0_cas.out")
 #a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
 #a = slt.compound_from_molcas(".", "aniso_benchmark", "bas0", ".", "DyCo_benchmark_aniso")
-a = slt.compound_from_slt(".", "DyCo_demo")
+# a = slt.compound_from_slt(".", "CeCoN3")
 
-a.plot_mag_3d("QZVPPP", colour_map_name="dark_rainbow", r_density = 50, c_density = 50,  ticks=2)
+# a.plot_mag_3d("QZVPPP", colour_map_name="dark_rainbow", r_density = 50, c_density = 50,  ticks=2)
 
 # fields = np.linspace(0.1,0.1,1)
 # temperatures = np.linspace(1,300,300)
@@ -35,18 +39,18 @@ a.plot_mag_3d("QZVPPP", colour_map_name="dark_rainbow", r_density = 50, c_densit
 
 
 
-# start_time = time.perf_counter()
+start_time = time.perf_counter()
 
-# mth = a.calculate_mth("bas0", 1000, fields, 5, temperatures, 32, 2)
+CeCoN3.calculate_hemholtz_energy_3d("TZVP", 0, fields, 100, temperatures, 16, 1, slt="twoja_stara")
 
-# end_time = time.perf_counter()
+end_time = time.perf_counter()
 
 
 
-# elapsed_time = (end_time - start_time)
+elapsed_time = (end_time - start_time)
 
-# # Print the elapsed time
-# print(f"Elapsed time: {elapsed_time} s")
+# Print the elapsed time
+print(f"Elapsed time: {elapsed_time} s")
 
 # b_k_q = a.soc_crystal_field_parameters("bas0", 0, 15, 14, slt="wololol", even_order=False)
 

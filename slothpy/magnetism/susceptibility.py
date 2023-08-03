@@ -221,36 +221,33 @@ def chit_3d(filename: str, group: str, fields: np.ndarray, states_cutoff: int, t
 
         dim = 2 * num_of_points + 1
         # Comments here modyfied!!!!
-        mag_x = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim))
-        mag_y = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim))
-        mag_z = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim))
-        x = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid))
-        y = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid))
-        z = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid))
+        mag_x = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim), dtype=np.float64)
+        mag_y = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim), dtype=np.float64)
+        mag_z = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid, dim), dtype=np.float64)
+        x = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid), dtype=np.float64)
+        y = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid), dtype=np.float64)
+        z = np.zeros((fields.shape[0], temperatures.shape[0], spherical_grid, 2 * spherical_grid), dtype=np.float64)
 
+        # Set fields for finite difference method
+        fields_diffs = (np.arange(-num_of_points, num_of_points + 1).astype(np.int64) * delta_h)[:, np.newaxis] + fields
+        fields_diffs = fields_diffs.astype(np.float64)
 
-        for field_index, field in enumerate(fields):
+        for diff_index, fields_diff in enumerate(fields_diffs):
 
-            # Set fields for finite difference method
-            fields_diffs = (np.arange(-num_of_points, num_of_points + 1).astype(np.int64) * delta_h)[:, np.newaxis] + fields
-            fields_diffs = fields_diffs.astype(np.float64)
+            # Get M(t,H) for adjacent values of field
+            mag_x[:,:,:,:,diff_index], mag_y[:,:,:,:,diff_index], mag_z[:,:,:,:,diff_index] = mag_3d(filename, group, states_cutoff, fields_diff, spherical_grid, temperatures, num_cpu, num_threads)
 
-            for diff_index, fields_diff in enumerate(fields_diffs):
+        stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
 
-                # Get M(t,H) for two adjacent values of field
-                mag_x[:,:,:,:,diff_index], mag_y[:,:,:,:,diff_index], mag_z[:,:,:,:,diff_index] = mag_3d(filename, group, states_cutoff, fields_diff, spherical_grid, temperatures, num_cpu, num_threads)
-
-            stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
-
-            if T:
-                for temp_index, temp in enumerate(temperatures):
-                    x[:,temp_index,:,:] = temp * np.dot(mag_x[:,temp_index,:,:,:], stencil_coeff)
-                    y[:,temp_index,:,:] = temp * np.dot(mag_y[:,temp_index,:,:,:], stencil_coeff)
-                    z[:,temp_index,:,:] = temp * np.dot(mag_z[:,temp_index,:,:,:], stencil_coeff)
-            else:
-                x[:,:,:,:] = np.dot(mag_x[:,:,:,:,:], stencil_coeff)
-                y[:,:,:,:] = np.dot(mag_y[:,:,:,:,:], stencil_coeff)
-                z[:,:,:,:] = np.dot(mag_z[:,:,:,:,:], stencil_coeff)
+        if T:
+            for temp_index, temp in enumerate(temperatures):
+                x[:,temp_index,:,:] = temp * np.dot(mag_x[:,temp_index,:,:,:], stencil_coeff)
+                y[:,temp_index,:,:] = temp * np.dot(mag_y[:,temp_index,:,:,:], stencil_coeff)
+                z[:,temp_index,:,:] = temp * np.dot(mag_z[:,temp_index,:,:,:], stencil_coeff)
+        else:
+            x[:,:,:,:] = np.dot(mag_x[:,:,:,:,:], stencil_coeff)
+            y[:,:,:,:] = np.dot(mag_y[:,:,:,:,:], stencil_coeff)
+            z[:,:,:,:] = np.dot(mag_z[:,:,:,:,:], stencil_coeff)
     
     return x, y, z
 

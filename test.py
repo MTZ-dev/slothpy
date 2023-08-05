@@ -8,10 +8,62 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 
-fields = np.linspace(0.01, 14, 100)
-temperatures = np.linspace(0.1,700, 100)
 
-CeCoN3 = slt.compound_from_orca(".", "CeCoN3", "TZVP", ".", "CeCoN3_TZVP_cas_nevpt2_restart.out", pt2 = True)
+if __name__ == '__main__':
+
+    fields = np.linspace(0.1, 7, 50, dtype=np.float64)
+    temperatures = np.linspace(0.1,700, 60, dtype=np.float64)
+
+    #CeCoN3 = slt.compound_from_molcas(".", "CeCoN3", "VTZP", ".", "CeCoN3_bas2_benchmark")
+    CeCoN3 = slt.compound_from_slt(".", "CeCoN3")
+
+    start_time = time.perf_counter()
+
+    rotation = np.array([[-0.46452073, -0.1162711, 0.87789608],
+  [0.11809391,  0.97435556,  0.19153345],
+  [-0.87765273,  0.19264544, -0.43887745]])
+    
+    rotatione = rotation.T
+
+    print(CeCoN3.decomposition_in_z_total_angular_momentum_basis("VTZP", 0, 5, rotation=rotatione))
+
+    #axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("VTZP", [0,1,2])
+
+    # print(axes)
+    # print(gtensor)
+
+    #mth = CeCoN3.calculate_mth("VTZP", 0, fields, 5, [2.,4.,6.,8.], 64, 1)
+
+    end_time = time.perf_counter()
+
+    print(f'{end_time - start_time} s')
+
+    # for mt in mth:
+    #     print("temp")
+    #     for m in mt:
+    #         print(m)
+
+
+    # start_time = time.perf_counter()
+
+    # CeCoN3.calculate_hemholtz_energy_3d("TZVP", 0, fields, 100, temperatures, 64, 2, slt="twoja_stara")
+
+    # end_time = time.perf_counter()
+
+    # print(f'{end_time - start_time} s')
+
+
+    # start_time = time.perf_counter()
+
+    # #CeCoN3.animate_energy_3d("TZVP", 14, np.array([0.1]), 100, 0.1, 700, 60, 3, 1, fps = 20, dpi = 100, filename="lolz", ticks=100)
+
+    # CeCoN3.animate_3d("twoja_stara", 'hemholtz_energy', 'temperature', fps=10, dpi=100)
+
+    # end_time = time.perf_counter()
+
+    # print(f'{end_time - start_time} s')
+
+
 
 #a = slt.compound_from_orca(".", "DyCo", "bas0", ".", "DyCo_supercell_1800_0_0_cas.out")
 #a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
@@ -39,18 +91,18 @@ CeCoN3 = slt.compound_from_orca(".", "CeCoN3", "TZVP", ".", "CeCoN3_TZVP_cas_nev
 
 
 
-start_time = time.perf_counter()
+# start_time = time.perf_counter()
 
-CeCoN3.calculate_hemholtz_energy_3d("TZVP", 0, fields, 100, temperatures, 16, 1, slt="twoja_stara")
+# CeCoN3.calculate_hemholtz_energy_3d("TZVP", 0, fields, 100, temperatures, 16, 1, slt="twoja_stara")
 
-end_time = time.perf_counter()
+# end_time = time.perf_counter()
 
 
 
-elapsed_time = (end_time - start_time)
+# elapsed_time = (end_time - start_time)
 
-# Print the elapsed time
-print(f"Elapsed time: {elapsed_time} s")
+# # Print the elapsed time
+# print(f"Elapsed time: {elapsed_time} s")
 
 # b_k_q = a.soc_crystal_field_parameters("bas0", 0, 15, 14, slt="wololol", even_order=False)
 

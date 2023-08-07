@@ -11,20 +11,26 @@ from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 
 if __name__ == '__main__':
 
-    fields = np.linspace(0.1, 7, 50, dtype=np.float64)
-    temperatures = np.linspace(0.1,700, 60, dtype=np.float64)
+    fields = np.linspace(0.1, 10, 1, dtype=np.float64)
+    print(fields)
+    temperatures = np.linspace(0.0000009,700, 1, dtype=np.float64)
+    print(temperatures)
 
-    CeCoN3 = slt.compound_from_molcas(".", "Lore", "rot", ".", "rot_lorenzo_bas0_corr")
-    CeCoN3 = slt.compound_from_molcas(".", "Lore", "no_rot", ".", "no_rot_lorenzo_bas0")
-    CeCoN3 = slt.compound_from_slt(".", "Lore")
+    # CeCoN3 = slt.compound_from_molcas(".", "Lore", "rot", ".", "rot_lorenzo_bas0_corr")
+    #CeCoN3 = slt.compound_from_molcas(".", "animations", "no_rot", ".", "no_rot_lorenzo_bas0")
+    CeCoN3 = slt.compound_from_slt(".", "animations")
 
     start_time = time.perf_counter()
 
-    rotation = np.array([[-0.46452073, 0.1162711, -0.87789608],
-  [0.11809391,  -0.97435556,  -0.19153345],
-  [-0.87765273,  -0.19264544, 0.43887745]])
+    CeCoN3.calculate_hemholtz_energy_3d("no_rot", 0, fields, 2, temperatures, 64, 2)
+
+    #CeCoN3.interactive_plot_3d("animeeeee", "hemholtz_energy")
+
+#     rotation = np.array([[-0.46452073, 0.1162711, -0.87789608],
+#   [0.11809391,  -0.97435556,  -0.19153345],
+#   [-0.87765273,  -0.19264544, 0.43887745]])
     
-    rotatione = rotation.T
+    # rotatione = rotation.T
 
     #print(CeCoN3.states_total_angular_momenta("VTZP", [0,2], rotation=rotatione))
     # matrix = CeCoN3.magnetic_momenta_matrix("VTZP", 6, rotation=rotatione)
@@ -33,18 +39,18 @@ if __name__ == '__main__':
     # print(eigenvalues)
     #CeCoN3.decomposition_in_z_magnetic_momentum_basis("VTZP", 0, 5, rotation=rotatione)
 
-    axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("rot", [0,1])
+    # axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("rot", [0,1])
 
-    print(axes)
-    print(gtensor)
-
-
+    # print(axes)
+    # print(gtensor)
 
 
-    axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("no_rot", [0,1])
 
-    print(axes)
-    print(gtensor)
+
+    # axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("no_rot", [0,1])
+
+    # print(axes)
+    # print(gtensor)
 
     #mth = CeCoN3.calculate_mth("VTZP", 0, fields, 5, [2.,4.,6.,8.], 64, 1)
 

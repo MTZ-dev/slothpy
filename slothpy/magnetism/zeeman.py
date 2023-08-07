@@ -123,6 +123,10 @@ def calculate_hemholtz_energy(energies: np.ndarray, temperature: np.float64, int
     # Partition function
     z = np.sum(exp_diff)
 
+    # Float64 precision
+    if z < 1e-307:
+        z = 1e-307
+
     if internal_energy:
         e = np.sum((energies * hartree_to_cm_1) * exp_diff)
         return e / z
@@ -248,7 +252,6 @@ def hemholtz_energy_3d(filename: str, group: str, states_cutoff: int, fields: np
             for j in range(phi.shape[1]):
                 hemholtz_energy_3d_array[field_index,:,i,j] = eth[pool_index][:]
                 pool_index += 1
-
 
     x = (np.sin(phi) * np.cos(theta))[np.newaxis,np.newaxis,:,:] * hemholtz_energy_3d_array
     y = (np.sin(phi) * np.sin(theta))[np.newaxis,np.newaxis,:,:] * hemholtz_energy_3d_array

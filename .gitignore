@@ -5,4 +5,7 @@
 *.slt
 *.gif
 *.dat
+*.inp
+*.in
+*.ipynb
 __pycache__

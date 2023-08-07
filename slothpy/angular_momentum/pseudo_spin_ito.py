@@ -44,10 +44,10 @@ def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, st
     magnetic_momenta, soc_energies  = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, stop_state+1, rotation)
     magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
-    soc_matrix = np.diag(soc_energies)
+    soc_matrix = np.diag(soc_energies).astype(np.complex128)
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, magnetic_momenta[2,:,:])
     soc_matrix = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(magnetic_momenta, soc_matrix)
-
+    
     return soc_matrix 
 
 
@@ -56,7 +56,7 @@ def get_soc_matrix_in_z_total_angular_momentum_basis(filename, group, start_stat
     total_angular_momenta, soc_energies  = get_soc_total_angular_momenta_and_energies_from_hdf5(filename, group, stop_state+1, rotation)
     total_angular_momenta = total_angular_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
-    soc_matrix = np.diag(soc_energies)
+    soc_matrix = np.diag(soc_energies).astype(np.complex128)
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(soc_matrix, total_angular_momenta[2,:,:])
     soc_matrix = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(total_angular_momenta, soc_matrix)
     

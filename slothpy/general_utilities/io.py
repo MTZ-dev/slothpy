@@ -331,9 +331,49 @@ def get_soc_energies_and_soc_angular_momenta_from_hdf5(filename: str, group: str
                 sz = file[str(group)]['SOC_SZ'][:]
                 lz = file[str(group)]['SOC_LZ'][:]
 
-                if (rotation is not None) or (rotation != None): #then is istnace of Rotation class
-                    sx, sy, sz = rotate_vector_operator(sx, sy, sz, rotation)
-                    lx, ly, lz = rotate_vector_operator(lx, ly, lz, rotation)
+            ####EXPERIMENTAL PHASE AT STAGE OF WHOLE PURE SX AND LX MATRICES
+            
+            # jz = sz + lz
+            # _, eigenvectors = np.linalg.eigh(jz)
+            
+            # px = lx + sx
+            # px = eigenvectors.conj().T @ px @ eigenvectors
+
+            # # Initialize phases of vectors with the first one = 1
+            # c = np.zeros(sx.shape[0], dtype=np.complex128)
+            # c[0] = 1.
+
+            # # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
+            # for i in range(px.shape[0]-1):
+            #     if np.real(px[i,i+1]).any() > 1e-12 or np.abs(np.imag(px[i,i+1])).any() > 1e-12:
+            #         c[i+1] = 1j*px[i,i+1].conj()/np.abs(px[i,i+1])/c[i].conj()
+            #     else:
+            #         c[i+1] = 1.
+
+            # sx_p = sx
+            # lx_p = lx
+            # sy_p = sy
+            # ly_p = ly
+            # sz_p = sz
+            # lz_p = lz
+
+            # # Transform matrices applying new phase factors
+            # for i in range(sx.shape[0]):
+            #     for j in range(sx.shape[0]):
+            #         sx_p[i,j] = sx[i,j] * c[i].conj() * c[j]
+            #         lx_p[i,j] = lx[i,j] * c[i].conj() * c[j]
+            #         sy_p[i,j] = sy[i,j] * c[i].conj() * c[j]
+            #         ly_p[i,j] = ly[i,j] * c[i].conj() * c[j]
+            #         sz_p[i,j] = sz[i,j] * c[i].conj() * c[j]
+            #         lz_p[i,j] = lz[i,j] * c[i].conj() * c[j]
+
+            # if (rotation is not None) or (rotation != None): #then is istnace of Rotation class
+            #     sx, sy, sz = rotate_vector_operator(sx_p, sy_p, sz_p, rotation)
+            #     lx, ly, lz = rotate_vector_operator(lx_p, ly_p, lz_p, rotation)
+
+            if (rotation is not None) or (rotation != None): #then is istnace of Rotation class
+                sx, sy, sz = rotate_vector_operator(sx, sy, sz, rotation)
+                lx, ly, lz = rotate_vector_operator(lx, ly, lz, rotation)
 
             return soc_energies, sx, sy, sz, lx, ly, lz #rotation implement everywhere
 
@@ -508,32 +548,51 @@ def get_states_magnetic_momenta(filename: str, group: str, states: np.ndarray = 
 
     _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group, rotation)
 
-    if (np.all(states is not None)) and (np.all(states != None)):
+    if (np.all(states is not None)) and (np.all(states != None)) and (np.any(states != 0)):
 
         if np.any(states < 0) or not np.issubdtype(states.dtype, np.integer) or np.any(states > sx.shape[0]):
             raise ValueError(f'States list contains negative values, non-integer elements or indexes greater than the number of states: {sx.shape[0]}!')
 
-        # Convert states to ndarray without repetitions
-        states = np.unique(np.array(states).astype(np.int64))
+        if states.size == 1 and (np.any(states != 0)):
 
-        # Number of states desired
-        num_of_states = states.size
+            magnetic_momenta = np.ascontiguousarray(np.zeros((3, states), dtype=np.complex128))
 
-        #  Initialize the result array
-        magnetic_momenta = np.ascontiguousarray(np.zeros((3, num_of_states), dtype=np.complex128))
+            # Slice arrays based on states_cutoff
+            sx = sx[:states, :states]
+            sy = sy[:states, :states]
+            sz = sz[:states, :states]
+            lx = lx[:states, :states]
+            ly = ly[:states, :states]
+            lz = lz[:states, :states]
 
-        # Slice arrays based on states_cutoff
-        sx = sx[states, states]
-        sy = sy[states, states]
-        sz = sz[states, states]
-        lx = lx[states, states]
-        ly = ly[states, states]
-        lz = lz[states, states]
+            # Compute and save magnetic momenta in a.u.
+            magnetic_momenta[0] =  np.diagonal(-(ge * sx + lx))
+            magnetic_momenta[1] =  np.diagonal(-(ge * sy + ly))
+            magnetic_momenta[2] =  np.diagonal(-(ge * sz + lz))
 
-        # Compute and save magnetic momenta in a.u.
-        magnetic_momenta[0] =  -(ge * sx + lx)
-        magnetic_momenta[1] =  -(ge * sy + ly)
-        magnetic_momenta[2] =  -(ge * sz + lz)
+        elif np.any(states != 0):
+
+            # Convert states to ndarray without repetitions
+            states = np.unique(np.array(states).astype(np.int64))
+
+            # Number of states desired
+            num_of_states = states.size
+
+            #  Initialize the result array
+            magnetic_momenta = np.ascontiguousarray(np.zeros((3, num_of_states), dtype=np.complex128))
+
+            # Slice arrays based on states_cutoff
+            sx = sx[states, states]
+            sy = sy[states, states]
+            sz = sz[states, states]
+            lx = lx[states, states]
+            ly = ly[states, states]
+            lz = lz[states, states]
+
+            # Compute and save magnetic momenta in a.u.
+            magnetic_momenta[0] =  -(ge * sx + lx)
+            magnetic_momenta[1] =  -(ge * sy + ly)
+            magnetic_momenta[2] =  -(ge * sz + lz)
 
     else:
 
@@ -554,33 +613,52 @@ def get_states_total_angular_momneta(filename: str, group: str, states: np.ndarr
 
     _, sx, sy, sz, lx, ly, lz = get_soc_energies_and_soc_angular_momenta_from_hdf5(filename, group, rotation)
 
-    if (np.all(states is not None)) and (np.all(states != None)):
+    if (np.all(states is not None)) and (np.all(states != None)) and (np.any(states != 0)):
 
         if np.any(states < 0) or not np.issubdtype(states.dtype, np.integer) or np.any(states > sx.shape[0]):
             raise ValueError(f'States list contains negative values, non-integer elements or indexes greater than the number of states: {sx.shape[0]}!')
 
-        # Convert states to ndarray without repetitions
-        states = np.unique(np.array(states).astype(np.int64))
+        if states.size == 1 and (np.any(states != 0)):
 
-        # Number of states desired
-        num_of_states = states.size
+            total_angular_momenta = np.ascontiguousarray(np.zeros((3, states), dtype=np.complex128))
 
-        #  Initialize the result array
-        total_angular_momenta = np.ascontiguousarray(np.zeros((3, num_of_states), dtype=np.complex128))
+            # Slice arrays based on states_cutoff
+            sx = sx[:states, :states]
+            sy = sy[:states, :states]
+            sz = sz[:states, :states]
+            lx = lx[:states, :states]
+            ly = ly[:states, :states]
+            lz = lz[:states, :states]
 
-        # Slice arrays based on states_cutoff
-        sx = sx[states, states]
-        sy = sy[states, states]
-        sz = sz[states, states]
-        lx = lx[states, states]
-        ly = ly[states, states]
-        lz = lz[states, states]
+            # Compute and save magnetic momenta in a.u.
+            total_angular_momenta[0] =  np.diagonal(sx + lx)
+            total_angular_momenta[1] =  np.diagonal(sy + ly)
+            total_angular_momenta[2] =  np.diagonal(sz + lz)
+
+        elif np.any(states != 0):
+
+            # Convert states to ndarray without repetitions
+            states = np.unique(np.array(states).astype(np.int64))
+
+            # Number of states desired
+            num_of_states = states.size
+
+            #  Initialize the result array
+            total_angular_momenta = np.ascontiguousarray(np.zeros((3, num_of_states), dtype=np.complex128))
+
+            # Slice arrays based on states_cutoff
+            sx = sx[states, states]
+            sy = sy[states, states]
+            sz = sz[states, states]
+            lx = lx[states, states]
+            ly = ly[states, states]
+            lz = lz[states, states]
 
 
-        # Compute and save magnetic momenta in a.u.
-        total_angular_momenta[0] =  sx + lx
-        total_angular_momenta[1] =  sy + ly
-        total_angular_momenta[2] =  sz + lz
+            # Compute and save magnetic momenta in a.u.
+            total_angular_momenta[0] =  sx + lx
+            total_angular_momenta[1] =  sy + ly
+            total_angular_momenta[2] =  sz + lz
 
     else:
 

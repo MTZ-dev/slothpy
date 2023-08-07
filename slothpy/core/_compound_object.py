@@ -674,7 +674,7 @@ class Compound:
 
     def magnetic_momenta_matrix(self, group: str, states_cutoff: np.ndarray = None, rotation = None, slt: str = None):
 
-        if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0):
+        if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
             raise ValueError(f'Invalid states cutoff, set it to positive integer or 0 for all states.')
 
         try:
@@ -913,7 +913,7 @@ class Compound:
 
     def zeeman_matrix(self, group: str, states_cutoff, field, orientation, slt: str = None):
 
-        if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0):
+        if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
             raise ValueError(f'Invalid states cutoff, set it to positive integer or 0 for all states.')
 
         try:

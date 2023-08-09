@@ -11,9 +11,9 @@ from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 
 if __name__ == '__main__':
 
-    fields = np.linspace(0.1, 10, 1, dtype=np.float64)
+    fields = np.linspace(0.1, 10, 10, dtype=np.float64)
     print(fields)
-    temperatures = np.linspace(0.0000009,700, 1, dtype=np.float64)
+    temperatures = np.linspace(0.0000009,700, 10, dtype=np.float64)
     print(temperatures)
 
     # CeCoN3 = slt.compound_from_molcas(".", "Lore", "rot", ".", "rot_lorenzo_bas0_corr")
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     start_time = time.perf_counter()
 
-    CeCoN3.calculate_hemholtz_energy_3d("no_rot", 0, fields, 2, temperatures, 64, 2)
+    CeCoN3.calculate_hemholtz_energy_3d("no_rot", 0, fields, 30, temperatures, 16, 2)
 
     #CeCoN3.interactive_plot_3d("animeeeee", "hemholtz_energy")
 

@@ -151,9 +151,8 @@ def calculate_hemholtz_energyt(magnetic_momenta: np.ndarray, soc_energies: np.nd
         zeeman_matrix = calculate_zeeman_matrix(magnetic_momenta, soc_energies, field, orientation)
 
         # Diagonalize full Hamiltonian matrix
-        eigenvalues, eigenvectors = np.linalg.eigh(zeeman_matrix)
+        eigenvalues = np.linalg.eigvalsh(zeeman_matrix)
         eigenvalues = np.ascontiguousarray(eigenvalues)
-        eigenvectors = np.ascontiguousarray(eigenvectors)
 
         # Compute Hemholtz energy for each T
         for t in range(temperatures.shape[0]):

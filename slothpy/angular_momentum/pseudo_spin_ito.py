@@ -12,7 +12,7 @@ def set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(momenta_matrix,
      Jy[i,i+1] = imag, positive
      J+/- = real (Condon_Shortley)
      Jz = real, diag"""
-    
+
     # Transform momenta to "z" basis
     _, eigenvectors = np.linalg.eigh(momenta_matrix[2,:,:])
     for i in range(3):
@@ -23,20 +23,23 @@ def set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(momenta_matrix,
     c[0] = 1.
 
     # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
-    for i in range(momenta_matrix[1,:,:].shape[0]-1):
-        if np.real(momenta_matrix[1,i,i+1]).any() > 1e-12 or np.abs(np.imag(momenta_matrix[1,i,i+1])).any() > 1e-12:
-            c[i+1] = 1j*momenta_matrix[1,i,i+1].conj()/np.abs(momenta_matrix[1,i,i+1])/c[i].conj()
+    for i in range(momenta_matrix[0,:,:].shape[0]-1):
+        if np.real(momenta_matrix[0,i,i+1]).any() > 1e-12 or np.abs(np.imag(momenta_matrix[1,i,i+1])).any() > 1e-12:
+            c[i+1] = momenta_matrix[0,i,i+1].conj()/np.abs(momenta_matrix[0,i,i+1])/c[i].conj()
         else:
             c[i+1] = 1.
-
-    phase_matrix = matrix
-
-    # Transform matrices applying new phase factors
-    for i in range(phase_matrix.shape[1]):
-        for j in range(phase_matrix.shape[1]):
-            phase_matrix[i,j] = matrix[i,j] * c[i].conj() * c[j]
     
-    return phase_matrix
+    for i in range(momenta_matrix[0].shape[0]-1):
+        if momenta_matrix[0,i,i+1] * c[i].conj() * c[i+1] > 0:
+            c[i+1] = -c[i+1]
+    
+    matrix_out = np.zeros_like(matrix)
+
+    for i in range(matrix_out.shape[0]):
+        for j in range(matrix_out.shape[0]):
+            matrix_out[i,j] = matrix[i,j] * c[i].conj() * c[j]
+
+    return matrix_out
 
 
 def get_soc_matrix_in_z_magnetic_momentum_basis(filename, group, start_state, stop_state, rotation = None):

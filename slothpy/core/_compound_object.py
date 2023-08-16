@@ -30,10 +30,15 @@ matplotlib.use('Qt5Agg')
 
 ###To do: orinetation print in zeeman splitting
 ###       Hemholtz 3D plot, animate 3D all properties,
-###       coloured prints and errors, numpy docstrings,
+###       coloured prints and errors in terminal, numpy docstrings,
 ###       new diemnsions 3D, np.arrays of orient in decompositions
 
 ### MATRIX FROM ITO FIX MATRIX TYPE!!!!
+
+### Use os.cpu_count() to determine max numeber of cpu to be used
+### MPI memory management chunksize and how to minimize memory per process not sharing with the main one
+
+### Effective charge distribution from CFPs.
 
 
 class Compound:
@@ -1849,14 +1854,13 @@ class Compound:
 
         """
         T = False
-        if data_type == 'susceptibility':
-            try:
+        if data_type == 'chit':
                 x = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][0, field_i, temp_i, :, :]
                 y = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][1, field_i, temp_i, :, :]
                 z = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][2, field_i, temp_i, :, :]
                 description = f"ChiT dependance on direction, B={self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i]} T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i]}"
                 T = True
-            except:
+        elif data_type == 'chi':
                 x = self[f'{group}_3d_susceptibility', f'{group}_chi_3d'][0, field_i, temp_i, :, :]
                 y = self[f'{group}_3d_susceptibility', f'{group}_chi_3d'][1, field_i, temp_i, :, :]
                 z = self[f'{group}_3d_susceptibility', f'{group}_chi_3d'][2, field_i, temp_i, :, :]
@@ -1949,49 +1953,38 @@ class Compound:
                    r_density=0, c_density=0, axis_off=False, fps=15, dpi=100, bar=True, bar_scale=False,
                    bar_colour_map_name='dark_rainbow_r', temp_rounding=0, field_rounding=0):
 
-        if data_type == 'susceptibility':
-            fields = self[f'{group}_3d_susceptibility', f'{group}_fields']
-            temps = self[f'{group}_3d_susceptibility', f'{group}_temperatures']
-        elif data_type == 'hemholtz_energy':
-            fields = self[f'{group}_3d_hemholtz_energy', f'{group}_fields']
-            temps = self[f'{group}_3d_hemholtz_energy', f'{group}_temperatures']
-        elif data_type == 'magnetisation':
-            fields = self[f'{group}_3d_magnetisation', f'{group}_fields']
-            temps = self[f'{group}_3d_magnetisation', f'{group}_temperatures']
         T = False
-        if data_type == 'chiT':
+        if data_type == 'chit':
             x0 = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][0]
             y0 = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][1]
             z0 = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][2]
-            if animation_variable == 'temperature':
-                description = f"ChiT dependance on direction, B={self[f'{group}_3d_susceptibility', f'{group}_fields'][i_constant]:.4f} T"
-            else:
-                description = f"ChiT dependance on direction, T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][i_constant]:.4f} K"
+            fields = self[f'{group}_3d_susceptibility', f'{group}_fields']
+            temps = self[f'{group}_3d_susceptibility', f'{group}_temperatures']
             T = True
-        if data_type == 'chi':
+        elif data_type == 'chi':
             x0 = self[f'{group}_3d_susceptibility', f'{group}_chi_3d'][0]
             y0 = self[f'{group}_3d_susceptibility', f'{group}_chi_3d'][1]
             z0 = self[f'{group}_3d_susceptibility', f'{group}_chi_3d'][2]
-            if animation_variable == 'temperature':
-                description = f"Chi dependance on direction, B={self[f'{group}_3d_susceptibility', f'{group}_fields'][i_constant]:.4f} T"
-            else:
-                description = f"Chi dependance on direction, T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][i_constant]:.4f} K"
+            fields = self[f'{group}_3d_susceptibility', f'{group}_fields']
+            temps = self[f'{group}_3d_susceptibility', f'{group}_temperatures']
         elif data_type == 'hemholtz_energy':
             x0 = self[f'{group}_3d_hemholtz_energy', f'{group}_energy_3d'][0]
             y0 = self[f'{group}_3d_hemholtz_energy', f'{group}_energy_3d'][1]
             z0 = self[f'{group}_3d_hemholtz_energy', f'{group}_energy_3d'][2]
-            if animation_variable == 'temperature':
-                description = f"Energy dependence on direction, B={self[f'{group}_3d_hemholtz_energy', f'{group}_fields'][i_constant]:.4f} T"
-            else:
-                description = f"Energy dependence on direction, T={self[f'{group}_3d_hemholtz_energy', f'{group}_temperatures'][i_constant]:.4f} K"
+            fields = self[f'{group}_3d_hemholtz_energy', f'{group}_fields']
+            temps = self[f'{group}_3d_hemholtz_energy', f'{group}_temperatures']
         elif data_type == 'magnetisation':
             x0 = self[f'{group}_3d_magnetisation', f'{group}_mag_3d'][0]
             y0 = self[f'{group}_3d_magnetisation', f'{group}_mag_3d'][1]
             z0 = self[f'{group}_3d_magnetisation', f'{group}_mag_3d'][2]
-            if animation_variable == 'temperature':
-                description = f"Magnetisation dependence on direction, B={self[f'{group}_3d_magnetisation', f'{group}_fields'][i_constant]:.4f} T"
-            else:
-                description = f"Magnetisation dependence on direction, T={self[f'{group}_3d_magnetisation', f'{group}_temperatures'][i_constant]:.4f} K"
+            fields = self[f'{group}_3d_magnetisation', f'{group}_fields']
+            temps = self[f'{group}_3d_magnetisation', f'{group}_temperatures']
+        else:
+            raise ValueError
+        if animation_variable == 'temperature':
+            description = f"Magnetisation dependence on direction, B={fields[i_constant]:.4f} T"
+        else:
+            description = f"Magnetisation dependence on direction, T={temps[i_constant]:.4f} K"
         title = description
 
         fig = plt.figure()
@@ -2013,14 +2006,14 @@ class Compound:
                     x = x0[i_constant, i_temp, :, :]
                     y = y0[i_constant, i_temp, :, :]
                     z = z0[i_constant, i_temp, :, :]
-                    if data_type == 'chiT':
+                    if data_type == 'chit':
                         ax.set_xlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
                                       labelpad=20 * len(str(ticks)) / 4)
                         ax.set_ylabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
                                       labelpad=20 * len(str(ticks)) / 4)
                         ax.set_zlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
                                       labelpad=20 * len(str(ticks)) / 4)
-                    elif data_type == 'chiT':
+                    elif data_type == 'chi':
                         ax.set_xlabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$',
                                       labelpad=20 * len(str(ticks)) / 4)
                         ax.set_ylabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$',
@@ -2080,7 +2073,7 @@ class Compound:
 
                     if bar:
                         c = next(colour)
-                        axins = ax.inset_axes([0, .6, .1, .2])
+                        axins = ax.inset_axes([0, .6, .098, .2])
                         axins.bar(1, indicator[i_temp - i_start], width=0.2, color=c)
                         axins.set_ylim(0, 1)
                         if not bar_scale:
@@ -2103,14 +2096,14 @@ class Compound:
                     x = x0[i_field, i_constant, :, :]
                     y = y0[i_field, i_constant, :, :]
                     z = z0[i_field, i_constant, :, :]
-                    if data_type == 'chiT':
+                    if data_type == 'chit':
                         ax.set_xlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
                                       labelpad=20 * len(str(ticks)) / 4)
                         ax.set_ylabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
                                       labelpad=20 * len(str(ticks)) / 4)
                         ax.set_zlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
                                       labelpad=20 * len(str(ticks)) / 4)
-                    elif data_type == 'chiT':
+                    elif data_type == 'chi':
                         ax.set_xlabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$',
                                       labelpad=20 * len(str(ticks)) / 4)
                         ax.set_ylabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$',
@@ -2171,11 +2164,10 @@ class Compound:
 
                     if bar:
                         c = next(colour)
-                        axins = ax.inset_axes([0, .6, .1, .2])
+                        axins = ax.inset_axes([0, .6, .098, .2])
                         axins.bar(1, indicator[i_field - i_start], width=0.2, color=c)
                         axins.set_ylim(0, 1)
 
-                        axins.axison = False
                         if not bar_scale:
                             axins.text(1, 1, s=f'{round(fields[-1], field_rounding)} T', verticalalignment='bottom',
                                        horizontalalignment='center')
@@ -2196,24 +2188,14 @@ class Compound:
                             bar=True, axis_off=False):
 
         field_i, temp_i = 0, 0
-        if data_type == 'susceptibility':
-            fields = self[f'{group}_3d_susceptibility', f'{group}_fields']
-            temps = self[f'{group}_3d_susceptibility', f'{group}_temperatures']
-        elif data_type == 'hemholtz_energy':
-            fields = self[f'{group}_3d_hemholtz_energy', f'{group}_fields']
-            temps = self[f'{group}_3d_hemholtz_energy', f'{group}_temperatures']
-        elif data_type == 'magnetisation':
-            fields = self[f'{group}_3d_magnetisation', f'{group}_fields']
-            temps = self[f'{group}_3d_magnetisation', f'{group}_temperatures']
 
         T = False
-        if data_type == 'chiT':
+        if data_type == 'chit':
             x0 = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][0]
             y0 = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][1]
             z0 = self[f'{group}_3d_susceptibility', f'{group}_chit_3d'][2]
             fields = self[f'{group}_3d_susceptibility', f'{group}_fields']
             temps = self[f'{group}_3d_susceptibility', f'{group}_temperatures']
-
             T = True
         if data_type == 'chi':
             x0 = self[f'{group}_3d_susceptibility', f'{group}_chi_3d'][0]
@@ -2226,11 +2208,15 @@ class Compound:
             x0 = self[f'{group}_3d_hemholtz_energy', f'{group}_energy_3d'][0]
             y0 = self[f'{group}_3d_hemholtz_energy', f'{group}_energy_3d'][1]
             z0 = self[f'{group}_3d_hemholtz_energy', f'{group}_energy_3d'][2]
+            fields = self[f'{group}_3d_hemholtz_energy', f'{group}_fields']
+            temps = self[f'{group}_3d_hemholtz_energy', f'{group}_temperatures']
 
         elif data_type == 'magnetisation':
             x0 = self[f'{group}_3d_magnetisation', f'{group}_mag_3d'][0]
             y0 = self[f'{group}_3d_magnetisation', f'{group}_mag_3d'][1]
             z0 = self[f'{group}_3d_magnetisation', f'{group}_mag_3d'][2]
+            fields = self[f'{group}_3d_magnetisation', f'{group}_fields']
+            temps = self[f'{group}_3d_magnetisation', f'{group}_temperatures']
 
         fig = plt.figure()
         global ax
@@ -2259,7 +2245,7 @@ class Compound:
         ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
         ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
         # Important order of operations!
-        if data_type == 'susceptibility':
+        if data_type in 'chit':
             if T:
                 ax.set_xlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
                               labelpad=20 * len(str(ticks)) / 4)
@@ -2276,9 +2262,9 @@ class Compound:
             ax.set_ylabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
             ax.set_zlabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
         elif data_type == 'magnetisation':
-            ax.set_xlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-            ax.set_ylabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-            ax.set_zlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
+            ax.set_xlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=20 * len(str(ticks)) / 4)
+            ax.set_ylabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=20 * len(str(ticks)) / 4)
+            ax.set_zlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=20 * len(str(ticks)) / 4)
         if ticks == 0:
             for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
                 axis.set_ticklabels([])
@@ -2305,7 +2291,7 @@ class Compound:
         fig.subplots_adjust(left=0.1)
         if bar:
             c = colour1[temp_i]
-            axins = ax.inset_axes([0, .7, .1, .2])
+            axins = ax.inset_axes([-0.05, .7, .1, .2])
             axins.bar(1, indicator1[temp_i], width=0.2, color=c)
             axins.set_ylim(0, 1)
             axins.text(1, 1, s=f'{round(temps[-1], 1)} K', verticalalignment='bottom',
@@ -2319,7 +2305,7 @@ class Compound:
             axins.axison = False
 
             c = colour2[field_i]
-            axins2 = ax.inset_axes([0, .2, .1, .2])
+            axins2 = ax.inset_axes([-0.05, .2, .1, .2])
             axins2.bar(1, indicator2[field_i], width=0.2, color=c)
             axins2.set_ylim(0, 1)
             axins2.text(1, 1, s=f'{round(fields[-1], 1)} T', verticalalignment='bottom',
@@ -2345,7 +2331,7 @@ class Compound:
             temp_i = slider_temp.val
             field_i = slider_field.val
 
-            ax.clear()
+            ax.cla()
             x = x0[field_i, temp_i, :, :]
             y = y0[field_i, temp_i, :, :]
             z = z0[field_i, temp_i, :, :]
@@ -2362,54 +2348,55 @@ class Compound:
             ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
+            ax.set_title(f'B={fields[field_i]:.4f} T, T={temps[temp_i]:.4f} K')
             # Important order of operations!
-            if data_type == 'susceptibility':
-                if T:
-                    ax.set_xlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
-                                  labelpad=20 * len(str(ticks)) / 4)
-                    ax.set_ylabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
-                                  labelpad=20 * len(str(ticks)) / 4)
-                    ax.set_zlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
-                                  labelpad=20 * len(str(ticks)) / 4)
-                else:
-                    ax.set_xlabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-                    ax.set_ylabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-                    ax.set_zlabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-            elif data_type == 'hemholtz_energy':
-                ax.set_xlabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-                ax.set_ylabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-                ax.set_zlabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-            elif data_type == 'magnetisation':
-                ax.set_xlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-                ax.set_ylabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-                ax.set_zlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-            if ticks == 0:
-                for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                    axis.set_ticklabels([])
-                    axis._axinfo['axisline']['linewidth'] = 1
-                    axis._axinfo['axisline']['color'] = (0, 0, 0)
-                    axis._axinfo['grid']['linewidth'] = 0.5
-                    axis._axinfo['grid']['linestyle'] = "-"
-                    axis._axinfo['grid']['color'] = (0, 0, 0)
-                    axis._axinfo['tick']['inward_factor'] = 0.0
-                    axis._axinfo['tick']['outward_factor'] = 0.0
-                    axis.set_pane_color((0.95, 0.95, 0.95))
-            else:
-                ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-                ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-                ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                if not (not T and ticks == 1):
-                    ax.xaxis.set_major_locator(MultipleLocator(ticks))
-                    ax.yaxis.set_major_locator(MultipleLocator(ticks))
-                    ax.zaxis.set_major_locator(MultipleLocator(ticks))
+            # if data_type in 'chit':
+            #     if T:
+            #         ax.set_xlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
+            #                       labelpad=20 * len(str(ticks)) / 4)
+            #         ax.set_ylabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
+            #                       labelpad=20 * len(str(ticks)) / 4)
+            #         ax.set_zlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
+            #                       labelpad=20 * len(str(ticks)) / 4)
+            #     else:
+            #         ax.set_xlabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
+            #         ax.set_ylabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
+            #         ax.set_zlabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
+            # elif data_type == 'hemholtz_energy':
+            #     ax.set_xlabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
+            #     ax.set_ylabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
+            #     ax.set_zlabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
+            # elif data_type == 'magnetisation':
+            #     ax.set_xlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
+            #     ax.set_ylabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
+            #     ax.set_zlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
+            # if ticks == 0:
+            #     for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
+            #         axis.set_ticklabels([])
+            #         axis._axinfo['axisline']['linewidth'] = 1
+            #         axis._axinfo['axisline']['color'] = (0, 0, 0)
+            #         axis._axinfo['grid']['linewidth'] = 0.5
+            #         axis._axinfo['grid']['linestyle'] = "-"
+            #         axis._axinfo['grid']['color'] = (0, 0, 0)
+            #         axis._axinfo['tick']['inward_factor'] = 0.0
+            #         axis._axinfo['tick']['outward_factor'] = 0.0
+            #         axis.set_pane_color((0.95, 0.95, 0.95))
+            # else:
+            #     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+            #     ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+            #     ax.zaxis.set_minor_locator(AutoMinorLocator(2))
+            #     if not (not T and ticks == 1):
+            #         ax.xaxis.set_major_locator(MultipleLocator(ticks))
+            #         ax.yaxis.set_major_locator(MultipleLocator(ticks))
+            #         ax.zaxis.set_major_locator(MultipleLocator(ticks))
             ax.grid(False)
-
-            ax.set_box_aspect([1, 1, 1])
+            #
+            # ax.set_box_aspect([1, 1, 1])
             # plt.title(title)
             fig.subplots_adjust(left=0.1)
             if bar:
                 c = colour1[temp_i]
-                axins = ax.inset_axes([0, .7, .1, .2])
+                axins = ax.inset_axes([-0.05, .7, .1, .2])
                 axins.bar(1, indicator1[temp_i], width=0.2, color=c)
                 axins.set_ylim(0, 1)
                 axins.text(1, 1, s=f'{round(temps[-1], 1)} K', verticalalignment='bottom',
@@ -2423,7 +2410,7 @@ class Compound:
                 axins.axison = False
 
                 c = colour2[field_i]
-                axins2 = ax.inset_axes([0, .2, .1, .2])
+                axins2 = ax.inset_axes([-0.05, .2, .1, .2])
                 axins2.bar(1, indicator2[field_i], width=0.2, color=c)
                 axins2.set_ylim(0, 1)
                 axins2.text(1, 1, s=f'{round(fields[-1], 1)} T', verticalalignment='bottom',
@@ -2432,7 +2419,7 @@ class Compound:
                             horizontalalignment='center')
                 axins2.axison = False
 
-            fig.canvas.draw_idle()
+            fig.canvas.draw()
 
         slider_temp.on_changed(slider_update)
         slider_field.on_changed(slider_update)
@@ -2440,6 +2427,7 @@ class Compound:
             plt.axis('off')
         # plt.tight_layout()
         plt.show()
+
 
 
 

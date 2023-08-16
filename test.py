@@ -11,20 +11,78 @@ from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 
 if __name__ == '__main__':
 
-    fields = np.linspace(0.1, 10, 10, dtype=np.float64)
-    print(fields)
-    temperatures = np.linspace(0.0000009,700, 10, dtype=np.float64)
-    print(temperatures)
+    # test = slt.compound_from_slt(".", "Lorenzo_Co")
 
-    # CeCoN3 = slt.compound_from_molcas(".", "Lore", "rot", ".", "rot_lorenzo_bas0_corr")
-    #CeCoN3 = slt.compound_from_molcas(".", "animations", "no_rot", ".", "no_rot_lorenzo_bas0")
-    CeCoN3 = slt.compound_from_slt(".", "animations")
+    # test.states_magnetic_momenta("rot_orca", 0)
 
-    start_time = time.perf_counter()
 
-    CeCoN3.calculate_hemholtz_energy_3d("no_rot", 0, fields, 30, temperatures, 16, 2)
+    #test = slt.compound_from_molcas(".", "test_with_aniso", "bas0", ".", "no_rot_lorenzo_bas0")
 
-    #CeCoN3.interactive_plot_3d("animeeeee", "hemholtz_energy")
+    test = slt.compound_from_slt(".", "test_with_aniso")
+
+    rotation=np.array([[-0.37234899,  0.88008991, -0.29461498],
+        [-0.8118157 , -0.15500841,  0.56296329],
+        [ 0.44979051,  0.44879188,  0.77218803]])
+    
+
+    from slothpy.angular_momentum.pseudo_spin_ito import set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis
+
+    rot = rotation.T
+    matrix = test.magnetic_momenta_matrix("bas0", 2, rotation=rot)
+    #print(matrix)
+
+    # eigenvalues, eigenvectors = np.linalg.eigh(matrix)
+
+    # print(eigenvalues)
+
+    # matrix2 = eigenvectors[0].conj().T @ matrix[0] @ eigenvectors[0]
+    # print(matrix2)
+
+    # matrix3 = eigenvectors[1].conj().T @ matrix[1] @ eigenvectors[1]
+    # print(matrix3)
+
+    # matrix4 = eigenvectors[2].conj().T @ matrix[2] @ eigenvectors[2]
+    # print(matrix4)
+
+    matrix2 = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(matrix, matrix[0])
+
+    print(matrix2)
+
+    matrix3 = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(matrix, matrix[1])
+
+    print(matrix3)
+
+    matrix4 = set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(matrix, matrix[2])
+
+    print(matrix4)
+
+    #print(test.calculate_g_tensor_and_axes_doublet("bas0", [0,1]))
+
+
+
+    # fields = np.linspace(0.1, 10, 48, dtype=np.float64)
+    # temperatures = np.linspace(0.1,300, 96, dtype=np.float64)
+
+    # #CeCoN3 = slt.compound_from_orca(".", "test", "error", ".", "geom.out")
+    # CeCoN3 = slt.compound_from_molcas(".", "YbCo", "bas3", ".", "YbCo_DG_bas3")
+    # CeCoN3 = slt.compound_from_slt(".", "YbCo")
+
+    # start_time = time.perf_counter()
+
+    # CeCoN3.calculate_chit_3d("bas3", fields, 0, temperatures, 16, 2, 3, 0.0001, 50, slt="bas3")
+    # CeCoN3.calculate_hemholtz_energy_3d("bas3", 0, fields, 50, temperatures, 16, 2, slt="bas3")
+    # CeCoN3.calculate_mag_3d("bas3", 0, fields, 64, temperatures, 16, 2, slt="bas3")
+
+
+    # end_time = time.perf_counter()
+
+    # print(f'{end_time - start_time} s')
+
+    # CeCoN3.interactive_plot_3d("bas3", "hemholtz_energy")
+    # CeCoN3.interactive_plot_3d("bas3", "magnetisation")
+    # CeCoN3.interactive_plot_3d("bas3", "chit")
+
+    # CeCoN3.states_total_angular_momenta("error")
 
 #     rotation = np.array([[-0.46452073, 0.1162711, -0.87789608],
 #   [0.11809391,  -0.97435556,  -0.19153345],
@@ -39,7 +97,7 @@ if __name__ == '__main__':
     # print(eigenvalues)
     #CeCoN3.decomposition_in_z_magnetic_momentum_basis("VTZP", 0, 5, rotation=rotatione)
 
-    # axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("rot", [0,1])
+    # axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("error", [0,1])
 
     # print(axes)
     # print(gtensor)
@@ -54,9 +112,6 @@ if __name__ == '__main__':
 
     #mth = CeCoN3.calculate_mth("VTZP", 0, fields, 5, [2.,4.,6.,8.], 64, 1)
 
-    end_time = time.perf_counter()
-
-    print(f'{end_time - start_time} s')
 
     # for mt in mth:
     #     print("temp")

@@ -1,5 +1,6 @@
-import threadpoolctl
+import time
 import multiprocessing
+import threadpoolctl
 import numpy as np
 from numba import jit
 from slothpy.magnetism.magnetisation import (mth, calculate_magnetization, mag_3d)
@@ -233,10 +234,12 @@ def chit_3d(filename: str, group: str, fields: np.ndarray, states_cutoff: int, t
         fields_diffs = fields_diffs.astype(np.float64)
 
         for diff_index, fields_diff in enumerate(fields_diffs):
-
+            print(f'STENCIL DIFFERENCE: {diff_index}')
+            start_time = time.perf_counter()
             # Get M(t,H) for adjacent values of field
             mag_x[:,:,:,:,diff_index], mag_y[:,:,:,:,diff_index], mag_z[:,:,:,:,diff_index] = mag_3d(filename, group, states_cutoff, fields_diff, spherical_grid, temperatures, num_cpu, num_threads)
-
+            end_time = time.perf_counter()
+            print(f'{end_time - start_time} s')
         stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
 
         if T:

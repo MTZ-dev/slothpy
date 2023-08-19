@@ -1,5 +1,6 @@
-import threadpoolctl
+import time
 import multiprocessing
+import threadpoolctl
 import numpy as np
 from numba import jit
 from slothpy.general_utilities.system import get_num_of_processes
@@ -157,13 +158,12 @@ def mth(filename: str, group: str, states_cutoff: int, fields: np.ndarray, grid:
     return mth_array # Returning values in Bohr magnetons
 
 
-def arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures):
+def arg_iter_mag_3d(magnetic_moment, soc_energies, fields, theta, phi, temperatures):
 
-    field = np.float64(field)
-    
-    for i in range(phi.shape[0]):
-        for j in range(phi.shape[1]):
-            yield (magnetic_moment, soc_energies, field, np.array([[np.sin(phi[i, j]) * np.cos(theta[i, j]), np.sin(phi[i, j]) * np.sin(theta[i, j]), np.cos(phi[i, j]), 1.]]), temperatures)
+    for k in range(fields.shape[0]):
+        for i in range(phi.shape[0]):
+            for j in range(phi.shape[1]):
+                yield (magnetic_moment, soc_energies, fields[k], np.array([[np.sin(phi[i, j]) * np.cos(theta[i, j]), np.sin(phi[i, j]) * np.sin(theta[i, j]), np.cos(phi[i, j]), 1.]]), temperatures)
 
 
 def mag_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, spherical_grid: int, temperatures: np.ndarray, num_cpu: int, num_threads: int) -> np.ndarray:
@@ -182,20 +182,18 @@ def mag_3d(filename: str, group: str, states_cutoff: int, fields: np.ndarray, sp
     # Read data from HDF5 file
     magnetic_moment, soc_energies = get_soc_magnetic_momenta_and_energies_from_hdf5(filename, group, states_cutoff)
 
-    for field_index, field in enumerate(fields):
+    with threadpoolctl.threadpool_limits(limits=num_threads, user_api='blas'):
+        with threadpoolctl.threadpool_limits(limits=num_threads, user_api='openmp'):
+            # Parallel M(T,H) calculation over different grid points
+            with multiprocessing.Pool(num_process) as p:
+                mth = p.map(calculate_mt_wrapper, arg_iter_mag_3d(magnetic_moment, soc_energies, fields, theta, phi, temperatures))
 
-        with threadpoolctl.threadpool_limits(limits=num_threads, user_api='blas'):
-            with threadpoolctl.threadpool_limits(limits=num_threads, user_api='openmp'):
-                # Parallel M(T,H) calculation over different grid points
-                with multiprocessing.Pool(num_process) as p:
-                    mth = p.map(calculate_mt_wrapper, arg_iter_mag_3d(magnetic_moment, soc_energies, field, theta, phi, temperatures))
-
-        pool_index = 0
-
-        for i in range(phi.shape[0]):
-            for j in range(phi.shape[1]):
-                mag_3d_array[field_index,:,i,j] = mth[pool_index][:]
-                pool_index += 1
+            pool_index = 0
+            for k in range(fields.shape[0]):
+                for i in range(phi.shape[0]):
+                    for j in range(phi.shape[1]):
+                        mag_3d_array[k,:,i,j] = mth[pool_index][:]
+                        pool_index += 1
 
 
     x = (np.sin(phi) * np.cos(theta))[np.newaxis,np.newaxis,:,:] * mag_3d_array

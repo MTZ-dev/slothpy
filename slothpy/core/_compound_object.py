@@ -18,6 +18,7 @@ from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 
 ###Experimental imports for plotting
 from cycler import cycler
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 import matplotlib.colors
@@ -26,7 +27,13 @@ import matplotlib.gridspec
 from matplotlib.animation import PillowWriter
 from matplotlib.widgets import Slider
 
-matplotlib.use('Qt5Agg')
+# faster plot
+import matplotlib.style as mplstyle
+mplstyle.use('fast')
+mpl.rcParams['path.simplify'] = True
+mpl.rcParams['path.simplify_threshold'] = 1.0
+
+mpl.use('Qt5Agg')
 
 ###To do: orinetation print in zeeman splitting
 ###       Hemholtz 3D plot, animate 3D all properties,
@@ -39,6 +46,19 @@ matplotlib.use('Qt5Agg')
 ### MPI memory management chunksize and how to minimize memory per process not sharing with the main one
 
 ### Effective charge distribution from CFPs.
+
+### Check files before computations to avoid errors after resulting with no return
+
+### change algorithm for 3d sus to improve memory usage (probably dont store whole stencils but compute elements on the fly, maybe with
+# properly constructed generator)
+
+### Add shared memory support as in zeeman_shared_1leak xd but learn more about this, use shared memory manger, and probably add index to the iterator
+# https://docs.python.org/3/library/multiprocessing.shared_memory.html, wrapper should form a tuple pointing to the  shared memory object (but try if x is something to try this)
+# after tests you should restart computer to cler the leaks and buffers
+
+## You should probably move loops over fields to the new iterator with shared memory arrays to speed everything up
+
+## get_soc_magnetic_momenta_and_energies_from_hdf5 should be out of mag_3d there are seconds wasted for reading over and over
 
 
 class Compound:

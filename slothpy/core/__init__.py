@@ -1,1 +1,1 @@
-from ._creation_functions import (compound_from_orca, compound_from_slt, compound_from_molcas)
+from .creation_functions import (compound_from_orca, compound_from_slt, compound_from_molcas)

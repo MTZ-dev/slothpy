@@ -68,7 +68,35 @@ if __name__ == '__main__':
 
     # #CeCoN3 = slt.compound_from_orca(".", "test", "error", ".", "geom.out")
     #CeCoN3 = slt.compound_from_molcas(".", "TmCo", "bas3", ".", "TmCo_DG_bas3")
-    CeCoN3 = slt.compound_from_slt(".", "TmCo")
+    CeCoN3 = slt.compound_from_slt(".", "HoCo")
+
+    #print(CeCoN3.soc_energies_cm_1("bas3", num_of_states=2))
+
+    
+    # for ln in ["Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb"]:
+    #     CeCoN3 = slt.compound_from_slt(".", f'{ln}Co')
+    #     for dat_type in ["hemholtz_energy", "magnetisation", "chit"]:
+    #         for i in ["temperature", "field"]:
+    #             if i == "temperature":
+    #                 start = 0
+    #                 end = 299
+    #                 constant = 19
+    #                 fp = 7
+    #             else:
+    #                 start = 0
+    #                 end = 99
+    #                 constant = 9
+    #                 fp = 7
+    #             start_time = time.perf_counter()
+    #             CeCoN3.animate_3d("bas3", f"{dat_type}", f"{i}", f'{ln}_{dat_type}_{i}_slow', i_start = start, i_end = end, i_constant = constant, 
+    #                     fps = fp, bar_scale=True, temp_rounding = 1, field_rounding=1)
+    #             end_time = time.perf_counter()
+    #             print(f'Animation done in {end_time - start_time} s')
+    #     print(f'{ln} done!')
+
+
+    # CeCoN3.animate_3d("bas3", "hemholtz_energy", "temperature", "animatrix", i_start = 0, i_end = 299, i_constant = 0, 
+    #                   fps = 15, bar_scale=True, temp_rounding = 1, field_rounding=0.1)
 
     #print(CeCoN3.soc_energies_cm_1("bas3", 128))
 
@@ -76,7 +104,7 @@ if __name__ == '__main__':
 
     
     # CeCoN3.calculate_mag_3d("bas3", 64, fields, 52, temperatures, 32, 1, slt="bas3")
-    # CeCoN3.calculate_chit_3d("bas3", fields, 64, temperatures, 32, 1, 3, 0.0001, 52, slt="bas3")
+    #CeCoN3.calculate_chit_3d("bas3", fields, 64, temperatures, 32, 1, 3, 0.0001, 52, slt="bas3")
     # CeCoN3.calculate_hemholtz_energy_3d("bas3", 64, fields, 52, temperatures, 32, 1, slt="bas3")
 
 
@@ -84,11 +112,11 @@ if __name__ == '__main__':
 
     # print(f'{end_time - start_time} s')
 
-    CeCoN3.interactive_plot_3d("bas3", "hemholtz_energy")
-    CeCoN3.interactive_plot_3d("bas3", "magnetisation")
+    #CeCoN3.interactive_plot_3d("bas3", "hemholtz_energy")
+    # CeCoN3.interactive_plot_3d("bas3", "magnetisation")
     CeCoN3.interactive_plot_3d("bas3", "chit")
 
-    #CeCoN3.animate_3d("bas3", "hemholtz_energy", "temperature", "animatrix", 0, 64, 3, bar_scale=True, field_rounding=1)
+
 
     # CeCoN3.states_total_angular_momenta("error")
 

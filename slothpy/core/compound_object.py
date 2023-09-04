@@ -14,7 +14,7 @@ from slothpy.angular_momentum.pseudo_spin_ito import (get_decomposition_in_z_tot
                                                       get_zeeman_matrix_in_z_magnetic_momentum_basis, get_zeeman_matrix_in_z_total_angular_momentum_basis, 
                                                       matrix_from_ito_complex, matrix_from_ito_real)
 from slothpy.general_utilities.math_expresions import normalize_grid_vectors
-
+from slothpy.core._slothpy_exception import SltError
 
 ###Experimental imports for plotting
 from cycler import cycler
@@ -62,59 +62,83 @@ mpl.use('Qt5Agg')
 
 
 class Compound:
-
+    """
+    A core object constituting the API and access to all methods.
+    """
 
     @classmethod
     def _new(cls, filepath: str, filename: str):
+        """
+        This is a private method for initializing the Compound object that
+        should be only used by creation_functions.
+
+        Parameters
+        ----------
+        filepath : str
+            A path of the file that will be associated with the created
+            instance of the Compound class.
+        filename : str
+            A name of the file that will be associated with the created
+            instance of the Compound class.
+
+        Returns
+        -------
+        Compound
+            An instance of the Compound class.
+        """
 
         filename += ".slt"
-
         hdf5_file = path.join(filepath, filename)
-
         obj = super().__new__(cls)
-
         obj._hdf5 = hdf5_file
         obj._get_hdf5_groups_and_attributes()
 
         return obj
 
+    def __new__(cls, *args, **kwargs) -> None:
+        """
+        The definition of this method prevents direct instantialization of the
+        Compound class.
 
-    def __new__(cls, *args, **kwargs):
+        Raises
+        ------
+        TypeError
+            Prevents Compound() from working.
+        """
 
-        raise TypeError("The Compound object should not be instantiated directly. Use a Compound creation function instead.")
-    
+        raise TypeError("The Compound object should not be instantiated \
+                         directly. Use a Compound creation function instead.")
 
     def __repr__(self) -> str:
+        """
+        Creates a representation of the Compund object using names and
+        attributes of the groups contained in the assosiated .slt file.
 
-        representation = f"Compound from {self._hdf5} with the following groups of data:\n"
-        
+        Returns
+        -------
+        str
+            A representation in terms of the contents of the .slt file.
+        """
+
+        representation = f"Compound from {self._hdf5} with the following \
+              groups of data:\n"
         for group, attributes in self._groups.items():
             representation += f"{group}: {attributes}\n"
 
         return representation
 
+    # Set __str__ the same as an object representation using __repr__.
+    __str__ = __repr__
 
-    def __str__(self) -> str:
-      
-        string = f"Compound from {self._hdf5} with the following groups of data:\n"
-        
-        for group, attributes in self._groups.items():
-            string += f"{group}: {attributes}\n"
-
-        return string
-        
-    
     def __setitem__(self, key, value) -> None:
 
         value = np.array(value)
-
         if isinstance(key, str):
-
             try:
                 with h5py.File(self._hdf5, 'r+') as file:
-                    new_dataset = file.create_dataset(key, shape=value.shape, dtype=value.dtype)
+                    new_dataset = file.create_dataset(key, shape=value.shape,
+                                                       dtype=value.dtype)
                     new_dataset[:] = value[:]
-                
                 self._get_hdf5_groups_and_attributes()
                 return
                     
@@ -196,11 +220,15 @@ class Compound:
     def delete_group(self, group: str) -> None:
         """Deletes a group provided its full name from the .slt file.
 
-        Args:
-            group (str): The full group name to delete.
+        Parameters
+        ----------
+        group : str
+            The full group name to delete.
 
-        Raises:
-            Exception: If the deletion is unsuccessful, for example when the provided group name does not exist.
+        Raises
+        ------
+        Exception
+            If the deletion is unsuccessful, for example when the provided group name does not exist.
         """
 
         try:
@@ -2002,9 +2030,9 @@ class Compound:
         else:
             raise ValueError
         if animation_variable == 'temperature':
-            description = f"Magnetisation dependence on direction, B={fields[i_constant]:.4f} T"
+            description = f"B={fields[i_constant]:.4f} T"
         else:
-            description = f"Magnetisation dependence on direction, T={temps[i_constant]:.4f} K"
+            description = f"T={temps[i_constant]:.4f} K"
         title = description
 
         fig = plt.figure()
@@ -2201,6 +2229,7 @@ class Compound:
 
                     writer.grab_frame()
                     plt.cla()
+        plt.close()
 
     def interactive_plot_3d(self, group: str, data_type: str, colour_map_name='dark_rainbow_r',
                             T_slider_colour='#77f285', B_slider_colour='#794285', temp_bar_colour_map_name='BuRd',

@@ -24,7 +24,7 @@ class SltError(Exception):
 
 class CompError(Exception):
     """
-    A custom exception class for runtime errors connected to computations.
+    A custom exception class for runtime errors connected with computations.
 
     Parameters
     ----------

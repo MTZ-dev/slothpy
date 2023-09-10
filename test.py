@@ -66,8 +66,7 @@ if __name__ == "__main__":
     # CeCoN3 = slt.compound_from_molcas(".", "TmCo", "bas3", ".", "TmCo_DG_bas3")
     CeCoN3 = slt.compound_from_slt(".", "HoCo")
 
-    CeCoN3.delete_group("dupaaaaaaaas")
-
+    # CeCoN3.delete_group_dataset("dupaaaaaaaas")
     print(CeCoN3)
 
     # print(CeCoN3.soc_energies_cm_1("bas3", num_of_states=2))

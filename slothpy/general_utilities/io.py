@@ -2,7 +2,10 @@ import os
 import re
 import numpy as np
 import h5py
-from slothpy.angular_momentum.rotation import rotate_vector_operator
+from typing import Tuple
+from slothpy.general_utilities._constants import YELLOW, RESET
+from slothpy.core._slothpy_exceptions import SltFileError
+from slothpy.angular_momentum.rotation import _rotate_vector_operator
 
 
 def grep_to_file(
@@ -367,155 +370,82 @@ def molcas_spin_orbit_to_slt(
             "Description"
         ] = f"Dataset containing Lz matrix in SOC basis"
 
-        # Old alternative with PRPR keyword from files spin and angmom
 
-        # matrices = ['SOC_SX', 'SOC_SY', 'SOC_SZ', 'SOC_LX', 'SOC_LY', 'SOC_LZ']
-        # files_names = ['spin-1.txt', 'spin-2.txt', 'spin-3.txt', 'angmom-1.txt', 'angmom-2.txt', 'angmom-3.txt']
-
-        # for matrix_name, file in zip(matrices, files_names):
-
-        #     file_path_name = os.path.join(path_molcas, file)
-
-        #     data = np.loadtxt(file_path_name, dtype=np.float64, skiprows=1)
-        #     data_dim = np.int64(np.sqrt(data.shape[0]))
-        #     data_to_save = np.zeros((data_dim, data_dim), dtype=np.complex128)
-
-        #     for row in data:
-        #         data_to_save[np.int64(row[0] - 1),np.int64(row[1] - 1)] = row[2] + 1j * row[3]
-
-        #     dataset = molcas.create_dataset(matrix_name, shape=(data_dim, data_dim), dtype=np.complex128)
-        #     if file in ['angmom-1.txt', 'angmom-2.txt', 'angmom-3.txt']:
-        #         dataset[:, :] = 1j * data_to_save[:, :]
-        #     else:
-        #         dataset[:, :] = data_to_save[:, :]
-        #     dataset.attrs['Description'] = f'Dataset containing {matrix_name} matrix in SOC basis'
-
-
-def get_soc_energies_and_soc_angular_momenta_from_hdf5(
+def _get_soc_ener_and_soc_ang_mom_from_hdf5(
     filename: str, group: str, rotation=None
-) -> (
-    tuple
-):  # named tuple, see numpy for example linalg.eig, they return class from typing and class type of rotation
+) -> Tuple[np.ndarray, np.ndarray]:
     try:
         # Read data from HDF5 file
         with h5py.File(filename, "r") as file:
-            soc_matrix = file[str(group)]["SOC"][:]
-            sx = 0.5 * file[str(group)]["SF_SX"][:]
-            lx = 1j * file[str(group)]["SF_LX"][:]
-            sy = 0.5j * file[str(group)]["SF_SY"][:]
-            ly = 1j * file[str(group)]["SF_LY"][:]
-            sz = 0.5 * file[str(group)]["SF_SZ"][:]
-            lz = 1j * file[str(group)]["SF_LZ"][:]
+            shape = file[str(group)]["SOC"][:].shape[0]
+            ang_mom = np.zeros((6, shape, shape), dtype=np.complex128)
+            soc_mat = file[str(group)]["SOC"][:]
+            ang_mom[0][:] = 0.5 * file[str(group)]["SF_SX"][:]
+            ang_mom[1][:] = 0.5j * file[str(group)]["SF_SY"][:]
+            ang_mom[2][:] = 0.5 * file[str(group)]["SF_SZ"][:]
+            ang_mom[3][:] = 1j * file[str(group)]["SF_LX"][:]
+            ang_mom[4][:] = 1j * file[str(group)]["SF_LY"][:]
+            ang_mom[5][:] = 1j * file[str(group)]["SF_LZ"][:]
 
-        # Perform diagonalization on SOC matrix
-        soc_energies, eigenvectors = np.linalg.eigh(soc_matrix)
-        soc_energies = np.ascontiguousarray(soc_energies.astype(np.float64))
-        eigenvectors = np.ascontiguousarray(eigenvectors.astype(np.complex128))
+        # Perform diagonalization of SOC matrix
+        soc_ener, eigenvect = np.linalg.eigh(soc_mat)
+
+        ang_mom = np.ascontiguousarray(ang_mom)
+        soc_ener = np.ascontiguousarray(soc_ener.astype(np.float64))
+        eigenvect = np.ascontiguousarray(eigenvect.astype(np.complex128))
 
         # Apply transformations to spin and orbital operators
-        sx = eigenvectors.conj().T @ sx.astype(np.complex128) @ eigenvectors
-        sy = eigenvectors.conj().T @ sy.astype(np.complex128) @ eigenvectors
-        sz = eigenvectors.conj().T @ sz.astype(np.complex128) @ eigenvectors
-        lx = eigenvectors.conj().T @ lx.astype(np.complex128) @ eigenvectors
-        ly = eigenvectors.conj().T @ ly.astype(np.complex128) @ eigenvectors
-        lz = eigenvectors.conj().T @ lz.astype(np.complex128) @ eigenvectors
+        ang_mom = eigenvect.conj().T @ ang_mom @ eigenvect
 
-        if (rotation is not None) or (
-            rotation != None
-        ):  # then is istnace of Rotation class
-            sx, sy, sz = rotate_vector_operator(sx, sy, sz, rotation)
-            lx, ly, lz = rotate_vector_operator(lx, ly, lz, rotation)
+        if (rotation is not None) or (rotation != None):
+            ang_mom[0:3, :, :] = _rotate_vector_operator(
+                ang_mom[0:3, :, :], rotation
+            )
+            ang_mom[3:6, :, :] = _rotate_vector_operator(
+                ang_mom[3:6, :, :], rotation
+            )
 
         # Return operators in SOC basis
-        return (
-            soc_energies,
-            sx,
-            sy,
-            sz,
-            lx,
-            ly,
-            lz,
-        )  # rotation to implement everywhere
+        return soc_ener, ang_mom
 
-    except Exception as e:
-        error_type_1 = type(e).__name__
-        error_message_1 = str(e)
-        error_print_1 = f"{error_type_1}: {error_message_1}"
+    except Exception as exc_1:
+        error_type_1 = type(exc_1).__name__
+        error_message_1 = str(exc_1)
+        error_print_1 = (
+            YELLOW + f"{error_type_1}" + RESET + f": {error_message_1}"
+        )
         try:
             with h5py.File(filename, "r") as file:
-                soc_energies = file[str(group)]["SOC_energies"][:]
-                sx = file[str(group)]["SOC_SX"][:]
-                lx = file[str(group)]["SOC_LX"][:]
-                sy = file[str(group)]["SOC_SY"][:]
-                ly = file[str(group)]["SOC_LY"][:]
-                sz = file[str(group)]["SOC_SZ"][:]
-                lz = file[str(group)]["SOC_LZ"][:]
+                shape = file[str(group)]["SOC_energies"][:].shape[0]
+                ang_mom = np.zeros((6, shape, shape), dtype=np.complex128)
+                soc_ener = file[str(group)]["SOC_energies"][:]
+                ang_mom[0][:] = file[str(group)]["SOC_SX"][:]
+                ang_mom[1][:] = file[str(group)]["SOC_SY"][:]
+                ang_mom[2][:] = file[str(group)]["SOC_SZ"][:]
+                ang_mom[3][:] = file[str(group)]["SOC_LX"][:]
+                ang_mom[4][:] = file[str(group)]["SOC_LY"][:]
+                ang_mom[5][:] = file[str(group)]["SOC_LZ"][:]
 
-            ####EXPERIMENTAL PHASE AT STAGE OF WHOLE PURE SX AND LX MATRICES
+            if (rotation is not None) or (rotation != None):
+                ang_mom[0:3, :, :] = _rotate_vector_operator(
+                    ang_mom[0:3, :, :], rotation
+                )
+                ang_mom[3:6, :, :] = _rotate_vector_operator(
+                    ang_mom[3:6, :, :], rotation
+                )
 
-            # jz = sz + lz
-            # _, eigenvectors = np.linalg.eigh(jz)
+            return soc_ener, ang_mom
 
-            # px = lx + sx
-            # px = eigenvectors.conj().T @ px @ eigenvectors
-
-            # # Initialize phases of vectors with the first one = 1
-            # c = np.zeros(sx.shape[0], dtype=np.complex128)
-            # c[0] = 1.
-
-            # # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
-            # for i in range(px.shape[0]-1):
-            #     if np.real(px[i,i+1]).any() > 1e-12 or np.abs(np.imag(px[i,i+1])).any() > 1e-12:
-            #         c[i+1] = 1j*px[i,i+1].conj()/np.abs(px[i,i+1])/c[i].conj()
-            #     else:
-            #         c[i+1] = 1.
-
-            # sx_p = sx
-            # lx_p = lx
-            # sy_p = sy
-            # ly_p = ly
-            # sz_p = sz
-            # lz_p = lz
-
-            # # Transform matrices applying new phase factors
-            # for i in range(sx.shape[0]):
-            #     for j in range(sx.shape[0]):
-            #         sx_p[i,j] = sx[i,j] * c[i].conj() * c[j]
-            #         lx_p[i,j] = lx[i,j] * c[i].conj() * c[j]
-            #         sy_p[i,j] = sy[i,j] * c[i].conj() * c[j]
-            #         ly_p[i,j] = ly[i,j] * c[i].conj() * c[j]
-            #         sz_p[i,j] = sz[i,j] * c[i].conj() * c[j]
-            #         lz_p[i,j] = lz[i,j] * c[i].conj() * c[j]
-
-            # if (rotation is not None) or (rotation != None): #then is istnace of Rotation class
-            #     sx, sy, sz = rotate_vector_operator(sx_p, sy_p, sz_p, rotation)
-            #     lx, ly, lz = rotate_vector_operator(lx_p, ly_p, lz_p, rotation)
-
-            if (rotation is not None) or (
-                rotation != None
-            ):  # then is istnace of Rotation class
-                sx, sy, sz = rotate_vector_operator(sx, sy, sz, rotation)
-                lx, ly, lz = rotate_vector_operator(lx, ly, lz, rotation)
-
-            return (
-                soc_energies,
-                sx,
-                sy,
-                sz,
-                lx,
-                ly,
-                lz,
-            )  # rotation implement everywhere
-
-        except Exception as e:
-            error_type_2 = type(e).__name__
-            error_message_2 = str(e)
-            error_print_2 = f"{error_type_2}: {error_message_2}"
-            raise Exception(
-                "Failed to load SOC, spin and angular momenta data from HDF5"
-                " file.\n Error(s) encountered while trying read the data:"
-                f" {error_print_1}, {error_print_2}"
-            )
+        except Exception as exc_2:
+            raise SltFileError(
+                filename,
+                exc_2,
+                message=(
+                    "Failed to load SOC, spin and angular momenta data from"
+                    " .slt file.\n Previous errors encountered while trying"
+                    f" read the data: {error_print_1}"
+                ),
+            ) from None
 
 
 def get_soc_magnetic_momenta_and_energies_from_hdf5(
@@ -581,7 +511,7 @@ def get_soc_magnetic_momenta_and_energies_from_hdf5(
         lx,
         ly,
         lz,
-    ) = get_soc_energies_and_soc_angular_momenta_from_hdf5(
+    ) = _get_soc_ener_and_soc_ang_mom_from_hdf5(
         filename, group, rotation
     )
 

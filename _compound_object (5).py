@@ -2,7 +2,7 @@ from os import path
 from typing import Any, Tuple, Union
 import h5py
 import numpy as np
-from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
+from slothpy.magnetism._g_tensor import calculate_g_tensor_and_axes_doublet
 from slothpy.magnetism.magnetisation import (mth, mag_3d)
 from slothpy.magnetism.susceptibility import (chitht, chit_tensorht, chit_3d)
 from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid

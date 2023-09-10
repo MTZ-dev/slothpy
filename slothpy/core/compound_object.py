@@ -1,10 +1,23 @@
 from os import path
-from typing import Any, Tuple, Union
+from typing import Tuple, Union
 import h5py
 import numpy as np
-from ._slothpy_exceptions import SltFileError, SltCompError
-from ._constants import RED, GREEN, YELLOW, BLUE, RESET
-from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
+from ._slothpy_exceptions import (
+    SltFileError,
+    SltCompError,
+    SltSaveError,
+    SltReadError,
+    SltPlotError,
+)
+from slothpy.general_utilities._constants import (
+    RED,
+    GREEN,
+    YELLOW,
+    BLUE,
+    PURPLE,
+    RESET,
+)
+from slothpy.magnetism._g_tensor import _calculate_g_tensor_and_axes_doublet
 from slothpy.magnetism.magnetisation import mth, mag_3d
 from slothpy.magnetism.susceptibility import chitht, chit_tensorht, chit_3d
 from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
@@ -153,18 +166,18 @@ class Compound:
             + "File "
             + RESET
             + f'"{self._hdf5}" with the following '
-            + YELLOW
+            + BLUE
             + "Groups "
             + RESET
             + "of data:\n"
         )
         for group, attributes in self._groups.items():
-            representation += YELLOW + f"{group}" + RESET + f": {attributes}\n"
+            representation += BLUE + f"{group}" + RESET + f": {attributes}\n"
 
         if self._datasets:
-            representation += "and " + BLUE + "Datasets" + RESET + ":\n"
+            representation += "and " + PURPLE + "Datasets" + RESET + ":\n"
             for dataset in self._datasets:
-                representation += BLUE + f"{dataset}\n" + RESET
+                representation += PURPLE + f"{dataset}\n" + RESET
 
         return representation
 
@@ -173,7 +186,12 @@ class Compound:
 
     def __setitem__(
         self,
-        key: Union[str, Tuple[str, str], Tuple[str, str, str]],
+        key: Union[
+            str,
+            Tuple[str, str],
+            Tuple[str, str, str],
+            Tuple[str, str, str, str],
+        ],
         value: np.ndarray,
     ) -> None:
         """
@@ -184,16 +202,19 @@ class Compound:
 
         Parameters
         ----------
-        key : Union[str, Tuple[str, str], Tuple[str, str, str]]
-            A string or a 2/3-tuple of strings representing a dataset or
-            group/dataset/atribute (Description), respectively, to be created
-            or added (to the existing group).
+        key : Union[str, Tuple[str, str], Tuple[str, str, str],
+          Tuple[str, str, str]]
+            A string or a 2/3/4-tuple of strings representing a dataset or
+            group/dataset/dataset atribute/group atribute (Description),
+            respectively, to be created or added (to the existing group).
         value : np.ndarray
             An ArrayLike structure (can be converted to np.ndarray) that will
             be stored in the dataset or group/dataset provided by the key.
 
         Raises
         ------
+        SltSaveError
+            If setting the data set was unsuccessful.
         KeyError
             If the key is not a string or 2-tuple of strings.
         """
@@ -203,57 +224,14 @@ class Compound:
             self._set_single_dataset(key, value)
         elif (
             isinstance(key, tuple)
-            and (len(key) == 2 or len(key) == 3)
+            and (len(key) in [2, 3, 4])
             and all(isinstance(k, str) for k in key)
         ):
             self._set_group_and_dataset(key, value)
         else:
             raise KeyError(
-                "Invalid key type. It has to be str or a 2/3-tuple of str."
+                "Invalid key type. It has to be str or a 2/3/4-tuple of str."
             )
-
-    def _set_single_dataset(self, name: str, value: np.ndarray):
-        try:
-            with h5py.File(self._hdf5, "r+") as file:
-                new_dataset = file.create_dataset(
-                    name, shape=value.shape, dtype=value.dtype
-                )
-                new_dataset[:] = value[:]
-            self._get_hdf5_groups_datasets_and_attributes()
-        except Exception as exc:
-            raise SltFileError(
-                self._hdf5,
-                exc,
-                message=f'Failed to set a Dataset: "{name}" in the .slt file',
-            ) from None
-
-    def _set_group_and_dataset(
-        self,
-        names: Union[Tuple[str, str], Tuple[str, str, str]],
-        value: np.ndarray,
-    ):
-        try:
-            with h5py.File(self._hdf5, "r+") as file:
-                if names[0] in file and isinstance(file[names[0]], h5py.Group):
-                    group = file[names[0]]
-                else:
-                    group = file.create_group(names[0])
-                if len(names) == 3:
-                    group.attrs["Description"] = names[2]
-                new_dataset = group.create_dataset(
-                    names[1], shape=value.shape, dtype=value.dtype
-                )
-                new_dataset[:] = value[:]
-            self._get_hdf5_groups_datasets_and_attributes()
-        except Exception as exc:
-            raise SltFileError(
-                self._hdf5,
-                exc,
-                message=(
-                    f'Failed to set a Dataset: "{names[1]}" within the Group:'
-                    f' "{names[0]}" in the .slt file'
-                ),
-            ) from None
 
     def __getitem__(self, key: Union[str, Tuple[str, str]]) -> np.ndarray:
         """
@@ -275,47 +253,20 @@ class Compound:
 
         Raises
         ------
-        SltFileError
-            If the read of the data set is unsuccessful.
+        SltReadError
+            If reading the data from dataset set was unsuccessful.
         KeyError
             If the key is not a string or 2-tuple of strings.
         """
         if isinstance(key, str):
-            try:
-                with h5py.File(self._hdf5, "r") as file:
-                    value = file[key][:]
+            return self._get_data_from_dataset(key)
 
-                return value
-
-            except Exception as exc:
-                raise SltFileError(
-                    self._hdf5,
-                    exc,
-                    message=(
-                        f'Failed to get a Dataset: "{key}" from the .slt file'
-                    ),
-                ) from None
-
-        elif (
+        if (
             isinstance(key, tuple)
-            and len(key) == 2
+            and len(key) >= 2
             and all(isinstance(k, str) for k in key)
         ):
-            try:
-                with h5py.File(self._hdf5, "r") as file:
-                    value = file[key[0]][key[1]][:]
-
-                return value
-
-            except Exception as exc:
-                raise SltFileError(
-                    self._hdf5,
-                    exc,
-                    message=(
-                        f'Failed to get a Dataset: "{key[0]}/{key[1]}" from'
-                        " the .slt file"
-                    ),
-                ) from None
+            return self._get_data_from_group_dataset(key)
 
         else:
             raise KeyError(
@@ -335,7 +286,89 @@ class Compound:
         with h5py.File(self._hdf5, "r") as file:
             file.visititems(collect_objects)
 
-    def delete_group(self, first: str, second: str = None) -> None:
+    def _set_single_dataset(self, name: str, value: np.ndarray):
+        try:
+            with h5py.File(self._hdf5, "r+") as file:
+                new_dataset = file.create_dataset(
+                    name, shape=value.shape, dtype=value.dtype
+                )
+                new_dataset[:] = value[:]
+            self._get_hdf5_groups_datasets_and_attributes()
+        except Exception as exc:
+            raise SltSaveError(
+                self._hdf5,
+                exc,
+                message=f'Failed to set a Dataset: "{name}" in the .slt file',
+            ) from None
+
+    def _set_group_and_dataset(
+        self,
+        names: Union[
+            Tuple[str, str], Tuple[str, str, str], Tuple[str, str, str, str]
+        ],
+        value: np.ndarray,
+    ):
+        try:
+            with h5py.File(self._hdf5, "r+") as file:
+                if names[0] in file and isinstance(file[names[0]], h5py.Group):
+                    group = file[names[0]]
+                else:
+                    group = file.create_group(names[0])
+                if len(names) == 4:
+                    group.attrs["Description"] = names[3]
+                new_dataset = group.create_dataset(
+                    names[1], shape=value.shape, dtype=value.dtype
+                )
+                new_dataset[:] = value[:]
+                if len(names) >= 3:
+                    new_dataset.attrs["Description"] = names[2]
+            self._get_hdf5_groups_datasets_and_attributes()
+        except Exception as exc:
+            raise SltSaveError(
+                self._hdf5,
+                exc,
+                message=(
+                    f'Failed to set a Dataset: "{names[1]}" within the Group:'
+                    f' "{names[0]}" in the .slt file'
+                ),
+            ) from None
+
+    def _get_data_from_dataset(self, name: str) -> np.ndarray:
+        try:
+            with h5py.File(self._hdf5, "r") as file:
+                value = file[name][:]
+
+        except Exception as exc:
+            raise SltReadError(
+                self._hdf5,
+                exc,
+                message=(
+                    f'Failed to get a Dataset: "{name}" from the .slt file'
+                ),
+            ) from None
+
+        return value
+
+    def _get_data_from_group_dataset(
+        self, names: Tuple[str, str]
+    ) -> np.ndarray:
+        try:
+            with h5py.File(self._hdf5, "r") as file:
+                value = file[names[0]][names[1]][:]
+
+        except Exception as exc:
+            raise SltReadError(
+                self._hdf5,
+                exc,
+                message=(
+                    f'Failed to get a Dataset: "{names[0]}/{names[1]}" from'
+                    " the .slt file"
+                ),
+            ) from None
+
+        return value
+
+    def delete_group_dataset(self, first: str, second: str = None) -> None:
         """
         Deletes a group/dataset provided its full name/path from the .slt file.
 
@@ -374,90 +407,108 @@ class Compound:
         self._get_hdf5_groups_datasets_and_attributes()
 
     def calculate_g_tensor_and_axes_doublet(
-        self, group: str, doublets: np.ndarray[int], slt: str = None
+        self, group: str, doublets: np.ndarray[np.int64], slt: str = None
     ) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]:
-        """Calculates pseudo-g-tensor components (for S = 1/2) and main magnetic axes for a given list of doublet states.
-
-        Magnetic axes are returned in the form of rotation matrices that diagonalise Abragam-Bleaney tensor (G = gg.T) - coordinates
-        of the main axes XYZ in the initial xzy frame are columns of such matrices (0-X, 1-Y, 2-Z) .
-
-        Args:
-            group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of g-tensors.
-            doublets (np.ndarray[int]): ArrayLike structure (can be converted to numpy.NDArray) of integers corresponding to doublet labels (numbers).
-            slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _g_tensors_axes. Defaults to None.
-
-        Raises:
-            Exception: If the calculation of g-tensors is unsuccessful.
-            Exception: If the program is unable to correctly save the results to .slt file.
-
-        Returns:
-            Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]: The first array (g_tensor_list) contains a list g-tensors in a format
-              [doublet_number, gx, gy, gz], the second one (magnetic_axes_list) contains respective rotation matrices.
         """
+        Calculates pseudo-g-tensor components (for S = 1/2) and
+        main magnetic axes for a given list of doublet states.
 
-        doublets = np.array(doublets)
+        Magnetic axes are returned in the form of rotation matrices that
+        diagonalise the Abragam-Bleaney tensor (G = gg.T). Coordinates of the
+        main axes XYZ in the initial xzy frame are columns of such matrices
+        (0-X, 1-Y, 2-Z).
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio calculations used for the computation of g-tensors.
+        doublets : np.ndarray[np.int64]
+            ArrayLike structure (can be converted to numpy.NDArray) of integers corresponding to doublet labels (numbers).
+        slt : str, optional
+            If not None the results will be saved using this name to .slt file with sufix: _g_tensors_axes. Defaults to None., by default None
+
+        Returns
+        -------
+        Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]
+            The first array (g_tensor_list) contains a list g-tensors in a format
+            [doublet_number, gx, gy, gz], the second one (magnetic_axes_list) contains respective rotation matrices.
+
+        Raises
+        ------
+        ValueError
+            _description_
+        SltCompError
+            If the calculation of g-tensors is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save the results to .slt file.
+        """
+        doublets = np.array(doublets, dtype=np.int64)
+
+        if doublets.ndim != 1:
+            raise ValueError("The list of doublets has to be a 1D array.")
 
         try:
             (
                 g_tensor_list,
                 magnetic_axes_list,
-            ) = calculate_g_tensor_and_axes_doublet(
+            ) = _calculate_g_tensor_and_axes_doublet(
                 self._hdf5, group, doublets
             )
 
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to compute g-tensors and main"
-                f" magnetic axes from file: {self._hdf5} - group {group}:"
-                f" {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute g-tensors and main magnetic axes from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_g_tensors_axes")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing g-tensors of doublets and"
-                        f" their magnetic axes calculated from group: {group}."
-                    )
-                    tensors = new_group.create_dataset(
-                        f"{slt}_g_tensors",
-                        shape=(g_tensor_list.shape[0], g_tensor_list.shape[1]),
-                        dtype=np.float64,
-                    )
-                    tensors.attrs["Description"] = (
+                self[
+                    f"{slt}_g_tensors_axes",
+                    f"{slt}_g_tensors",
+                    (
                         "Dataset containing number of doublet and respective"
-                        f" g-tensors from group {group}."
-                    )
-                    axes = new_group.create_dataset(
-                        f"{slt}_axes",
-                        shape=(
-                            magnetic_axes_list.shape[0],
-                            magnetic_axes_list.shape[1],
-                            magnetic_axes_list.shape[2],
-                        ),
-                        dtype=np.float64,
-                    )
-                    axes.attrs["Description"] = (
-                        "Dataset containing rotation matrices from initial"
-                        " coordinate system to magnetic axes of respective"
-                        f" g-tensors from group: {group}."
-                    )
-                    tensors[:, :] = g_tensor_list[:, :]
-                    axes[:, :, :] = magnetic_axes_list[:, :, :]
+                        f" g-tensors from Group {group}."
+                    ),
+                    (
+                        f"Group({slt}) containing g-tensors of doublets and"
+                        f" their magnetic axes calculated from Group: {group}."
+                    ),
+                ] = g_tensor_list[:, :]
 
-                self._get_hdf5_groups_datasets_and_attributes()
+                self[
+                    f"{slt}_g_tensors_axes",
+                    f"{slt}_axes",
+                    (
+                        "Dataset containing rotation matrices from the initial"
+                        " coordinate system to the magnetic axes of respective"
+                        f" g-tensors from Group: {group}."
+                    ),
+                ] = magnetic_axes_list[:, :, :]
 
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save g-tensors and"
-                    f" magnetic axes to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save g-tensors and magnetic axes to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}_g_tensors_axes"
+                    + RESET
+                    + '".',
+                ) from None
 
         return g_tensor_list, magnetic_axes_list
 

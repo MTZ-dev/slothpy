@@ -1,6 +1,7 @@
 import time
 import os
-#os.environ['OMP_NUM_THREADS'] = '2'
+
+# os.environ['OMP_NUM_THREADS'] = '2'
 import slothpy as slt
 import numpy as np
 import h5py
@@ -9,27 +10,24 @@ from mpl_toolkits.mplot3d import Axes3D
 from slothpy.general_utilities.math_expresions import normalize_grid_vectors
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # test = slt.compound_from_slt(".", "Lorenzo_Co")
 
     # test.states_magnetic_momenta("rot_orca", 0)
 
-
-    #test = slt.compound_from_molcas(".", "test_with_aniso", "bas0", ".", "no_rot_lorenzo_bas0")
+    # test = slt.compound_from_molcas(".", "test_with_aniso", "bas0", ".", "no_rot_lorenzo_bas0")
 
     # test = slt.compound_from_slt(".", "test_with_aniso")
 
     # rotation=np.array([[-0.37234899,  0.88008991, -0.29461498],
     #     [-0.8118157 , -0.15500841,  0.56296329],
     #     [ 0.44979051,  0.44879188,  0.77218803]])
-    
 
     # from slothpy.angular_momentum.pseudo_spin_ito import set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis
 
     # rot = rotation.T
     # matrix = test.magnetic_momenta_matrix("bas0", 2, rotation=rot)
-    #print(matrix)
+    # print(matrix)
 
     # eigenvalues, eigenvectors = np.linalg.eigh(matrix)
 
@@ -56,23 +54,24 @@ if __name__ == '__main__':
 
     # print(matrix4)
 
-    #print(test.calculate_g_tensor_and_axes_doublet("bas0", [0,1]))
+    # print(test.calculate_g_tensor_and_axes_doublet("bas0", [0,1]))
 
-
-
-    fields = np.linspace(0.1, 10, 100, dtype=np.float64)
-    temperatures = np.linspace(1,300, 300, dtype=np.float64)
+    # fields = np.linspace(0.1, 10, 100, dtype=np.float64)
+    # temperatures = np.linspace(1,300, 300, dtype=np.float64)
 
     # print(fields)
     # print(temperatures)
 
     # #CeCoN3 = slt.compound_from_orca(".", "test", "error", ".", "geom.out")
-    #CeCoN3 = slt.compound_from_molcas(".", "TmCo", "bas3", ".", "TmCo_DG_bas3")
+    # CeCoN3 = slt.compound_from_molcas(".", "TmCo", "bas3", ".", "TmCo_DG_bas3")
     CeCoN3 = slt.compound_from_slt(".", "HoCo")
 
-    #print(CeCoN3.soc_energies_cm_1("bas3", num_of_states=2))
+    CeCoN3.delete_group("dupaaaaaaaas")
 
-    
+    print(CeCoN3)
+
+    # print(CeCoN3.soc_energies_cm_1("bas3", num_of_states=2))
+
     # for ln in ["Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb"]:
     #     CeCoN3 = slt.compound_from_slt(".", f'{ln}Co')
     #     for dat_type in ["hemholtz_energy", "magnetisation", "chit"]:
@@ -88,97 +87,89 @@ if __name__ == '__main__':
     #                 constant = 9
     #                 fp = 7
     #             start_time = time.perf_counter()
-    #             CeCoN3.animate_3d("bas3", f"{dat_type}", f"{i}", f'{ln}_{dat_type}_{i}_slow', i_start = start, i_end = end, i_constant = constant, 
+    #             CeCoN3.animate_3d("bas3", f"{dat_type}", f"{i}", f'{ln}_{dat_type}_{i}_slow', i_start = start, i_end = end, i_constant = constant,
     #                     fps = fp, bar_scale=True, temp_rounding = 1, field_rounding=1)
     #             end_time = time.perf_counter()
     #             print(f'Animation done in {end_time - start_time} s')
     #     print(f'{ln} done!')
 
-
-    # CeCoN3.animate_3d("bas3", "hemholtz_energy", "temperature", "animatrix", i_start = 0, i_end = 299, i_constant = 0, 
+    # CeCoN3.animate_3d("bas3", "hemholtz_energy", "temperature", "animatrix", i_start = 0, i_end = 299, i_constant = 0,
     #                   fps = 15, bar_scale=True, temp_rounding = 1, field_rounding=0.1)
 
-    #print(CeCoN3.soc_energies_cm_1("bas3", 128))
+    # print(CeCoN3.soc_energies_cm_1("bas3", 128))
 
     # start_time = time.perf_counter()
 
-    
     # CeCoN3.calculate_mag_3d("bas3", 64, fields, 52, temperatures, 32, 1, slt="bas3")
-    #CeCoN3.calculate_chit_3d("bas3", fields, 64, temperatures, 32, 1, 3, 0.0001, 52, slt="bas3")
+    # CeCoN3.calculate_chit_3d("bas3", fields, 64, temperatures, 32, 1, 3, 0.0001, 52, slt="bas3")
     # CeCoN3.calculate_hemholtz_energy_3d("bas3", 64, fields, 52, temperatures, 32, 1, slt="bas3")
-
 
     # end_time = time.perf_counter()
 
     # print(f'{end_time - start_time} s')
 
-    #CeCoN3.interactive_plot_3d("bas3", "hemholtz_energy")
+    # CeCoN3.interactive_plot_3d("bas3", "hemholtz_energy")
     # CeCoN3.interactive_plot_3d("bas3", "magnetisation")
-    CeCoN3.interactive_plot_3d("bas3", "chit")
-
-
+    # CeCoN3.interactive_plot_3d("bas3", "chit")
 
     # CeCoN3.states_total_angular_momenta("error")
 
 #     rotation = np.array([[-0.46452073, 0.1162711, -0.87789608],
 #   [0.11809391,  -0.97435556,  -0.19153345],
 #   [-0.87765273,  -0.19264544, 0.43887745]])
-    
-    # rotatione = rotation.T
 
-    #print(CeCoN3.states_total_angular_momenta("VTZP", [0,2], rotation=rotatione))
-    # matrix = CeCoN3.magnetic_momenta_matrix("VTZP", 6, rotation=rotatione)
-    # matrix = matrix[:, 4:6, 4:6]
-    # eigenvalues, eigenvectors = np.linalg.eigh(matrix)
-    # print(eigenvalues)
-    #CeCoN3.decomposition_in_z_magnetic_momentum_basis("VTZP", 0, 5, rotation=rotatione)
+# rotatione = rotation.T
 
-    # axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("error", [0,1])
+# print(CeCoN3.states_total_angular_momenta("VTZP", [0,2], rotation=rotatione))
+# matrix = CeCoN3.magnetic_momenta_matrix("VTZP", 6, rotation=rotatione)
+# matrix = matrix[:, 4:6, 4:6]
+# eigenvalues, eigenvectors = np.linalg.eigh(matrix)
+# print(eigenvalues)
+# CeCoN3.decomposition_in_z_magnetic_momentum_basis("VTZP", 0, 5, rotation=rotatione)
 
-    # print(axes)
-    # print(gtensor)
+# axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("error", [0,1])
 
-
+# print(axes)
+# print(gtensor)
 
 
-    # axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("no_rot", [0,1])
+# axes, gtensor = CeCoN3.calculate_g_tensor_and_axes_doublet("no_rot", [0,1])
 
-    # print(axes)
-    # print(gtensor)
+# print(axes)
+# print(gtensor)
 
-    #mth = CeCoN3.calculate_mth("VTZP", 0, fields, 5, [2.,4.,6.,8.], 64, 1)
-
-
-    # for mt in mth:
-    #     print("temp")
-    #     for m in mt:
-    #         print(m)
+# mth = CeCoN3.calculate_mth("VTZP", 0, fields, 5, [2.,4.,6.,8.], 64, 1)
 
 
-    # start_time = time.perf_counter()
-
-    # CeCoN3.calculate_hemholtz_energy_3d("TZVP", 0, fields, 100, temperatures, 64, 2, slt="twoja_stara")
-
-    # end_time = time.perf_counter()
-
-    # print(f'{end_time - start_time} s')
+# for mt in mth:
+#     print("temp")
+#     for m in mt:
+#         print(m)
 
 
-    # start_time = time.perf_counter()
+# start_time = time.perf_counter()
 
-    # #CeCoN3.animate_energy_3d("TZVP", 14, np.array([0.1]), 100, 0.1, 700, 60, 3, 1, fps = 20, dpi = 100, filename="lolz", ticks=100)
+# CeCoN3.calculate_hemholtz_energy_3d("TZVP", 0, fields, 100, temperatures, 64, 2, slt="twoja_stara")
 
-    # CeCoN3.animate_3d("twoja_stara", 'hemholtz_energy', 'temperature', fps=10, dpi=100)
+# end_time = time.perf_counter()
 
-    # end_time = time.perf_counter()
-
-    # print(f'{end_time - start_time} s')
+# print(f'{end_time - start_time} s')
 
 
+# start_time = time.perf_counter()
 
-#a = slt.compound_from_orca(".", "DyCo", "bas0", ".", "DyCo_supercell_1800_0_0_cas.out")
-#a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
-#a = slt.compound_from_molcas(".", "aniso_benchmark", "bas0", ".", "DyCo_benchmark_aniso")
+# #CeCoN3.animate_energy_3d("TZVP", 14, np.array([0.1]), 100, 0.1, 700, 60, 3, 1, fps = 20, dpi = 100, filename="lolz", ticks=100)
+
+# CeCoN3.animate_3d("twoja_stara", 'hemholtz_energy', 'temperature', fps=10, dpi=100)
+
+# end_time = time.perf_counter()
+
+# print(f'{end_time - start_time} s')
+
+
+# a = slt.compound_from_orca(".", "DyCo", "bas0", ".", "DyCo_supercell_1800_0_0_cas.out")
+# a = slt.compound_from_orca(".", "anisoop", "SVP", ".", "NdCoNO2_TZVP_cas.out")
+# a = slt.compound_from_molcas(".", "aniso_benchmark", "bas0", ".", "DyCo_benchmark_aniso")
 # a = slt.compound_from_slt(".", "CeCoN3")
 
 # a.plot_mag_3d("QZVPPP", colour_map_name="dark_rainbow", r_density = 50, c_density = 50,  ticks=2)
@@ -201,13 +192,11 @@ if __name__ == '__main__':
 # plt.show()
 
 
-
 # start_time = time.perf_counter()
 
 # CeCoN3.calculate_hemholtz_energy_3d("TZVP", 0, fields, 100, temperatures, 16, 1, slt="twoja_stara")
 
 # end_time = time.perf_counter()
-
 
 
 # elapsed_time = (end_time - start_time)
@@ -232,10 +221,9 @@ if __name__ == '__main__':
 #     plt.plot(fields, mh)
 # plt.show()
 
-#a.plot_mth("test")
+# a.plot_mth("test")
 
 # a.animate_mag_3d('SVP',6,1,100,1,600,24, colour_map_name='NdCoNO222bpdo_l', lim_scalar=0.75, ticks=0)
-
 
 
 # energy = a.calculate_hemholtz_energyth("molcas_test", 128, fields, 0, temperatures, 24)
@@ -295,9 +283,6 @@ if __name__ == '__main__':
 # plt.show()
 
 
-
-
-
 # g_ten, axes = a.calculate_g_tensor_and_axes_doublet("SVP", np.array([0,1,2]))
 # print(axes)
 # print(g_ten)
@@ -316,7 +301,6 @@ if __name__ == '__main__':
 
 # magn_momenta = a.states_total_angular_momenta("SVP", np.arange(6), rotation1)
 # print(magn_momenta)
-
 
 
 # magnetisation = a.calculate_mth("SVP", 14, fields, 5, temperatures, 4)
@@ -359,7 +343,7 @@ if __name__ == '__main__':
 #     for i in range(phase_magn_matrix.shape[1]):
 #         for j in range(phase_magn_matrix.shape[1]):
 #             phase_magn_matrix[index,i,j] = magn_matrix[index,i,j] * c[i].conj() * c[j]
-    
+
 #     # print(phase_magn_matrix[index])
 
 
@@ -424,26 +408,15 @@ if __name__ == '__main__':
 # print(rot_inv)
 
 
+# a = slt.compound_from_slt(".", "DyCo")
+
+# a = slt.compound_from_molcas(".", "DyrCffodrfB", "TZVP", ".", "DyCo_test_hdf5_bas0")
 
 
-
-
-
-
-
-
-
-
-
-#a = slt.compound_from_slt(".", "DyCo")
-
-#a = slt.compound_from_molcas(".", "DyrCffodrfB", "TZVP", ".", "DyCo_test_hdf5_bas0")
-
-
-#a.zeeman_matrix("TZVP", 10, 1, np.array([0.,0.,1.]), slt="TZVP_from_real")
+# a.zeeman_matrix("TZVP", 10, 1, np.array([0.,0.,1.]), slt="TZVP_from_real")
 # matrix2 = a.soc_zeem_in_angular_magnetic_momentum_basis("TZVP", 0, 9, 'soc', 'angular', 1, np.array([0.,0.,1.]))
 # coeff = a.soc_crystal_field_parameters("TZVP", 0, 9, 9, magnetic=False, even_order=True, slt="1200", imaginary=False)
-#coeff = a.zeeman_matrix_ito_decpomosition("TZVP", 0, 9, 1, np.array([0.,0.,1.]), 9, slt="fraqes", magnetic=False, imaginary=True)
+# coeff = a.zeeman_matrix_ito_decpomosition("TZVP", 0, 9, 1, np.array([0.,0.,1.]), 9, slt="fraqes", magnetic=False, imaginary=True)
 # matrix1 = a.matrix_from_ito("1200", imaginary=False, matrix_type='soc')
 
 # print(matrix1-matrix2)
@@ -465,7 +438,7 @@ if __name__ == '__main__':
 
 # print(a)
 
-#b = slt.compound_from_orca(".", "CeCoN3", "TZVP", ".", "CeCoN3_TZVP_cas_restart.out")
+# b = slt.compound_from_orca(".", "CeCoN3", "TZVP", ".", "CeCoN3_TZVP_cas_restart.out")
 
 # fields = np.linspace(0.0001, 7, 50)
 # temperatures = np.linspace(1.8, 1.8, 1)
@@ -486,13 +459,12 @@ if __name__ == '__main__':
 # beta = b.calculate_chitht("TZVP", fields, 252, temperatures, 4, 3, 0.0001, slt = 'chit')
 
 
-
 # plt.plot(fields, alfa[0], "-")
 # plt.show()
 
-#lol = b.soc_crystal_field_parameters("TZVP", 6, 4, slt="cfpp")
+# lol = b.soc_crystal_field_parameters("TZVP", 6, 4, slt="cfpp")
 
-#te = b.decomposition_in_z_angular_momentum_basis("TZVP", 14, slt="TVZP")
+# te = b.decomposition_in_z_angular_momentum_basis("TZVP", 14, slt="TVZP")
 
 
 # mth = a.calculate_mth("TZVP_nevpt22", 14, fields, 5, temperatures, 4)
@@ -533,7 +505,7 @@ if __name__ == '__main__':
 # temperatures1 = np.linspace(1.8, 1.8, 1)
 # temperatures2 = np.linspace(0.0001, 300, 150)
 # fields2 = np.linspace(0.1,0.1,1)
-#grid = np.loadtxt('grid.txt', usecols = (1,2,3,4))
+# grid = np.loadtxt('grid.txt', usecols = (1,2,3,4))
 # grid2 = np.loadtxt('grid2.txt', usecols = (1,2,3,4))
 # grid3 = np.loadtxt('grid3.txt', usecols = (1,2,3,4))
 # temperatures3 = np.linspace(1,5,5)
@@ -579,6 +551,6 @@ if __name__ == '__main__':
 
 # plt.show()
 
-#sus_tensor = b.calculate_chit_tensorht("molcas_test1234", fields2, 402, temperatures2, 4, 4, 0.00001, slt="first_tensorek")
+# sus_tensor = b.calculate_chit_tensorht("molcas_test1234", fields2, 402, temperatures2, 4, 4, 0.00001, slt="first_tensorek")
 
-#print(sus_tensor)
+# print(sus_tensor)

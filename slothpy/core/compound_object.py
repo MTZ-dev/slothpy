@@ -2,7 +2,8 @@ from os import path
 from typing import Any, Tuple, Union
 import h5py
 import numpy as np
-from ._slothpy_exception import SltError, CompError
+from ._slothpy_exceptions import SltFileError, SltCompError
+from ._constants import RED, GREEN, YELLOW, BLUE, RESET
 from slothpy.magnetism.g_tensor import calculate_g_tensor_and_axes_doublet
 from slothpy.magnetism.magnetisation import mth, mag_3d
 from slothpy.magnetism.susceptibility import chitht, chit_tensorht, chit_3d
@@ -89,7 +90,7 @@ class Compound:
     def _new(cls, filepath: str, filename: str):
         """
         This is a private method for initializing the Compound object that
-        should be only used by creation_functions.
+        should be only used by the creation_functions.
 
         Parameters
         ----------
@@ -110,7 +111,7 @@ class Compound:
         hdf5_file = path.join(filepath, filename)
         obj = super().__new__(cls)
         obj._hdf5 = hdf5_file
-        obj._get_hdf5_groups_and_attributes()
+        obj._get_hdf5_groups_datasets_and_attributes()
 
         return obj
 
@@ -132,6 +133,8 @@ class Compound:
 
     def __repr__(self) -> str:
         """
+        Performs the operation __repr__.
+
         Creates a representation of the Compound object using names and
         attributes of the groups contained in the associated .slt file.
 
@@ -142,10 +145,26 @@ class Compound:
         """
 
         representation = (
-            f"Compound from {self._hdf5} with the following groups of data:\n"
+            RED
+            + "Compound "
+            + RESET
+            + "from "
+            + GREEN
+            + "File "
+            + RESET
+            + f'"{self._hdf5}" with the following '
+            + YELLOW
+            + "Groups "
+            + RESET
+            + "of data:\n"
         )
         for group, attributes in self._groups.items():
-            representation += f"{group}: {attributes}\n"
+            representation += YELLOW + f"{group}" + RESET + f": {attributes}\n"
+
+        if self._datasets:
+            representation += "and " + BLUE + "Datasets" + RESET + ":\n"
+            for dataset in self._datasets:
+                representation += BLUE + f"{dataset}\n" + RESET
 
         return representation
 
@@ -153,7 +172,9 @@ class Compound:
     __str__ = __repr__
 
     def __setitem__(
-        self, key: Union[str, Tuple[str, str]], value: np.ndarray
+        self,
+        key: Union[str, Tuple[str, str], Tuple[str, str, str]],
+        value: np.ndarray,
     ) -> None:
         """
         Performs the operation __setitem__.
@@ -163,10 +184,10 @@ class Compound:
 
         Parameters
         ----------
-        key : Union[str, Tuple[str, str]]
-            A string or a 2-tuple of strings representing a dataset or
-            group/dataset respectively to be created or added (to the
-            existing group)
+        key : Union[str, Tuple[str, str], Tuple[str, str, str]]
+            A string or a 2/3-tuple of strings representing a dataset or
+            group/dataset/atribute (Description), respectively, to be created
+            or added (to the existing group).
         value : np.ndarray
             An ArrayLike structure (can be converted to np.ndarray) that will
             be stored in the dataset or group/dataset provided by the key.
@@ -182,61 +203,83 @@ class Compound:
             self._set_single_dataset(key, value)
         elif (
             isinstance(key, tuple)
-            and len(key) == 2
+            and (len(key) == 2 or len(key) == 3)
             and all(isinstance(k, str) for k in key)
         ):
             self._set_group_and_dataset(key, value)
         else:
             raise KeyError(
-                "Invalid key type. It has to be str or a 2-tuple of str."
+                "Invalid key type. It has to be str or a 2/3-tuple of str."
             )
 
-    def _set_single_dataset(self, key, value):
+    def _set_single_dataset(self, name: str, value: np.ndarray):
         try:
             with h5py.File(self._hdf5, "r+") as file:
                 new_dataset = file.create_dataset(
-                    key, shape=value.shape, dtype=value.dtype
+                    name, shape=value.shape, dtype=value.dtype
                 )
                 new_dataset[:] = value[:]
-            self._get_hdf5_groups_and_attributes()
+            self._get_hdf5_groups_datasets_and_attributes()
         except Exception as exc:
-            self._handle_exception_slt(exc, key)
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                message=f'Failed to set a Dataset: "{name}" in the .slt file',
+            ) from None
 
-    def _set_group_and_dataset(self, key, value):
-        group_key, dataset_key = key
+    def _set_group_and_dataset(
+        self,
+        names: Union[Tuple[str, str], Tuple[str, str, str]],
+        value: np.ndarray,
+    ):
         try:
             with h5py.File(self._hdf5, "r+") as file:
-                if group_key in file:
-                    group = file[group_key]
+                if names[0] in file and isinstance(file[names[0]], h5py.Group):
+                    group = file[names[0]]
                 else:
-                    group = file.create_group(group_key)
+                    group = file.create_group(names[0])
+                if len(names) == 3:
+                    group.attrs["Description"] = names[2]
                 new_dataset = group.create_dataset(
-                    dataset_key, shape=value.shape, dtype=value.dtype
+                    names[1], shape=value.shape, dtype=value.dtype
                 )
                 new_dataset[:] = value[:]
-            self._get_hdf5_groups_and_attributes()
+            self._get_hdf5_groups_datasets_and_attributes()
         except Exception as exc:
-            self._handle_exception_slt(
-                exc, f'group "{group_key}" and dataset "{dataset_key}"'
-            )
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                message=(
+                    f'Failed to set a Dataset: "{names[1]}" within the Group:'
+                    f' "{names[0]}" in the .slt file'
+                ),
+            ) from None
 
-    def _handle_exception_slt(self, exception, key):
-        error_type = type(exception).__name__
-        error_message = str(exception)
-        raise SltError(
-            f"Error encountered while trying to set {key} in .slt file:"
-            f" {self._hdf5}: {error_type}: {error_message}"
-        )
+    def __getitem__(self, key: Union[str, Tuple[str, str]]) -> np.ndarray:
+        """
+        Performs the operation __getitem__.
 
-    def _handle_exception_comp(self, exception, key):
-        error_type = type(exception).__name__
-        error_message = str(exception)
-        raise CompError(
-            f"Error encountered while trying to set {key} in .slt file:"
-            f" {self._hdf5}: {error_type}: {error_message}"
-        )
+        Provides a convenient method for getting datasets from the .slt file
+        associated with a Compund instance in an array-like manner.
 
-    def __getitem__(self, key) -> Any:
+        Parameters
+        ----------
+        key : Union[str, Tuple[str, str], Tuple[str, str, str]]
+            A string or a 2-tuple of strings representing a dataset or
+            group/dataset, respectively, to be read from the .slt file.
+
+        Returns
+        -------
+        np.ndarray
+            An array contained in the dataset associated with the provided key.
+
+        Raises
+        ------
+        SltFileError
+            If the read of the data set is unsuccessful.
+        KeyError
+            If the key is not a string or 2-tuple of strings.
+        """
         if isinstance(key, str):
             try:
                 with h5py.File(self._hdf5, "r") as file:
@@ -244,19 +287,19 @@ class Compound:
 
                 return value
 
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    f"Error encountered while trying to get dataset {key} from"
-                    f" .slt file: {self._hdf5}: {error_type}: {error_message}"
-                )
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    message=(
+                        f'Failed to get a Dataset: "{key}" from the .slt file'
+                    ),
+                ) from None
 
         elif (
             isinstance(key, tuple)
             and len(key) == 2
-            and isinstance(key[0], str)
-            and isinstance(key[1], str)
+            and all(isinstance(k, str) for k in key)
         ):
             try:
                 with h5py.File(self._hdf5, "r") as file:
@@ -264,59 +307,71 @@ class Compound:
 
                 return value
 
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    f'Error encountered while trying to get group "{key[0]}"'
-                    f' and dataset "{key[1]}" from .slt file: {self._hdf5}:'
-                    f" {error_type}: {error_message}"
-                )
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    message=(
+                        f'Failed to get a Dataset: "{key[0]}/{key[1]}" from'
+                        " the .slt file"
+                    ),
+                ) from None
 
         else:
             raise KeyError(
                 "Invalid key type. It has to be str or 2-tuple of str."
             )
 
-    def _get_hdf5_groups_and_attributes(self):
-        def collect_groups(name, obj):
-            if isinstance(obj, h5py.Group):
-                groups_dict[name] = dict(obj.attrs)
+    def _get_hdf5_groups_datasets_and_attributes(self):
+        self._groups = {}
+        self._datasets = []
 
-        groups_dict = {}
+        def collect_objects(name, obj):
+            if isinstance(obj, h5py.Group):
+                self._groups[name] = dict(obj.attrs)
+            elif isinstance(obj, h5py.Dataset):
+                self._datasets.append(name)
 
         with h5py.File(self._hdf5, "r") as file:
-            file.visititems(collect_groups)
+            file.visititems(collect_objects)
 
-        self._groups = groups_dict
-
-    def delete_group(self, group: str) -> None:
-        """Deletes a group provided its full name from the .slt file.
+    def delete_group(self, first: str, second: str = None) -> None:
+        """
+        Deletes a group/dataset provided its full name/path from the .slt file.
 
         Parameters
         ----------
-        group : str
-            The full name of the group to delete.
+        first : str
+            A name of the gorup or dataset to be deleted.
+        second : str, optional
+            A name of the particular dataset inside group from the first
+            argument to be deleted.
 
         Raises
         ------
-        Exception
-            If the deletion is unsuccessful, for example when the provided group name does not exist.
+        SltFileError
+            If the deletion is unsuccessful.
         """
 
         try:
             with h5py.File(self._hdf5, "r+") as file:
-                del file[group]
+                if second is None:
+                    del file[first]
+                else:
+                    del file[first][second]
 
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                f"Error encountered while trying to delete group {group} from"
-                f" .slt file: {self._hdf5}: {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                message=(
+                    f'Failed to delete  "{first}"'
+                    + (f"/{second}" if second is not None else "")
+                    + " from the .slt file"
+                ),
+            ) from None
 
-        self._get_hdf5_groups_and_attributes()
+        self._get_hdf5_groups_datasets_and_attributes()
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: np.ndarray[int], slt: str = None
@@ -393,7 +448,7 @@ class Compound:
                     tensors[:, :] = g_tensor_list[:, :]
                     axes[:, :, :] = magnetic_axes_list[:, :, :]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -509,7 +564,7 @@ class Compound:
                     fields_dataset[:] = fields[:]
                     temperatures_dataset[:] = temperatures[:]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -649,7 +704,7 @@ class Compound:
                     fields_dataset[:] = fields[:]
                     temperatures_dataset[:] = temperatures[:]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -780,7 +835,7 @@ class Compound:
                     fields_dataset[:] = fields[:]
                     temperatures_dataset[:] = temperatures[:]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -842,7 +897,7 @@ class Compound:
 
                     soc_energies_dataset[:] = soc_energies_array[:]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -912,7 +967,7 @@ class Compound:
                     magnetic_momenta_dataset[:] = magnetic_momenta_array[:]
                     states_dataset[:] = states[:]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -988,7 +1043,7 @@ class Compound:
                     ] = total_angular_momenta_array[:]
                     states_dataset[:] = states[:]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1129,7 +1184,7 @@ class Compound:
                     zeeman_splitting_dataset[:, :] = zeeman_array[:, :]
                     fields_dataset[:] = fields[:]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1211,7 +1266,7 @@ class Compound:
                         dtype=np.int64,
                     )
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1286,7 +1341,7 @@ class Compound:
                         magnetic_momenta_matrix_array.shape[1], dtype=np.int64
                     )
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1359,7 +1414,7 @@ class Compound:
                         -dim, dim + 1, step=1, dtype=np.float64
                     )
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1435,7 +1490,7 @@ class Compound:
                         -dim, dim + 1, step=1, dtype=np.float64
                     )
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1560,7 +1615,7 @@ class Compound:
                     cfp_dataset[:] = cfp[:]
                     states_dataset[:] = dim
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1700,7 +1755,7 @@ class Compound:
                     cfp_dataset[:] = cfp[:]
                     states_dataset[:] = dim
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1768,7 +1823,7 @@ class Compound:
                         zeeman_matrix_array.shape[1], dtype=np.int64
                     )
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -1892,7 +1947,7 @@ class Compound:
                     matrix_dataset[:] = matrix[:]
                     states_dataset[:] = J_result
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -2011,7 +2066,7 @@ class Compound:
                         matrix.shape[1], dtype=np.int64
                     )
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -2109,7 +2164,7 @@ class Compound:
                     temperatures_dataset[:] = temperatures
                     fields_dataset[:] = fields
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -2222,7 +2277,7 @@ class Compound:
                     temperatures_dataset[:] = temperatures
                     fields_dataset[:] = fields
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -2323,7 +2378,7 @@ class Compound:
                     temperatures_dataset[:] = temperatures
                     fields_dataset[:] = fields
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -2421,7 +2476,7 @@ class Compound:
                     fields_dataset[:] = fields[:]
                     temperatures_dataset[:] = temperatures[:]
 
-                self._get_hdf5_groups_and_attributes()
+                self._get_hdf5_groups_datasets_and_attributes()
 
             except Exception as e:
                 error_type = type(e).__name__

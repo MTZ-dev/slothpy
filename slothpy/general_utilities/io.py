@@ -4,8 +4,9 @@ import numpy as np
 import h5py
 from typing import Tuple
 from slothpy.general_utilities._constants import YELLOW, RESET
-from slothpy.core._slothpy_exceptions import SltFileError
+from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
 from slothpy.angular_momentum.rotation import _rotate_vector_operator
+from slothpy.general_utilities._math_expresions import _mag_mom_from_ang_mom
 
 
 def grep_to_file(
@@ -54,6 +55,15 @@ def grep_to_file(
 
         if not pattern_found:
             raise ValueError("Pattern not found in the input file.")
+
+
+def _dataset_exists(hdf5_file, group_name, dataset_name):
+    with h5py.File(hdf5_file, "r") as file:
+        if group_name in file:
+            group = file[group_name]
+            return dataset_name in group
+
+        return False
 
 
 def get_orca_so_blocks_size(path: str, orca_file: str) -> tuple[int, int, int]:
@@ -371,9 +381,7 @@ def molcas_spin_orbit_to_slt(
         ] = f"Dataset containing Lz matrix in SOC basis"
 
 
-def _get_soc_ener_and_soc_ang_mom_from_hdf5(
-    filename: str, group: str, rotation=None
-) -> Tuple[np.ndarray, np.ndarray]:
+def _load_orca_hdf5(filename, group, rotation):
     try:
         # Read data from HDF5 file
         with h5py.File(filename, "r") as file:
@@ -408,128 +416,99 @@ def _get_soc_ener_and_soc_ang_mom_from_hdf5(
         # Return operators in SOC basis
         return soc_ener, ang_mom
 
-    except Exception as exc_1:
-        error_type_1 = type(exc_1).__name__
-        error_message_1 = str(exc_1)
-        error_print_1 = (
-            YELLOW + f"{error_type_1}" + RESET + f": {error_message_1}"
+    except Exception as exc:
+        raise SltFileError(
+            filename,
+            exc,
+            message=(
+                "Failed to load SOC, spin, and angular momenta data in"
+                " the ORCA format from the .slt file."
+            ),
+        ) from None
+
+
+def _load_molcas_hdf5(filename, group, rotation):
+    try:
+        with h5py.File(filename, "r") as file:
+            shape = file[str(group)]["SOC_energies"][:].shape[0]
+            ang_mom = np.zeros((6, shape, shape), dtype=np.complex128)
+            soc_ener = file[str(group)]["SOC_energies"][:]
+            ang_mom[0][:] = file[str(group)]["SOC_SX"][:]
+            ang_mom[1][:] = file[str(group)]["SOC_SY"][:]
+            ang_mom[2][:] = file[str(group)]["SOC_SZ"][:]
+            ang_mom[3][:] = file[str(group)]["SOC_LX"][:]
+            ang_mom[4][:] = file[str(group)]["SOC_LY"][:]
+            ang_mom[5][:] = file[str(group)]["SOC_LZ"][:]
+
+        if (rotation is not None) or (rotation != None):
+            ang_mom[0:3, :, :] = _rotate_vector_operator(
+                ang_mom[0:3, :, :], rotation
+            )
+            ang_mom[3:6, :, :] = _rotate_vector_operator(
+                ang_mom[3:6, :, :], rotation
+            )
+
+        return soc_ener, ang_mom
+
+    except Exception as exc:
+        raise SltFileError(
+            filename,
+            exc,
+            message=(
+                "Failed to load SOC, spin, and angular momenta data in"
+                " the MOLCAS format from the .slt file."
+            ),
+        ) from None
+
+
+def _get_soc_ener_and_soc_ang_mom_from_hdf5(
+    filename: str, group: str, rotation=None
+) -> Tuple[np.ndarray, np.ndarray]:
+    if _dataset_exists(filename, group, "SOC"):
+        return _load_orca_hdf5(filename, group, rotation)
+
+    if _dataset_exists(filename, group, "SOC_energies"):
+        return _load_molcas_hdf5(filename, group, rotation)
+
+    else:
+        raise SltReadError(
+            filename,
+            ValueError(""),
+            message=(
+                "Incorect data format. The program was unable to read SOC,"
+                " spin, and angular momenta."
+            ),
         )
-        try:
-            with h5py.File(filename, "r") as file:
-                shape = file[str(group)]["SOC_energies"][:].shape[0]
-                ang_mom = np.zeros((6, shape, shape), dtype=np.complex128)
-                soc_ener = file[str(group)]["SOC_energies"][:]
-                ang_mom[0][:] = file[str(group)]["SOC_SX"][:]
-                ang_mom[1][:] = file[str(group)]["SOC_SY"][:]
-                ang_mom[2][:] = file[str(group)]["SOC_SZ"][:]
-                ang_mom[3][:] = file[str(group)]["SOC_LX"][:]
-                ang_mom[4][:] = file[str(group)]["SOC_LY"][:]
-                ang_mom[5][:] = file[str(group)]["SOC_LZ"][:]
-
-            if (rotation is not None) or (rotation != None):
-                ang_mom[0:3, :, :] = _rotate_vector_operator(
-                    ang_mom[0:3, :, :], rotation
-                )
-                ang_mom[3:6, :, :] = _rotate_vector_operator(
-                    ang_mom[3:6, :, :], rotation
-                )
-
-            return soc_ener, ang_mom
-
-        except Exception as exc_2:
-            raise SltFileError(
-                filename,
-                exc_2,
-                message=(
-                    "Failed to load SOC, spin and angular momenta data from"
-                    " .slt file.\n Previous errors encountered while trying"
-                    f" read the data: {error_print_1}"
-                ),
-            ) from None
 
 
-def get_soc_magnetic_momenta_and_energies_from_hdf5(
+def _get_soc_mag_mom_and_ener_from_hdf5(
     filename: str, group: str, states_cutoff: int, rotation=None
 ) -> tuple[np.ndarray, np.ndarray]:
-    shape = -1
+    soc_ener, ang_mom = _get_soc_ener_and_soc_ang_mom_from_hdf5(
+        filename, group, rotation
+    )
 
-    # Check matrix size
-    with h5py.File(filename, "r") as file:
-        try:
-            dataset = file[group]["SOC"]
-        except Exception as e:
-            error_type_1 = type(e).__name__
-            error_message_1 = str(e)
-            error_print_1 = f"{error_type_1}: {error_message_1}"
-
-            try:
-                dataset = file[group]["SOC_energies"]
-            except Exception as e:
-                error_type_2 = type(e).__name__
-                error_message_2 = str(e)
-                error_print_2 = f"{error_type_2}: {error_message_2}"
-                raise Exception(
-                    "Failed to acces SOC data sets due to the following"
-                    f" errors: {error_print_1}, {error_print_2}"
-                )
-
-        shape = dataset.shape[0]
-
-    if shape < 0:
-        raise Exception(
-            f"Failed to read size of SOC matrix from file {filename} due to"
-            f" the following errors:\n {error_print_1}, {error_print_2}"
-        )
+    shape = soc_ener.size
 
     if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
         raise ValueError(
-            f"Invalid states cutoff. Set it to positive integer less or equal"
-            f" to the number of SO-states"
+            "Invalid states cutoff. Set it to positive integer less or equal"
+            " to the number of SO-states (or zero for all states)."
         )
 
     if states_cutoff > shape:
         raise ValueError(
             f"States cutoff is larger than the number of SO-states ({shape})."
-            " Please set it less or equal (or zero) for all states."
+            " Please set it less or equal (or zero for all states)."
         )
 
     if states_cutoff == 0:
         states_cutoff = shape
 
-    ge = 2.00231930436256  # Electron g factor
+    soc_ener = soc_ener[:states_cutoff] - soc_ener[0]
+    mag_mom = _mag_mom_from_ang_mom(ang_mom, stop=states_cutoff)
 
-    #  Initialize the result array
-    magnetic_momenta = np.ascontiguousarray(
-        np.zeros((3, states_cutoff, states_cutoff), dtype=np.complex128)
-    )
-
-    (
-        soc_energies,
-        sx,
-        sy,
-        sz,
-        lx,
-        ly,
-        lz,
-    ) = _get_soc_ener_and_soc_ang_mom_from_hdf5(
-        filename, group, rotation
-    )
-
-    # Slice arrays based on states_cutoff
-    sx = sx[:states_cutoff, :states_cutoff]
-    sy = sy[:states_cutoff, :states_cutoff]
-    sz = sz[:states_cutoff, :states_cutoff]
-    lx = lx[:states_cutoff, :states_cutoff]
-    ly = ly[:states_cutoff, :states_cutoff]
-    lz = lz[:states_cutoff, :states_cutoff]
-    soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
-
-    # Compute and save magnetic momenta in a.u.
-    magnetic_momenta[0] = -(ge * sx + lx)
-    magnetic_momenta[1] = -(ge * sy + ly)
-    magnetic_momenta[2] = -(ge * sz + lz)
-
-    return magnetic_momenta, soc_energies
+    return mag_mom, soc_ener
 
 
 def get_soc_total_angular_momenta_and_energies_from_hdf5(

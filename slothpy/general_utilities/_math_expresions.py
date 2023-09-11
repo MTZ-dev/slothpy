@@ -119,8 +119,14 @@ def decomposition_of_hermitian_matrix(matrix):
     return (eigenvectors * eigenvectors.conj()).real.T * 100
 
 
-def normalize_grid_vectors(grid):
+def _normalize_grid_vectors(grid):
     grid = np.array(grid, dtype=np.float64)
+
+    if grid.shape[1] != 4 or grid.ndim != 2:
+        raise ValueError(
+            "Custom grid has to be (n,4) array in the format: [[direction_x,"
+            " direction_y, direction_z, weight],...]."
+        )
 
     for vector_index in range(grid.shape[0]):
         grid[vector_index][:3] = grid[vector_index][:3] / np.sqrt(

@@ -1,10 +1,11 @@
 import sys
+import os
 import IPython
 
 # os.cpu_count()!!! make it default with thread = 1 across whole slothpy
 
 
-def get_num_of_processes(num_cpu, num_threads):
+def _get_num_of_processes(num_cpu, num_threads):
     if (
         (not isinstance(num_cpu, int))
         or (not isinstance(num_threads, int))
@@ -12,8 +13,14 @@ def get_num_of_processes(num_cpu, num_threads):
         or (num_threads < 0)
     ):
         raise ValueError(
-            "Number of CPUs and Threads have to be positive integers!"
+            "Numbers of CPUs and Threads have to be positive integers."
         )
+
+    if num_cpu == 0:
+        num_cpu = os.cpu_count()
+
+    if num_threads == 0:
+        num_threads = 1
 
     # Check CPUs number considering the desired number of threads and assign
     # number of processes

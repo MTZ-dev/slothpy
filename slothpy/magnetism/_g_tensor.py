@@ -2,7 +2,7 @@ import numpy as np
 from slothpy.general_utilities.io import (
     _get_soc_ener_and_soc_ang_mom_from_hdf5,
 )
-from slothpy.general_utilities.math_expresions import _mag_mom_from_ang_mom
+from slothpy.general_utilities._math_expresions import _mag_mom_from_ang_mom
 
 
 def _calculate_g_tensor_and_axes_doublet(

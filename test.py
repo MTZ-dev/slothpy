@@ -7,7 +7,7 @@ import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from slothpy.general_utilities.math_expresions import normalize_grid_vectors
+from slothpy.general_utilities._math_expresions import normalize_grid_vectors
 
 
 if __name__ == "__main__":
@@ -62,13 +62,14 @@ if __name__ == "__main__":
     # print(fields)
     # print(temperatures)
 
-    # #CeCoN3 = slt.compound_from_orca(".", "test", "error", ".", "geom.out")
+    CeCoN3 = slt.compound_from_orca(".", "testujech", "error", ".", "geom.out")
     # CeCoN3 = slt.compound_from_molcas(".", "TmCo", "bas3", ".", "TmCo_DG_bas3")
-    CeCoN3 = slt.compound_from_slt(".", "HoCo")
+    # CeCoN3 = slt.compound_from_slt(".", "HoCo")
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
     print(CeCoN3)
 
+    CeCoN3.calculate_g_tensor_and_axes_doublet("error", [1, 2, 3], slt="dup")
     # print(CeCoN3.soc_energies_cm_1("bas3", num_of_states=2))
 
     # for ln in ["Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb"]:

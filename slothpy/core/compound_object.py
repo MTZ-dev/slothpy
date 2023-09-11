@@ -18,9 +18,11 @@ from slothpy.general_utilities._constants import (
     RESET,
 )
 from slothpy.magnetism._g_tensor import _calculate_g_tensor_and_axes_doublet
-from slothpy.magnetism.magnetisation import mth, mag_3d
+from slothpy.magnetism.magnetisation import _mth, mag_3d
 from slothpy.magnetism.susceptibility import chitht, chit_tensorht, chit_3d
-from slothpy.general_utilities.grids_over_hemisphere import lebedev_laikov_grid
+from slothpy.general_utilities._grids_over_hemisphere import (
+    _lebedev_laikov_grid,
+)
 from slothpy.general_utilities.io import (
     get_soc_energies_cm_1,
     get_states_magnetic_momenta,
@@ -46,7 +48,7 @@ from slothpy.angular_momentum.pseudo_spin_ito import (
     matrix_from_ito_complex,
     matrix_from_ito_real,
 )
-from slothpy.general_utilities.math_expresions import normalize_grid_vectors
+from slothpy.general_utilities._math_expresions import _normalize_grid_vectors
 
 # Experimental imports for plotting
 from cycler import cycler
@@ -67,6 +69,8 @@ mpl.rcParams["path.simplify"] = True
 mpl.rcParams["path.simplify_threshold"] = 1.0
 
 mpl.use("Qt5Agg")
+
+# Promote set_plain_error_reporting_mode and set_default_error_reporting_mode and rise it from system to main with doc string
 
 ###To do: orinetation print in zeeman splitting
 ###       Hemholtz 3D plot, animate 3D all properties,
@@ -377,7 +381,7 @@ class Compound:
         first : str
             A name of the gorup or dataset to be deleted.
         second : str, optional
-            A name of the particular dataset inside group from the first
+            A name of the particular dataset inside the group from the first
             argument to be deleted.
 
         Raises
@@ -421,26 +425,30 @@ class Compound:
         Parameters
         ----------
         group : str
-            Name of a group containing results of relativistic ab initio calculations used for the computation of g-tensors.
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of g-tensors.
         doublets : np.ndarray[np.int64]
-            ArrayLike structure (can be converted to numpy.NDArray) of integers corresponding to doublet labels (numbers).
+            ArrayLike structure (can be converted to numpy.NDArray) of integers
+            corresponding to doublet labels (numbers).
         slt : str, optional
-            If not None the results will be saved using this name to .slt file with sufix: _g_tensors_axes. Defaults to None., by default None
+            If given, the results will be saved using this name to the .slt
+            file with the sufix: _g_tensors_axes, by default None.
 
         Returns
         -------
         Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]
-            The first array (g_tensor_list) contains a list g-tensors in a format
-            [doublet_number, gx, gy, gz], the second one (magnetic_axes_list) contains respective rotation matrices.
+            The first array (g_tensor_list) contains a list g-tensors in
+            a format [doublet_number, gx, gy, gz], the second one
+            (magnetic_axes_list) contains respective rotation matrices.
 
         Raises
         ------
         ValueError
-            _description_
+            If doublets are not one-diemsional array.
         SltCompError
             If the calculation of g-tensors is unsuccessful.
         SltFileError
-            If the program is unable to correctly save the results to .slt file.
+            If the program is unable to correctly save results to .slt file.
         """
         doublets = np.array(doublets, dtype=np.int64)
 
@@ -505,7 +513,7 @@ class Compound:
                     + RESET
                     + '"'
                     + BLUE
-                    + f"{group}_g_tensors_axes"
+                    + f"{slt}_g_tensors_axes"
                     + RESET
                     + '".',
                 ) from None
@@ -515,65 +523,54 @@ class Compound:
     def calculate_mth(
         self,
         group: str,
-        states_cutoff: int,
         fields: np.ndarray[np.float64],
         grid: Union[int, np.ndarray[np.float64]],
         temperatures: np.ndarray[np.float64],
-        num_cpu: int,
-        num_threads: int,
+        states_cutoff: int = 0,
+        num_cpu: int = 0,
+        num_threads: int = 1,
         slt: str = None,
     ) -> np.ndarray[np.float64]:
-        """Calculates powder-averaged or directional molar magnetisation M(T,H) for a list of temeprature and field values.
-
-        Args:
-            group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of magnetisation.
-            states_cutoff (int): Number of states that will be taken into account for construction of Zeeman Hamiltonian.
-            fields (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of field values (T) at which magnetisation will be computed.
-            grid (Union[int, np.ndarray[np.float64]): If the grid is set to integer from 0-11 then the prescribed Lebedev-Laikov grids over hemisphere will be used
-                (see grids_over_hemisphere documentation), otherwise, user can provide an ArrayLike structure (can be converted to numpy.NDArray) of the structure:
-                [[direction_x, direction_y, direction_z, weight],...] for powder-averaging. If one wants a calculation for a single, particular direction the list
-                has to contain one entry like this: [[direction_x, direction_y, direction_z, 1.]].
-            temperatures (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetisation will be computed.
-            num_cpu (int): Number of physical CPUs to be assigned to perform calculation.
-            num_threads (int): Number of threads used in multithreaded implementation of the linear algebra libraries used during calculation. Values higher than 2 benefit
-                with the increasing size of matrices (states_cutoff) over the MPI parallelization over field and temperature values.
-            slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _magnetisation. Defaults to None.
-
-        Raises:
-            Exception: If the calculation of M(T,H) is unsuccessful.
-            Exception: If the program is unable to correctly save the results to .slt file.
-
-        Returns:
-            np.ndarray[np.float64]: The resulting array gives magnetisation in Bohr magnetons and is in the form (temperatures, fields) - the first dimension runs over
-                temperature values, the second over fields.
-        """
-
         fields = np.array(fields, dtype=np.float64)
         temperatures = np.array(temperatures, dtype=np.float64)
 
+        if fields.ndim != 1:
+            raise ValueError("The list of fields has to be a 1D array.")
+
+        if temperatures.ndim != 1:
+            raise ValueError("The list of temperatures has to be a 1D array.")
+
         if isinstance(grid, int):
-            grid = lebedev_laikov_grid(grid)
+            grid = _lebedev_laikov_grid(grid)
         else:
-            grid = normalize_grid_vectors(grid)
+            grid = _normalize_grid_vectors(grid)
 
         try:
-            mth_array = mth(
+            mth_array = _mth(
                 self._hdf5,
                 group,
-                states_cutoff,
                 fields,
                 grid,
                 temperatures,
+                states_cutoff,
                 num_cpu,
                 num_threads,
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to compute M(T,H) from file:"
-                f" {self._hdf5} - group {group}: {error_type}: {error_message}"
-            )
+
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute M(T,H) from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
@@ -617,14 +614,20 @@ class Compound:
 
                 self._get_hdf5_groups_datasets_and_attributes()
 
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save M(T,H) to file:"
-                    f" {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save M(T,H) to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{slt}_g_tensors_axes"
+                    + RESET
+                    + '".',
+                ) from None
 
         return mth_array
 

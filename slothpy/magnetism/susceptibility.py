@@ -4,9 +4,9 @@ import threadpoolctl
 import numpy as np
 from numba import jit
 from slothpy.magnetism.magnetisation import (
-    mth,
-    calculate_magnetization,
-    mag_3d,
+    _mth,
+    _calculate_magnetization,
+    _mag_3d,
 )
 from slothpy.general_utilities._math_expresions import finite_diff_stencil
 from slothpy.general_utilities.system import get_num_of_processes

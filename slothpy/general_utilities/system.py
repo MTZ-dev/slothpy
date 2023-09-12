@@ -56,3 +56,7 @@ def set_default_error_reporting_mode():
         IPython.get_ipython().run_line_magic("xmode", "Context")
     else:
         sys.tracebacklimit = None
+
+
+def get_num_of_processes():
+    pass

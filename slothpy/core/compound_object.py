@@ -1,3 +1,4 @@
+import time
 from os import path
 from typing import Tuple, Union
 import h5py
@@ -18,12 +19,13 @@ from slothpy.general_utilities._constants import (
     RESET,
 )
 from slothpy.magnetism._g_tensor import _calculate_g_tensor_and_axes_doublet
-from slothpy.magnetism.magnetisation import _mth, mag_3d
+from slothpy.magnetism.magnetisation import _mth, _mag_3d
 from slothpy.magnetism.susceptibility import chitht, chit_tensorht, chit_3d
 from slothpy.general_utilities._grids_over_hemisphere import (
     _lebedev_laikov_grid,
 )
 from slothpy.general_utilities.io import (
+    _group_exists,
     get_soc_energies_cm_1,
     get_states_magnetic_momenta,
     get_states_total_angular_momneta,
@@ -450,6 +452,24 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
         """
+
+        if slt is not None:
+            if _group_exists(self._hdf5, f"{slt}_g_tensors_axes"):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{slt}_g_tensors_axes"
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually",
+                )
+
         doublets = np.array(doublets, dtype=np.int64)
 
         if doublets.ndim != 1:
@@ -534,6 +554,23 @@ class Compound:
         fields = np.array(fields, dtype=np.float64)
         temperatures = np.array(temperatures, dtype=np.float64)
 
+        if slt is not None:
+            if _group_exists(self._hdf5, f"{slt}_magnetisation"):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{slt}_magnetisation"
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                )
+
         if fields.ndim != 1:
             raise ValueError("The list of fields has to be a 1D array.")
 
@@ -574,45 +611,39 @@ class Compound:
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_magnetisation")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing M(T,H) magnetisation"
-                        f" calculated from group: {group}."
-                    )
-                    mth_dataset = new_group.create_dataset(
-                        f"{slt}_mth",
-                        shape=(mth_array.shape[0], mth_array.shape[1]),
-                        dtype=np.float64,
-                    )
-                    mth_dataset.attrs["Description"] = (
+                start_time = time.perf_counter()
+
+                self[
+                    f"{slt}_magnetisation",
+                    f"{slt}_mth",
+                    (
                         "Dataset containing M(T,H) magnetisation (T - rows, H"
                         f" - columns) calculated from group: {group}."
-                    )
-                    fields_dataset = new_group.create_dataset(
-                        f"{slt}_fields",
-                        shape=(fields.shape[0],),
-                        dtype=np.float64,
-                    )
-                    fields_dataset.attrs["Description"] = (
+                    ),
+                    (
+                        f"Group({slt}) containing M(T,H) magnetisation"
+                        f" calculated from group: {group}."
+                    ),
+                ] = mth_array[:, :]
+                self[
+                    f"{slt}_magnetisation",
+                    f"{slt}_fields",
+                    (
                         "Dataset containing magnetic field H values used in"
                         f" simulation of M(T,H) from group: {group}."
-                    )
-                    temperatures_dataset = new_group.create_dataset(
-                        f"{slt}_temperatures",
-                        shape=(temperatures.shape[0],),
-                        dtype=np.float64,
-                    )
-                    temperatures_dataset.attrs["Description"] = (
+                    ),
+                ] = fields[:]
+                self[
+                    f"{slt}_magnetisation",
+                    f"{slt}_temperatures",
+                    (
                         "Dataset containing temperature T values used in"
                         f" simulation of M(T,H) from group: {group}."
-                    )
+                    ),
+                ] = temperatures[:]
 
-                    mth_dataset[:, :] = mth_array[:, :]
-                    fields_dataset[:] = fields[:]
-                    temperatures_dataset[:] = temperatures[:]
-
-                self._get_hdf5_groups_datasets_and_attributes()
+                end_time = time.perf_counter()
+                print(f"Saved in: {end_time - start_time} s")
 
             except Exception as exc:
                 raise SltFileError(

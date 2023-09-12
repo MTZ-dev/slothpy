@@ -57,6 +57,11 @@ def grep_to_file(
             raise ValueError("Pattern not found in the input file.")
 
 
+def _group_exists(hdf5_file, group_name):
+    with h5py.File(hdf5_file, "r") as file:
+        return group_name in file
+
+
 def _dataset_exists(hdf5_file, group_name, dataset_name):
     with h5py.File(hdf5_file, "r") as file:
         if group_name in file:
@@ -894,3 +899,7 @@ def get_total_angular_momneta_matrix(
     total_angular_momenta[2] = sz + lz
 
     return total_angular_momenta
+
+
+def get_soc_magnetic_momenta_and_energies_from_hdf5():
+    pass

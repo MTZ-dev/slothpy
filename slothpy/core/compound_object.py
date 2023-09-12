@@ -611,8 +611,6 @@ class Compound:
 
         if slt is not None:
             try:
-                start_time = time.perf_counter()
-
                 self[
                     f"{slt}_magnetisation",
                     f"{slt}_mth",
@@ -641,9 +639,6 @@ class Compound:
                         f" simulation of M(T,H) from group: {group}."
                     ),
                 ] = temperatures[:]
-
-                end_time = time.perf_counter()
-                print(f"Saved in: {end_time - start_time} s")
 
             except Exception as exc:
                 raise SltFileError(
@@ -1289,7 +1284,7 @@ class Compound:
         rotation=None,
         slt: str = None,
     ):
-        if (not isinstance(states_cutoff, np.int)) or (states_cutoff < 0):
+        if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
             raise ValueError(
                 "Invalid states cutoff, set it to positive integer or 0 for"
                 " all states."

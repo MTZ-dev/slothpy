@@ -65,23 +65,26 @@ if __name__ == "__main__":
     CeCoN3 = slt.compound_from_slt(".", "doc")
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
-    nazwa = "mega_wazekrr"
+    nazwa = "shateprrtrrrrtretterrtttrt"
     fields = np.linspace(0.1, 10, 64, dtype=np.float64)
     temperatures = np.linspace(1, 300, 300, dtype=np.float64)
 
     start_time = time.perf_counter()
+
     mth = CeCoN3.calculate_mth(
         "bas3",
         fields,
         5,
         temperatures,
-        898,
+        0,
         64,
         2,
         slt=nazwa,
     )
     end_time = time.perf_counter()
     print(f"{end_time - start_time} s")
+
+    CeCoN3.plot_mth(nazwa)
 
     # print(CeCoN3.soc_energies_cm_1("bas3", num_of_states=2))
 

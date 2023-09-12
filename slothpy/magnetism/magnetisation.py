@@ -1,5 +1,6 @@
 import time
 import multiprocessing
+import multiprocessing.managers
 import threadpoolctl
 import numpy as np
 from numba import jit
@@ -45,21 +46,25 @@ def _calculate_magnetization(
     return m / z
 
 
-@jit(
-    (
-        "float64[:](complex128[:,:,:], float64[:], float64, float64[:,:],"
-        " float64[:])"
-    ),
-    nopython=True,
-    cache=True,
-    nogil=True,
-)
+# @jit(
+#     (
+#         "float64[:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+#         " float64[:])"
+#     ),
+#     nopython=True,
+#     cache=True,
+#     nogil=True,
+# )
 def _calculate_mt(
     magnetic_momenta: np.ndarray,
     soc_energies: np.ndarray,
     field: np.float64,
     grid: np.ndarray,
     temperatures: np.ndarray,
+    m_s,
+    s_s,
+    g_s,
+    t_s,
 ) -> np.ndarray:
     """
     Calculates the M(T) array for a given array of magnetic moments, SOC energies, directional grid for powder averaging,
@@ -76,6 +81,19 @@ def _calculate_mt(
         np.ndarray[np.float64]: M(T) array.
 
     """
+
+    grid = np.ndarray(g_s, dtype=np.float64, buffer=grid.buf)
+    temperatures = np.ndarray(
+        t_s,
+        dtype=np.float64,
+        buffer=temperatures.buf,
+    )
+    magnetic_momenta = np.ndarray(
+        m_s,
+        dtype=np.complex128,
+        buffer=magnetic_momenta.buf,
+    )
+    soc_energies = np.ndarray(s_s, dtype=np.float64, buffer=soc_energies.buf)
 
     # Initialize arrays
     mt_array = np.ascontiguousarray(
@@ -139,11 +157,31 @@ def _calculate_mt_wrapper(args):
     return mt
 
 
-def _arg_iter_mth(magnetic_momenta, soc_energies, fields, grid, temperatures):
+def _arg_iter_mth(
+    fields,
+    magnetic_momenta,
+    soc_energies,
+    grid,
+    temperatures,
+    m_s,
+    s_s,
+    g_s,
+    t_s,
+):
     # Iterator generator for arguments with different field values to be
     # distributed along num_process processes
     for i in range(fields.shape[0]):
-        yield (magnetic_momenta, soc_energies, fields[i], grid, temperatures)
+        yield (
+            magnetic_momenta,
+            soc_energies,
+            fields[i],
+            grid,
+            temperatures,
+            m_s,
+            s_s,
+            g_s,
+            t_s,
+        )
 
 
 def _mth(
@@ -173,25 +211,81 @@ def _mth(
         soc_ener,
     ) = _get_soc_mag_mom_and_ener_from_hdf5(filename, group, states_cutoff)
 
-    with threadpoolctl.threadpool_limits(limits=num_threads, user_api="blas"):
-        with threadpoolctl.threadpool_limits(
-            limits=num_threads, user_api="openmp"
-        ):
-            with multiprocessing.Pool(num_process) as p:
-                mt = p.map(
-                    _calculate_mt_wrapper,
-                    _arg_iter_mth(
-                        mag_mom,
-                        soc_ener,
-                        fields,
-                        grid,
-                        temperatures,
-                    ),
-                )
+    with multiprocessing.managers.SharedMemoryManager() as smm:
+        # Create shared memory for arrays
+        fields_shared = smm.SharedMemory(size=fields.nbytes)
+        grid_shared = smm.SharedMemory(size=grid.nbytes)
+        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
+        mag_mom_shared = smm.SharedMemory(size=mag_mom.nbytes)
+        soc_ener_shared = smm.SharedMemory(size=soc_ener.nbytes)
 
-    # Collecting results in plotting-friendly convention for M(H)
-    for i in range(fields.shape[0]):
-        mth_array[:, i] = mt[i]
+        # Copy data to shared memory
+        fields_shared_arr = np.ndarray(
+            fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
+        )
+        grid_shared_arr = np.ndarray(
+            grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
+        )
+        temperatures_shared_arr = np.ndarray(
+            temperatures.shape,
+            dtype=temperatures.dtype,
+            buffer=temperatures_shared.buf,
+        )
+        mag_mom_shared_arr = np.ndarray(
+            mag_mom.shape, dtype=mag_mom.dtype, buffer=mag_mom_shared.buf
+        )
+        soc_ener_shared_arr = np.ndarray(
+            soc_ener.shape, dtype=soc_ener.dtype, buffer=soc_ener_shared.buf
+        )
+
+        g_shape = grid.shape
+        t_shape = temperatures.shape
+        s_shape = soc_ener.shape
+        m_shape = mag_mom.shape
+
+        fields_shared_arr[:] = fields[:]
+        grid_shared_arr[:] = grid[:]
+        temperatures_shared_arr[:] = temperatures[:]
+        soc_ener_shared_arr[:] = soc_ener[:]
+        mag_mom_shared_arr[:] = mag_mom[:]
+
+        with threadpoolctl.threadpool_limits(
+            limits=num_threads, user_api="blas"
+        ):
+            with threadpoolctl.threadpool_limits(
+                limits=num_threads, user_api="openmp"
+            ):
+                with multiprocessing.Pool(num_process) as p:
+                    mt = p.map(
+                        _calculate_mt_wrapper,
+                        _arg_iter_mth(
+                            fields_shared_arr,
+                            mag_mom_shared,
+                            soc_ener_shared,
+                            grid_shared,
+                            temperatures_shared,
+                            m_shape,
+                            s_shape,
+                            g_shape,
+                            t_shape,
+                        ),
+                    )
+
+        # Collecting results in plotting-friendly convention for M(H)
+        for i in range(fields.shape[0]):
+            mth_array[:, i] = mt[i]
+
+    # # Clean up shared memory
+    # fields_shared.close()
+    # fields_shared.unlink()
+    # grid_shared.close()
+    # grid_shared.unlink()
+    # temperatures_shared.close()
+    # temperatures_shared.unlink()
+    # mag_mom_shared.close()
+    # mag_mom_shared.unlink()
+    # soc_ener_shared.close()
+    # soc_ener_shared.unlink()
 
     return mth_array  # Returning values in Bohr magnetons
 

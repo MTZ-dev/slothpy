@@ -51,6 +51,7 @@ from slothpy.angular_momentum.pseudo_spin_ito import (
     matrix_from_ito_real,
 )
 from slothpy.general_utilities._math_expresions import _normalize_grid_vectors
+from slothpy.general_utilities._auto_tune import _auto_tune
 
 # Experimental imports for plotting
 from cycler import cycler
@@ -550,6 +551,7 @@ class Compound:
         num_cpu: int = 0,
         num_threads: int = 1,
         slt: str = None,
+        autotune: bool = False,
     ) -> np.ndarray[np.float64]:
         fields = np.array(fields, dtype=np.float64)
         temperatures = np.array(temperatures, dtype=np.float64)
@@ -581,6 +583,11 @@ class Compound:
             grid = _lebedev_laikov_grid(grid)
         else:
             grid = _normalize_grid_vectors(grid)
+
+        if autotune:
+            num_cpu, num_threads = _auto_tune(
+                self._hdf5, group, fields.shape[0], states_cutoff
+            )
 
         try:
             mth_array = _mth(

@@ -23,12 +23,12 @@ def diagonalize_hermitian_matrix(matrix):
 
 def main():
     # Define the shape of the matrix
-    matrix_shape = (3000, 3000)  # Change this to your desired shape
+    matrix_shape = (2002, 2002)  # Change this to your desired shape
 
     # Generate a random Hermitian matrix
     random_hermitian_matrix = generate_random_hermitian_matrix(matrix_shape)
-    with threadpoolctl.threadpool_limits(limits=1, user_api="blas"):
-        with threadpoolctl.threadpool_limits(limits=1, user_api="openmp"):
+    with threadpoolctl.threadpool_limits(limits=2, user_api="blas"):
+        with threadpoolctl.threadpool_limits(limits=2, user_api="openmp"):
             # Measure the time taken for diagonalization
             start_time = time.time()
             eigenvalues, eigenvectors = diagonalize_hermitian_matrix(
@@ -42,4 +42,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    threads_to_check = []
+
+    for i in range(1, 257):
+        if 256 % i == 0:
+            threads_to_check.append(i)
+
+    for num_threads in threads_to_check:
+        num_process = 256 // num_threads
+        print(f"{num_threads} {num_process}")

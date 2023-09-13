@@ -1,12 +1,8 @@
-import time
-import os
+from time import perf_counter
 
 # os.environ['OMP_NUM_THREADS'] = '2'
 import slothpy as slt
-import numpy as np
-import h5py
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from numpy import linspace, float64
 
 # from slothpy.general_utilities._math_expresions import normalize_grid_vectors
 
@@ -61,27 +57,26 @@ if __name__ == "__main__":
     # print(temperatures)
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
-    # CeCoN3 = slt.compound_from_molcas(".", "doc", "bas3", ".", "DyCo_DG_bas3")
-    CeCoN3 = slt.compound_from_slt(".", "doc")
+    # CeCoN3 = slt.compound_from_molcas(".", "docer", "bas3", ".", "SmCo_DG_bas3")
+    CeCoN3 = slt.compound_from_slt(".", "docer")
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
-    nazwa = "shateprrtrrrrtretterrtttrt"
-    fields = np.linspace(0.1, 10, 64, dtype=np.float64)
-    temperatures = np.linspace(1, 300, 300, dtype=np.float64)
+    nazwa = "normal_math"
+    fields = linspace(0.1, 10, 64, dtype=float64)
+    temperatures = linspace(1, 300, 300, dtype=float64)
 
-    start_time = time.perf_counter()
+    start_time = perf_counter()
 
     mth = CeCoN3.calculate_mth(
         "bas3",
         fields,
         5,
         temperatures,
-        0,
-        64,
-        2,
+        512,
         slt=nazwa,
+        autotune=True,
     )
-    end_time = time.perf_counter()
+    end_time = perf_counter()
     print(f"{end_time - start_time} s")
 
     CeCoN3.plot_mth(nazwa)

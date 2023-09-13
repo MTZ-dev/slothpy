@@ -6,7 +6,9 @@ from typing import Tuple
 from slothpy.general_utilities._constants import YELLOW, RESET
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
 from slothpy.angular_momentum.rotation import _rotate_vector_operator
-from slothpy.general_utilities._math_expresions import _mag_mom_from_ang_mom
+from slothpy.general_utilities._math_expresions import (
+    _magnetic_momenta_from_angular_momenta,
+)
 
 
 def grep_to_file(
@@ -298,7 +300,7 @@ def molcas_spin_orbit_to_slt(
 ) -> None:
     rassi_path_name = os.path.join(path_molcas, inp_molcas)
 
-    with h5py.File(f"{rassi_path_name}.rassi.h5", "a") as rassi:
+    with h5py.File(f"{rassi_path_name}.rassi.h5", "r") as rassi:
         soc_energies = rassi["SOS_ENERGIES"][:]
         sx = (
             rassi["SOS_SPIN_REAL"][0, :, :]
@@ -391,35 +393,37 @@ def _load_orca_hdf5(filename, group, rotation):
         # Read data from HDF5 file
         with h5py.File(filename, "r") as file:
             shape = file[str(group)]["SOC"][:].shape[0]
-            ang_mom = np.zeros((6, shape, shape), dtype=np.complex128)
+            angular_momenta = np.zeros((6, shape, shape), dtype=np.complex128)
             soc_mat = file[str(group)]["SOC"][:]
-            ang_mom[0][:] = 0.5 * file[str(group)]["SF_SX"][:]
-            ang_mom[1][:] = 0.5j * file[str(group)]["SF_SY"][:]
-            ang_mom[2][:] = 0.5 * file[str(group)]["SF_SZ"][:]
-            ang_mom[3][:] = 1j * file[str(group)]["SF_LX"][:]
-            ang_mom[4][:] = 1j * file[str(group)]["SF_LY"][:]
-            ang_mom[5][:] = 1j * file[str(group)]["SF_LZ"][:]
+            angular_momenta[0][:] = 0.5 * file[str(group)]["SF_SX"][:]
+            angular_momenta[1][:] = 0.5j * file[str(group)]["SF_SY"][:]
+            angular_momenta[2][:] = 0.5 * file[str(group)]["SF_SZ"][:]
+            angular_momenta[3][:] = 1j * file[str(group)]["SF_LX"][:]
+            angular_momenta[4][:] = 1j * file[str(group)]["SF_LY"][:]
+            angular_momenta[5][:] = 1j * file[str(group)]["SF_LZ"][:]
 
         # Perform diagonalization of SOC matrix
-        soc_ener, eigenvect = np.linalg.eigh(soc_mat)
+        soc_energies, eigenvectors = np.linalg.eigh(soc_mat)
 
-        ang_mom = np.ascontiguousarray(ang_mom)
-        soc_ener = np.ascontiguousarray(soc_ener.astype(np.float64))
-        eigenvect = np.ascontiguousarray(eigenvect.astype(np.complex128))
+        angular_momenta = np.ascontiguousarray(angular_momenta)
+        soc_energies = np.ascontiguousarray(soc_energies.astype(np.float64))
+        eigenvectors = np.ascontiguousarray(eigenvectors.astype(np.complex128))
 
         # Apply transformations to spin and orbital operators
-        ang_mom = eigenvect.conj().T @ ang_mom @ eigenvect
+        angular_momenta = (
+            eigenvectors.conj().T @ angular_momenta @ eigenvectors
+        )
 
         if (rotation is not None) or (rotation != None):
-            ang_mom[0:3, :, :] = _rotate_vector_operator(
-                ang_mom[0:3, :, :], rotation
+            angular_momenta[0:3, :, :] = _rotate_vector_operator(
+                angular_momenta[0:3, :, :], rotation
             )
-            ang_mom[3:6, :, :] = _rotate_vector_operator(
-                ang_mom[3:6, :, :], rotation
+            angular_momenta[3:6, :, :] = _rotate_vector_operator(
+                angular_momenta[3:6, :, :], rotation
             )
 
         # Return operators in SOC basis
-        return soc_ener, ang_mom
+        return soc_energies, angular_momenta
 
     except Exception as exc:
         raise SltFileError(
@@ -436,24 +440,24 @@ def _load_molcas_hdf5(filename, group, rotation):
     try:
         with h5py.File(filename, "r") as file:
             shape = file[str(group)]["SOC_energies"][:].shape[0]
-            ang_mom = np.zeros((6, shape, shape), dtype=np.complex128)
-            soc_ener = file[str(group)]["SOC_energies"][:]
-            ang_mom[0][:] = file[str(group)]["SOC_SX"][:]
-            ang_mom[1][:] = file[str(group)]["SOC_SY"][:]
-            ang_mom[2][:] = file[str(group)]["SOC_SZ"][:]
-            ang_mom[3][:] = file[str(group)]["SOC_LX"][:]
-            ang_mom[4][:] = file[str(group)]["SOC_LY"][:]
-            ang_mom[5][:] = file[str(group)]["SOC_LZ"][:]
+            angular_momenta = np.zeros((6, shape, shape), dtype=np.complex128)
+            soc_energies = file[str(group)]["SOC_energies"][:]
+            angular_momenta[0][:] = file[str(group)]["SOC_SX"][:]
+            angular_momenta[1][:] = file[str(group)]["SOC_SY"][:]
+            angular_momenta[2][:] = file[str(group)]["SOC_SZ"][:]
+            angular_momenta[3][:] = file[str(group)]["SOC_LX"][:]
+            angular_momenta[4][:] = file[str(group)]["SOC_LY"][:]
+            angular_momenta[5][:] = file[str(group)]["SOC_LZ"][:]
 
         if (rotation is not None) or (rotation != None):
-            ang_mom[0:3, :, :] = _rotate_vector_operator(
-                ang_mom[0:3, :, :], rotation
+            angular_momenta[0:3, :, :] = _rotate_vector_operator(
+                angular_momenta[0:3, :, :], rotation
             )
-            ang_mom[3:6, :, :] = _rotate_vector_operator(
-                ang_mom[3:6, :, :], rotation
+            angular_momenta[3:6, :, :] = _rotate_vector_operator(
+                angular_momenta[3:6, :, :], rotation
             )
 
-        return soc_ener, ang_mom
+        return soc_energies, angular_momenta
 
     except Exception as exc:
         raise SltFileError(
@@ -466,7 +470,7 @@ def _load_molcas_hdf5(filename, group, rotation):
         ) from None
 
 
-def _get_soc_ener_and_soc_ang_mom_from_hdf5(
+def _get_soc_energies_and_soc_angular_momenta_from_hdf5(
     filename: str, group: str, rotation=None
 ) -> Tuple[np.ndarray, np.ndarray]:
     if _dataset_exists(filename, group, "SOC"):
@@ -486,14 +490,17 @@ def _get_soc_ener_and_soc_ang_mom_from_hdf5(
         )
 
 
-def _get_soc_mag_mom_and_ener_from_hdf5(
+def _get_soc_magnetic_momenta_and_energies_from_hdf5(
     filename: str, group: str, states_cutoff: int, rotation=None
 ) -> tuple[np.ndarray, np.ndarray]:
-    soc_ener, ang_mom = _get_soc_ener_and_soc_ang_mom_from_hdf5(
+    (
+        soc_energies,
+        angular_momenta,
+    ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
         filename, group, rotation
     )
 
-    shape = soc_ener.size
+    shape = soc_energies.size
 
     if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
         raise ValueError(
@@ -510,10 +517,12 @@ def _get_soc_mag_mom_and_ener_from_hdf5(
     if states_cutoff == 0:
         states_cutoff = shape
 
-    soc_ener = soc_ener[:states_cutoff] - soc_ener[0]
-    mag_mom = _mag_mom_from_ang_mom(ang_mom, stop=states_cutoff)
+    soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
+    magnetic_momenta = _magnetic_momenta_from_angular_momenta(
+        angular_momenta, stop=states_cutoff
+    )
 
-    return mag_mom, soc_ener
+    return magnetic_momenta, soc_energies
 
 
 def get_soc_total_angular_momenta_and_energies_from_hdf5(

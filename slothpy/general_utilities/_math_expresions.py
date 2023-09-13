@@ -138,48 +138,51 @@ def _normalize_grid_vectors(grid):
     return grid
 
 
-def _mag_mom_from_ang_mom(
-    ang_mom: np.ndarray[np.complex128], start: int = 0, stop: int = 0
+def _magnetic_momenta_from_angular_momenta(
+    angular_momenta: np.ndarray[np.complex128], start: int = 0, stop: int = 0
 ):
     if stop == 0:
-        stop = ang_mom.shape[0]
+        stop = angular_momenta.shape[0]
     size = stop - start
-    mag_mom = np.zeros((3, size, size), dtype=np.complex128)
+    magnetic_momenta = np.zeros((3, size, size), dtype=np.complex128)
 
     # Compute and save magnetic momenta in a.u.
-    mag_mom[0] = -(
-        GE * ang_mom[0, start:stop, start:stop]
-        + ang_mom[3, start:stop, start:stop]
+    magnetic_momenta[0] = -(
+        GE * angular_momenta[0, start:stop, start:stop]
+        + angular_momenta[3, start:stop, start:stop]
     )
-    mag_mom[1] = -(
-        GE * ang_mom[1, start:stop, start:stop]
-        + ang_mom[4, start:stop, start:stop]
+    magnetic_momenta[1] = -(
+        GE * angular_momenta[1, start:stop, start:stop]
+        + angular_momenta[4, start:stop, start:stop]
     )
-    mag_mom[2] = -(
-        GE * ang_mom[2, start:stop, start:stop]
-        + ang_mom[5, start:stop, start:stop]
+    magnetic_momenta[2] = -(
+        GE * angular_momenta[2, start:stop, start:stop]
+        + angular_momenta[5, start:stop, start:stop]
     )
 
-    return mag_mom
+    return magnetic_momenta
 
 
-def _tot_ang_mom_from_ang_mom(
-    ang_mom: np.ndarray[np.complex128], start: int = 0, stop: int = 0
+def _tot_angular_momenta_from_angular_momenta(
+    angular_momenta: np.ndarray[np.complex128], start: int = 0, stop: int = 0
 ):
     if stop == 0:
-        stop = ang_mom.shape[0]
+        stop = angular_momenta.shape[0]
     size = stop - start
-    tot_ang_mom = np.zeros((3, size, size), dtype=np.complex128)
+    tot_angular_momenta = np.zeros((3, size, size), dtype=np.complex128)
 
     # Compute and save magnetic momenta in a.u.
-    tot_ang_mom[0] = (
-        ang_mom[0, start:stop, start:stop] + ang_mom[3, start:stop, start:stop]
+    tot_angular_momenta[0] = (
+        angular_momenta[0, start:stop, start:stop]
+        + angular_momenta[3, start:stop, start:stop]
     )
-    tot_ang_mom[1] = (
-        ang_mom[1, start:stop, start:stop] + ang_mom[4, start:stop, start:stop]
+    tot_angular_momenta[1] = (
+        angular_momenta[1, start:stop, start:stop]
+        + angular_momenta[4, start:stop, start:stop]
     )
-    tot_ang_mom[2] = (
-        ang_mom[2, start:stop, start:stop] + ang_mom[5, start:stop, start:stop]
+    tot_angular_momenta[2] = (
+        angular_momenta[2, start:stop, start:stop]
+        + angular_momenta[5, start:stop, start:stop]
     )
 
-    return tot_ang_mom
+    return tot_angular_momenta

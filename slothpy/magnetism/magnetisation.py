@@ -328,7 +328,7 @@ def _mag_3d(
     theta, phi = meshgrid(theta, phi)
 
     # Initialize the result array
-    mag_3d_array = zeros(
+    mag_3d = zeros(
         (fields.shape[0], temperatures.shape[0], phi.shape[0], phi.shape[1]),
         dtype=float64,
     )
@@ -412,11 +412,13 @@ def _mag_3d(
     for k in range(fields.shape[0]):
         for i in range(phi.shape[0]):
             for j in range(phi.shape[1]):
-                mag_3d_array[k, :, i, j] = mth[pool_index][:]
+                mag_3d[k, :, i, j] = mth[pool_index][:]
                 pool_index += 1
 
-    x = (sin(phi) * cos(theta))[newaxis, newaxis, :, :] * mag_3d_array
-    y = (sin(phi) * sin(theta))[newaxis, newaxis, :, :] * mag_3d_array
-    z = (cos(phi))[newaxis, newaxis, :, :] * mag_3d_array
+    mag_3d_array = zeros((3, *mag_3d.shape), dtype=float64)
 
-    return x, y, z
+    mag_3d_array[0] = (sin(phi) * cos(theta))[newaxis, newaxis, :, :] * mag_3d
+    mag_3d_array[1] = (sin(phi) * sin(theta))[newaxis, newaxis, :, :] * mag_3d
+    mag_3d_array[2] = (cos(phi))[newaxis, newaxis, :, :] * mag_3d
+
+    return mag_3d_array

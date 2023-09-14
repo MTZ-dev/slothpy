@@ -809,7 +809,7 @@ class Compound:
             )
 
         try:
-            x, y, z = _mag_3d(
+            mag_3d_array = _mag_3d(
                 self._hdf5,
                 group,
                 states_cutoff,
@@ -837,13 +837,6 @@ class Compound:
 
         if slt is not None:
             try:
-                mag_3d_dataset = np.zeros(
-                    (3, x.shape[0], x.shape[1], x.shape[2], x.shape[3]),
-                    dtype=np.float64,
-                )
-                mag_3d_dataset[0, :, :, :, :] = x[:, :, :, :]
-                mag_3d_dataset[1, :, :, :, :] = y[:, :, :, :]
-                mag_3d_dataset[2, :, :, :, :] = z[:, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_mag_3d",
@@ -857,7 +850,7 @@ class Compound:
                         f"Group({slt}) containing 3D magnetisation calculated"
                         f" from group: {group}."
                     ),
-                ] = mag_3d_dataset[:]
+                ] = mag_3d_array[:]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
@@ -890,7 +883,7 @@ class Compound:
                     + '".',
                 ) from None
 
-        return x, y, z
+        return mag_3d_array
 
     def calculate_chitht(
         self,

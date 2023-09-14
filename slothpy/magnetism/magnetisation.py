@@ -38,19 +38,6 @@ from slothpy.magnetism.zeeman import calculate_zeeman_matrix
 def _calculate_magnetization(
     energies: ndarray, states_momenta: ndarray, temperature: float64
 ) -> float64:
-    """
-    Calculates the magnetization for a given array of states energies, momenta, and temperature.
-
-    Args:
-        energies (np.ndarray[np.float64]): Array of energies.
-        states_momenta (np.ndarray[np.float64]): Array of states momenta.
-        temperature (np.float64): Temperature value.
-
-    Returns:
-        np.float64: Magnetization value.
-
-    """
-
     # Boltzman weights
     exp_diff = exp(-(energies - energies[0]) / (KB * temperature))
 
@@ -133,22 +120,6 @@ def _calculate_mt(
     t_s: int,
     g_s: int = 1,
 ) -> ndarray:
-    """
-    Calculates the M(T) array for a given array of magnetic moments, SOC energies, directional grid for powder averaging,
-    and temperatures for a particular value of magnetic field.
-
-    Args:
-        magnetic_moment (np.ndarray[np.complex128]): Array of magnetic moments.
-        soc_energies (np.ndarray[np.float64]): Array of SOC energies.
-        field (np.float64): Value of magnetic field.
-        grid (np.ndarray[np.float64]): Grid array.
-        temperatures (np.ndarray[np.float64]): Array of temperatures.
-
-    Returns:
-        np.ndarray[np.float64]: M(T) array.
-
-    """
-
     if g_s != 1:
         grid = ndarray(g_s, dtype=float64, buffer=grid.buf)
 
@@ -170,14 +141,6 @@ def _calculate_mt(
 
 
 def _calculate_mt_wrapper(args):
-    """Wrapper function for parallel use of M(T) calulations
-
-    Args:
-        args (tuple): Tuple of arguments for calculate_mt function
-
-    Returns:
-        np.ndarray[np.float64]: M(T) array.
-    """
     # Unpack arguments and call the function
     mt = _calculate_mt(*args)
 

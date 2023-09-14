@@ -1,7 +1,8 @@
-import time
 from os import path
 from typing import Tuple, Union
 import h5py
+from h5py import File, Group, Dataset
+from numpy import ndarray, array, float64, int64
 import numpy as np
 from ._slothpy_exceptions import (
     SltFileError,
@@ -199,7 +200,7 @@ class Compound:
             Tuple[str, str, str],
             Tuple[str, str, str, str],
         ],
-        value: np.ndarray,
+        value: ndarray,
     ) -> None:
         """
         Performs the operation __setitem__.
@@ -225,7 +226,7 @@ class Compound:
         KeyError
             If the key is not a string or 2-tuple of strings.
         """
-        value = np.array(value)
+        value = array(value)
 
         if isinstance(key, str):
             self._set_single_dataset(key, value)
@@ -240,7 +241,7 @@ class Compound:
                 "Invalid key type. It has to be str or a 2/3/4-tuple of str."
             )
 
-    def __getitem__(self, key: Union[str, Tuple[str, str]]) -> np.ndarray:
+    def __getitem__(self, key: Union[str, Tuple[str, str]]) -> ndarray:
         """
         Performs the operation __getitem__.
 
@@ -255,7 +256,7 @@ class Compound:
 
         Returns
         -------
-        np.ndarray
+        ndarray
             An array contained in the dataset associated with the provided key.
 
         Raises
@@ -285,17 +286,17 @@ class Compound:
         self._datasets = []
 
         def collect_objects(name, obj):
-            if isinstance(obj, h5py.Group):
+            if isinstance(obj, Group):
                 self._groups[name] = dict(obj.attrs)
-            elif isinstance(obj, h5py.Dataset):
+            elif isinstance(obj, Dataset):
                 self._datasets.append(name)
 
-        with h5py.File(self._hdf5, "r") as file:
+        with File(self._hdf5, "r") as file:
             file.visititems(collect_objects)
 
-    def _set_single_dataset(self, name: str, value: np.ndarray):
+    def _set_single_dataset(self, name: str, value: ndarray):
         try:
-            with h5py.File(self._hdf5, "r+") as file:
+            with File(self._hdf5, "r+") as file:
                 new_dataset = file.create_dataset(
                     name, shape=value.shape, dtype=value.dtype
                 )
@@ -313,11 +314,11 @@ class Compound:
         names: Union[
             Tuple[str, str], Tuple[str, str, str], Tuple[str, str, str, str]
         ],
-        value: np.ndarray,
+        value: ndarray,
     ):
         try:
-            with h5py.File(self._hdf5, "r+") as file:
-                if names[0] in file and isinstance(file[names[0]], h5py.Group):
+            with File(self._hdf5, "r+") as file:
+                if names[0] in file and isinstance(file[names[0]], Group):
                     group = file[names[0]]
                 else:
                     group = file.create_group(names[0])
@@ -340,9 +341,9 @@ class Compound:
                 ),
             ) from None
 
-    def _get_data_from_dataset(self, name: str) -> np.ndarray:
+    def _get_data_from_dataset(self, name: str) -> ndarray:
         try:
-            with h5py.File(self._hdf5, "r") as file:
+            with File(self._hdf5, "r") as file:
                 value = file[name][:]
 
         except Exception as exc:
@@ -356,11 +357,9 @@ class Compound:
 
         return value
 
-    def _get_data_from_group_dataset(
-        self, names: Tuple[str, str]
-    ) -> np.ndarray:
+    def _get_data_from_group_dataset(self, names: Tuple[str, str]) -> ndarray:
         try:
-            with h5py.File(self._hdf5, "r") as file:
+            with File(self._hdf5, "r") as file:
                 value = file[names[0]][names[1]][:]
 
         except Exception as exc:
@@ -394,7 +393,7 @@ class Compound:
         """
 
         try:
-            with h5py.File(self._hdf5, "r+") as file:
+            with File(self._hdf5, "r+") as file:
                 if second is None:
                     del file[first]
                 else:
@@ -414,23 +413,18 @@ class Compound:
         self._get_hdf5_groups_datasets_and_attributes()
 
     def calculate_g_tensor_and_axes_doublet(
-        self, group: str, doublets: np.ndarray[np.int64], slt: str = None
-    ) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]:
+        self, group: str, doublets: ndarray[int64], slt: str = None
+    ) -> Tuple[ndarray[float64], ndarray[float64]]:
         """
         Calculates pseudo-g-tensor components (for S = 1/2) and
         main magnetic axes for a given list of doublet states.
-
-        Magnetic axes are returned in the form of rotation matrices that
-        diagonalise the Abragam-Bleaney tensor (G = gg.T). Coordinates of the
-        main axes XYZ in the initial xzy frame are columns of such matrices
-        (0-X, 1-Y, 2-Z).
 
         Parameters
         ----------
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of g-tensors.
-        doublets : np.ndarray[np.int64]
+        doublets : ndarray[int64]
             ArrayLike structure (can be converted to numpy.NDArray) of integers
             corresponding to doublet labels (numbers).
         slt : str, optional
@@ -439,19 +433,28 @@ class Compound:
 
         Returns
         -------
-        Tuple[np.ndarray[np.float64], np.ndarray[np.float64]]
+        Tuple[ndarray[float64], ndarray[float64]]
             The first array (g_tensor_list) contains a list g-tensors in
             a format [doublet_number, gx, gy, gz], the second one
             (magnetic_axes_list) contains respective rotation matrices.
 
         Raises
         ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
         ValueError
             If doublets are not one-diemsional array.
         SltCompError
             If the calculation of g-tensors is unsuccessful.
         SltFileError
             If the program is unable to correctly save results to .slt file.
+
+        Notes
+        -----
+        Magnetic axes are returned in the form of rotation matrices that
+        diagonalise the Abragam-Bleaney tensor (G = gg.T). Coordinates of the
+        main axes XYZ in the initial xzy frame are columns of such matrices
+        (0-X, 1-Y, 2-Z).
         """
 
         if slt is not None:
@@ -472,7 +475,7 @@ class Compound:
                     + "already exists. Delete it manually",
                 )
 
-        doublets = np.array(doublets, dtype=np.int64)
+        doublets = array(doublets, dtype=np.int64)
 
         if doublets.ndim != 1:
             raise ValueError("The list of doublets has to be a 1D array.")
@@ -545,17 +548,96 @@ class Compound:
     def calculate_mth(
         self,
         group: str,
-        fields: np.ndarray[np.float64],
-        grid: Union[int, np.ndarray[np.float64]],
-        temperatures: np.ndarray[np.float64],
+        fields: ndarray[float64],
+        grid: Union[int, ndarray[float64]],
+        temperatures: ndarray[float64],
         states_cutoff: int = 0,
-        num_cpu: int = 0,
-        num_threads: int = 1,
+        number_cpu: int = 0,
+        number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
-    ) -> np.ndarray[np.float64]:
-        fields = np.array(fields, dtype=np.float64)
-        temperatures = np.array(temperatures, dtype=np.float64)
+        _autotune_size: int = 2,
+    ) -> ndarray[float64]:
+        """
+        Calculates powder-averaged or directional molar magnetisation M(T,H)
+        for a given list of temeprature and field values.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the magnetisation.
+        fields : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) at which magnetisation will be computed.
+        grid : Union[int, ndarray[float64]]
+            If the grid is set to integer from 0-11 then the prescribed
+            Lebedev-Laikov grids over hemisphere will be used (see
+            grids_over_hemisphere documentation), otherwise, user can provide
+            an ArrayLike structure (can be converted to numpy.NDArray) with the
+            convention: [[direction_x, direction_y, direction_z, weight],...]
+            for powder-averaging. If one wants a calculation for a single,
+            particular direction the list has to contain one entry like this:
+            [[direction_x, direction_y, direction_z, 1.]].
+        temperatures : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            temeperature values (K) at which magnetisation will be computed.
+        states_cutoff : int, optional
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0
+        number_cpu : int, optional
+            Number of logical CPUs to be assigned to perform the calculation.
+            If set to zero, all available CPUs will be used., by default 0
+        number_threads : int, optional
+            Number of threads used in a multithreaded implementation of linear
+            algebra libraries used during the calculation. Higher values
+            benefit with the increasing size of matrices (states_cutoff) over
+            the parallelization over CPUs., by default 1
+        slt : str, optional
+            If given the results will be saved in group of this name to .slt
+            file with sufix: _magnetisation., by default None
+        autotune : bool, optional
+            If True the program will automatically try to choose the best
+            number of threads (and therefore parallel processes), for the given
+            number of CPUs, to be used during the calculation. Note that this
+            process can take a significant amount of time, so start to use it
+            with medim-sized calculations (e.g. with states_cutoff > 300,
+            dense grids or a higher number of field values) where it becomes
+            a necessity., by default False
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting mth_array gives magnetisation in Bohr magnetons and
+            is in the form [temperatures, fields] - the first dimension runs
+            over temperature values, and the second over fields.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        ValueError
+            If fields are not one-diemsional array.
+        ValueError
+            If temperatures are not one-diemsional array.
+        SltCompError
+            If the calculation of magnetisation is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+
+        See Also
+        --------
+        slothpy.lebedev_laikov_grid : For the description of the prescribed
+        Lebedev-Laikov grids
+
+        Notes
+        -----
+        Here, number_cpu // number_threads parallel processes are used to
+        distribute the workload over the provided field values.
+        """
+        fields = array(fields, dtype=float64)
+        temperatures = array(temperatures, dtype=float64)
 
         if slt is not None:
             slt_group_name = f"{slt}_magnetisation"
@@ -587,8 +669,14 @@ class Compound:
             grid = _normalize_grid_vectors(grid)
 
         if autotune:
-            num_cpu, num_threads = _auto_tune(
-                self._hdf5, group, fields.shape[0], states_cutoff
+            number_cpu, number_threads = _auto_tune(
+                self._hdf5,
+                group,
+                fields.shape[0],
+                states_cutoff,
+                grid.shape[0],
+                number_cpu,
+                _autotune_size,
             )
 
         try:
@@ -599,8 +687,8 @@ class Compound:
                 grid,
                 temperatures,
                 states_cutoff,
-                num_cpu,
-                num_threads,
+                number_cpu,
+                number_threads,
             )
 
         except Exception as exc:
@@ -669,14 +757,15 @@ class Compound:
     def calculate_mag_3d(
         self,
         group: str,
-        fields: np.ndarray,
+        fields: ndarray,
         spherical_grid: int,
-        temperatures: np.ndarray,
+        temperatures: ndarray,
         states_cutoff: int = 0,
-        num_cpu: int = 0,
-        num_threads: int = 1,
+        number_cpu: int = 0,
+        number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
+        _autotune_size: int = 1,
     ):
         temperatures = np.array(temperatures, dtype=np.float64)
         fields = np.array(fields, dtype=np.float64)
@@ -709,11 +798,14 @@ class Compound:
             raise ValueError("Spherical grid has to be a positive integer.")
 
         if autotune:
-            num_cpu, num_threads = _auto_tune(
+            number_cpu, number_threads = _auto_tune(
                 self._hdf5,
                 group,
                 fields.shape[0] * 2 * spherical_grid**2,
                 states_cutoff,
+                1,
+                number_cpu,
+                _autotune_size,
             )
 
         try:
@@ -724,8 +816,8 @@ class Compound:
                 fields,
                 spherical_grid,
                 temperatures,
-                num_cpu,
-                num_threads,
+                number_cpu,
+                number_threads,
             )
 
         except Exception as exc:

@@ -17,7 +17,7 @@ def _get_num_of_processes(num_cpu, num_threads):
         )
 
     if num_cpu == 0:
-        num_cpu = os.cpu_count()
+        num_cpu = int(os.cpu_count())
 
     if num_threads == 0:
         num_threads = 1

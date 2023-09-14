@@ -455,7 +455,8 @@ class Compound:
         """
 
         if slt is not None:
-            if _group_exists(self._hdf5, f"{slt}_g_tensors_axes"):
+            slt_group_name = f"{slt}_g_tensors_axes"
+            if _group_exists(self._hdf5, slt_group_name):
                 raise SltSaveError(
                     self._hdf5,
                     NameError(""),
@@ -502,7 +503,7 @@ class Compound:
         if slt is not None:
             try:
                 self[
-                    f"{slt}_g_tensors_axes",
+                    slt_group_name,
                     f"{slt}_g_tensors",
                     (
                         "Dataset containing number of doublet and respective"
@@ -515,7 +516,7 @@ class Compound:
                 ] = g_tensor_list[:, :]
 
                 self[
-                    f"{slt}_g_tensors_axes",
+                    slt_group_name,
                     f"{slt}_axes",
                     (
                         "Dataset containing rotation matrices from the initial"
@@ -557,7 +558,8 @@ class Compound:
         temperatures = np.array(temperatures, dtype=np.float64)
 
         if slt is not None:
-            if _group_exists(self._hdf5, f"{slt}_magnetisation"):
+            slt_group_name = f"{slt}_magnetisation"
+            if _group_exists(self._hdf5, slt_group_name):
                 raise SltSaveError(
                     self._hdf5,
                     NameError(""),
@@ -619,7 +621,7 @@ class Compound:
         if slt is not None:
             try:
                 self[
-                    f"{slt}_magnetisation",
+                    slt_group_name,
                     f"{slt}_mth",
                     (
                         "Dataset containing M(T,H) magnetisation (T - rows, H"
@@ -631,7 +633,7 @@ class Compound:
                     ),
                 ] = mth_array[:, :]
                 self[
-                    f"{slt}_magnetisation",
+                    slt_group_name,
                     f"{slt}_fields",
                     (
                         "Dataset containing magnetic field H values used in"
@@ -639,7 +641,7 @@ class Compound:
                     ),
                 ] = fields[:]
                 self[
-                    f"{slt}_magnetisation",
+                    slt_group_name,
                     f"{slt}_temperatures",
                     (
                         "Dataset containing temperature T values used in"
@@ -663,6 +665,140 @@ class Compound:
                 ) from None
 
         return mth_array
+
+    def calculate_mag_3d(
+        self,
+        group: str,
+        fields: np.ndarray,
+        spherical_grid: int,
+        temperatures: np.ndarray,
+        states_cutoff: int = 0,
+        num_cpu: int = 0,
+        num_threads: int = 1,
+        slt: str = None,
+        autotune: bool = False,
+    ):
+        temperatures = np.array(temperatures, dtype=np.float64)
+        fields = np.array(fields, dtype=np.float64)
+
+        if slt is not None:
+            slt_group_name = f"{slt}_3d_magnetisation"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{slt}_magnetisation"
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                )
+
+        if fields.ndim != 1:
+            raise ValueError("The list of fields has to be a 1D array.")
+
+        if temperatures.ndim != 1:
+            raise ValueError("The list of temperatures has to be a 1D array.")
+
+        if (not isinstance(spherical_grid, int)) or spherical_grid <= 0:
+            raise ValueError("Spherical grid has to be a positive integer.")
+
+        if autotune:
+            num_cpu, num_threads = _auto_tune(
+                self._hdf5,
+                group,
+                fields.shape[0] * 2 * spherical_grid**2,
+                states_cutoff,
+            )
+
+        try:
+            x, y, z = _mag_3d(
+                self._hdf5,
+                group,
+                states_cutoff,
+                fields,
+                spherical_grid,
+                temperatures,
+                num_cpu,
+                num_threads,
+            )
+
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute 3D magnetisation from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+
+        if slt is not None:
+            try:
+                mag_3d_dataset = np.zeros(
+                    (3, x.shape[0], x.shape[1], x.shape[2], x.shape[3]),
+                    dtype=np.float64,
+                )
+                mag_3d_dataset[0, :, :, :, :] = x[:, :, :, :]
+                mag_3d_dataset[1, :, :, :, :] = y[:, :, :, :]
+                mag_3d_dataset[2, :, :, :, :] = z[:, :, :, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_mag_3d",
+                    (
+                        "Dataset containing 3D magnetisation as meshgird"
+                        " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
+                        " temperature, meshgrid, meshgrid) calculated from"
+                        f" group: {group}."
+                    ),
+                    (
+                        f"Group({slt}) containing 3D magnetisation calculated"
+                        f" from group: {group}."
+                    ),
+                ] = mag_3d_dataset[:]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    (
+                        "Dataset containing magnetic field H values used in"
+                        f" simulation of 3D magnetisation from group: {group}."
+                    ),
+                ] = fields[:]
+                self[
+                    slt_group_name,
+                    f"{slt}_temperatures",
+                    (
+                        "Dataset containing temperature T values used in"
+                        f" simulation of 3D magnetisation from group: {group}."
+                    ),
+                ] = temperatures[:]
+
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save 3D magnetisation to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{slt}_g_tensors_axes"
+                    + RESET
+                    + '".',
+                ) from None
+
+        return x, y, z
 
     def calculate_chitht(
         self,
@@ -1317,10 +1453,6 @@ class Compound:
                 with h5py.File(self._hdf5, "r+") as file:
                     new_group = file.create_group(
                         f"{slt}_total_angular_momenta_matrix"
-                    )
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing total angular momenta"
-                        f" calculated from group: {group}."
                     )
                     total_angular_momenta_matrix_dataset = (
                         new_group.create_dataset(
@@ -2166,103 +2298,6 @@ class Compound:
                 )
 
         return matrix
-
-    def calculate_mag_3d(
-        self,
-        group: str,
-        states_cutoff: int,
-        fields: np.ndarray,
-        spherical_grid: int,
-        temperatures: np.ndarray,
-        num_cpu: int,
-        num_threads: int,
-        slt: str = None,
-    ):
-        temperatures = np.array(temperatures, dtype=np.float64)
-        fields = np.array(fields, dtype=np.float64)
-
-        try:
-            x, y, z = mag_3d(
-                self._hdf5,
-                group,
-                states_cutoff,
-                fields,
-                spherical_grid,
-                temperatures,
-                num_cpu,
-                num_threads,
-            )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to compute 3D magnetisation"
-                f" from file: {self._hdf5} - group {group}: {error_type}:"
-                f" {error_message}"
-            )
-
-        if slt is not None:
-            try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_3d_magnetisation")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing 3D magnetisation calculated"
-                        f" from group: {group}."
-                    )
-                    mag_3d_dataset = new_group.create_dataset(
-                        f"{slt}_mag_3d",
-                        shape=(
-                            3,
-                            x.shape[0],
-                            x.shape[1],
-                            x.shape[2],
-                            x.shape[3],
-                        ),
-                        dtype=np.float64,
-                    )
-                    mag_3d_dataset.attrs["Description"] = (
-                        "Dataset containing 3D magnetisation as meshgird"
-                        " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
-                        " temperature, meshgrid, meshgrid) calculated from"
-                        f" group: {group}."
-                    )
-                    fields_dataset = new_group.create_dataset(
-                        f"{slt}_fields",
-                        shape=(fields.shape[0],),
-                        dtype=np.float64,
-                    )
-                    fields_dataset.attrs["Description"] = (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of 3D magnetisation from group: {group}."
-                    )
-                    temperatures_dataset = new_group.create_dataset(
-                        f"{slt}_temperatures",
-                        shape=(temperatures.shape[0],),
-                        dtype=np.float64,
-                    )
-                    temperatures_dataset.attrs["Description"] = (
-                        "Dataset containing temperature T values used in"
-                        f" simulation of 3D magnetisation from group: {group}."
-                    )
-
-                    mag_3d_dataset[0, :, :, :, :] = x[:, :, :, :]
-                    mag_3d_dataset[1, :, :, :, :] = y[:, :, :, :]
-                    mag_3d_dataset[2, :, :, :, :] = z[:, :, :, :]
-                    temperatures_dataset[:] = temperatures
-                    fields_dataset[:] = fields
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save 3D magnetisation"
-                    f" to file: {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
-
-        return x, y, z
 
     def calculate_chit_3d(
         self,

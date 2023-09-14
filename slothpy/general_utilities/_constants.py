@@ -9,4 +9,7 @@ PURPLE = "\033[35m"
 RESET = "\033[0m"
 
 # Physical constants
-GE = 2.00231930436256
+GE = 2.00231930436256  # Electron g-factor
+KB = 3.166811563e-6  # Boltzmann constant a.u./K
+MU_B = 2.127191078656686e-06  # Bohr magneton in a.u./T
+H_CM_1 = 219474.6  # Atomic units (Hartree) to wavenumbers

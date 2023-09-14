@@ -20,6 +20,7 @@ from numpy import (
 )
 from numpy.linalg import eigh
 from numba import jit
+from slothpy.general_utilities._constants import KB
 from slothpy.general_utilities.system import _get_num_of_processes
 from slothpy.general_utilities.io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -49,10 +50,9 @@ def _calculate_magnetization(
         np.float64: Magnetization value.
 
     """
-    kB = 3.166811563e-6  # Boltzmann constant a.u./K
 
     # Boltzman weights
-    exp_diff = exp(-(energies - energies[0]) / (kB * temperature))
+    exp_diff = exp(-(energies - energies[0]) / (KB * temperature))
 
     # Partition function
     z = sum(exp_diff)
@@ -128,10 +128,10 @@ def _calculate_mt(
     field: float64,
     grid: ndarray,
     temperatures: ndarray,
-    m_s,
-    s_s,
-    g_s,
-    t_s,
+    m_s: int,
+    s_s: int,
+    t_s: int,
+    g_s: int = 1,
 ) -> ndarray:
     """
     Calculates the M(T) array for a given array of magnetic moments, SOC energies, directional grid for powder averaging,
@@ -149,7 +149,9 @@ def _calculate_mt(
 
     """
 
-    grid = ndarray(g_s, dtype=float64, buffer=grid.buf)
+    if g_s != 1:
+        grid = ndarray(g_s, dtype=float64, buffer=grid.buf)
+
     temperatures = ndarray(
         t_s,
         dtype=float64,
@@ -183,15 +185,15 @@ def _calculate_mt_wrapper(args):
 
 
 def _arg_iter_mth(
-    fields,
     magnetic_momenta,
     soc_energies,
+    fields,
     grid,
     temperatures,
     m_s,
     s_s,
-    g_s,
     t_s,
+    g_s,
 ):
     # Iterator generator for arguments with different field values to be
     # distributed along num_process processes
@@ -204,8 +206,8 @@ def _arg_iter_mth(
             temperatures,
             m_s,
             s_s,
-            g_s,
             t_s,
+            g_s,
         )
 
 
@@ -235,32 +237,26 @@ def _mth(
     )
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
-    fields = ascontiguousarray(fields)
-    grid = ascontiguousarray(grid)
-    temperatures = ascontiguousarray(temperatures)
+    fields = ascontiguousarray(fields, dtype=float64)
+    temperatures = ascontiguousarray(temperatures, dtype=float64)
+    grid = ascontiguousarray(grid, dtype=float64)
+
+    m_shape = magnetic_momenta.shape
+    s_shape = soc_energies.shape
+    t_shape = temperatures.shape
+    g_shape = grid.shape
 
     with SharedMemoryManager() as smm:
         # Create shared memory for arrays
-        fields_shared = smm.SharedMemory(size=fields.nbytes)
-        grid_shared = smm.SharedMemory(size=grid.nbytes)
-        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
         magnetic_momenta_shared = smm.SharedMemory(
             size=magnetic_momenta.nbytes
         )
         soc_energies_shared = smm.SharedMemory(size=soc_energies.nbytes)
+        fields_shared = smm.SharedMemory(size=fields.nbytes)
+        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
+        grid_shared = smm.SharedMemory(size=grid.nbytes)
 
         # Copy data to shared memory
-        fields_shared_arr = ndarray(
-            fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
-        )
-        grid_shared_arr = ndarray(
-            grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
-        )
-        temperatures_shared_arr = ndarray(
-            temperatures.shape,
-            dtype=temperatures.dtype,
-            buffer=temperatures_shared.buf,
-        )
         magnetic_momenta_shared_arr = ndarray(
             magnetic_momenta.shape,
             dtype=magnetic_momenta.dtype,
@@ -271,17 +267,23 @@ def _mth(
             dtype=soc_energies.dtype,
             buffer=soc_energies_shared.buf,
         )
+        fields_shared_arr = ndarray(
+            fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
+        )
+        temperatures_shared_arr = ndarray(
+            temperatures.shape,
+            dtype=temperatures.dtype,
+            buffer=temperatures_shared.buf,
+        )
+        grid_shared_arr = ndarray(
+            grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
+        )
 
-        g_shape = grid.shape
-        t_shape = temperatures.shape
-        s_shape = soc_energies.shape
-        m_shape = magnetic_momenta.shape
-
-        fields_shared_arr[:] = fields[:]
-        grid_shared_arr[:] = grid[:]
-        temperatures_shared_arr[:] = temperatures[:]
-        soc_energies_shared_arr[:] = soc_energies[:]
         magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
+        soc_energies_shared_arr[:] = soc_energies[:]
+        fields_shared_arr[:] = fields[:]
+        temperatures_shared_arr[:] = temperatures[:]
+        grid_shared_arr[:] = grid[:]
 
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
@@ -289,27 +291,35 @@ def _mth(
                     mt = p.map(
                         _calculate_mt_wrapper,
                         _arg_iter_mth(
-                            fields_shared_arr,
                             magnetic_momenta_shared,
                             soc_energies_shared,
+                            fields_shared_arr,
                             grid_shared,
                             temperatures_shared,
                             m_shape,
                             s_shape,
-                            g_shape,
                             t_shape,
+                            g_shape,
                         ),
                     )
 
-        # Collecting results in plotting-friendly convention for M(H)
-        for i in range(fields.shape[0]):
-            mth_array[:, i] = mt[i]
+    # Collecting results in plotting-friendly convention for M(H)
+    for i in range(fields.shape[0]):
+        mth_array[:, i] = mt[i]
 
     return mth_array  # Returning values in Bohr magnetons
 
 
 def _arg_iter_mag_3d(
-    magnetic_moment, soc_energies, fields, theta, phi, temperatures
+    magnetic_moment,
+    soc_energies,
+    fields,
+    theta,
+    phi,
+    temperatures,
+    m_shape,
+    s_shape,
+    t_shape,
 ):
     for k in range(fields.shape[0]):
         for i in range(phi.shape[0]):
@@ -330,6 +340,9 @@ def _arg_iter_mag_3d(
                         dtype=float64,
                     ),
                     temperatures,
+                    m_shape,
+                    s_shape,
+                    t_shape,
                 )
 
 
@@ -347,8 +360,8 @@ def _mag_3d(
     num_process = _get_num_of_processes(num_cpu, num_threads)
 
     # Create a gird
-    theta = linspace(0, 2 * pi, 2 * spherical_grid)
-    phi = linspace(0, pi, spherical_grid)
+    theta = linspace(0, 2 * pi, 2 * spherical_grid, dtype=float64)
+    phi = linspace(0, pi, spherical_grid, dtype=float64)
     theta, phi = meshgrid(theta, phi)
 
     # Initialize the result array
@@ -359,34 +372,85 @@ def _mag_3d(
 
     # Read data from HDF5 file
     (
-        magnetic_moment,
+        magnetic_momenta,
         soc_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff
     )
 
-    with threadpool_limits(limits=num_threads, user_api="blas"):
-        with threadpool_limits(limits=num_threads, user_api="openmp"):
-            # Parallel M(T,H) calculation over different grid points
-            with Pool(num_process) as p:
-                mth = p.map(
-                    _calculate_mt_wrapper,
-                    _arg_iter_mag_3d(
-                        magnetic_moment,
-                        soc_energies,
-                        fields,
-                        theta,
-                        phi,
-                        temperatures,
-                    ),
-                )
+    m_shape = magnetic_momenta.shape
+    s_shape = soc_energies.shape
+    t_shape = temperatures.shape
 
-            pool_index = 0
-            for k in range(fields.shape[0]):
-                for i in range(phi.shape[0]):
-                    for j in range(phi.shape[1]):
-                        mag_3d_array[k, :, i, j] = mth[pool_index][:]
-                        pool_index += 1
+    with SharedMemoryManager() as smm:
+        # Create shared memory for arrays
+        magnetic_momenta_shared = smm.SharedMemory(
+            size=magnetic_momenta.nbytes
+        )
+        soc_energies_shared = smm.SharedMemory(size=soc_energies.nbytes)
+        fields_shared = smm.SharedMemory(size=fields.nbytes)
+        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
+        theta_shared = smm.SharedMemory(size=theta.nbytes)
+        phi_shared = smm.SharedMemory(size=phi.nbytes)
+
+        # Copy data to shared memory
+        magnetic_momenta_shared_arr = ndarray(
+            magnetic_momenta.shape,
+            dtype=magnetic_momenta.dtype,
+            buffer=magnetic_momenta_shared.buf,
+        )
+        soc_energies_shared_arr = ndarray(
+            soc_energies.shape,
+            dtype=soc_energies.dtype,
+            buffer=soc_energies_shared.buf,
+        )
+        fields_shared_arr = ndarray(
+            fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
+        )
+        temperatures_shared_arr = ndarray(
+            temperatures.shape,
+            dtype=temperatures.dtype,
+            buffer=temperatures_shared.buf,
+        )
+        theta_shared_arr = ndarray(
+            theta.shape, dtype=theta.dtype, buffer=theta_shared.buf
+        )
+        phi_shared_arr = ndarray(
+            phi.shape, dtype=phi.dtype, buffer=phi_shared.buf
+        )
+
+        magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
+        soc_energies_shared_arr[:] = soc_energies[:]
+        fields_shared_arr[:] = fields[:]
+        temperatures_shared_arr[:] = temperatures[:]
+        theta_shared_arr[:] = theta[:]
+        phi_shared_arr[:] = phi[:]
+
+        with threadpool_limits(limits=num_threads, user_api="blas"):
+            with threadpool_limits(limits=num_threads, user_api="openmp"):
+                # Parallel M(T,H) calculation over different grid points
+                with Pool(num_process) as p:
+                    mth = p.map(
+                        _calculate_mt_wrapper,
+                        _arg_iter_mag_3d(
+                            magnetic_momenta_shared,
+                            soc_energies_shared,
+                            fields_shared_arr,
+                            theta_shared_arr,
+                            phi_shared_arr,
+                            temperatures_shared,
+                            m_shape,
+                            s_shape,
+                            t_shape,
+                        ),
+                    )
+
+    pool_index = 0
+    for k in range(fields.shape[0]):
+        for i in range(phi.shape[0]):
+            for j in range(phi.shape[1]):
+                mag_3d_array[k, :, i, j] = mth[pool_index][:]
+                pool_index += 1
 
     x = (sin(phi) * cos(theta))[newaxis, newaxis, :, :] * mag_3d_array
     y = (sin(phi) * sin(theta))[newaxis, newaxis, :, :] * mag_3d_array

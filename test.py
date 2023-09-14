@@ -4,6 +4,8 @@ from time import perf_counter
 import slothpy as slt
 from numpy import linspace, float64
 
+import numpy as np
+
 # from slothpy.general_utilities._math_expresions import normalize_grid_vectors
 
 
@@ -57,29 +59,39 @@ if __name__ == "__main__":
     # print(temperatures)
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
-    # CeCoN3 = slt.compound_from_molcas(".", "docer", "bas3", ".", "SmCo_DG_bas3")
-    CeCoN3 = slt.compound_from_slt(".", "docer")
+    CeCoN3 = slt.compound_from_molcas(
+        ".", "docerr", "bas3", ".", "HoCo_DG_bas3"
+    )
+    CeCoN3 = slt.compound_from_slt(".", "docerr")
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
-    nazwa = "normal_math"
-    fields = linspace(0.1, 10, 64, dtype=float64)
+    nazwa = "normal_matttoatrhrhthhh"
+    fields = linspace(0.1, 10, 100, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
 
-    mth = CeCoN3.calculate_mth(
-        "bas3",
-        fields,
-        5,
-        temperatures,
-        512,
-        slt=nazwa,
-        autotune=True,
+    CeCoN3.calculate_mag_3d(
+        "bas3", fields, 52, temperatures, 0, slt=nazwa, autotune=True
     )
+
+    # mth = CeCoN3.calculate_mth(
+    #     "bas3",
+    #     fields,
+    #     5,
+    #     temperatures,
+    #     200,
+    #     128,
+    #     2,
+    #     slt=nazwa,
+    #     autotune=True,
+    # )
     end_time = perf_counter()
     print(f"{end_time - start_time} s")
 
-    CeCoN3.plot_mth(nazwa)
+    CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
+
+    # CeCoN3.plot_mth(nazwa)
 
     # print(CeCoN3.soc_energies_cm_1("bas3", num_of_states=2))
 

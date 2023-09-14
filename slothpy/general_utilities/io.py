@@ -59,7 +59,7 @@ def grep_to_file(
             raise ValueError("Pattern not found in the input file.")
 
 
-def _group_exists(hdf5_file, group_name):
+def _group_exists(hdf5_file, group_name: str):
     with h5py.File(hdf5_file, "r") as file:
         return group_name in file
 

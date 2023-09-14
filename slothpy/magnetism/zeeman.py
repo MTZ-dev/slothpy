@@ -2,6 +2,7 @@ import threadpoolctl
 import multiprocessing
 import numpy as np
 from numba import jit
+from slothpy.general_utilities._constants import MU_B, KB, H_CM_1
 from slothpy.general_utilities.system import get_num_of_processes
 from slothpy.general_utilities.io import (
     get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -18,9 +19,7 @@ from slothpy.general_utilities.io import (
 def calculate_zeeman_matrix(
     magnetic_momenta, soc_energies, field, orientation
 ):
-    bohr_magneton = 2.127191078656686e-06  # Bohr magneton in a.u./T
-
-    orientation = -field * bohr_magneton * orientation
+    orientation = -field * MU_B * orientation
     zeeman_matrix = np.ascontiguousarray(
         magnetic_momenta[0] * orientation[0]
         + magnetic_momenta[1] * orientation[1]
@@ -188,12 +187,10 @@ def get_zeeman_matrix(
 def calculate_hemholtz_energy(
     energies: np.ndarray, temperature: np.float64, internal_energy: False
 ) -> np.float64:
-    kB = 3.166811563e-6  # Boltzmann constant a.u./K
-    hartree_to_cm_1 = 219474.6  # atomic units to wavenumbers
     energies = energies[1:] - energies[0]
 
     # Boltzman weights
-    exp_diff = np.exp(-(energies) / (kB * temperature))
+    exp_diff = np.exp(-(energies) / (KB * temperature))
 
     # Partition function
     z = np.sum(exp_diff)
@@ -203,10 +200,10 @@ def calculate_hemholtz_energy(
         z = 1e-307
 
     if internal_energy:
-        e = np.sum((energies * hartree_to_cm_1) * exp_diff)
+        e = np.sum((energies * H_CM_1) * exp_diff)
         return e / z
     else:
-        return -kB * temperature * np.log(z) * hartree_to_cm_1
+        return -KB * temperature * np.log(z) * H_CM_1
 
 
 @jit(

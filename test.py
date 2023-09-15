@@ -59,9 +59,9 @@ if __name__ == "__main__":
     # print(temperatures)
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
-    CeCoN3 = slt.compound_from_molcas(
-        ".", "hensel", "bas3", ".", "EuCo_DG_bas3"
-    )
+    # CeCoN3 = slt.compound_from_molcas(
+    #     ".", "hensel", "bas3", ".", "EuCo_DG_bas3"
+    # )
     CeCoN3 = slt.compound_from_slt(".", "hensel")
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")

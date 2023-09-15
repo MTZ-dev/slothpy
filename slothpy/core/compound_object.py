@@ -345,7 +345,6 @@ class Compound:
         try:
             with File(self._hdf5, "r") as file:
                 value = file[name][:]
-
         except Exception as exc:
             raise SltReadError(
                 self._hdf5,
@@ -361,7 +360,6 @@ class Compound:
         try:
             with File(self._hdf5, "r") as file:
                 value = file[names[0]][names[1]][:]
-
         except Exception as exc:
             raise SltReadError(
                 self._hdf5,
@@ -398,7 +396,6 @@ class Compound:
                     del file[first]
                 else:
                     del file[first][second]
-
         except Exception as exc:
             raise SltFileError(
                 self._hdf5,
@@ -487,7 +484,6 @@ class Compound:
             ) = _calculate_g_tensor_and_axes_doublet(
                 self._hdf5, group, doublets
             )
-
         except Exception as exc:
             raise SltCompError(
                 self._hdf5,
@@ -527,7 +523,6 @@ class Compound:
                         f" g-tensors from Group: {group}."
                     ),
                 ] = magnetic_axes_list[:, :, :]
-
             except Exception as exc:
                 raise SltFileError(
                     self._hdf5,
@@ -669,16 +664,32 @@ class Compound:
             grid = _normalize_grid_vectors(grid)
 
         if autotune:
-            number_cpu, number_threads = _auto_tune(
-                self._hdf5,
-                group,
-                fields.size,
-                states_cutoff,
-                grid.shape[0],
-                temperatures.size,
-                number_cpu,
-                _autotune_size,
-            )
+            try:
+                number_cpu, number_threads = _auto_tune(
+                    self._hdf5,
+                    group,
+                    fields.size,
+                    states_cutoff,
+                    grid.shape[0],
+                    temperatures.size,
+                    number_cpu,
+                    _autotune_size,
+                )
+            except Exception as exc:
+                raise SltCompError(
+                    self._hdf5,
+                    exc,
+                    "Failed to autotune a number of processes and threads to"
+                    " the data within "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '".',
+                ) from None
 
         try:
             mth_array = _mth(
@@ -691,7 +702,6 @@ class Compound:
                 number_cpu,
                 number_threads,
             )
-
         except Exception as exc:
             raise SltCompError(
                 self._hdf5,
@@ -737,7 +747,6 @@ class Compound:
                         f" simulation of M(T,H) from group: {group}."
                     ),
                 ] = temperatures[:]
-
             except Exception as exc:
                 raise SltFileError(
                     self._hdf5,
@@ -875,16 +884,32 @@ class Compound:
             raise ValueError("Spherical grid has to be a positive integer.")
 
         if autotune:
-            number_cpu, number_threads = _auto_tune(
-                self._hdf5,
-                group,
-                fields.size * 2 * spherical_grid**2,
-                states_cutoff,
-                1,
-                temperatures.size,
-                number_cpu,
-                _autotune_size,
-            )
+            try:
+                number_cpu, number_threads = _auto_tune(
+                    self._hdf5,
+                    group,
+                    fields.size * 2 * spherical_grid**2,
+                    states_cutoff,
+                    1,
+                    temperatures.size,
+                    number_cpu,
+                    _autotune_size,
+                )
+            except Exception as exc:
+                raise SltCompError(
+                    self._hdf5,
+                    exc,
+                    "Failed to autotune a number of processes and threads to"
+                    " the data within "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '".',
+                ) from None
 
         try:
             mag_3d_array = _mag_3d(
@@ -897,7 +922,6 @@ class Compound:
                 number_cpu,
                 number_threads,
             )
-
         except Exception as exc:
             raise SltCompError(
                 self._hdf5,
@@ -945,7 +969,6 @@ class Compound:
                         f" simulation of 3D magnetisation from group: {group}."
                     ),
                 ] = temperatures[:]
-
             except Exception as exc:
                 raise SltFileError(
                     self._hdf5,
@@ -1024,27 +1047,43 @@ class Compound:
         elif grid is not None:
             grid = _normalize_grid_vectors(grid)
 
-        if exp or number_of_points == 0:
-            num_to_parallel = fields.size
-        else:
-            num_to_parallel = (2 * number_of_points + 1) * fields.size
-
-        if grid is None:
-            grid_shape = 3
-        else:
-            grid_shape = grid.shape[0]
-
         if autotune:
-            number_cpu, number_threads = _auto_tune(
-                self._hdf5,
-                group,
-                num_to_parallel,
-                states_cutoff,
-                grid_shape,
-                temperatures.shape[0],
-                number_cpu,
-                _autotune_size,
-            )
+            if exp or number_of_points == 0:
+                num_to_parallel = fields.size
+            else:
+                num_to_parallel = (2 * number_of_points + 1) * fields.size
+
+            if grid is None:
+                grid_shape = 3
+            else:
+                grid_shape = grid.shape[0]
+
+            try:
+                number_cpu, number_threads = _auto_tune(
+                    self._hdf5,
+                    group,
+                    num_to_parallel,
+                    states_cutoff,
+                    grid_shape,
+                    temperatures.shape[0],
+                    number_cpu,
+                    _autotune_size,
+                )
+            except Exception as exc:
+                raise SltCompError(
+                    self._hdf5,
+                    exc,
+                    "Failed to autotune a number of processes and threads to"
+                    " the data within "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '".',
+                ) from None
 
         if T:
             chi_name = "chiT(H,T)"
@@ -1053,36 +1092,35 @@ class Compound:
             chi_name = "chi(H,T)"
             chi_file = "chi"
 
-        # try:
-        chitht_array = _chitht(
-            self._hdf5,
-            group,
-            temperatures,
-            fields,
-            number_of_points,
-            delta_h,
-            states_cutoff,
-            number_cpu,
-            number_threads,
-            exp,
-            T,
-            grid,
-        )
-
-        # except Exception as exc:
-        #     raise SltCompError(
-        #         self._hdf5,
-        #         exc,
-        #         f"Failed to compute {chi_name} from "
-        #         + BLUE
-        #         + "Group "
-        #         + RESET
-        #         + '"'
-        #         + BLUE
-        #         + f"{group}"
-        #         + RESET
-        #         + '".',
-        #     ) from None
+        try:
+            chitht_array = _chitht(
+                self._hdf5,
+                group,
+                temperatures,
+                fields,
+                number_of_points,
+                delta_h,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+                exp,
+                T,
+                grid,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                f"Failed to compute {chi_name} from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
@@ -1115,7 +1153,6 @@ class Compound:
                         f" simulation of {chi_name} from group: {group}."
                     ),
                 ] = temperatures[:]
-
             except Exception as exc:
                 raise SltFileError(
                     self._hdf5,

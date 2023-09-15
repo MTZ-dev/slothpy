@@ -59,33 +59,53 @@ if __name__ == "__main__":
     # print(temperatures)
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
-    # CeCoN3 = slt.compound_from_molcas(
-    #     ".", "docerr", "bas3", ".", "HoCo_DG_bas3"
-    # )
-    CeCoN3 = slt.compound_from_slt(".", "docerr")
+    CeCoN3 = slt.compound_from_molcas(
+        ".", "hensel", "bas3", ".", "EuCo_DG_bas3"
+    )
+    CeCoN3 = slt.compound_from_slt(".", "hensel")
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
-    nazwa = "nteops"
-    fields = linspace(0.1, 10, 100, dtype=float64)
+    nazwa = "1"
+    fields = linspace(0.1, 3, 12, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
 
     # CeCoN3.calculate_g_tensor_and_axes_doublet("bas3", [1, 2, 3])
 
-    CeCoN3.calculate_mag_3d(
-        "bas3", fields, 52, temperatures, 300, slt=nazwa, autotune=True
-    )
+    # CeCoN3.calculate_mag_3d(
+    #     "bas3", fields, 52, temperatures, 300, slt=nazwa, autotune=True
+    # )
 
     # mth = CeCoN3.calculate_mth(
-    #     "bas3", fields, 5, temperatures, 512, slt=nazwa, autotune=True
+    #     "bas3",
+    #     fields,
+    #     5,
+    #     temperatures,
+    #     898,
+    #     128,
+    #     4,
+    #     slt=nazwa,
+    #     autotune=True,
     # )
+
+    chit = CeCoN3.calculate_chitht(
+        "bas3",
+        temperatures,
+        fields,
+        states_cutoff=10000,
+        number_of_points=3,
+        autotune=True,
+        slt=nazwa,
+        T=True,
+    )
+
     end_time = perf_counter()
     print(f"{end_time - start_time} s")
 
-    CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
+    # CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
 
-    # CeCoN3.plot_mth(nazwa)
+    CeCoN3.plot_chitht(nazwa)
 
     # print(CeCoN3.soc_energies_cm_1("bas3", num_of_states=2))
 

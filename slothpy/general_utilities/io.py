@@ -484,8 +484,8 @@ def _get_soc_energies_and_soc_angular_momenta_from_hdf5(
             filename,
             ValueError(""),
             message=(
-                "Incorect data format. The program was unable to read SOC,"
-                " spin, and angular momenta."
+                "Incorrect group name or data format. The program was unable"
+                " to read SOC, spin, and angular momenta."
             ),
         )
 

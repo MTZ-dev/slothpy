@@ -20,8 +20,8 @@ from slothpy.general_utilities._constants import (
     RESET,
 )
 from slothpy.magnetism._g_tensor import _calculate_g_tensor_and_axes_doublet
-from slothpy.magnetism.magnetisation import _mth, _mag_3d
-from slothpy.magnetism.susceptibility import chitht, chit_tensorht, chit_3d
+from slothpy.magnetism._magnetisation import _mth, _mag_3d
+from slothpy.magnetism.susceptibility import _chitht, chit_tensorht, chit_3d
 from slothpy.general_utilities._grids_over_hemisphere import (
     _lebedev_laikov_grid,
 )
@@ -469,7 +469,7 @@ class Compound:
                     + RESET
                     + '"'
                     + BLUE
-                    + f"{slt}_g_tensors_axes"
+                    + slt_group_name
                     + RESET
                     + '" '
                     + "already exists. Delete it manually",
@@ -538,7 +538,7 @@ class Compound:
                     + RESET
                     + '"'
                     + BLUE
-                    + f"{slt}_g_tensors_axes"
+                    + slt_group_name
                     + RESET
                     + '".',
                 ) from None
@@ -560,7 +560,7 @@ class Compound:
     ) -> ndarray[float64]:
         """
         Calculates powder-averaged or directional molar magnetisation M(T,H)
-        for a given list of temeprature and field values.
+        for a given list of temperature and field values.
 
         Parameters
         ----------
@@ -592,17 +592,17 @@ class Compound:
         number_threads : int, optional
             Number of threads used in a multithreaded implementation of linear
             algebra libraries used during the calculation. Higher values
-            benefit with the increasing size of matrices (states_cutoff) over
+            benefit from the increasing size of matrices (states_cutoff) over
             the parallelization over CPUs., by default 1
         slt : str, optional
-            If given the results will be saved in group of this name to .slt
+            If given the results will be saved in a group of this name to .slt
             file with sufix: _magnetisation., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
             number of CPUs, to be used during the calculation. Note that this
             process can take a significant amount of time, so start to use it
-            with medim-sized calculations (e.g. with states_cutoff > 300,
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
             dense grids or a higher number of field values) where it becomes
             a necessity., by default False
 
@@ -618,9 +618,9 @@ class Compound:
         SltSaveError
             If the name of the group already exists in the .slt file.
         ValueError
-            If fields are not one-diemsional array.
+            If fields are not a one-diemsional array.
         ValueError
-            If temperatures are not one-diemsional array.
+            If temperatures are a not one-diemsional array.
         SltCompError
             If the calculation of magnetisation is unsuccessful.
         SltFileError
@@ -633,7 +633,7 @@ class Compound:
 
         Notes
         -----
-        Here, number_cpu // number_threads parallel processes are used to
+        Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.
         """
         fields = array(fields, dtype=float64)
@@ -651,7 +651,7 @@ class Compound:
                     + RESET
                     + '"'
                     + BLUE
-                    + f"{slt}_magnetisation"
+                    + slt_group_name
                     + RESET
                     + '" '
                     + "already exists. Delete it manually.",
@@ -672,9 +672,10 @@ class Compound:
             number_cpu, number_threads = _auto_tune(
                 self._hdf5,
                 group,
-                fields.shape[0],
+                fields.size,
                 states_cutoff,
                 grid.shape[0],
+                temperatures.size,
                 number_cpu,
                 _autotune_size,
             )
@@ -747,7 +748,7 @@ class Compound:
                     + RESET
                     + '"'
                     + BLUE
-                    + f"{slt}_g_tensors_axes"
+                    + slt_group_name
                     + RESET
                     + '".',
                 ) from None
@@ -757,18 +758,94 @@ class Compound:
     def calculate_mag_3d(
         self,
         group: str,
-        fields: ndarray,
+        fields: ndarray[float64],
         spherical_grid: int,
-        temperatures: ndarray,
+        temperatures: ndarray[float64],
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 1,
-    ):
-        temperatures = np.array(temperatures, dtype=np.float64)
-        fields = np.array(fields, dtype=np.float64)
+    ) -> ndarray[float64]:
+        """
+        Calculates 3D magnetisation over a spherical grid for a given list of
+        temperature and field values.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the 3D magnetisation.
+        fields : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) at which 3D magnetisation will be computed.
+        spherical_grid : int
+            Controls the density of the angular grid for the 3D magnetisation
+            calculation. A grid of dimension (spherical_grid*2*spherical_grid)
+            for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
+        temperatures : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            temperature values (K) at which magnetisation will be computed.
+        states_cutoff : int, optional
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0, by default 0
+        number_cpu : int, optional
+            Number of logical CPUs to be assigned to perform the calculation.
+            If set to zero, all available CPUs will be used., by default 0
+        number_threads : int, optional
+            Number of threads used in a multithreaded implementation of linear
+            algebra libraries used during the calculation. Higher values
+            benefit from the increasing size of matrices (states_cutoff) over
+            the parallelization over CPUs., by default 1, by default 1
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with sufix: _3d_magnetisation., by default None
+        autotune : bool, optional
+            If True the program will automatically try to choose the best
+            number of threads (and therefore parallel processes), for the given
+            number of CPUs, to be used during the calculation. Note that this
+            process can take a significant amount of time, so start to use it
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
+            dense grids or a higher number of field values) where it becomes
+            a necessity., by default False
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting mag_3d_array gives magnetisation in Bohr magnetons
+            and is in the form [coordinates, fields, temperatures, mesh, mesh]
+            - the first dimension runs over coordinates (0-x, 1-y, 2-z), the
+            second over field values, and the third over temperatures. The last
+            two dimensions are in a form of meshgrids over theta and phi, ready
+            for 3D plots as xyz.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        ValueError
+            If fields are not a one-diemsional array.
+        ValueError
+            If temperatures are not a one-diemsional array.
+        ValueError
+            If spherical_grid is not a positive integer.
+        SltCompError
+            If the calculation of 3D magnetisation is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        Notes
+        -----
+        Here, (number_cpu // number_threads) parallel processes are used to
+        distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
+        aware that the resulting arrays and computations can quickly consume
+        much memory (e.g. for calculation with 100 field values 1-10 T, 300
+        temperatures 1-300 K, and spherical_grid = 60, the resulting array will
+        take 3*100*300*2*60*60*8 bytes = 5.184 Gb).
+        """
+        temperatures = array(temperatures, dtype=np.float64)
+        fields = array(fields, dtype=np.float64)
 
         if slt is not None:
             slt_group_name = f"{slt}_3d_magnetisation"
@@ -782,7 +859,7 @@ class Compound:
                     + RESET
                     + '"'
                     + BLUE
-                    + f"{slt}_magnetisation"
+                    + slt_group_name
                     + RESET
                     + '" '
                     + "already exists. Delete it manually.",
@@ -801,9 +878,10 @@ class Compound:
             number_cpu, number_threads = _auto_tune(
                 self._hdf5,
                 group,
-                fields.shape[0] * 2 * spherical_grid**2,
+                fields.size * 2 * spherical_grid**2,
                 states_cutoff,
                 1,
+                temperatures.size,
                 number_cpu,
                 _autotune_size,
             )
@@ -850,7 +928,7 @@ class Compound:
                         f"Group({slt}) containing 3D magnetisation calculated"
                         f" from group: {group}."
                     ),
-                ] = mag_3d_array[:]
+                ] = mag_3d_array[:, :, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
@@ -878,7 +956,7 @@ class Compound:
                     + RESET
                     + '"'
                     + BLUE
-                    + f"{slt}_g_tensors_axes"
+                    + slt_group_name
                     + RESET
                     + '".',
                 ) from None
@@ -888,52 +966,85 @@ class Compound:
     def calculate_chitht(
         self,
         group: str,
-        states_cutoff: int,
-        temperatures: np.ndarray[np.float64],
-        fields: np.ndarray[np.float64],
-        num_of_points: int,
-        delta_h: np.float64,
-        num_cpu: int,
-        num_threads: int,
+        temperatures: ndarray[float64],
+        fields: ndarray[float64],
+        number_of_points: int,
+        delta_h: float64 = 0.0001,
+        states_cutoff: int = 0,
+        number_cpu: int = 0,
+        number_threads: int = 1,
         exp: bool = False,
         T: bool = True,
-        grid: Union[int, np.ndarray[np.float64]] = None,
+        grid: Union[int, np.ndarray[float64]] = None,
         slt: str = None,
-    ) -> np.ndarray[np.float64]:
-        """Calculates powder-averaged or directional molar magnetic susceptibility chi(H,T) for a list of field and temperatures values.
+        autotune: bool = False,
+        _autotune_size: int = 1,
+    ) -> np.ndarray[float64]:
+        fields = array(fields, dtype=np.float64)
+        temperatures = array(temperatures, dtype=np.float64)
 
-        Args:
-            group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of magnetic susceptibility.
-            states_cutoff (int): Number of states that will be taken into account for construction of Zeeman Hamiltonian.
-            temperatures (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetic susceptibility will be computed.
-            fields (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of field values (T) at which magnetic susceptibility will be computed.
-            num_of_points (int): Number of points for numerical differentiation over magnetic field values using symmetrical stencil (finite difference method). The total number of
-                used points = (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain the first derivative using 3 points - including the value at the point at which the derivative is taken
-                (for details see finite_diff_stencil documentation). Following that, the value 0 triggers experimentalist model for susceptibility.
-            delta_h (np.float64): Value of field step used for numerical differentiation using finite difference method. 0.0001 (T) = 1 Oe is recomended as starting point.
-            num_cpu (int): Number of physical CPUs to be assigned to perform calculation.
-            num_threads (int): Number of threads used in multithreaded implementation of the linear algebra libraries used during calculation. Values higher than 2 benefit
-                with the increasing size of matrices (states_cutoff) over the MPI parallelization over field and temperature values.
-            exp (bool, optional): Turns on the experimentalis model for magnetic susceptibility. Defaults to False.
-            T (bool, optional): Results are returned as product with temperature chiT(H,T). Defaults to True.
-            grid (Union[int, np.ndarray[np.float64]], optional): If the grid is set to integer from 0-11 then the prescribed Lebedev-Laikov grids over hemisphere will be used
-                (see grids_over_hemisphere documentation), otherwise, user can provide an ArrayLike structure (can be converted to numpy.NDArray) of the structure:
-                [[direction_x, direction_y, direction_z, weight],...] for powder-averaging. If one wants a calculation for a single, particular direction the list
-                has to contain one entry like this: [[direction_x, direction_y, direction_z, 1.]]. If not provided average is taken over xyz directions, which is sufficent
-                for second rank tensor. Defaults to None.
-            slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _susceptibility. Defaults to None.
+        if slt is not None:
+            slt_group_name = f"{slt}_susceptibility"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                )
 
-        Raises:
-            Exception: If the calculation of chi(T,H) is unsuccessful.
-            Exception: If the program is unable to correctly save the results to .slt file.
+        if fields.ndim != 1:
+            raise ValueError("The list of fields has to be a 1D array.")
 
-        Returns:
-            np.ndarray[np.float64]: The resulting array gives magnetic susceptibility (or product with temperature) in cm^3 (or * K) and is in the form (fields, temperatures) - the first dimension
-              runs over field values, the second over temperatures.
-        """
+        if temperatures.ndim != 1:
+            raise ValueError("The list of temperatures has to be a 1D array.")
 
-        fields = np.array(fields, dtype=np.float64)
-        temperatures = np.array(temperatures, dtype=np.float64)
+        if (not isinstance(delta_h, float)) or delta_h <= 0:
+            raise ValueError(
+                "The field step for finite difference method has to be a"
+                " possitive number."
+            )
+
+        if (not isinstance(number_of_points, int)) or number_of_points < 0:
+            raise ValueError(
+                "The number of points for finite difference method has to be a"
+                " possitive integer."
+            )
+
+        if isinstance(grid, int):
+            grid = _lebedev_laikov_grid(grid)
+        elif grid is not None:
+            grid = _normalize_grid_vectors(grid)
+
+        if exp or number_of_points == 0:
+            num_to_parallel = fields.size
+        else:
+            num_to_parallel = (2 * number_of_points + 1) * fields.size
+
+        if grid is None:
+            grid_shape = 3
+        else:
+            grid_shape = grid.shape[0]
+
+        if autotune:
+            number_cpu, number_threads = _auto_tune(
+                self._hdf5,
+                group,
+                num_to_parallel,
+                states_cutoff,
+                grid_shape,
+                temperatures.shape[0],
+                number_cpu,
+                _autotune_size,
+            )
 
         if T:
             chi_name = "chiT(H,T)"
@@ -942,86 +1053,83 @@ class Compound:
             chi_name = "chi(H,T)"
             chi_file = "chi"
 
-        if isinstance(grid, int):
-            grid = lebedev_laikov_grid(grid)
-        elif (grid is not None) and (grid is not None):
-            grid = normalize_grid_vectors(grid)
+        # try:
+        chitht_array = _chitht(
+            self._hdf5,
+            group,
+            temperatures,
+            fields,
+            number_of_points,
+            delta_h,
+            states_cutoff,
+            number_cpu,
+            number_threads,
+            exp,
+            T,
+            grid,
+        )
 
-        try:
-            chitht_array = chitht(
-                self._hdf5,
-                group,
-                fields,
-                states_cutoff,
-                temperatures,
-                num_cpu,
-                num_threads,
-                num_of_points,
-                delta_h,
-                exp,
-                T,
-                grid,
-            )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                f"Error encountered while trying to compute {chi_name} from"
-                f" file: {self._hdf5} - group {group}: {error_type}:"
-                f" {error_message}"
-            )
+        # except Exception as exc:
+        #     raise SltCompError(
+        #         self._hdf5,
+        #         exc,
+        #         f"Failed to compute {chi_name} from "
+        #         + BLUE
+        #         + "Group "
+        #         + RESET
+        #         + '"'
+        #         + BLUE
+        #         + f"{group}"
+        #         + RESET
+        #         + '".',
+        #     ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_susceptibility")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing {chi_name} magnetic"
-                        f" susceptibility calculated from group: {group}."
-                    )
-                    chitht_dataset = new_group.create_dataset(
-                        f"{slt}_{chi_file}ht",
-                        shape=(chitht_array.shape[0], chitht_array.shape[1]),
-                        dtype=np.float64,
-                    )
-                    chitht_dataset.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_{chi_file}ht",
+                    (
                         f"Dataset containing {chi_name} magnetic"
                         " susceptibility (H - rows, T - columns) calculated"
                         f" from group: {group}."
-                    )
-                    fields_dataset = new_group.create_dataset(
-                        f"{slt}_fields",
-                        shape=(fields.shape[0],),
-                        dtype=np.float64,
-                    )
-                    fields_dataset.attrs["Description"] = (
+                    ),
+                    (
+                        f"Group({slt}) containing {chi_name} magnetic"
+                        f" susceptibility calculated from group: {group}."
+                    ),
+                ] = chitht_array[:, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    (
                         "Dataset containing magnetic field H values used in"
                         f" simulation of {chi_name} from group: {group}."
-                    )
-                    temperatures_dataset = new_group.create_dataset(
-                        f"{slt}_temperatures",
-                        shape=(temperatures.shape[0],),
-                        dtype=np.float64,
-                    )
-                    temperatures_dataset.attrs["Description"] = (
+                    ),
+                ] = fields[:]
+                self[
+                    slt_group_name,
+                    f"{slt}_temperatures",
+                    (
                         "Dataset containing temperature T values used in"
                         f" simulation of {chi_name} from group: {group}."
-                    )
+                    ),
+                ] = temperatures[:]
 
-                    chitht_dataset[:, :] = chitht_array[:, :]
-                    fields_dataset[:] = fields[:]
-                    temperatures_dataset[:] = temperatures[:]
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    f"Error encountered while trying to save {chi_name} to"
-                    f" file: {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save {chi_name} to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return chitht_array
 

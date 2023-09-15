@@ -25,7 +25,7 @@ from slothpy.general_utilities.system import _get_num_of_processes
 from slothpy.general_utilities.io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
-from slothpy.magnetism.zeeman import calculate_zeeman_matrix
+from slothpy.magnetism.zeeman import _calculate_zeeman_matrix
 
 
 @jit(
@@ -75,7 +75,7 @@ def _mt_over_grid(
         # Construct Zeeman matrix
         orientation = grid[j, :3]
 
-        zeeman_matrix = calculate_zeeman_matrix(
+        zeeman_matrix = _calculate_zeeman_matrix(
             magnetic_momenta, soc_energies, field, orientation
         )
         # Diagonalize full Hamiltonian matrix

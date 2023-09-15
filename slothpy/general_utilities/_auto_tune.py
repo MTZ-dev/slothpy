@@ -1,7 +1,6 @@
 from os import cpu_count
 from time import perf_counter
 from math import ceil
-from statistics import mean
 from typing import Tuple
 from multiprocessing import Pool
 from multiprocessing.managers import SharedMemoryManager
@@ -14,7 +13,7 @@ from numpy import (
     complex128,
 )
 from threadpoolctl import threadpool_limits
-from slothpy.magnetism.magnetisation import _mt_over_grid
+from slothpy.magnetism._magnetisation import _mt_over_grid
 from slothpy.general_utilities.system import _get_num_of_processes
 from slothpy.general_utilities.io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -198,10 +197,11 @@ def _auto_tune(
     num_to_parallelize: int,
     matrix_size: int,
     internal_loop_size: int,
+    internal_task_size: int,
     num_cpu: int = 0,
     internal_loop_samples: int = 1,
 ) -> Tuple[int, int]:
-    temperatures = linspace(1, 600, 600, dtype=float64)
+    temperatures = linspace(1, 600, internal_task_size, dtype=float64)
     grid = ones(
         (internal_loop_samples, 4),
         dtype=float64,

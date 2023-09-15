@@ -82,7 +82,9 @@ def Wigner_3j(j1, j2, j3, m1, m2, m3):
     )
 
 
-def finite_diff_stencil(diff_order: int, num_of_points: int, step: np.float64):
+def _finite_diff_stencil(
+    diff_order: int, num_of_points: int, step: np.float64
+):
     stencil_len = 2 * num_of_points + 1
 
     if diff_order >= stencil_len:

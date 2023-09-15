@@ -16,7 +16,7 @@ from slothpy.general_utilities.io import (
     cache=True,
     fastmath=True,
 )
-def calculate_zeeman_matrix(
+def _calculate_zeeman_matrix(
     magnetic_momenta, soc_energies, field, orientation
 ):
     orientation = -field * MU_B * orientation
@@ -61,7 +61,7 @@ def calculate_zeeman_splitting(
     for j in range(grid.shape[0]):
         orientation = grid[j, :3]
 
-        zeeman_matrix = calculate_zeeman_matrix(
+        zeeman_matrix = _calculate_zeeman_matrix(
             magnetic_momenta, soc_energies, field, orientation
         )
 
@@ -170,7 +170,7 @@ def get_zeeman_matrix(
     ) = get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff
     )
-    zeeman_matrix = calculate_zeeman_matrix(
+    zeeman_matrix = _calculate_zeeman_matrix(
         magnetic_momenta, soc_energies, field, orientation
     )
 
@@ -236,7 +236,7 @@ def calculate_hemholtz_energyt(
         # Construct Zeeman matrix
         orientation = grid[j, :3]
 
-        zeeman_matrix = calculate_zeeman_matrix(
+        zeeman_matrix = _calculate_zeeman_matrix(
             magnetic_momenta, soc_energies, field, orientation
         )
 

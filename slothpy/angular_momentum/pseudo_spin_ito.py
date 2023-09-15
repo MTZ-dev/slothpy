@@ -9,7 +9,7 @@ from slothpy.general_utilities._math_expresions import (
     decomposition_of_hermitian_matrix,
     Wigner_3j,
 )
-from slothpy.magnetism.zeeman import calculate_zeeman_matrix
+from slothpy.magnetism.zeeman import _calculate_zeeman_matrix
 
 # from sympy.physics.quantum.cg import (CG, Wigner3j)
 
@@ -118,7 +118,7 @@ def get_zeeman_matrix_in_z_magnetic_momentum_basis(
     )
     magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
-    zeeman_matrix = calculate_zeeman_matrix(
+    zeeman_matrix = _calculate_zeeman_matrix(
         magnetic_momenta, soc_energies, field, orientation
     )
     zeeman_matrix = hermitian_x_in_basis_of_hermitian_y(
@@ -147,7 +147,7 @@ def get_zeeman_matrix_in_z_total_angular_momentum_basis(
     )
     magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
-    zeeman_matrix = calculate_zeeman_matrix(
+    zeeman_matrix = _calculate_zeeman_matrix(
         magnetic_momenta, soc_energies, field, orientation
     )
     zeeman_matrix = hermitian_x_in_basis_of_hermitian_y(

@@ -122,180 +122,99 @@ def _chitht(
     return chitht_array
 
 
-# @jit('float64[:,:](complex128[:,:,:], float64[:], float64, float64[:], int64, float64[:], boolean)', nopython=True, cache=True, nogil=True)
-def calculate_chi_grid(
-    magnetic_momenta,
-    soc_energies,
-    field,
-    temperatures,
-    num_of_points,
-    delta_h,
-    exp: bool = False,
-):
-    pass
-    # bohr_magneton = 2.127191078656686e-06  # Bohr magneton in a.u./T
-    # bohr_magneton_to_cm3 = 0.5584938904  # Conversion factor for chi in cm3
-    # field = np.float64(field)
-
-    # # Initialize the result array
-    # chi = np.zeros_like(temperatures)
-
-    # if exp or num_of_points == 0:
-    #     # Experimentalist model, one value of magnetic field
-    #     fields = np.array([field], dtype=np.float64)
-    #     mth = np.zeros((temperatures.shape[0], 1))
-    # else:
-    #     # Set fields for finite difference method
-    #     fields = (
-    #         np.arange(-num_of_points, num_of_points + 1).astype(np.int64)
-    #         * delta_h
-    #         + field
-    #     )
-    #     fields = fields.astype(np.float64)
-    #     mth = np.zeros((temperatures.shape[0], 2 * num_of_points + 1))
-
-    # # Initialize arrays as contiguous
-    # magnetic_momenta = np.ascontiguousarray(magnetic_momenta)
-    # soc_energies = np.ascontiguousarray(soc_energies)
-
-    # # Iterate over field values for finite difference method
-    # for i in range(fields.shape[0]):
-    #     # Construct Zeeman matrix
-    #     zeeman_matrix = -fields[i] * bohr_magneton * magnetic_momenta[0]
-
-    #     # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
-    #     for k in range(zeeman_matrix.shape[0]):
-    #         zeeman_matrix[k, k] += soc_energies[k]
-
-    #     # Diagonalize full Hamiltonian matrix
-    #     eigenvalues, eigenvectors = np.linalg.eigh(zeeman_matrix)
-    #     eigenvalues = np.ascontiguousarray(eigenvalues)
-    #     eigenvectors = np.ascontiguousarray(eigenvectors)
-
-    #     # Transform momenta according to the new eigenvectors
-    #     states_momenta = (
-    #         eigenvectors.conj().T @ magnetic_momenta[1] @ eigenvectors
-    #     )
-
-    #     # Get diagonal momenta of the new states
-    #     states_momenta = np.diag(states_momenta).real.astype(np.float64)
-
-    #     # Compute partition function and magnetization
-    #     for t in range(temperatures.shape[0]):
-    #         mth[t, i] = calculate_magnetization(
-    #             eigenvalues, states_momenta, temperatures[t]
-    #         )
-
-    # if exp or num_of_points == 0:
-    #     chi[:] = mth[t, 0] / field
-
-    #     return chi * bohr_magneton_to_cm3
-
-    # else:
-    #     stencil_coeff = finite_diff_stencil(1, num_of_points, delta_h)
-
-    #     # Numerical derivative of M(T,H) around given field value
-    #     for t in range(temperatures.shape[0]):
-    #         chi[t] = np.dot(mth[t, :], stencil_coeff)
-
-    #     return chi * bohr_magneton_to_cm3
-
-
-def calculate_chi_grid_wrapper(args):
-    # Unpack arguments and call the function
-    chi = calculate_chi_grid(*args)
-
-    return chi
-
-
-def arg_iter_chi_tensor(
-    magnetic_momenta,
-    soc_energies,
-    field,
-    temperatures,
-    num_of_points,
-    delta_h,
-    exp,
-):
-    pass
-
-
-#     for i in range(3):
-#         for j in range(3):
-#             yield (
-#                 np.array([magnetic_momenta[i], magnetic_momenta[j]]),
-#                 soc_energies,
-#                 field,
-#                 temperatures,
-#                 num_of_points,
-#                 delta_h,
-#                 exp,
-#             )
-
-
 def chit_tensorht(
     filename: str,
     group: str,
-    fields: ndarray,
-    states_cutoff: int,
     temperatures: ndarray,
-    num_cpu: int,
-    num_threads: int,
+    fields: ndarray,
     num_of_points: int,
     delta_h: float64,
+    states_cutoff: int,
+    num_cpu: int,
+    num_threads: int,
     exp: bool = False,
     T: bool = True,
-):
-    pass
+    rotation: ndarray[float64] = None,
+) -> ndarray[float64]:
+    chitht_tensor_array = zeros(
+        (fields.shape[0], temperatures.shape[0], 3, 3), dtype=float64
+    )
 
+    # When passed to _mth activates tensor calculation
+    grid = array([1])
 
-#     # Get number of parallel proceses to be used
-#     num_process = get_num_of_processes(num_cpu, num_threads)
+    # Experimentalist model
+    if (exp == True) or (num_of_points == 0):
+        mht_tensor_array = _mth(
+            filename,
+            group,
+            fields,
+            grid,
+            temperatures,
+            states_cutoff,
+            num_cpu,
+            num_threads,
+        )
 
-#     # Read data from HDF5 file
-#     (
-#         magnetic_momenta,
-#         soc_energies,
-#     ) = get_soc_magnetic_momenta_and_energies_from_hdf5(
-#         filename, group, states_cutoff
-#     )
+        if T:
+            chitht_tensor_array = (
+                mht_tensor_array
+                * temperatures[newaxis, :, :, :]
+                * MU_B_CM_3
+                / fields[:, newaxis, newaxis, newaxis]
+            )
+        else:
+            chitht_tensor_array = (
+                mht_tensor_array
+                * MU_B_CM_3
+                / fields[:, newaxis, newaxis, newaxis]
+            )
 
-#     chi_tensor_array = np.zeros(
-#         (fields.shape[0], temperatures.shape[0], 3, 3), dtype=np.float64
-#     )
+    else:
+        fields_diffs = (
+            arange(-num_of_points, num_of_points + 1).astype(int64) * delta_h
+        )[:, newaxis] + fields
+        fields_diffs = fields_diffs.T.astype(float64)
+        fields_diffs = fields_diffs.flatten()
 
-#     for index, field in enumerate(fields):
-#         with threadpoolctl.threadpool_limits(
-#             limits=num_threads, user_api="blas"
-#         ):
-#             with threadpoolctl.threadpool_limits(
-#                 limits=num_threads, user_api="openmp"
-#             ):
-#                 # Parallel M(T,H) calculation over different grid points
-#                 with multiprocessing.Pool(num_process) as p:
-#                     chi = p.map(
-#                         calculate_chi_grid_wrapper,
-#                         arg_iter_chi_tensor(
-#                             magnetic_momenta,
-#                             soc_energies,
-#                             field,
-#                             temperatures,
-#                             num_of_points,
-#                             delta_h,
-#                             exp,
-#                         ),
-#                     )
+        # Get M(T,H) for adjacent values of field
+        mht_tensor_array = _mth(
+            filename,
+            group,
+            fields_diffs,
+            grid,
+            temperatures,
+            states_cutoff,
+            num_cpu,
+            num_threads,
+        )
 
-#         # Collect results in (3,3) tensor
-#         chi_reshape = np.array(chi).reshape((3, 3, temperatures.shape[0]))
-#         sus_tensor = np.transpose(chi_reshape, axes=(2, 0, 1))
+        stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)
 
-#         if T:
-#             sus_tensor = sus_tensor * temperatures[:, np.newaxis, np.newaxis]
+        mht_tensor_array = mht_tensor_array.reshape(
+            (fields.size, stencil_coeff.size, temperatures.size, 3, 3)
+        )
 
-#         chi_tensor_array[index, :, :, :] = sus_tensor[:, :, :]
+        if T:
+            # Numerical derivative of M(T,H) around given field value
+            for i in range(3):
+                for j in range(3):
+                    for index, temp in enumerate(temperatures):
+                        chitht_tensor_array[:, index, i, j] = temp * dot(
+                            mht_tensor_array[:, :, index, i, j], stencil_coeff
+                        )
 
-#     return chi_tensor_array
+        else:
+            for i in range(3):
+                for j in range(3):
+                    for index in range(temperatures.size):
+                        chitht_tensor_array[:, index, i, j] = dot(
+                            mht_tensor_array[:, :, index, i, j], stencil_coeff
+                        )
+
+        chitht_tensor_array = chitht_tensor_array * MU_B_CM_3
+
+    return chitht_tensor_array
 
 
 def chit_3d(

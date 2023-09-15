@@ -491,7 +491,7 @@ def _get_soc_energies_and_soc_angular_momenta_from_hdf5(
 
 
 def _get_soc_magnetic_momenta_and_energies_from_hdf5(
-    filename: str, group: str, states_cutoff: int, rotation=None
+    filename: str, group: str, states_cutoff: int, rotation: np.ndarray = None
 ) -> tuple[np.ndarray, np.ndarray]:
     (
         soc_energies,

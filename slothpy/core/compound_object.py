@@ -1173,17 +1173,20 @@ class Compound:
     def calculate_chit_tensorht(
         self,
         group: str,
-        states_cutoff: int,
-        temperatures: np.ndarray[np.float64],
-        fields: np.ndarray[np.float64],
-        num_of_points: int,
-        delta_h: np.float64,
-        num_cpu: int,
-        num_threads: int,
+        temperatures: ndarray[float64],
+        fields: ndarray[float64],
+        number_of_points: int,
+        delta_h: float64 = 0.0001,
+        states_cutoff: int = 0,
+        number_cpu: int = 0,
+        number_threads: int = 1,
         exp: bool = False,
         T: bool = True,
+        rotation: ndarray[float64] = None,
         slt: str = None,
-    ) -> np.ndarray[np.float64]:
+        autotune: bool = False,
+        _autotune_size: int = 1,
+    ) -> np.ndarray[float64]:
         """Calculates magnetic susceptibility (Van Vleck) tensor chi(H,T) for a list of field and temperatures values in the initial corrdinate's frame.
 
         Args:
@@ -1211,22 +1214,23 @@ class Compound:
               runs over field values, the second over temperatures.
         """
 
-        fields = np.array(fields, dtype=np.float64)
-        temperatures = np.array(temperatures, dtype=np.float64)
+        fields = array(fields, dtype=np.float64)
+        temperatures = array(temperatures, dtype=np.float64)
 
         try:
             chit_tensorht_array = chit_tensorht(
                 self._hdf5,
                 group,
-                fields,
-                states_cutoff,
                 temperatures,
-                num_cpu,
-                num_threads,
-                num_of_points,
+                fields,
+                number_of_points,
                 delta_h,
+                states_cutoff,
+                number_cpu,
+                number_threads,
                 exp,
                 T,
+                rotation,
             )
         except Exception as e:
             error_type = type(e).__name__

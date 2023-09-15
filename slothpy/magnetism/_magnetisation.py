@@ -20,7 +20,7 @@ from numpy import (
 )
 from numpy.linalg import eigh
 from numba import jit
-from slothpy.general_utilities._constants import KB
+from slothpy.general_utilities._constants import KB, MU_B
 from slothpy.general_utilities.system import _get_num_of_processes
 from slothpy.general_utilities.io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -78,10 +78,9 @@ def _mt_over_grid(
         zeeman_matrix = _calculate_zeeman_matrix(
             magnetic_momenta, soc_energies, field, orientation
         )
+
         # Diagonalize full Hamiltonian matrix
         eigenvalues, eigenvectors = eigh(zeeman_matrix)
-        # eigenvalues = np.ascontiguousarray(eigenvalues)
-        # eigenvectors = np.ascontiguousarray(eigenvectors)
 
         # Transform momenta according to the new eigenvectors
         states_momenta = (
@@ -109,6 +108,52 @@ def _mt_over_grid(
     return mt_array
 
 
+@jit(
+    "float64[:,:,:](complex128[:,:,:], float64[:], float64, float64[:])",
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+)
+def _mt_over_tensor(
+    magnetic_momenta: ndarray,
+    soc_energies: ndarray,
+    field: float64,
+    temperatures: ndarray,
+):
+    # Initialize arrays
+    mt_tensor_array = ascontiguousarray(
+        zeros((temperatures.shape[0], 3, 3), dtype=float64)
+    )
+
+    # Perform calculations for each tensor component
+    for i in range(3):
+        for j in range(3):
+            # Construct Zeeman matrix
+            zeeman_matrix = -field * MU_B * magnetic_momenta[j]
+            for k in range(zeeman_matrix.shape[0]):
+                zeeman_matrix[k, k] += soc_energies[k]
+
+            # Diagonalize full Hamiltonian matrix
+            eigenvalues, eigenvectors = eigh(zeeman_matrix)
+
+            # Transform momentum according to the new eigenvectors
+            states_momenta = (
+                eigenvectors.conj().T @ magnetic_momenta[i] @ eigenvectors
+            )
+
+            # Get diagonal momenta of the new states
+            states_momenta = diag(states_momenta).real.astype(float64)
+
+            # Compute partition function and magnetization for each T
+            for t in range(temperatures.shape[0]):
+                mt_tensor_array[t, i, j] = _calculate_magnetization(
+                    eigenvalues, states_momenta, temperatures[t]
+                )
+
+    return mt_tensor_array
+
+
 def _calculate_mt(
     magnetic_momenta: ndarray,
     soc_energies: ndarray,
@@ -120,6 +165,7 @@ def _calculate_mt(
     t_s: int,
     g_s: int = 1,
 ) -> ndarray:
+    # Option to enable calculations with only a single grid point.
     if g_s != 1:
         grid = ndarray(g_s, dtype=float64, buffer=grid.buf)
 
@@ -134,6 +180,12 @@ def _calculate_mt(
         buffer=magnetic_momenta.buf,
     )
     soc_energies = ndarray(s_s, dtype=float64, buffer=soc_energies.buf)
+
+    # Hidden option for susceptibility tensor calculation.
+    if grid == array([1]):
+        return _mt_over_tensor(
+            magnetic_momenta, soc_energies, field, temperatures
+        )
 
     return _mt_over_grid(
         magnetic_momenta, soc_energies, field, grid, temperatures
@@ -183,6 +235,7 @@ def _mth(
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
+    rotation: ndarray[float64] = None,
 ) -> ndarray:
     # Read data from HDF5 file
     (
@@ -265,6 +318,10 @@ def _mth(
                             g_shape,
                         ),
                     )
+
+    # Hidden option for susceptibility tensor calculation.
+    if grid == array([1]):
+        return array(mt)
 
     # Collecting results in plotting-friendly convention for M(H)
     for i in range(fields.shape[0]):

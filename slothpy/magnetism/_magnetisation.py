@@ -17,6 +17,7 @@ from numpy import (
     exp,
     float64,
     complex128,
+    array_equal,
 )
 from numpy.linalg import eigh
 from numba import jit
@@ -81,6 +82,7 @@ def _mt_over_grid(
 
         # Diagonalize full Hamiltonian matrix
         eigenvalues, eigenvectors = eigh(zeeman_matrix)
+        magnetic_momenta = ascontiguousarray(magnetic_momenta)
 
         # Transform momenta according to the new eigenvectors
         states_momenta = (
@@ -136,6 +138,7 @@ def _mt_over_tensor(
 
             # Diagonalize full Hamiltonian matrix
             eigenvalues, eigenvectors = eigh(zeeman_matrix)
+            magnetic_momenta = ascontiguousarray(magnetic_momenta)
 
             # Transform momentum according to the new eigenvectors
             states_momenta = (
@@ -182,7 +185,7 @@ def _calculate_mt(
     soc_energies = ndarray(s_s, dtype=float64, buffer=soc_energies.buf)
 
     # Hidden option for susceptibility tensor calculation.
-    if grid == array([1]):
+    if array_equal(grid, array([1])):
         return _mt_over_tensor(
             magnetic_momenta, soc_energies, field, temperatures
         )
@@ -247,11 +250,6 @@ def _mth(
 
     num_process = _get_num_of_processes(num_cpu, num_threads)
 
-    # Initialize the result array
-    mth_array = ascontiguousarray(
-        zeros((temperatures.size, fields.size), dtype=float64)
-    )
-
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)
     temperatures = ascontiguousarray(temperatures, dtype=float64)
@@ -304,7 +302,7 @@ def _mth(
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 with Pool(num_process) as p:
-                    mt = p.map(
+                    mht = p.map(
                         _calculate_mt_wrapper,
                         _arg_iter_mth(
                             magnetic_momenta_shared,
@@ -320,12 +318,11 @@ def _mth(
                     )
 
     # Hidden option for susceptibility tensor calculation.
-    if grid == array([1]):
-        return array(mt)
+    if array_equal(grid, array([1])):
+        return array(mht)
 
     # Collecting results in plotting-friendly convention for M(H)
-    for i in range(fields.shape[0]):
-        mth_array[:, i] = mt[i]
+    mth_array = array(mht).T
 
     return mth_array  # Returning values in Bohr magnetons
 
@@ -383,12 +380,6 @@ def _mag_3d(
     theta = linspace(0, 2 * pi, 2 * spherical_grid, dtype=float64)
     phi = linspace(0, pi, spherical_grid, dtype=float64)
     theta, phi = meshgrid(theta, phi)
-
-    # Initialize the result array
-    mag_3d = zeros(
-        (fields.shape[0], temperatures.shape[0], phi.shape[0], phi.shape[1]),
-        dtype=float64,
-    )
 
     # Read data from HDF5 file
     (
@@ -450,7 +441,7 @@ def _mag_3d(
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 # Parallel M(T,H) calculation over different grid points
                 with Pool(num_process) as p:
-                    mth = p.map(
+                    mht = p.map(
                         _calculate_mt_wrapper,
                         _arg_iter_mag_3d(
                             magnetic_momenta_shared,
@@ -465,12 +456,10 @@ def _mag_3d(
                         ),
                     )
 
-    pool_index = 0
-    for k in range(fields.shape[0]):
-        for i in range(phi.shape[0]):
-            for j in range(phi.shape[1]):
-                mag_3d[k, :, i, j] = mth[pool_index][:]
-                pool_index += 1
+    mag_3d = array(mht).reshape(
+        (fields.shape[0], phi.shape[0], phi.shape[1], temperatures.shape[0])
+    )
+    mag_3d = mag_3d.transpose((0, 3, 1, 2))
 
     mag_3d_array = zeros((3, *mag_3d.shape), dtype=float64)
 

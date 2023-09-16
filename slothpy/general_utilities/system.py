@@ -16,11 +16,20 @@ def _get_num_of_processes(num_cpu, num_threads):
             "Numbers of CPUs and Threads have to be positive integers."
         )
 
+    total_num_of_cpu = int(os.cpu_count())
+
     if num_cpu == 0:
-        num_cpu = int(os.cpu_count())
+        num_cpu = total_num_of_cpu
 
     if num_threads == 0:
         num_threads = 1
+
+    if num_cpu > total_num_of_cpu:
+        raise ValueError(
+            f"Insufficient number of logical CPUs ({total_num_of_cpu}), to"
+            f" accomodate {num_cpu} desired cores, was detected on the"
+            " machine."
+        )
 
     # Check CPUs number considering the desired number of threads and assign
     # number of processes

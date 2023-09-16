@@ -1,28 +1,14 @@
-import time
-import multiprocessing
-import threadpoolctl
 from numpy import (
     ndarray,
     array,
-    zeros,
-    zeros_like,
     arange,
     dot,
     newaxis,
     float64,
     int64,
 )
-from numba import jit
-from slothpy.magnetism._magnetisation import (
-    _mth,
-    _calculate_magnetization,
-    _mag_3d,
-)
+from slothpy.magnetism._magnetisation import _mth
 from slothpy.general_utilities._math_expresions import _finite_diff_stencil
-from slothpy.general_utilities.system import _get_num_of_processes
-from slothpy.general_utilities.io import (
-    get_soc_magnetic_momenta_and_energies_from_hdf5,
-)
 from slothpy.general_utilities._constants import MU_B_CM_3
 
 
@@ -40,10 +26,6 @@ def _chitht(
     T: bool = True,
     grid: ndarray[float64] = None,
 ) -> ndarray[float64]:
-    chitht_array = zeros(
-        (fields.shape[0], temperatures.shape[0]), dtype=float64
-    )
-
     # Default XYZ grid
     if grid is None or grid == None:
         grid = array(
@@ -56,7 +38,7 @@ def _chitht(
         )
 
     # Experimentalist model
-    if (exp == True) or (num_of_points == 0):
+    if exp or (num_of_points == 0):
         mth_array = _mth(
             filename,
             group,
@@ -68,16 +50,10 @@ def _chitht(
             num_threads,
         )
 
+        chitht_array = mth_array.T / fields[:, newaxis]
+
         if T:
-            for index_temp, temp in enumerate(temperatures):
-                chitht_array[:, index_temp] = (
-                    temp * mth_array[index_temp, :] * MU_B_CM_3 / fields
-                )
-        else:
-            for index_temp in range(temperatures.size):
-                chitht_array[:, index_temp] = (
-                    mth_array[index_temp, :] * MU_B_CM_3 / fields
-                )
+            chitht_array = chitht_array * temperatures[newaxis, :]
 
     else:
         fields_diffs = (
@@ -103,21 +79,13 @@ def _chitht(
         mth_array = mth_array.reshape(
             (temperatures.size, fields.size, stencil_coeff.size)
         )
+        # Numerical derivative of M(T,H) around given field value
+        chitht_array = dot(mth_array, stencil_coeff).T
 
         if T:
-            # Numerical derivative of M(T,H) around given field value
-            for index, temp in enumerate(temperatures):
-                chitht_array[:, index] = temp * dot(
-                    mth_array[index, :, :], stencil_coeff
-                )
+            chitht_array = chitht_array * temperatures[newaxis, :]
 
-        else:
-            for index in range(temperatures.size):
-                chitht_array[:, index] = dot(
-                    mth_array[index, :, :], stencil_coeff
-                )
-
-        chitht_array = chitht_array * MU_B_CM_3
+    chitht_array = chitht_array * MU_B_CM_3
 
     return chitht_array
 
@@ -136,15 +104,12 @@ def chit_tensorht(
     T: bool = True,
     rotation: ndarray[float64] = None,
 ) -> ndarray[float64]:
-    chitht_tensor_array = zeros(
-        (fields.shape[0], temperatures.shape[0], 3, 3), dtype=float64
-    )
-
-    # When passed to _mth activates tensor calculation
+    # When passed to _mth activates tensor calculation and _mth actually
+    # returns mht format
     grid = array([1])
 
     # Experimentalist model
-    if (exp == True) or (num_of_points == 0):
+    if exp or (num_of_points == 0):
         mht_tensor_array = _mth(
             filename,
             group,
@@ -157,18 +122,14 @@ def chit_tensorht(
             rotation,
         )
 
+        chitht_tensor_array = (
+            mht_tensor_array / fields[:, newaxis, newaxis, newaxis]
+        )
+
         if T:
             chitht_tensor_array = (
-                mht_tensor_array
-                * temperatures[newaxis, :, :, :]
-                * MU_B_CM_3
-                / fields[:, newaxis, newaxis, newaxis]
-            )
-        else:
-            chitht_tensor_array = (
-                mht_tensor_array
-                * MU_B_CM_3
-                / fields[:, newaxis, newaxis, newaxis]
+                chitht_tensor_array
+                * temperatures[newaxis, :, newaxis, newaxis]
             )
 
     else:
@@ -196,24 +157,17 @@ def chit_tensorht(
             (fields.size, stencil_coeff.size, temperatures.size, 3, 3)
         )
 
+        mht_tensor_array = mht_tensor_array.transpose((0, 2, 3, 4, 1))
+        # Numerical derivative of M(T,H) around given field value
+        chitht_tensor_array = dot(mht_tensor_array, stencil_coeff)
+
         if T:
-            # Numerical derivative of M(T,H) around given field value
-            for i in range(3):
-                for j in range(3):
-                    for index, temp in enumerate(temperatures):
-                        chitht_tensor_array[:, index, i, j] = temp * dot(
-                            mht_tensor_array[:, :, index, i, j], stencil_coeff
-                        )
+            chitht_tensor_array = (
+                chitht_tensor_array
+                * temperatures[newaxis, :, newaxis, newaxis]
+            )
 
-        else:
-            for i in range(3):
-                for j in range(3):
-                    for index in range(temperatures.size):
-                        chitht_tensor_array[:, index, i, j] = dot(
-                            mht_tensor_array[:, :, index, i, j], stencil_coeff
-                        )
-
-        chitht_tensor_array = chitht_tensor_array * MU_B_CM_3
+    chitht_tensor_array = chitht_tensor_array * MU_B_CM_3
 
     return chitht_tensor_array
 

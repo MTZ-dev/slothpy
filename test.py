@@ -4,8 +4,6 @@ from time import perf_counter
 import slothpy as slt
 from numpy import linspace, float64
 
-import numpy as np
-
 # from slothpy.general_utilities._math_expresions import normalize_grid_vectors
 
 
@@ -65,52 +63,70 @@ if __name__ == "__main__":
     CeCoN3 = slt.compound_from_slt(".", "hensell")
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
-    nazwa = "123456"
-    fields = linspace(0.1, 0.2, 200, dtype=float64)
+    nazwa = "123454rr5rd6rt7f66"
+    fields = linspace(0, 7, 64, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
 
-    # CeCoN3.calculate_g_tensor_and_axes_doublet("bas3", [1, 2, 3])
+    # a, b = CeCoN3.calculate_g_tensor_and_axes_doublet(
+    #     "bas3", np.arange(0, 400, 1)
+    # )
 
     # CeCoN3.calculate_mag_3d(
-    #     "bas3", fields, 52, temperatures, 300, slt=nazwa, autotune=True
-    # )
-
-    # mth = CeCoN3.calculate_mth(
     #     "bas3",
     #     fields,
-    #     5,
+    #     52,
     #     temperatures,
-    #     898,
-    #     128,
-    #     4,
+    #     90,
     #     slt=nazwa,
-    #     autotune=True,
     # )
+
+    mth = CeCoN3.calculate_mth(
+        "bas3",
+        fields,
+        5,
+        temperatures,
+        32,
+        128,
+        2,
+        slt=nazwa,
+    )
 
     # chit = CeCoN3.calculate_chitht(
     #     "bas3",
     #     temperatures,
     #     fields,
-    #     states_cutoff=1600,
+    #     states_cutoff=898,
     #     number_of_points=3,
-    #     number_cpu=60,
-    #     number_threads=10,
+    #     number_cpu=128,
+    #     number_threads=12,
     #     slt=nazwa,
     #     T=True,
+    #     exp=True,
     # )
 
-    chitensor = CeCoN3.calculate_chit_tensorht(
-        "bas3", temperatures, fields, 3, 0.0001, 898, 128, 4
-    )
+    # chitensor = CeCoN3.calculate_chit_tensorht(
+    #     "bas3",
+    #     temperatures,
+    #     fields,
+    #     3,
+    #     0.0001,
+    #     898,
+    #     128,
+    #     4,
+    #     exp=True,
+    # )
 
     end_time = perf_counter()
     print(f"{end_time - start_time} s")
 
-    print(chitensor)
+    # print(a)
+    # print(b)
 
     # CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
+
+    CeCoN3.plot_mth(nazwa)
 
     # CeCoN3.plot_chitht(nazwa)
 

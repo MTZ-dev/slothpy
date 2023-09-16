@@ -522,7 +522,7 @@ def _get_soc_magnetic_momenta_and_energies_from_hdf5(
 
     soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
     magnetic_momenta = _magnetic_momenta_from_angular_momenta(
-        angular_momenta, stop=states_cutoff
+        angular_momenta, 0, states_cutoff
     )
 
     return magnetic_momenta, soc_energies

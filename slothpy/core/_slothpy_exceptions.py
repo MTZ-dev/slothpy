@@ -232,6 +232,56 @@ class SltReadError(Exception):
         return str(self.final_message)
 
 
+class SltInputError(Exception):
+    """
+    A custom exception class for errors in input data.
+
+    Parameters
+    ----------
+    None
+    """
+
+    def __init__(self, exception: Exception, message: str = ""):
+        """
+        Initialize for the custom message printing.
+
+        Parameters
+        ----------
+        exception : Exception
+            An exception that initially caused the error.
+        message : str, optional
+            A message to be printed., by default ""
+        """
+        self.error_type = type(exception).__name__
+        self.error_message = str(exception)
+        self.slt_message = (
+            RED
+            + "\nSlothInputError"
+            + RESET
+            + ", "
+            + YELLOW
+            + f"{self.error_type}"
+            + RESET
+            + f": {self.error_message} \n"
+        )
+        self.final_message = self.slt_message + message
+        super().__init__(self.final_message)
+
+    def __str__(self) -> str:
+        """
+        Perform the operation __str__.
+
+        Overwrites the default Exception __str__ method to provide a custom
+        message for printing.
+
+        Returns
+        -------
+        str
+            Custom error message.
+        """
+        return str(self.final_message)
+
+
 class SltPlotError(Exception):
     """
     A custom exception class for errors in data plotting from .slt files.

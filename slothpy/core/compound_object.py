@@ -9,6 +9,7 @@ from ._slothpy_exceptions import (
     SltCompError,
     SltSaveError,
     SltReadError,
+    SltInputError,
     SltPlotError,
 )
 from slothpy.general_utilities._constants import (
@@ -19,7 +20,7 @@ from slothpy.general_utilities._constants import (
     PURPLE,
     RESET,
 )
-from slothpy.magnetism._g_tensor import _calculate_g_tensor_and_axes_doublet
+from slothpy.magnetism._g_tensor import _g_tensor_and_axes_doublet
 from slothpy.magnetism._magnetisation import _mth, _mag_3d
 from slothpy.magnetism.susceptibility import _chitht, chit_tensorht, chit_3d
 from slothpy.general_utilities._grids_over_hemisphere import (
@@ -439,7 +440,9 @@ class Compound:
         ------
         SltSaveError
             If the name of the group already exists in the .slt file.
-        ValueError
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
             If doublets are not one-diemsional array.
         SltCompError
             If the calculation of g-tensors is unsuccessful.
@@ -470,20 +473,22 @@ class Compound:
                     + RESET
                     + '" '
                     + "already exists. Delete it manually",
-                )
-
-        doublets = array(doublets, dtype=np.int64)
+                ) from None
+        try:
+            doublets = array(doublets, dtype=int64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
 
         if doublets.ndim != 1:
-            raise ValueError("The list of doublets has to be a 1D array.")
+            raise SltInputError(
+                ValueError("The list of doublets has to be a 1D array.")
+            ) from None
 
         try:
             (
                 g_tensor_list,
                 magnetic_axes_list,
-            ) = _calculate_g_tensor_and_axes_doublet(
-                self._hdf5, group, doublets
-            )
+            ) = _g_tensor_and_axes_doublet(self._hdf5, group, doublets)
         except Exception as exc:
             raise SltCompError(
                 self._hdf5,
@@ -566,7 +571,7 @@ class Compound:
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which magnetisation will be computed.
         grid : Union[int, ndarray[float64]]
-            If the grid is set to integer from 0-11 then the prescribed
+            If the grid is set to an integer from 0-11 then the prescribed
             Lebedev-Laikov grids over hemisphere will be used (see
             grids_over_hemisphere documentation), otherwise, user can provide
             an ArrayLike structure (can be converted to numpy.NDArray) with the
@@ -597,7 +602,7 @@ class Compound:
             number of threads (and therefore parallel processes), for the given
             number of CPUs, to be used during the calculation. Note that this
             process can take a significant amount of time, so start to use it
-            with medium-sized calculations (e.g. for states_cutoff > 300 with
+            with medium-sized calculations (e.g. for states_cutoff > 400 with
             dense grids or a higher number of field values) where it becomes
             a necessity., by default False
 
@@ -612,10 +617,14 @@ class Compound:
         ------
         SltSaveError
             If the name of the group already exists in the .slt file.
-        ValueError
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
             If fields are not a one-diemsional array.
-        ValueError
-            If temperatures are a not one-diemsional array.
+        SltInputError
+            If temperatures are not a one-diemsional array.
+        SltCompError
+            If autotuning a number of processes and threads is unsuccessful.
         SltCompError
             If the calculation of magnetisation is unsuccessful.
         SltFileError
@@ -631,8 +640,6 @@ class Compound:
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.
         """
-        fields = array(fields, dtype=float64)
-        temperatures = array(temperatures, dtype=float64)
 
         if slt is not None:
             slt_group_name = f"{slt}_magnetisation"
@@ -650,13 +657,22 @@ class Compound:
                     + RESET
                     + '" '
                     + "already exists. Delete it manually.",
-                )
+                ) from None
+        try:
+            fields = array(fields, dtype=float64)
+            temperatures = array(temperatures, dtype=float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
 
         if fields.ndim != 1:
-            raise ValueError("The list of fields has to be a 1D array.")
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
 
         if temperatures.ndim != 1:
-            raise ValueError("The list of temperatures has to be a 1D array.")
+            raise SltInputError(
+                ValueError("The list of temperatures has to be a 1D array.")
+            ) from None
 
         if isinstance(grid, int):
             grid = _lebedev_laikov_grid(grid)
@@ -834,12 +850,16 @@ class Compound:
         ------
         SltSaveError
             If the name of the group already exists in the .slt file.
-        ValueError
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
             If fields are not a one-diemsional array.
-        ValueError
+        SltInputError
             If temperatures are not a one-diemsional array.
-        ValueError
+        SltInputError
             If spherical_grid is not a positive integer.
+        SltCompError
+            If autotuning a number of processes and threads is unsuccessful.
         SltCompError
             If the calculation of 3D magnetisation is unsuccessful.
         SltFileError
@@ -851,10 +871,8 @@ class Compound:
         aware that the resulting arrays and computations can quickly consume
         much memory (e.g. for calculation with 100 field values 1-10 T, 300
         temperatures 1-300 K, and spherical_grid = 60, the resulting array will
-        take 3*100*300*2*60*60*8 bytes = 5.184 Gb).
+        take 3*100*300*2*60*60*8 bytes = 5.184 GB).
         """
-        temperatures = array(temperatures, dtype=np.float64)
-        fields = array(fields, dtype=np.float64)
 
         if slt is not None:
             slt_group_name = f"{slt}_3d_magnetisation"
@@ -872,16 +890,27 @@ class Compound:
                     + RESET
                     + '" '
                     + "already exists. Delete it manually.",
-                )
+                ) from None
+        try:
+            temperatures = array(temperatures, dtype=np.float64)
+            fields = array(fields, dtype=np.float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
 
         if fields.ndim != 1:
-            raise ValueError("The list of fields has to be a 1D array.")
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
 
         if temperatures.ndim != 1:
-            raise ValueError("The list of temperatures has to be a 1D array.")
+            raise SltInputError(
+                ValueError("The list of temperatures has to be a 1D array.")
+            ) from None
 
         if (not isinstance(spherical_grid, int)) or spherical_grid <= 0:
-            raise ValueError("Spherical grid has to be a positive integer.")
+            raise SltInputError(
+                ValueError("Spherical grid has to be a positive integer.")
+            ) from None
 
         if autotune:
             try:
@@ -1002,10 +1031,109 @@ class Compound:
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 1,
-    ) -> np.ndarray[float64]:
-        fields = array(fields, dtype=np.float64)
-        temperatures = array(temperatures, dtype=np.float64)
+    ) -> ndarray[float64]:
+        """
+        Calculates powder-averaged or directional molar magnetic susceptibility
+        chi(T)(H,T) for a given list of field and temperatures values.
 
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the magnetisation.
+        temperatures : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            temeperature values (K) at which magnetic susceptibility will
+            be computed.
+        fields : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) at which magnetic susceptibility will be computed.
+        number_of_points : int
+            Controls the number of points for numerical differentiation over
+            the magnetic field values using the finite difference method with
+            a symmetrical stencil. The total number of used points =
+            (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain
+            the first derivative using 3 points - including the value at the
+            point at which the derivative is taken. In this regard, the value 0
+            triggers the experimentalist model for susceptibility.
+        delta_h : float64, optional
+            Value of field step used for numerical differentiation using finite
+            difference method. 0.0001 (T) = 1 Oe is recommended as starting
+            point., by default 0.0001
+        states_cutoff : int, optional
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0
+        number_cpu : int, optional
+            Number of logical CPUs to be assigned to perform the calculation.
+            If set to zero, all available CPUs will be used., by default 0
+        number_threads : int, optional
+            Number of threads used in a multithreaded implementation of linear
+            algebra libraries used during the calculation. Higher values
+            benefit from the increasing size of matrices (states_cutoff) over
+            the parallelization over CPUs., by default 1
+        exp : bool, optional
+            Turns on the experimentalist model for magnetic susceptibility.,
+            by default False
+        T : bool, optional
+            Results are returned as a product with temperature chiT(H,T).,
+            by default True
+        grid : Union[int, np.ndarray[float64]], optional
+            If the grid is set to an integer from 0-11 then the prescribed
+            Lebedev-Laikov grids over the hemisphere will be used (see
+            grids_over_hemisphere documentation), otherwise, the user can
+            provide an ArrayLike structure (can be converted to numpy.NDArray)
+            with the convention: [[direction_x, direction_y, direction_z,
+            weight],...] for powder-averaging. If one wants a calculation for a
+            single, particular direction the list has to contain one entry like
+            this: [[direction_x, direction_y, direction_z, 1.]]. If not given
+            the average is taken over xyz directions, which is sufficient for a
+            second rank tensor., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with sufix: _susceptibility., by default None, by default None
+        autotune : bool, optional
+            If True the program will automatically try to choose the best
+            number of threads (and therefore parallel processes), for the given
+            number of CPUs, to be used during the calculation. Note that this
+            process can take a significant amount of time, so start to use it
+            with medium-sized calculations (e.g. for states_cutoff > 600 with
+            a higher number of field values) where it becomes a necessity.,
+            by default False
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting chitht_array gives magnetic susceptibility (or
+            product with temperature) in cm^3 (or * K) and is in the form
+            [fields, temperatures] - the first dimension runs over field
+            values, and the second over temperatures.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays
+        SltInputError
+            If temperatures are not a one-diemsional array.
+        SltInputError
+            If fields are not a one-diemsional array.
+        SltInputError
+            If the  number of points for finite difference method is not
+            a possitive integer.
+        SltInputError
+            If the field step for the finite difference method is not
+            a possitive real number.
+        SltCompError
+            If autotuning a number of processes and threads is unsuccessful.
+        SltCompError
+            If the calculation of magnetisation is unsuccessful.
+        SltCompError
+            If the calculation of magnetisation is unsuccessful
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
         if slt is not None:
             slt_group_name = f"{slt}_susceptibility"
             if _group_exists(self._hdf5, slt_group_name):
@@ -1022,25 +1150,38 @@ class Compound:
                     + RESET
                     + '" '
                     + "already exists. Delete it manually.",
-                )
-
-        if fields.ndim != 1:
-            raise ValueError("The list of fields has to be a 1D array.")
+                ) from None
+        try:
+            fields = array(fields, dtype=float64)
+            temperatures = array(temperatures, dtype=float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
 
         if temperatures.ndim != 1:
-            raise ValueError("The list of temperatures has to be a 1D array.")
+            raise SltInputError(
+                ValueError("The list of temperatures has to be a 1D array.")
+            ) from None
 
-        if (not isinstance(delta_h, float)) or delta_h <= 0:
-            raise ValueError(
-                "The field step for finite difference method has to be a"
-                " possitive number."
-            )
+        if fields.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
 
         if (not isinstance(number_of_points, int)) or number_of_points < 0:
-            raise ValueError(
-                "The number of points for finite difference method has to be a"
-                " possitive integer."
-            )
+            raise SltInputError(
+                ValueError(
+                    "The number of points for the finite difference method has"
+                    " to be a possitive integer."
+                )
+            ) from None
+
+        if (not isinstance(delta_h, float)) or delta_h <= 0:
+            raise SltInputError(
+                ValueError(
+                    "The field step for finite difference method has to be a"
+                    " possitive number."
+                )
+            ) from None
 
         if isinstance(grid, int):
             grid = _lebedev_laikov_grid(grid)
@@ -1186,34 +1327,7 @@ class Compound:
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 1,
-    ) -> np.ndarray[float64]:
-        """Calculates magnetic susceptibility (Van Vleck) tensor chi(H,T) for a list of field and temperatures values in the initial corrdinate's frame.
-
-        Args:
-            group (str): Name of a group containing results of relativistic ab initio calculations used for the computation of magnetic susceptibility (Van Vleck) tensor.
-            states_cutoff (int): Number of states that will be taken into account for construction of Zeeman Hamiltonian.
-            temperatures (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of temeperature values (K) at which magnetic susceptibility tensor will be computed.
-            fields (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of field values (T) at which magnetic susceptibility tensor will be computed.
-            num_of_points (int): Number of points for numerical differentiation over magnetic field values using symmetrical stencil (finite difference method). The total number of
-                used points = (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain the first derivative using 3 points - including the value at the point at which the derivative is taken
-                (for details see finite_diff_stencil documentation). Following that, the value 0 triggers experimentalist model for susceptibility.
-            delta_h (np.float64): Value of field step used for numerical differentiation using finite difference method. 0.0001 (T) = 1 Oe is recomended as starting point.
-            num_cpu (int): Number of physical CPUs to be assigned to perform calculation.
-            num_threads (int): Number of threads used in multithreaded implementation of the linear algebra libraries used during calculation. Values higher than 2 benefit
-                with the increasing size of matrices (states_cutoff) over the MPI parallelization over field and temperature values.
-            exp (bool, optional): Turns on the experimentalis model for magnetic susceptibility tensor. Defaults to False.
-            T (bool, optional): Results are returned as product with temperature chiT(H,T). Defaults to True.
-            slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _susceptibility_tensor. Defaults to None.
-
-        Raises:
-            Exception: If the calculation of chi(T,H) tensor is unsuccessful.
-            Exception: If the program is unable to correctly save the results to .slt file.
-
-        Returns:
-            np.ndarray[np.float64]: The resulting array gives magnetic susceptibility (Van Vleck) tensors (or products with temperature) in cm^3 (or * K) and is in the form (fields, temperatures, 3x3 tensor) - the first dimension
-              runs over field values, the second over temperatures.
-        """
-
+    ) -> ndarray[float64]:
         fields = array(fields, dtype=np.float64)
         temperatures = array(temperatures, dtype=np.float64)
 

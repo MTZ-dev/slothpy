@@ -1,11 +1,19 @@
-import numpy as np
+from numpy import ndarray, allclose, identity, zeros_like
 
 
 # eventually incorporate it into class as classmethod probably
-def _rotate_vector_operator(vect_oper: np.ndarray, rotation: np.ndarray):
+def _rotate_vector_operator(vect_oper: ndarray, rotation: ndarray):
     # rotation = Rotation.matrix (from class)
 
-    rotated_oper = np.zeros_like(vect_oper)
+    if rotation.shape != (3, 3):
+        raise ValueError("Input rotation matrix must be a 3x3 matrix.")
+
+    product = rotation.T @ rotation
+
+    if not allclose(product, identity(3), atol=1e-2, rtol=0):
+        raise ValueError("Input rotation matrix must be orthogonal.")
+
+    rotated_oper = zeros_like(vect_oper)
 
     rotated_oper[0] = (
         rotation[0, 0] * vect_oper[0]

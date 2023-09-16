@@ -242,7 +242,7 @@ def _mth(
         magnetic_momenta,
         soc_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff
+        filename, group, states_cutoff, rotation
     )
 
     num_process = _get_num_of_processes(num_cpu, num_threads)

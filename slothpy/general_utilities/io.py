@@ -5,7 +5,7 @@ import h5py
 from typing import Tuple
 from slothpy.general_utilities._constants import YELLOW, RESET
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
-from slothpy.angular_momentum.rotation import _rotate_vector_operator
+from slothpy.angular_momentum._rotation import _rotate_vector_operator
 from slothpy.general_utilities._math_expresions import (
     _magnetic_momenta_from_angular_momenta,
 )
@@ -449,6 +449,9 @@ def _load_molcas_hdf5(filename, group, rotation):
             angular_momenta[4][:] = file[str(group)]["SOC_LY"][:]
             angular_momenta[5][:] = file[str(group)]["SOC_LZ"][:]
 
+        angular_momenta = np.ascontiguousarray(angular_momenta)
+        soc_energies = np.ascontiguousarray(soc_energies.astype(np.float64))
+
         if (rotation is not None) or (rotation != None):
             angular_momenta[0:3, :, :] = _rotate_vector_operator(
                 angular_momenta[0:3, :, :], rotation
@@ -471,7 +474,7 @@ def _load_molcas_hdf5(filename, group, rotation):
 
 
 def _get_soc_energies_and_soc_angular_momenta_from_hdf5(
-    filename: str, group: str, rotation=None
+    filename: str, group: str, rotation: np.ndarray = None
 ) -> Tuple[np.ndarray, np.ndarray]:
     if _dataset_exists(filename, group, "SOC"):
         return _load_orca_hdf5(filename, group, rotation)

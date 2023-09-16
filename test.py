@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
     nazwa = "123456"
-    fields = linspace(0.1, 0.1, 1, dtype=float64)
+    fields = linspace(0.1, 0.2, 200, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     # )
 
     chitensor = CeCoN3.calculate_chit_tensorht(
-        "bas3", temperatures, fields, 2, 0.0001, 512, 128, 4
+        "bas3", temperatures, fields, 3, 0.0001, 898, 128, 4
     )
 
     end_time = perf_counter()

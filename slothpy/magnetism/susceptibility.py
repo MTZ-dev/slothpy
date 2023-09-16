@@ -154,6 +154,7 @@ def chit_tensorht(
             states_cutoff,
             num_cpu,
             num_threads,
+            rotation,
         )
 
         if T:

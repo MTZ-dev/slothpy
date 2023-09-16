@@ -90,7 +90,7 @@ def _chitht(
     return chitht_array
 
 
-def chit_tensorht(
+def _chitht_tensor(
     filename: str,
     group: str,
     temperatures: ndarray,
@@ -172,17 +172,17 @@ def chit_tensorht(
     return chitht_tensor_array
 
 
-def chit_3d(
+def _chit_3d(
     filename: str,
     group: str,
-    fields: ndarray,
-    states_cutoff: int,
     temperatures: ndarray,
+    fields: ndarray,
+    spherical_grid: int,
+    num_of_points: int,
+    delta_h: float64
+    states_cutoff: int,
     num_cpu: int,
     num_threads: int,
-    num_of_points: int,
-    delta_h: float64,
-    spherical_grid: int,
     exp: bool = False,
     T: bool = True,
 ):

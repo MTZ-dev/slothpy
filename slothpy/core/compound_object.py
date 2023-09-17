@@ -1610,10 +1610,10 @@ class Compound:
         fields: ndarray,
         spherical_grid: int,
         number_of_points: int,
-        delta_h: float64,
-        states_cutoff: int,
-        number_cpu: int,
-        number_threads: int,
+        delta_h: float64 = 0.0001,
+        states_cutoff: int = 0,
+        number_cpu: int = 0,
+        number_threads: int = 1,
         exp: bool = False,
         T: bool = True,
         slt: str = None,
@@ -1639,6 +1639,44 @@ class Compound:
                     + RESET
                     + '" '
                     + "already exists. Delete it manually.",
+                ) from None
+
+        if autotune:
+            if exp:
+                num_to_parallel = fields.size * 2 * spherical_grid**2
+            else:
+                num_to_parallel = (
+                    (2 * number_of_points + 1)
+                    * fields.size
+                    * 2
+                    * spherical_grid**2
+                )
+
+            try:
+                number_cpu, number_threads = _auto_tune(
+                    self._hdf5,
+                    group,
+                    num_to_parallel,
+                    states_cutoff,
+                    1,  # Single grid point in the inner loop
+                    temperatures.shape[0],
+                    number_cpu,
+                    _autotune_size,
+                )
+            except Exception as exc:
+                raise SltCompError(
+                    self._hdf5,
+                    exc,
+                    "Failed to autotune a number of processes and threads to"
+                    " the data within "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '".',
                 ) from None
 
         try:

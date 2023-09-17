@@ -381,8 +381,6 @@ def _mag_3d(
     phi = linspace(0, pi, spherical_grid, dtype=float64)
     theta, phi = meshgrid(theta, phi)
 
-    print(phi.shape)
-
     # Read data from HDF5 file
     (
         magnetic_momenta,

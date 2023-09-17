@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
     nazwa = "123454rr5rd6rt7f66"
-    fields = linspace(0, 7, 64, dtype=float64)
+    fields = linspace(0.01, 7, 64, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
@@ -73,25 +73,25 @@ if __name__ == "__main__":
     #     "bas3", np.arange(0, 400, 1)
     # )
 
-    # CeCoN3.calculate_mag_3d(
-    #     "bas3",
-    #     fields,
-    #     52,
-    #     temperatures,
-    #     90,
-    #     slt=nazwa,
-    # )
-
-    mth = CeCoN3.calculate_mth(
+    CeCoN3.calculate_mag_3d(
         "bas3",
         fields,
-        5,
+        52,
         temperatures,
-        32,
-        128,
-        2,
+        90,
         slt=nazwa,
     )
+
+    # mth = CeCoN3.calculate_mth(
+    #     "bas3",
+    #     fields,
+    #     5,
+    #     temperatures,
+    #     32,
+    #     128,
+    #     2,
+    #     slt=nazwa,
+    # )
 
     # chit = CeCoN3.calculate_chitht(
     #     "bas3",
@@ -114,19 +114,18 @@ if __name__ == "__main__":
     #     0.0001,
     #     898,
     #     128,
-    #     4,
-    #     exp=True,
+    #     6,
     # )
 
     end_time = perf_counter()
     print(f"{end_time - start_time} s")
 
-    # print(a)
+    print(chitensor)
     # print(b)
 
     # CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
 
-    CeCoN3.plot_mth(nazwa)
+    # CeCoN3.plot_mth(nazwa)
 
     # CeCoN3.plot_chitht(nazwa)
 

@@ -22,7 +22,13 @@ from slothpy.general_utilities._constants import (
 )
 from slothpy.magnetism._g_tensor import _g_tensor_and_axes_doublet
 from slothpy.magnetism._magnetisation import _mth, _mag_3d
-from slothpy.magnetism.susceptibility import _chitht, _chitht_tensor, chit_3d
+from slothpy.magnetism.susceptibility import _chitht, _chitht_tensor, _chit_3d
+from slothpy.magnetism.zeeman import (
+    zeeman_splitting,
+    get_zeeman_matrix,
+    hemholtz_energyth,
+    hemholtz_energy_3d,
+)
 from slothpy.general_utilities._grids_over_hemisphere import (
     _lebedev_laikov_grid,
 )
@@ -33,12 +39,6 @@ from slothpy.general_utilities.io import (
     get_states_total_angular_momneta,
     get_total_angular_momneta_matrix,
     get_magnetic_momenta_matrix,
-)
-from slothpy.magnetism.zeeman import (
-    zeeman_splitting,
-    get_zeeman_matrix,
-    hemholtz_energyth,
-    hemholtz_energy_3d,
 )
 from slothpy.angular_momentum.pseudo_spin_ito import (
     get_decomposition_in_z_total_angular_momentum_basis,
@@ -944,10 +944,10 @@ class Compound:
             mag_3d_array = _mag_3d(
                 self._hdf5,
                 group,
-                states_cutoff,
                 fields,
                 spherical_grid,
                 temperatures,
+                states_cutoff,
                 number_cpu,
                 number_threads,
             )
@@ -1541,7 +1541,7 @@ class Compound:
             raise SltCompError(
                 self._hdf5,
                 exc,
-                f"Failed to compute {chi_name}_tensor from "
+                f"Failed to compute {chi_name} tensor from "
                 + BLUE
                 + "Group "
                 + RESET
@@ -1590,7 +1590,7 @@ class Compound:
                 raise SltFileError(
                     self._hdf5,
                     exc,
-                    f"Failed to save {chi_name} to "
+                    f"Failed to save {chi_name} tensor to "
                     + BLUE
                     + "Group "
                     + RESET
@@ -1619,9 +1619,27 @@ class Compound:
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 1,
-    ):
+    ) -> ndarray[float64]:
         temperatures = np.array(temperatures, dtype=np.float64)
         fields = np.array(fields, dtype=np.float64)
+
+        if slt is not None:
+            slt_group_name = f"{slt}_3d_susceptibility"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
 
         try:
             chit_3d_array = _chit_3d(
@@ -1638,83 +1656,77 @@ class Compound:
                 exp,
                 T,
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to compute 3D magnetic"
-                f" susceptibility from file: {self._hdf5} - group {group}:"
-                f" {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute 3D magnetic susceptibility"
+                f" {chi_name} from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             if T:
+                chi_name = "chiT(H,T)"
                 chi_file = "chit"
             else:
+                chi_name = "chi(H,T)"
                 chi_file = "chi"
 
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_3d_susceptibility")
-                    new_group.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_{chi_file}_3d",
+                    (
+                        "Dataset containing 3D magnetic susceptibility"
+                        f" {chi_name} as meshgird (0-x,1-y,2-z) arrays over"
+                        " sphere ((xyz, field, temperature, meshgrid,"
+                        f" meshgrid) calculated from group: {group}."
+                    ),
+                    (
                         f"Group({slt}) containing 3D magnetic susceptibility"
-                        f" calculated from group: {group}."
-                    )
-                    chit_3d_dataset = new_group.create_dataset(
-                        f"{slt}_{chi_file}_3d",
-                        shape=(
-                            3,
-                            x.shape[0],
-                            x.shape[1],
-                            x.shape[2],
-                            x.shape[3],
-                        ),
-                        dtype=np.float64,
-                    )
-                    chit_3d_dataset.attrs["Description"] = (
-                        "Dataset containing 3D magnetic susceptibility as"
-                        " meshgird (0-x,1-y,2-z) arrays over sphere ((xyz,"
-                        " field, temperature, meshgrid, meshgrid) calculated"
-                        f" from group: {group}."
-                    )
-                    fields_dataset = new_group.create_dataset(
-                        f"{slt}_fields",
-                        shape=(fields.shape[0],),
-                        dtype=np.float64,
-                    )
-                    fields_dataset.attrs["Description"] = (
+                        f" {chi_name} calculated from group: {group}."
+                    ),
+                ] = chit_3d_array[:, :, :, :, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    (
                         "Dataset containing magnetic field H values used in"
-                        " simulation of 3D magnetic susceptibility from"
-                        f" group: {group}."
-                    )
-                    temperatures_dataset = new_group.create_dataset(
-                        f"{slt}_temperatures",
-                        shape=(temperatures.shape[0],),
-                        dtype=np.float64,
-                    )
-                    temperatures_dataset.attrs["Description"] = (
+                        " simulation of 3D magnetic susceptibility"
+                        f" {chi_name} from group: {group}."
+                    ),
+                ] = fields[:]
+                self[
+                    slt_group_name,
+                    f"{slt}_temperatures",
+                    (
                         "Dataset containing temperature T values used in"
-                        " simulation of 3D magnetic susceptibility from"
-                        f" group: {group}."
-                    )
-
-                    chit_3d_dataset[0, :, :, :, :] = x[:, :, :, :]
-                    chit_3d_dataset[1, :, :, :, :] = y[:, :, :, :]
-                    chit_3d_dataset[2, :, :, :, :] = z[:, :, :, :]
-
-                    temperatures_dataset[:] = temperatures
-                    fields_dataset[:] = fields
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save 3D magnetic"
-                    f" susceptibility to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
+                        " simulation of 3D magnetic susceptibility"
+                        f" {chi_name} from group: {group}."
+                    ),
+                ] = temperatures[:]
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save 3D magnetic susceptibility {chi_name} to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return chit_3d_array
 

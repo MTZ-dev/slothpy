@@ -366,10 +366,10 @@ def _arg_iter_mag_3d(
 def _mag_3d(
     filename: str,
     group: str,
-    states_cutoff: int,
     fields: ndarray,
     spherical_grid: int,
     temperatures: ndarray,
+    states_cutoff: int,
     num_cpu: int,
     num_threads: int,
 ) -> ndarray:
@@ -380,6 +380,8 @@ def _mag_3d(
     theta = linspace(0, 2 * pi, 2 * spherical_grid, dtype=float64)
     phi = linspace(0, pi, spherical_grid, dtype=float64)
     theta, phi = meshgrid(theta, phi)
+
+    print(phi.shape)
 
     # Read data from HDF5 file
     (

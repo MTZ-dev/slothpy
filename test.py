@@ -57,13 +57,13 @@ if __name__ == "__main__":
     # print(temperatures)
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
-    CeCoN3 = slt.compound_from_molcas(
-        ".", "hensell", "bas3", ".", "DyCo_DG_bas3"
-    )
-    # CeCoN3 = slt.compound_from_slt(".", "hensell")
+    # CeCoN3 = slt.compound_from_molcas(
+    #     ".", "hensell", "bas3", ".", "DyCo_DG_bas3"
+    # )
+    CeCoN3 = slt.compound_from_slt(".", "hensell")
 
     # CeCoN3.delete_group_dataset("dupaaaaaaaas")
-    nazwa = "123454rr5rd6rt7fr66"
+    nazwa = "1rtr"
     fields = linspace(0.01, 10, 100, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
@@ -78,13 +78,12 @@ if __name__ == "__main__":
         temperatures,
         fields,
         52,
-        1,
+        3,
         0.0001,
-        64,
-        64,
-        2,
+        16,
+        128,
+        1,
         slt=nazwa,
-        autotune=True,
     )
 
     # CeCoN3.calculate_mag_3d(
@@ -104,9 +103,9 @@ if __name__ == "__main__":
     #     fields,
     #     5,
     #     temperatures,
-    #     32,
+    #     898,
     #     128,
-    #     2,
+    #     4,
     #     slt=nazwa,
     # )
 

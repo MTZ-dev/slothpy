@@ -1,5 +1,6 @@
 from multiprocessing.managers import SharedMemoryManager
-from multiprocessing import Pool
+from multiprocessing.shared_memory import SharedMemory
+from multiprocessing import get_context
 from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
@@ -158,40 +159,46 @@ def _mt_over_tensor(
 
 
 def _calculate_mt(
-    magnetic_momenta: ndarray,
-    soc_energies: ndarray,
+    magnetic_momenta: str,
+    soc_energies: str,
     field: float64,
-    grid: ndarray,
-    temperatures: ndarray,
+    grid: str,
+    temperatures: str,
     m_s: int,
     s_s: int,
     t_s: int,
-    g_s: int = 1,
+    g_s: int = 0,
 ) -> ndarray:
     # Option to enable calculations with only a single grid point.
-    if g_s != 1:
-        grid = ndarray(g_s, dtype=float64, buffer=grid.buf)
+    if g_s != 0:
+        grid_s = SharedMemory(name=grid)
+        grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
+    else:
+        grid_a = grid
 
-    temperatures = ndarray(
+    temperatures_s = SharedMemory(name=temperatures)
+    temperatures_a = ndarray(
         t_s,
         dtype=float64,
-        buffer=temperatures.buf,
+        buffer=temperatures_s.buf,
     )
-    magnetic_momenta = ndarray(
+    magnetic_momenta_s = SharedMemory(name=magnetic_momenta)
+    magnetic_momenta_a = ndarray(
         m_s,
         dtype=complex128,
-        buffer=magnetic_momenta.buf,
+        buffer=magnetic_momenta_s.buf,
     )
-    soc_energies = ndarray(s_s, dtype=float64, buffer=soc_energies.buf)
+    soc_energies_s = SharedMemory(name=soc_energies)
+    soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
 
     # Hidden option for susceptibility tensor calculation.
     if array_equal(grid, array([1])):
         return _mt_over_tensor(
-            magnetic_momenta, soc_energies, field, temperatures
+            magnetic_momenta_a, soc_energies_a, field, temperatures_a
         )
 
     return _mt_over_grid(
-        magnetic_momenta, soc_energies, field, grid, temperatures
+        magnetic_momenta_a, soc_energies_a, field, grid_a, temperatures_a
     )
 
 
@@ -255,11 +262,6 @@ def _mth(
     temperatures = ascontiguousarray(temperatures, dtype=float64)
     grid = ascontiguousarray(grid, dtype=float64)
 
-    m_shape = magnetic_momenta.shape
-    s_shape = soc_energies.shape
-    t_shape = temperatures.shape
-    g_shape = grid.shape
-
     with SharedMemoryManager() as smm:
         # Create shared memory for arrays
         magnetic_momenta_shared = smm.SharedMemory(
@@ -301,19 +303,19 @@ def _mth(
 
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
-                with Pool(num_process) as p:
+                with get_context("fork").Pool(num_process) as p:
                     mht = p.map(
                         _calculate_mt_wrapper,
                         _arg_iter_mth(
-                            magnetic_momenta_shared,
-                            soc_energies_shared,
+                            magnetic_momenta_shared.name,
+                            soc_energies_shared.name,
                             fields_shared_arr,
-                            grid_shared,
-                            temperatures_shared,
-                            m_shape,
-                            s_shape,
-                            t_shape,
-                            g_shape,
+                            grid_shared.name,
+                            temperatures_shared.name,
+                            magnetic_momenta_shared_arr.shape,
+                            soc_energies_shared_arr.shape,
+                            temperatures_shared_arr.shape,
+                            grid_shared_arr.shape,
                         ),
                     )
 
@@ -389,10 +391,6 @@ def _mag_3d(
         filename, group, states_cutoff
     )
 
-    m_shape = magnetic_momenta.shape
-    s_shape = soc_energies.shape
-    t_shape = temperatures.shape
-
     with SharedMemoryManager() as smm:
         # Create shared memory for arrays
         magnetic_momenta_shared = smm.SharedMemory(
@@ -440,19 +438,19 @@ def _mag_3d(
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 # Parallel M(T,H) calculation over different grid points
-                with Pool(num_process) as p:
+                with get_context("fork").Pool(num_process) as p:
                     mht = p.map(
                         _calculate_mt_wrapper,
                         _arg_iter_mag_3d(
-                            magnetic_momenta_shared,
-                            soc_energies_shared,
+                            magnetic_momenta_shared.name,
+                            soc_energies_shared.name,
                             fields_shared_arr,
                             theta_shared_arr,
                             phi_shared_arr,
-                            temperatures_shared,
-                            m_shape,
-                            s_shape,
-                            t_shape,
+                            temperatures_shared.name,
+                            magnetic_momenta_shared_arr.shape,
+                            soc_energies_shared_arr.shape,
+                            temperatures_shared_arr.shape,
                         ),
                     )
 

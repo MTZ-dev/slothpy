@@ -2,7 +2,8 @@ from os import cpu_count
 from time import perf_counter
 from math import ceil
 from typing import Tuple
-from multiprocessing import Pool
+from multiprocessing import get_context
+from multiprocessing.shared_memory import SharedMemory
 from multiprocessing.managers import SharedMemoryManager
 from numpy import (
     ndarray,
@@ -56,34 +57,38 @@ def _arg_iter_mth_benchmark(
 
 
 def _get_mt_exec_time(
-    magnetic_momenta: ndarray,
-    soc_energies: ndarray,
+    magnetic_momenta: str,
+    soc_energies: str,
     field: float64,
-    grid: ndarray,
-    temperatures: ndarray,
+    grid: str,
+    temperatures: str,
     m_s: int,
     s_s: int,
     t_s: int,
-    g_s: int = 1,
+    g_s: int = 0,
 ) -> float64:
     start_time = perf_counter()
 
-    if g_s != 1:
-        grid = ndarray(g_s, dtype=float64, buffer=grid.buf)
-
-    temperatures = ndarray(
+    grid_s = SharedMemory(name=grid)
+    grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
+    temperatures_s = SharedMemory(name=temperatures)
+    temperatures_a = ndarray(
         t_s,
         dtype=float64,
-        buffer=temperatures.buf,
+        buffer=temperatures_s.buf,
     )
-    magnetic_momenta = ndarray(
+    magnetic_momenta_s = SharedMemory(name=magnetic_momenta)
+    magnetic_momenta_a = ndarray(
         m_s,
         dtype=complex128,
-        buffer=magnetic_momenta.buf,
+        buffer=magnetic_momenta_s.buf,
     )
-    soc_energies = ndarray(s_s, dtype=float64, buffer=soc_energies.buf)
+    soc_energies_s = SharedMemory(name=soc_energies)
+    soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
 
-    _mt_over_grid(magnetic_momenta, soc_energies, field, grid, temperatures)
+    _mt_over_grid(
+        magnetic_momenta_a, soc_energies_a, field, grid_a, temperatures_a
+    )
 
     end_time = perf_counter()
 
@@ -121,11 +126,6 @@ def _mth_benchmark(
     fields = ascontiguousarray(fields, dtype=float64)
     temperatures = ascontiguousarray(temperatures, dtype=float64)
     grid = ascontiguousarray(grid, dtype=float64)
-
-    m_shape = magnetic_momenta.shape
-    s_shape = soc_energies.shape
-    t_shape = temperatures.shape
-    g_shape = grid.shape
 
     with SharedMemoryManager() as smm:
         # Create shared memory for arrays
@@ -168,19 +168,19 @@ def _mth_benchmark(
 
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
-                with Pool(num_process) as p:
+                with get_context("fork").Pool(num_process) as p:
                     exec_time = p.map(
                         _get_mt_exec_time_wrapper,
                         _arg_iter_mth_benchmark(
-                            magnetic_momenta_shared,
-                            soc_energies_shared,
+                            magnetic_momenta_shared.name,
+                            soc_energies_shared.name,
                             fields_shared_arr,
-                            grid_shared,
-                            temperatures_shared,
-                            m_shape,
-                            s_shape,
-                            t_shape,
-                            g_shape,
+                            grid_shared.name,
+                            temperatures_shared.name,
+                            magnetic_momenta_shared_arr.shape,
+                            soc_energies_shared_arr.shape,
+                            temperatures_shared_arr.shape,
+                            grid_shared_arr.shape,
                         ),
                     )
 

@@ -3,9 +3,15 @@ from numpy import (
     array,
     arange,
     dot,
+    linspace,
+    meshgrid,
+    zeros,
     newaxis,
     float64,
     int64,
+    sin,
+    cos,
+    pi,
 )
 from slothpy.magnetism._magnetisation import _mth, _mag_3d
 from slothpy.general_utilities._math_expresions import _finite_diff_stencil
@@ -217,7 +223,7 @@ def _chit_3d(
         fields_diffs = fields_diffs.flatten()
 
         # Get M(T,H) for adjacent values of field
-        mag_3d_array = _mag_3d(
+        mag_3d = _mag_3d(
             filename,
             group,
             fields_diffs,
@@ -226,13 +232,13 @@ def _chit_3d(
             states_cutoff,
             num_cpu,
             num_threads,
+            sus_3d_num=True,
         )
 
         stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)
 
-        mag_3d_array = mag_3d_array.reshape(
+        mag_3d_array = mag_3d.reshape(
             (
-                3,
                 fields.size,
                 stencil_coeff.size,
                 temperatures.size,
@@ -240,16 +246,23 @@ def _chit_3d(
                 2 * spherical_grid,
             )
         )
-        mag_3d_array = mag_3d_array.transpose((0, 1, 3, 4, 5, 2))
+        mag_3d_array = mag_3d_array.transpose((0, 2, 3, 4, 1))
         # Numerical derivative of M(T,H) around given field value
-        chi_3d_array = dot(mag_3d_array, stencil_coeff)
+        chi_3d = dot(mag_3d_array, stencil_coeff)
 
         if T:
-            chi_3d_array = (
-                chi_3d_array
-                * temperatures[newaxis, newaxis, :, newaxis, newaxis]
-            )
+            chi_3d = chi_3d * temperatures[newaxis, :, newaxis, newaxis]
 
-    chi_3d_array = chi_3d_array * MU_B_CM_3
+    theta = linspace(0, 2 * pi, 2 * spherical_grid, dtype=float64)
+    phi = linspace(0, pi, spherical_grid, dtype=float64)
+    theta, phi = meshgrid(theta, phi)
+
+    chi_3d = chi_3d * MU_B_CM_3
+
+    chi_3d_array = zeros((3, *chi_3d.shape), dtype=float64)
+
+    chi_3d_array[0] = (sin(phi) * cos(theta))[newaxis, newaxis, :, :] * chi_3d
+    chi_3d_array[1] = (sin(phi) * sin(theta))[newaxis, newaxis, :, :] * chi_3d
+    chi_3d_array[2] = (cos(phi))[newaxis, newaxis, :, :] * chi_3d
 
     return chi_3d_array

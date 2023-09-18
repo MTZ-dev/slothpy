@@ -1,7 +1,7 @@
 from os import cpu_count
 from time import perf_counter
-from statistics import mean
 from math import ceil
+from statistics import median, mean
 from typing import Tuple
 from multiprocessing import Pool
 from multiprocessing.shared_memory import SharedMemory
@@ -68,7 +68,7 @@ def _dummy_function(
     s_s: int,
     t_s: int,
     g_s: int = 0,
-) -> float64:
+) -> ndarray:
     grid_s = SharedMemory(name=grid)
     grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
     temperatures_s = SharedMemory(name=temperatures)
@@ -115,7 +115,7 @@ def _get_mt_exec_time(
     s_s: int,
     t_s: int,
     g_s: int = 0,
-) -> float64:
+) -> float:
     grid_s = SharedMemory(name=grid)
     grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
     temperatures_s = SharedMemory(name=temperatures)
@@ -135,9 +135,11 @@ def _get_mt_exec_time(
 
     start_time = perf_counter()
 
-    _mt_over_grid(
+    mt = _mt_over_grid(
         magnetic_momenta_a, soc_energies_a, field, grid_a, temperatures_a
     )
+
+    mt = array(mt)
 
     end_time = perf_counter()
 
@@ -145,14 +147,10 @@ def _get_mt_exec_time(
 
 
 def _get_mt_exec_time_wrapper(args):
-    start_time = perf_counter()
-
     # Unpack arguments and call the function
     mt = _get_mt_exec_time(*args)
 
-    end_time = perf_counter()
-
-    return [mt, end_time - start_time]
+    return mt
 
 
 def _mth_load(
@@ -223,7 +221,7 @@ def _mth_load(
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 with Pool(num_process) as p:
-                    exec_time = p.map(
+                    dummy_return = p.map(
                         _dummy_function_wrapper,
                         _arg_iter_mth_benchmark(
                             magnetic_momenta_shared.name,
@@ -237,6 +235,7 @@ def _mth_load(
                             grid_shared_arr.shape,
                         ),
                     )
+    dummy_return = array(dummy_return)
     end_time_load = perf_counter()
 
     return end_time_load - start_time_load
@@ -324,13 +323,9 @@ def _mth_benchmark(
                         ),
                     )
 
-    exec_time = array(exec_time)
-    setup_time = mean(
-        exec_time[:, 1] - exec_time[:, 0]
-    )  # Four as in the chunksize 4 * len(self._pool)
-
-    return setup_time, mean(
-        exec_time[:, 0]
+    exec_time = sorted(exec_time[len(exec_time) // 2 :])
+    return mean(
+        exec_time[: ceil(len(exec_time) / 2)]
     )  # Can return min, max or mean for different approaches depending on
     # internal_loop_samples size in _auto_tune so be careful what you are
     # doing.
@@ -369,9 +364,9 @@ def _auto_tune(
         if new_processes != old_processes:
             num_processes = old_processes
             num_threads = threads - 1
-            fields = linspace(1, 10, num_processes, dtype=float64)
+            fields = linspace(1, 10, 2 * num_processes, dtype=float64)
 
-            setup_time, exec_time = _mth_benchmark(
+            exec_time = _mth_benchmark(
                 filename,
                 group,
                 fields,
@@ -381,6 +376,7 @@ def _auto_tune(
                 num_cpu,
                 num_threads,
             )
+
             load_time = _mth_load(
                 filename,
                 group,
@@ -392,11 +388,8 @@ def _auto_tune(
                 num_threads,
             )
 
-            print(load_time)
-
             current_time = (
                 exec_time * internal_loop_size / internal_loop_samples
-                + setup_time
             ) * ceil(num_to_parallelize / num_processes) + load_time
 
             info = (

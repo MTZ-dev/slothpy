@@ -22,7 +22,7 @@ from slothpy.general_utilities._constants import (
 )
 from slothpy.magnetism._g_tensor import _g_tensor_and_axes_doublet
 from slothpy.magnetism._magnetisation import _mth, _mag_3d
-from slothpy.magnetism.susceptibility import _chitht, _chitht_tensor, _chit_3d
+from slothpy.magnetism._susceptibility import _chitht, _chitht_tensor, _chit_3d
 from slothpy.magnetism.zeeman import (
     zeeman_splitting,
     get_zeeman_matrix,
@@ -602,7 +602,7 @@ class Compound:
             number of threads (and therefore parallel processes), for the given
             number of CPUs, to be used during the calculation. Note that this
             process can take a significant amount of time, so start to use it
-            with medium-sized calculations (e.g. for states_cutoff > 400 with
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
             dense grids or a higher number of field values) where it becomes
             a necessity., by default False
 
@@ -811,7 +811,7 @@ class Compound:
             for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
         temperatures : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of
-            temperature values (K) at which magnetisation will be computed.
+            temperature values (K) at which 3D magnetisation will be computed.
         states_cutoff : int, optional
             Number of states that will be taken into account for construction
             of Zeeman Hamiltonian. If set to zero, all available states from
@@ -1097,9 +1097,9 @@ class Compound:
             number of threads (and therefore parallel processes), for the given
             number of CPUs, to be used during the calculation. Note that this
             process can take a significant amount of time, so start to use it
-            with medium-sized calculations (e.g. for states_cutoff > 600 with
-            a higher number of field values) where it becomes a necessity.,
-            by default False
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
+            a higher number of field values and number_of_points) where it
+            becomes a necessity., by default False
 
         Returns
         -------
@@ -1391,8 +1391,8 @@ class Compound:
             number of CPUs, to be used during the calculation. Note that this
             process can take a significant amount of time, so start to use it
             with medium-sized calculations (e.g. for states_cutoff > 500 with
-            a higher number of field values) where it becomes a necessity.,
-            by default False
+            a higher number of field values and number_of_points) where it
+            becomes a necessity., by default False
 
         Returns
         -------
@@ -1620,6 +1620,102 @@ class Compound:
         autotune: bool = False,
         _autotune_size: int = 1,
     ) -> ndarray[float64]:
+        """
+        Calculates 3D magnetic susceptibility over a spherical grid for a given
+        list of temperature and field values.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the 3D magnetic
+            susceptibility.
+        temperatures : ndarray
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            temperature values (K) at which 3D magnetic susceptibility will be
+            computed.
+        fields : ndarray
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) at which 3D magnetic susceptibility will be computed.
+        spherical_grid : int
+            Controls the density of the angular grid for the 3D susceptibility
+            calculation. A grid of dimension (spherical_grid*2*spherical_grid)
+            for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
+        number_of_points : int
+            _description_
+        delta_h : float64, optional
+            _description_, by default 0.0001
+        states_cutoff : int, optional
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0, by default 0
+        number_cpu : int, optional
+            Number of logical CPUs to be assigned to perform the calculation.
+            If set to zero, all available CPUs will be used., by default 0
+        number_threads : int, optional
+            Number of threads used in a multithreaded implementation of linear
+            algebra libraries used during the calculation. Higher values
+            benefit from the increasing size of matrices (states_cutoff) over
+            the parallelization over CPUs., by default 1, by default 1
+        exp : bool, optional
+            _description_, by default False
+        T : bool, optional
+            _description_, by default True
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with sufix: _3d_magnetisation., by default None
+        autotune : bool, optional
+            If True the program will automatically try to choose the best
+            number of threads (and therefore parallel processes), for the given
+            number of CPUs, to be used during the calculation. Note that this
+            process can take a significant amount of time, so start to use it
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
+            dense grids or a higher number of field values) where it becomes
+            a necessity., by default False
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting chi_3d_array gives magnetisation in Bohr magnetons
+            and is in the form [coordinates, fields, temperatures, mesh, mesh]
+            - the first dimension runs over coordinates (0-x, 1-y, 2-z), the
+            second over field values, and the third over temperatures. The last
+            two dimensions are in a form of meshgrids over theta and phi, ready
+            for 3D plots as xyz.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
+            If temperatures are not a one-diemsional array.
+        SltInputError
+            If fields are not a one-diemsional array.
+        SltInputError
+            If spherical_grid is not a positive integer.
+        SltInputError
+            _description_
+        SltInputError
+            _description_
+        SltCompError
+            If autotuning a number of processes and threads is unsuccessful.
+        SltCompError
+            If the calculation of 3D magnetic susceptibility is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+
+        Notes
+        -----
+        Here, (number_cpu // number_threads) parallel processes are used to
+        distribute the workload over len(fields)*(2*number_of_points + 1)
+        *2*shperical_grid**2 tasks. Be aware that the resulting arrays and
+        computations can quickly consume much memory (e.g. for calculation with
+        100 field values 1-10 T, 300 temperatures 1-300 K, number_of_points=3,
+        and spherical_grid = 60, the intermediate array (before numerical
+        differentiation) will take 7*100*300*2*60*60*8 bytes = 12.096 GB).
+        """
         temperatures = np.array(temperatures, dtype=np.float64)
         fields = np.array(fields, dtype=np.float64)
 
@@ -1640,6 +1736,42 @@ class Compound:
                     + '" '
                     + "already exists. Delete it manually.",
                 ) from None
+        try:
+            fields = array(fields, dtype=float64)
+            temperatures = array(temperatures, dtype=float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
+
+        if temperatures.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of temperatures has to be a 1D array.")
+            ) from None
+
+        if fields.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
+
+        if (not isinstance(spherical_grid, int)) or spherical_grid <= 0:
+            raise SltInputError(
+                ValueError("Spherical grid has to be a positive integer.")
+            ) from None
+
+        if (not isinstance(number_of_points, int)) or number_of_points < 0:
+            raise SltInputError(
+                ValueError(
+                    "The number of points for the finite difference method has"
+                    " to be a possitive integer."
+                )
+            ) from None
+
+        if (not isinstance(delta_h, float)) or delta_h <= 0:
+            raise SltInputError(
+                ValueError(
+                    "The field step for finite difference method has to be a"
+                    " possitive number."
+                )
+            ) from None
 
         if autotune:
             if exp:

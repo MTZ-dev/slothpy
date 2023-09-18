@@ -375,6 +375,7 @@ def _mag_3d(
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
+    sus_3d_num: bool = False,
 ) -> ndarray:
     # Get number of parallel proceses to be used
     num_process = _get_num_of_processes(num_cpu, num_threads)
@@ -391,6 +392,9 @@ def _mag_3d(
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff
     )
+
+    fields = ascontiguousarray(fields, dtype=float64)
+    temperatures = ascontiguousarray(temperatures, dtype=float64)
 
     with SharedMemoryManager() as smm:
         # Create shared memory for arrays
@@ -459,6 +463,9 @@ def _mag_3d(
         (fields.shape[0], phi.shape[0], phi.shape[1], temperatures.shape[0])
     )
     mag_3d = mag_3d.transpose((0, 3, 1, 2))
+
+    if sus_3d_num:
+        return mag_3d
 
     mag_3d_array = zeros((3, *mag_3d.shape), dtype=float64)
 

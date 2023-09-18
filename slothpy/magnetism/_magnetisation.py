@@ -1,6 +1,6 @@
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
-from multiprocessing import get_context
+from multiprocessing import Pool
 from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
@@ -19,6 +19,7 @@ from numpy import (
     float64,
     complex128,
     array_equal,
+    ceil,
 )
 from numpy.linalg import eigh
 from numba import jit
@@ -303,7 +304,7 @@ def _mth(
 
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
-                with get_context("fork").Pool(num_process) as p:
+                with Pool(num_process) as p:
                     mht = p.map(
                         _calculate_mt_wrapper,
                         _arg_iter_mth(
@@ -438,7 +439,7 @@ def _mag_3d(
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 # Parallel M(T,H) calculation over different grid points
-                with get_context("fork").Pool(num_process) as p:
+                with Pool(num_process) as p:
                     mht = p.map(
                         _calculate_mt_wrapper,
                         _arg_iter_mag_3d(

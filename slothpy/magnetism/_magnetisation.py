@@ -19,7 +19,6 @@ from numpy import (
     float64,
     complex128,
     array_equal,
-    ceil,
 )
 from numpy.linalg import eigh
 from numba import jit
@@ -69,7 +68,7 @@ def _mt_over_grid(
     field: float64,
     grid: ndarray,
     temperatures: ndarray,
-):
+) -> ndarray:
     # Initialize arrays
     mt_array = ascontiguousarray(zeros((temperatures.shape[0]), dtype=float64))
 
@@ -256,6 +255,7 @@ def _mth(
         filename, group, states_cutoff, rotation
     )
 
+    # Get number of parallel proceses to be used
     num_process = _get_num_of_processes(num_cpu, num_threads)
 
     # Get magnetic field in a.u. and allocate arrays as contiguous

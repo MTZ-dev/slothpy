@@ -3,6 +3,7 @@ from time import perf_counter
 # os.environ['OMP_NUM_THREADS'] = '2'
 import slothpy as slt
 from numpy import linspace, float64
+import matplotlib.pyplot as plt
 
 # from slothpy.general_utilities._math_expresions import normalize_grid_vectors
 
@@ -57,13 +58,13 @@ if __name__ == "__main__":
     # print(temperatures)
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
-    # CeCoN3 = slt.compound_from_molcas(
-    #     ".", "hensell", "bas3", ".", "SmCo_DG_bas3"
-    # )
+    CeCoN3 = slt.compound_from_molcas(
+        ".", "hensell", "bas3", ".", "DyCo_DG_bas3"
+    )
     CeCoN3 = slt.compound_from_slt(".", "hensell")
 
-    # CeCoN3.delete_group_dataset("dupaaaaaaaas")
-    nazwa = "12354frrererdffr4r5"
+    # CeCoN3.delete_group_dataset("dupaadaaaaaas")
+    nazwa = "12"
     fields = linspace(0.01, 10, 100, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
@@ -73,18 +74,18 @@ if __name__ == "__main__":
     #     "bas3", np.arange(0, 400, 1)
     # )
 
-    CeCoN3.calculate_chit_3d(
-        "bas3",
-        temperatures,
-        fields,
-        52,
-        3,
-        0.0001,
-        16,
-        128,
-        1,
-        slt=nazwa,
-    )
+    # CeCoN3.calculate_chit_3d(
+    #     "bas3",
+    #     temperatures,
+    #     fields,
+    #     52,
+    #     3,
+    #     0.0001,
+    #     16,
+    #     128,
+    #     1,
+    #     slt=nazwa,
+    # )
 
     # CeCoN3.calculate_mag_3d(
     #     "bas3",
@@ -98,6 +99,19 @@ if __name__ == "__main__":
     #     autotune=True,
     # )
 
+    CeCoN3.calculate_hemholtz_energy_3d(
+        "bas3",
+        fields,
+        40,
+        temperatures,
+        64,
+        128,
+        3,
+        slt=nazwa,
+        internal_energy=True,
+        autotune=True,
+    )
+
     # mth = CeCoN3.calculate_mth(
     #     "bas3",
     #     fields,
@@ -107,6 +121,21 @@ if __name__ == "__main__":
     #     126,
     #     3,
     # )
+
+    # eth = CeCoN3.calculate_hemholtz_energyth(
+    #     "bas3",
+    #     fields,
+    #     4,
+    #     temperatures,
+    #     500,
+    #     128,
+    #     2,
+    #     slt=nazwa,
+    # )
+
+    # for i in eth:
+    #     plt.plot(fields, i)
+    # plt.show()
 
     # chit = CeCoN3.calculate_chitht(
     #     "bas3",
@@ -135,9 +164,11 @@ if __name__ == "__main__":
     end_time = perf_counter()
     print(f"{end_time - start_time} s")
 
+    # CeCoN3.plot_hemholtz_energyth(nazwa)
     # print(chitensor)
     # print(b)
-    CeCoN3.interactive_plot_3d(nazwa, "chit")
+    CeCoN3.interactive_plot_3d(nazwa, "internal_energy")
+    # CeCoN3.interactive_plot_3d(nazwa, "chit")
     # CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
 
     # CeCoN3.plot_mth(nazwa)

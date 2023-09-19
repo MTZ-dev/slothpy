@@ -19,6 +19,7 @@ from numpy import (
 from numpy.linalg import eigh, inv
 from numba import jit
 from slothpy.general_utilities._constants import GE
+from slothpy.core._slothpy_exceptions import SltInputError
 
 
 @jit("float64(float64, float64)", nopython=True, cache=True, nogil=True)
@@ -103,9 +104,12 @@ def _finite_diff_stencil(diff_order: int, num_of_points: int, step: float64):
     stencil_len = 2 * num_of_points + 1
 
     if diff_order >= stencil_len:
-        raise ValueError(
-            f"Insufficient number of points to evaluate coefficients. Provide"
-            f" number of points greater than (derivative order - 1) / 2."
+        raise SltInputError(
+            ValueError(
+                f"Insufficient number of points to evaluate coefficients."
+                f" Provide number of points greater than (derivative order -"
+                f" 1) / 2."
+            )
         )
 
     stencil_matrix = tile(
@@ -136,11 +140,14 @@ def decomposition_of_hermitian_matrix(matrix):
 
 def _normalize_grid_vectors(grid):
     grid = array(grid, dtype=float64)
+    print(grid.ndim)
 
-    if grid.shape[1] != 4 or grid.ndim != 2:
-        raise ValueError(
-            "Custom grid has to be (n,4) array in the format: [[direction_x,"
-            " direction_y, direction_z, weight],...]."
+    if grid.ndim != 2 or grid.shape[1] != 4:
+        raise SltInputError(
+            ValueError(
+                "Custom grid has to be (n,4) array in the format:"
+                " [[direction_x, direction_y, direction_z, weight],...]."
+            )
         )
 
     for vector_index in range(grid.shape[0]):

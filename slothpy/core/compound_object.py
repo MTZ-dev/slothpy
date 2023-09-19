@@ -26,8 +26,8 @@ from slothpy.magnetism._susceptibility import _chitht, _chitht_tensor, _chit_3d
 from slothpy.magnetism.zeeman import (
     zeeman_splitting,
     get_zeeman_matrix,
-    hemholtz_energyth,
-    hemholtz_energy_3d,
+    _hemholtz_energyth,
+    _hemholtz_energy_3d,
 )
 from slothpy.general_utilities._grids_over_hemisphere import (
     _lebedev_laikov_grid,
@@ -815,7 +815,7 @@ class Compound:
         states_cutoff : int, optional
             Number of states that will be taken into account for construction
             of Zeeman Hamiltonian. If set to zero, all available states from
-            the file will be used., by default 0, by default 0
+            the file will be used., by default 0
         number_cpu : int, optional
             Number of logical CPUs to be assigned to perform the calculation.
             If set to zero, all available CPUs will be used., by default 0
@@ -823,7 +823,7 @@ class Compound:
             Number of threads used in a multithreaded implementation of linear
             algebra libraries used during the calculation. Higher values
             benefit from the increasing size of matrices (states_cutoff) over
-            the parallelization over CPUs., by default 1, by default 1
+            the parallelization over CPUs., by default 1
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
             file with sufix: _3d_magnetisation., by default None
@@ -864,12 +864,13 @@ class Compound:
             If the calculation of 3D magnetisation is unsuccessful.
         SltFileError
             If the program is unable to correctly save results to .slt file.
+
         Notes
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
         aware that the resulting arrays and computations can quickly consume
-        much memory (e.g. for calculation with 100 field values 1-10 T, 300
+        much memory (e.g. for a calculation with 100 field values 1-10 T, 300
         temperatures 1-300 K, and spherical_grid = 60, the resulting array will
         take 3*100*300*2*60*60*8 bytes = 5.184 GB).
         """
@@ -1021,7 +1022,7 @@ class Compound:
         temperatures: ndarray[float64],
         fields: ndarray[float64],
         number_of_points: int,
-        delta_h: float64 = 0.0001,
+        delta_h: float = 0.0001,
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
@@ -1091,7 +1092,7 @@ class Compound:
             second rank tensor., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _susceptibility., by default None, by default None
+            file with sufix: _susceptibility., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -1281,14 +1282,7 @@ class Compound:
                         f" susceptibility calculated from group: {group}."
                     ),
                 ] = chitht_array[:, :]
-                self[
-                    slt_group_name,
-                    f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of {chi_name} from group: {group}."
-                    ),
-                ] = fields[:]
+                self[slt_group_name, _description_] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
@@ -1320,7 +1314,7 @@ class Compound:
         temperatures: ndarray[float64],
         fields: ndarray[float64],
         number_of_points: int,
-        delta_h: float64 = 0.0001,
+        delta_h: float = 0.0001,
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
@@ -1610,7 +1604,7 @@ class Compound:
         fields: ndarray,
         spherical_grid: int,
         number_of_points: int,
-        delta_h: float64 = 0.0001,
+        delta_h: float = 0.0001,
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
@@ -1642,13 +1636,21 @@ class Compound:
             calculation. A grid of dimension (spherical_grid*2*spherical_grid)
             for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
         number_of_points : int
-            _description_
+            Controls the number of points for numerical differentiation over
+            the magnetic field values using the finite difference method with
+            a symmetrical stencil. The total number of used points =
+            (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain
+            the first derivative using 3 points - including the value at the
+            point at which the derivative is taken. In this regard, the value 0
+            triggers the experimentalist model for susceptibility.
         delta_h : float64, optional
-            _description_, by default 0.0001
+            Value of field step used for numerical differentiation using finite
+            difference method. 0.0001 (T) = 1 Oe is recommended as a starting
+            point., by default 0.0001
         states_cutoff : int, optional
             Number of states that will be taken into account for construction
             of Zeeman Hamiltonian. If set to zero, all available states from
-            the file will be used., by default 0, by default 0
+            the file will be used., by default 0
         number_cpu : int, optional
             Number of logical CPUs to be assigned to perform the calculation.
             If set to zero, all available CPUs will be used., by default 0
@@ -1656,11 +1658,13 @@ class Compound:
             Number of threads used in a multithreaded implementation of linear
             algebra libraries used during the calculation. Higher values
             benefit from the increasing size of matrices (states_cutoff) over
-            the parallelization over CPUs., by default 1, by default 1
+            the parallelization over CPUs., by default 1
         exp : bool, optional
-            _description_, by default False
+            Turns on the experimentalist model for magnetic susceptibility.,
+            by default False
         T : bool, optional
-            _description_, by default True
+            Results are returned as a product with temperature chiT(H,T).,
+            by default True
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
             file with sufix: _3d_magnetisation., by default None
@@ -1676,11 +1680,12 @@ class Compound:
         Returns
         -------
         ndarray[float64]
-            The resulting chi_3d_array gives magnetisation in Bohr magnetons
-            and is in the form [coordinates, fields, temperatures, mesh, mesh]
-            - the first dimension runs over coordinates (0-x, 1-y, 2-z), the
-            second over field values, and the third over temperatures. The last
-            two dimensions are in a form of meshgrids over theta and phi, ready
+            The resulting chi_3d_array gives magnetic susceptibility (or
+            product with temperature) in cm^3 (or * K) and is in the form
+            [coordinates, fields, temperatures, mesh, mesh] - the first
+            dimension runs over coordinates (0-x, 1-y, 2-z), the second over
+            field values, and the third over temperatures. The last two
+            dimensions are in a form of meshgrids over theta and phi, ready
             for 3D plots as xyz.
 
         Raises
@@ -1696,9 +1701,11 @@ class Compound:
         SltInputError
             If spherical_grid is not a positive integer.
         SltInputError
-            _description_
+            If the  number of points for finite difference method is not
+            a possitive integer.
         SltInputError
-            _description_
+            If the field step for the finite difference method is not
+            a possitive real number.
         SltCompError
             If autotuning a number of processes and threads is unsuccessful.
         SltCompError
@@ -1899,6 +1906,506 @@ class Compound:
                 ) from None
 
         return chit_3d_array
+
+    def calculate_hemholtz_energyth(
+        self,
+        group: str,
+        fields: ndarray,
+        grid: ndarray,
+        temperatures: ndarray,
+        states_cutoff: int,
+        number_cpu: int,
+        number_threads: int,
+        internal_energy: bool = False,
+        slt: str = None,
+        autotune: bool = False,
+        _autotune_size: int = 2,
+    ) -> ndarray[float64]:
+        """
+        Calculates powder-averaged or directional Hemholtz (or internal) energy
+        for a given list of temperature and field values.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the energy.
+        fields : ndarray
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) at which energy will be computed.
+        grid : ndarray
+            If the grid is set to an integer from 0-11 then the prescribed
+            Lebedev-Laikov grids over hemisphere will be used (see
+            grids_over_hemisphere documentation), otherwise, user can provide
+            an ArrayLike structure (can be converted to numpy.NDArray) with the
+            convention: [[direction_x, direction_y, direction_z, weight],...]
+            for powder-averaging. If one wants a calculation for a single,
+            particular direction the list has to contain one entry like this:
+            [[direction_x, direction_y, direction_z, 1.]].
+        temperatures : ndarray
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            temeperature values (K) at which energy will be computed
+        states_cutoff : int
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0
+        number_cpu : int
+            Number of logical CPUs to be assigned to perform the calculation.
+            If set to zero, all available CPUs will be used., by default 0
+        number_threads : int
+            Number of threads used in a multithreaded implementation of linear
+            algebra libraries used during the calculation. Higher values
+            benefit from the increasing size of matrices (states_cutoff) over
+            the parallelization over CPUs., by default 1
+        internal_energy : bool, optional
+            Turns on the calculation of internal energy., by default False
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with sufix: _hemholtz_energy or _internal_energy., by default
+            None
+        autotune : bool, optional
+            If True the program will automatically try to choose the best
+            number of threads (and therefore parallel processes), for the given
+            number of CPUs, to be used during the calculation. Note that this
+            process can take a significant amount of time, so start to use it
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
+            dense grids or a higher number of field values) where it becomes
+            a necessity., by default False
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting eth_array gives energy in cm-1 and is in the form
+            [temperatures, fields] - the first dimension runs over temperature
+            values, and the second over fields.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
+            If fields are not a one-diemsional array
+        SltInputError
+            If temperatures are not a one-diemsional array
+        SltCompError
+            If autotuning a number of processes and threads is unsuccessful.
+        SltCompError
+            If the calculation of energy is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+
+        See Also
+        --------
+        slothpy.lebedev_laikov_grid : For the description of the prescribed
+        Lebedev-Laikov grids
+
+        Notes
+        -----
+        Here, (number_cpu // number_threads) parallel processes are used to
+        distribute the workload over the provided field values.
+        """
+        if internal_energy:
+            group_suffix = "_internal_energy"
+            name = "internal"
+        else:
+            group_suffix = "_hemholtz_energy"
+            name = "Hemholtz"
+
+        if slt is not None:
+            slt_group_name = f"{slt}{group_suffix}"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
+        try:
+            fields = array(fields, dtype=float64)
+            temperatures = array(temperatures, dtype=float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
+
+        if fields.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
+
+        if temperatures.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of temperatures has to be a 1D array.")
+            ) from None
+
+        if isinstance(grid, int):
+            grid = _lebedev_laikov_grid(grid)
+        else:
+            grid = _normalize_grid_vectors(grid)
+
+        if autotune:
+            try:
+                number_cpu, number_threads = _auto_tune(
+                    self._hdf5,
+                    group,
+                    fields.size,
+                    states_cutoff,
+                    grid.shape[0],
+                    temperatures.size,
+                    number_cpu,
+                    _autotune_size,
+                    True,
+                )
+            except Exception as exc:
+                raise SltCompError(
+                    self._hdf5,
+                    exc,
+                    "Failed to autotune a number of processes and threads to"
+                    " the data within "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '".',
+                ) from None
+
+        try:
+            energyth_array = _hemholtz_energyth(
+                self._hdf5,
+                group,
+                fields,
+                grid,
+                temperatures,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+                internal_energy,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                f"Failed to compute {name} energy from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+
+        if slt is not None:
+            try:
+                self[
+                    slt_group_name,
+                    f"{slt}_eth",
+                    (
+                        f"Dataset containing E(T,H) {name} energy (T - rows,"
+                        f" H - columns) calculated from group: {group}."
+                    ),
+                    (
+                        f"Group({slt}) containing E(T,H) {name} energy"
+                        f" calculated from group: {group}."
+                    ),
+                ] = energyth_array[:, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    (
+                        "Dataset containing magnetic field H values used in"
+                        f" simulation of E(T,H) {name} energy from group:"
+                        f" {group}."
+                    ),
+                ] = fields[:]
+                self[
+                    slt_group_name,
+                    f"{slt}_temperatures",
+                    (
+                        "Dataset containing temperature T values used in"
+                        f" simulation of E(T,H) {name} energy from group:"
+                        f" {group}."
+                    ),
+                ] = temperatures[:]
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save {name} energy to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
+
+        return energyth_array
+
+    def calculate_hemholtz_energy_3d(
+        self,
+        group: str,
+        fields: ndarray[float64],
+        spherical_grid: int,
+        temperatures: ndarray[float64],
+        states_cutoff: int = 0,
+        number_cpu: int = 0,
+        number_threads: int = 1,
+        internal_energy: bool = False,
+        slt: str = None,
+        autotune: bool = False,
+        _autotune_size: int = 1,
+    ) -> ndarray[float64]:
+        """
+        Calculates 3D Hemholtz (or internal) energy over a spherical grid for
+        a given list of temperature and field values.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the 3D energy.
+        fields : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) at which 3D energy will be computed.
+        spherical_grid : int
+            Controls the density of the angular grid for the 3D magnetisation
+            calculation. A grid of dimension (spherical_grid*2*spherical_grid)
+            for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
+        temperatures : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            temperature values (K) at which 3D energy will be computed.
+        states_cutoff : int, optional
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0,
+        number_cpu : int, optional
+            Number of logical CPUs to be assigned to perform the calculation.
+            If set to zero, all available CPUs will be used., by default 0
+        number_threads : int, optional
+            Number of threads used in a multithreaded implementation of linear
+            algebra libraries used during the calculation. Higher values
+            benefit from the increasing size of matrices (states_cutoff) over
+            the parallelization over CPUs., by default 1
+        internal_energy : bool, optional
+            Turns on the calculation of internal energy., by default False
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with sufix: _3d_hemholtz_energy or _3d_internal_energy.,
+            by default None
+        autotune : bool, optional
+            If True the program will automatically try to choose the best
+            number of threads (and therefore parallel processes), for the given
+            number of CPUs, to be used during the calculation. Note that this
+            process can take a significant amount of time, so start to use it
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
+            dense grids or a higher number of field values) where it becomes
+            a necessity., by default False
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting energy_3d_array gives energy in cm-1
+            and is in the form [coordinates, fields, temperatures, mesh, mesh]
+            - the first dimension runs over coordinates (0-x, 1-y, 2-z), the
+            second over field values, and the third over temperatures. The last
+            two dimensions are in a form of meshgrids over theta and phi, ready
+            for 3D plots as xyz.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
+            If fields are not a one-diemsional array.
+        SltInputError
+            If temperatures are not a one-diemsional array.
+        SltInputError
+           If spherical_grid is not a positive integer.
+        SltCompError
+            If autotuning a number of processes and threads is unsuccessful.
+        SltCompError
+            If the calculation of 3D energy is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+
+        Notes
+        -----
+        Here, (number_cpu // number_threads) parallel processes are used to
+        distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
+        aware that the resulting arrays and computations can quickly consume
+        much memory (e.g. for a calculation with 100 field values 1-10 T, 300
+        temperatures 1-300 K, and spherical_grid = 60, the resulting array will
+        take 3*100*300*2*60*60*8 bytes = 5.184 GB).
+        """
+        if internal_energy:
+            group_suffix = "_3d_internal_energy"
+            name = "internal"
+        else:
+            group_suffix = "_3d_hemholtz_energy"
+            name = "Hemholtz"
+
+        if slt is not None:
+            slt_group_name = f"{slt}{group_suffix}"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+        try:
+            temperatures = array(temperatures, dtype=np.float64)
+            fields = array(fields, dtype=np.float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
+
+        if fields.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
+
+        if temperatures.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of temperatures has to be a 1D array.")
+            ) from None
+
+        if (not isinstance(spherical_grid, int)) or spherical_grid <= 0:
+            raise SltInputError(
+                ValueError("Spherical grid has to be a positive integer.")
+            ) from None
+
+        if autotune:
+            try:
+                number_cpu, number_threads = _auto_tune(
+                    self._hdf5,
+                    group,
+                    fields.size * 2 * spherical_grid**2,
+                    states_cutoff,
+                    1,  # Single grid point in the inner loop
+                    temperatures.size,
+                    number_cpu,
+                    _autotune_size,
+                    True,
+                )
+            except Exception as exc:
+                raise SltCompError(
+                    self._hdf5,
+                    exc,
+                    "Failed to autotune a number of processes and threads to"
+                    " the data within "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '".',
+                ) from None
+
+        try:
+            energy_3d_array = _hemholtz_energy_3d(
+                self._hdf5,
+                group,
+                fields,
+                spherical_grid,
+                temperatures,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+                internal_energy,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                f"Failed to compute 3D {name} energy from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+
+        if slt is not None:
+            try:
+                self[
+                    slt_group_name,
+                    f"{slt}_energy_3d",
+                    (
+                        "Dataset containing 3D {name} energy as meshgird"
+                        " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
+                        " temperature, meshgrid, meshgrid) calculated from"
+                        f" group: {group}."
+                    ),
+                    (
+                        f"Group({slt}) containing 3D {name}_energy"
+                        f" calculated from group: {group}."
+                    ),
+                ] = energy_3d_array[:, :, :, :, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    (
+                        "Dataset containing magnetic field H values used in"
+                        f" simulation of 3D {name} energy from group:"
+                        f" {group}."
+                    ),
+                ] = fields[:]
+                self[
+                    slt_group_name,
+                    f"{slt}_temperatures",
+                    (
+                        "Dataset containing temperature T values used in"
+                        f" simulation of 3D {name} energy from group:"
+                        f" {group}."
+                    ),
+                ] = temperatures[:]
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save 3D {name} energy to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
+
+        return energy_3d_array
 
     def soc_energies_cm_1(
         self, group: str, num_of_states: int = None, slt: str = None
@@ -3128,205 +3635,6 @@ class Compound:
 
         return matrix
 
-    def calculate_hemholtz_energy_3d(
-        self,
-        group: str,
-        states_cutoff: int,
-        fields: np.ndarray,
-        spherical_grid: int,
-        temperatures: np.ndarray,
-        num_cpu: int,
-        num_threads: int,
-        internal_energy: bool = False,
-        slt: str = None,
-    ):
-        temperatures = np.array(temperatures, dtype=np.float64)
-        fields = np.array(fields, dtype=np.float64)
-
-        try:
-            x, y, z = hemholtz_energy_3d(
-                self._hdf5,
-                group,
-                states_cutoff,
-                fields,
-                spherical_grid,
-                temperatures,
-                num_cpu,
-                num_threads,
-                internal_energy,
-            )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to compute 3D magnetisation"
-                f" from file: {self._hdf5} - group {group}: {error_type}:"
-                f" {error_message}"
-            )
-
-        if slt is not None:
-            try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_3d_hemholtz_energy")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing 3D hemholtz_energy"
-                        f" calculated from group: {group}."
-                    )
-                    hemholtz_energy_3d_dataset = new_group.create_dataset(
-                        f"{slt}_energy_3d",
-                        shape=(
-                            3,
-                            x.shape[0],
-                            x.shape[1],
-                            x.shape[2],
-                            x.shape[3],
-                        ),
-                        dtype=np.float64,
-                    )
-                    hemholtz_energy_3d_dataset.attrs["Description"] = (
-                        "Dataset containing 3D hemholtz_energy as meshgird"
-                        " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
-                        " temperature, meshgrid, meshgrid) calculated from"
-                        f" group: {group}."
-                    )
-                    fields_dataset = new_group.create_dataset(
-                        f"{slt}_fields",
-                        shape=(fields.shape[0],),
-                        dtype=np.float64,
-                    )
-                    fields_dataset.attrs["Description"] = (
-                        "Dataset containing magnetic field H values used in"
-                        " simulation of 3D hemholtz_energy from group:"
-                        f" {group}."
-                    )
-                    temperatures_dataset = new_group.create_dataset(
-                        f"{slt}_temperatures",
-                        shape=(temperatures.shape[0],),
-                        dtype=np.float64,
-                    )
-                    temperatures_dataset.attrs["Description"] = (
-                        "Dataset containing temperature T values used in"
-                        " simulation of 3D hemholtz_energy from group:"
-                        f" {group}."
-                    )
-
-                    hemholtz_energy_3d_dataset[0, :, :, :, :] = x[:, :, :, :]
-                    hemholtz_energy_3d_dataset[1, :, :, :, :] = y[:, :, :, :]
-                    hemholtz_energy_3d_dataset[2, :, :, :, :] = z[:, :, :, :]
-                    temperatures_dataset[:] = temperatures
-                    fields_dataset[:] = fields
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save 3D"
-                    f" hemholtz_energy to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
-
-        return x, y, z
-
-    def calculate_hemholtz_energyth(
-        self,
-        group: str,
-        states_cutoff: np.int64,
-        fields: np.ndarray,
-        grid: np.ndarray,
-        temperatures: np.ndarray,
-        num_cpu: int,
-        num_threads: int,
-        internal_energy: bool = False,
-        slt: str = None,
-    ):
-        fields = np.array(fields)
-        temperatures = np.array(temperatures)
-
-        if isinstance(grid, int):
-            grid = lebedev_laikov_grid(grid)
-        else:
-            grid = np.array(grid)
-
-        try:
-            hemholtz_energyth_array = hemholtz_energyth(
-                self._hdf5,
-                group,
-                states_cutoff,
-                fields,
-                grid,
-                temperatures,
-                num_cpu,
-                num_threads,
-                internal_energy,
-            )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to compute E(T,H) from file:"
-                f" {self._hdf5} - group {group}: {error_type}: {error_message}"
-            )
-
-        if slt is not None:
-            try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_hemholtz_energy")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing E(T,H) Hemholtz energy"
-                        f" calculated from group: {group}."
-                    )
-                    hemholtz_energyth_dataset = new_group.create_dataset(
-                        f"{slt}_eth",
-                        shape=(
-                            hemholtz_energyth_array.shape[0],
-                            hemholtz_energyth_array.shape[1],
-                        ),
-                        dtype=np.float64,
-                    )
-                    hemholtz_energyth_dataset.attrs["Description"] = (
-                        "Dataset containing E(T,H) Hemholtz energy (T - rows,"
-                        f" H - columns) calculated from group: {group}."
-                    )
-                    fields_dataset = new_group.create_dataset(
-                        f"{slt}_fields",
-                        shape=(fields.shape[0],),
-                        dtype=np.float64,
-                    )
-                    fields_dataset.attrs["Description"] = (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of E(T,H) from group: {group}."
-                    )
-                    temperatures_dataset = new_group.create_dataset(
-                        f"{slt}_temperatures",
-                        shape=(temperatures.shape[0],),
-                        dtype=np.float64,
-                    )
-                    temperatures_dataset.attrs["Description"] = (
-                        "Dataset containing temperature T values used in"
-                        f" simulation of E(T,H) from group: {group}."
-                    )
-
-                    hemholtz_energyth_dataset[:, :] = hemholtz_energyth_array[
-                        :, :
-                    ]
-                    fields_dataset[:] = fields[:]
-                    temperatures_dataset[:] = temperatures[:]
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save E(T,H) to file:"
-                    f" {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
-
-        return hemholtz_energyth_array
-
     ####Experimental plotting
     @staticmethod
     def colour_map(name):
@@ -3883,6 +4191,142 @@ class Compound:
                         "Error encountered while trying to save graph of"
                         f" chiT(H,T) or chi(H,T): {self._hdf5} - group"
                         f" {group}: {error_type}: {error_message}"
+                    )
+        if origin:
+            return data
+
+    #################
+    #################
+    #################
+    # To tutaj dodalem zeby zobaczyc wykresy
+    def plot_hemholtz_energyth(
+        self,
+        group: str,
+        internal_energy=False,
+        show=True,
+        origin=False,
+        save=False,
+        colour_map_name="rainbow",
+        xlim=(),
+        ylim=(),
+        xticks=1,
+        yticks=0,
+        field="B",
+    ):
+        """
+        Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown,
+        saved, colour palettes can be changed. If origin=True it returns data packed into a dictionary for exporting
+        to Origin.
+
+            Args:
+                group (str): name of a group in HDF5 file
+                show (bool): determines if matplotlib graph is created
+                and shown if True
+                origin (bool): determines if function should return raw data
+                save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
+                colour_map_name (str) or (list): sets colours used to create graphs, valid options are returned by
+                Compound.colour_map staticmethod
+                xlim (tuple): tuple of two or one numbers that set corresponding axe limits
+                ylim (tuple): tuple of two or one numbers that set corresponding axe limits
+                xticks (int): frequency of x major ticks
+                yticks (int): frequency of x major ticks
+                field ('B' or 'H'): chooses field type and unit: Tesla for B and kOe for H
+            Returns:
+                if origin=True:
+                    dict[origin_column (str), data (np.array)]: contains data used to create graph in origin
+        """
+        if internal_energy:
+            name = "internal"
+        else:
+            name = "hemholtz"
+        try:
+            """Getting data from hdf5 or sloth file"""
+            mth = self[f"{group}_{name}_energy", f"{group}_eth"]
+            fields = self[f"{group}_{name}_energy", f"{group}_fields"]
+            if field == "H":
+                fields *= 10
+                xticks *= 10
+            temps = self[f"{group}_{name}_energy", f"{group}_temperatures"]
+            """Creates dataset suitable to be exported to Origin"""
+            data = {"data_x": fields, "data_y": mth, "comment": temps}
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            raise Exception(
+                "Error encountered while trying to get data to create graph"
+                f" of M(H, T): {self._hdf5} - group {group}: {error_type}:"
+                f" {error_message}"
+            )
+        if show:
+            try:
+                """Plotting in matplotlib"""
+                fig, ax = plt.subplots()
+                """Defining colour maps for graphs"""
+                colour = iter(
+                    Compound.colour_map(colour_map_name)(
+                        np.linspace(0, 1, len(temps))
+                    )
+                )
+                """Creating a plot"""
+                for i, mh in enumerate(mth):
+                    c = next(colour)
+                    ax.plot(
+                        fields, mh, linewidth=2, c=c, label=f"{temps[i]} K"
+                    )
+
+                if yticks:
+                    ax.yaxis.set_major_locator(MultipleLocator(yticks))
+                ax.xaxis.set_major_locator(MultipleLocator(xticks))
+                ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+                ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+                ax.tick_params(which="major", length=7)
+                ax.tick_params(which="minor", length=3.5)
+                if field == "B":
+                    ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
+                elif field == "H":
+                    ax.set_xlabel(r"$H\ /\ \mathrm{kOe}$")
+                ax.set_ylabel(r"$M\ /\ \mathrm{\mu_{B}}$")
+                if xlim:
+                    if len(xlim) == 2:
+                        ax.set_ylim(xlim[0], xlim[1])
+                    else:
+                        ax.set_ylim(xlim[0])
+                else:
+                    if len(temps) > 17:
+                        ax.set_xlim(0)
+                        ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+
+                    else:
+                        ax.set_xlim(0, fields[-1] + 0.3 * fields[-1])
+                        ax.legend()
+                if ylim:
+                    if len(ylim) == 2:
+                        ax.set_ylim(ylim[0], ylim[1])
+                    else:
+                        ax.set_ylim(ylim[0])
+                else:
+                    ax.set_ylim(0)
+                plt.tight_layout()
+                plt.show()
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                raise Exception(
+                    "Error encountered while trying to create graph of M(H,"
+                    f" T): {self._hdf5} - group {group}: {error_type}:"
+                    f" {error_message}"
+                )
+            if save:
+                try:
+                    """Saving plot figure"""
+                    fig.savefig(f"mgh_{group}.tiff", dpi=300)
+                except Exception as e:
+                    error_type = type(e).__name__
+                    error_message = str(e)
+                    raise Exception(
+                        "Error encountered while trying to save graph of M(H,"
+                        f" T): {self._hdf5} - group {group}: {error_type}:"
+                        f" {error_message}"
                     )
         if origin:
             return data
@@ -4863,6 +5307,19 @@ class Compound:
             fields = self[f"{group}_3d_hemholtz_energy", f"{group}_fields"]
             temps = self[
                 f"{group}_3d_hemholtz_energy", f"{group}_temperatures"
+            ]
+        ##############
+        ##############
+        ##############
+        # Dodalem internal do plotow nowy
+
+        elif data_type == "internal_energy":
+            x0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][0]
+            y0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][1]
+            z0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][2]
+            fields = self[f"{group}_3d_internal_energy", f"{group}_fields"]
+            temps = self[
+                f"{group}_3d_internal_energy", f"{group}_temperatures"
             ]
 
         elif data_type == "magnetisation":

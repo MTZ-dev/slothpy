@@ -1,7 +1,7 @@
 from os import cpu_count
 from time import perf_counter
 from math import ceil
-from statistics import median, mean
+from statistics import mean
 from typing import Tuple
 from multiprocessing import Pool
 from multiprocessing.shared_memory import SharedMemory
@@ -17,6 +17,7 @@ from numpy import (
 )
 from threadpoolctl import threadpool_limits
 from slothpy.magnetism._magnetisation import _mt_over_grid
+from slothpy.magnetism.zeeman import _hemholtz_energyt_over_grid
 from slothpy.general_utilities.system import _get_num_of_processes
 from slothpy.general_utilities.io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -41,6 +42,7 @@ def _arg_iter_mth_benchmark(
     s_s,
     t_s,
     g_s,
+    energy: bool = False,
 ):
     # Iterator generator for arguments with different field values to be
     # distributed along num_process processes
@@ -55,6 +57,7 @@ def _arg_iter_mth_benchmark(
             s_s,
             t_s,
             g_s,
+            energy,
         )
 
 
@@ -68,6 +71,7 @@ def _dummy_function(
     s_s: int,
     t_s: int,
     g_s: int = 0,
+    energy: bool = False,
 ) -> ndarray:
     grid_s = SharedMemory(name=grid)
     grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
@@ -115,6 +119,7 @@ def _get_mt_exec_time(
     s_s: int,
     t_s: int,
     g_s: int = 0,
+    energy: bool = False,
 ) -> float:
     grid_s = SharedMemory(name=grid)
     grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
@@ -133,15 +138,32 @@ def _get_mt_exec_time(
     soc_energies_s = SharedMemory(name=soc_energies)
     soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
 
-    start_time = perf_counter()
+    if energy:
+        start_time = perf_counter()
 
-    mt = _mt_over_grid(
-        magnetic_momenta_a, soc_energies_a, field, grid_a, temperatures_a
-    )
+        mt = _hemholtz_energyt_over_grid(
+            magnetic_momenta_a,
+            soc_energies_a,
+            field,
+            grid_a,
+            temperatures_a,
+            False,
+        )
 
-    mt = array(mt)
+        mt = array(mt)
 
-    end_time = perf_counter()
+        end_time = perf_counter()
+
+    else:
+        start_time = perf_counter()
+
+        mt = _mt_over_grid(
+            magnetic_momenta_a, soc_energies_a, field, grid_a, temperatures_a
+        )
+
+        mt = array(mt)
+
+        end_time = perf_counter()
 
     return end_time - start_time
 
@@ -250,6 +272,7 @@ def _mth_benchmark(
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
+    energy: bool = False,
 ) -> float64:
     # Read data from HDF5 file
     (
@@ -320,6 +343,7 @@ def _mth_benchmark(
                             soc_energies_shared_arr.shape,
                             temperatures_shared_arr.shape,
                             grid_shared_arr.shape,
+                            energy,
                         ),
                     )
 
@@ -340,6 +364,7 @@ def _auto_tune(
     internal_task_size: int,
     num_cpu: int = 0,
     internal_loop_samples: int = 1,
+    energy: bool = False,
 ) -> Tuple[int, int]:
     temperatures = linspace(1, 600, internal_task_size, dtype=float64)
     grid = ones(
@@ -375,6 +400,7 @@ def _auto_tune(
                 matrix_size,
                 num_cpu,
                 num_threads,
+                energy,
             )
 
             load_time = _mth_load(

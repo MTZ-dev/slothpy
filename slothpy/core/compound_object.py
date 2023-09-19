@@ -24,8 +24,8 @@ from slothpy.magnetism._g_tensor import _g_tensor_and_axes_doublet
 from slothpy.magnetism._magnetisation import _mth, _mag_3d
 from slothpy.magnetism._susceptibility import _chitht, _chitht_tensor, _chit_3d
 from slothpy.magnetism.zeeman import (
-    zeeman_splitting,
-    get_zeeman_matrix,
+    _zeeman_splitting,
+    _get_zeeman_matrix,
     _hemholtz_energyth,
     _hemholtz_energy_3d,
 )
@@ -578,7 +578,8 @@ class Compound:
             convention: [[direction_x, direction_y, direction_z, weight],...]
             for powder-averaging. If one wants a calculation for a single,
             particular direction the list has to contain one entry like this:
-            [[direction_x, direction_y, direction_z, 1.]].
+            [[direction_x, direction_y, direction_z, 1.]]. Custom grids will be
+            automatically normalized.
         temperatures : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temeperature values (K) at which magnetisation will be computed.
@@ -1089,7 +1090,8 @@ class Compound:
             single, particular direction the list has to contain one entry like
             this: [[direction_x, direction_y, direction_z, 1.]]. If not given
             the average is taken over xyz directions, which is sufficient for a
-            second rank tensor., by default None
+            second rank tensor. Custom grids will be automatically normalized.,
+            by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
             file with sufix: _susceptibility., by default None
@@ -1600,8 +1602,8 @@ class Compound:
     def calculate_chit_3d(
         self,
         group: str,
-        temperatures: ndarray,
-        fields: ndarray,
+        temperatures: ndarray[float64],
+        fields: ndarray[float64],
         spherical_grid: int,
         number_of_points: int,
         delta_h: float = 0.0001,
@@ -1624,11 +1626,11 @@ class Compound:
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the 3D magnetic
             susceptibility.
-        temperatures : ndarray
+        temperatures : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temperature values (K) at which 3D magnetic susceptibility will be
             computed.
-        fields : ndarray
+        fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which 3D magnetic susceptibility will be computed.
         spherical_grid : int
@@ -1910,9 +1912,9 @@ class Compound:
     def calculate_hemholtz_energyth(
         self,
         group: str,
-        fields: ndarray,
-        grid: ndarray,
-        temperatures: ndarray,
+        fields: ndarray[float64],
+        grid: ndarray[float64],
+        temperatures: ndarray[float64],
         states_cutoff: int,
         number_cpu: int,
         number_threads: int,
@@ -1930,10 +1932,10 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the energy.
-        fields : ndarray
+        fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which energy will be computed.
-        grid : ndarray
+        grid : ndarray[float64]
             If the grid is set to an integer from 0-11 then the prescribed
             Lebedev-Laikov grids over hemisphere will be used (see
             grids_over_hemisphere documentation), otherwise, user can provide
@@ -1941,8 +1943,9 @@ class Compound:
             convention: [[direction_x, direction_y, direction_z, weight],...]
             for powder-averaging. If one wants a calculation for a single,
             particular direction the list has to contain one entry like this:
-            [[direction_x, direction_y, direction_z, 1.]].
-        temperatures : ndarray
+            [[direction_x, direction_y, direction_z, 1.]]. Custom grids will be
+            automatically normalized.
+        temperatures : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temeperature values (K) at which energy will be computed
         states_cutoff : int
@@ -2407,6 +2410,346 @@ class Compound:
 
         return energy_3d_array
 
+    def calculate_zeeman_splitting(
+        self,
+        group: str,
+        number_of_states: int,
+        fields: ndarray[np.float64],
+        grid: ndarray[np.float64],
+        states_cutoff: int = 0,
+        number_cpu: int = 0,
+        number_threads: int = 1,
+        average: bool = False,
+        slt: str = None,
+        autotune: bool = False,
+        _autotune_size: int = 1,
+    ) -> ndarray[np.float64]:
+        """
+        Calculates directional or powder-averaged Zeeman splitting for a given
+        number of states and list of field values.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the Zeeman splitting.
+        number_of_states : int
+            Number of states whose energy splitting will be given in the
+            result array.
+        fields : ndarray[np.float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) at which Zeeman splitting will be computed.
+        grid : ndarray[np.float64]
+            If the grid is set to an integer from 0-11 then the prescribed
+            Lebedev-Laikov grids over hemisphere will be used (see
+            grids_over_hemisphere documentation) and powder-averaging will be
+            turned on, otherwise, user can provide an ArrayLike structure (can
+            be converted to numpy.NDArray) with the convention: [[direction_x,
+            direction_y, direction_z, weight],...] with average = True for
+            powder-averaging. If one wants a calculation for a list of
+            particular directions the list has to follow the above format with
+            arbitrary weights, which will not be taken into account. Custom
+            grids will be automatically normalized.
+        states_cutoff : int, optional
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0
+        number_cpu : int, optional
+            Number of logical CPUs to be assigned to perform the calculation.
+            If set to zero, all available CPUs will be used., by default 0
+        number_threads : int, optional
+            Number of threads used in a multithreaded implementation of linear
+            algebra libraries used during the calculation. Higher values
+            benefit from the increasing size of matrices (states_cutoff) over
+            the parallelization over CPUs., by default 1
+        average : bool, optional
+            Turns on powder-averaging using a list of directions and weights in
+            the form of ArrayLike structure: [[direction_x, direction_y,
+            direction_z, weight],...].
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with sufix: _zeeman_splitting., by default None
+        autotune : bool, optional
+            If True the program will automatically try to choose the best
+            number of threads (and therefore parallel processes), for the given
+            number of CPUs, to be used during the calculation. Note that this
+            process can take a significant amount of time, so start to use it
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
+            dense grids or a higher number of field values) where it becomes
+            a necessity., by default Falsee
+
+        Returns
+        -------
+        ndarray[np.float64]
+            The resulting array gives Zeeman splitting of number_of_states
+            energy levels in cm-1 for each direction (or average) in the form
+            [orientations, fields, energies] - the first dimension
+            runs over different orientations, the second over field values, and
+            the last gives energy of number_of_states states.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
+            If fields are not a one-diemsional array.
+        SltInputError
+            If number of states is not an integer less or equal to the states
+            cutoff.
+        SltCompError
+            If autotuning a number of processes and threads is unsuccessful.
+        SltCompError
+            If the calculation of Zeeman splitting is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+
+        See Also
+        --------
+        slothpy.lebedev_laikov_grid : For the description of the prescribed
+        Lebedev-Laikov grids
+
+        Notes
+        -----
+        Here, (number_cpu // number_threads) parallel processes are used to
+        distribute the workload over the provided field values.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_zeeman_splitting"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
+        try:
+            fields = array(fields, dtype=np.float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
+
+        if fields.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
+
+        if (
+            not isinstance(number_of_states, int)
+            or number_of_states > states_cutoff
+        ):
+            raise SltInputError(
+                ValueError(
+                    "The number of states has to be an integer less or equal"
+                    " to the states cutoff."
+                )
+            ) from None
+
+        if isinstance(grid, int):
+            grid = _lebedev_laikov_grid(grid)
+            average = True
+        else:
+            grid = _normalize_grid_vectors(grid)
+
+        if autotune:
+            try:
+                number_cpu, number_threads = _auto_tune(
+                    self._hdf5,
+                    group,
+                    fields.size,
+                    states_cutoff,
+                    grid.shape[0],
+                    1,
+                    number_cpu,
+                    _autotune_size,
+                    True,
+                )
+            except Exception as exc:
+                raise SltCompError(
+                    self._hdf5,
+                    exc,
+                    "Failed to autotune a number of processes and threads to"
+                    " the data within "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '".',
+                ) from None
+
+        try:
+            zeeman_array = _zeeman_splitting(
+                self._hdf5,
+                group,
+                number_of_states,
+                fields,
+                grid,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+                average,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute Zeeman splitting from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+
+        if average:
+            name = "average "
+        else:
+            name = ""
+
+        if slt is not None:
+            try:
+                self[
+                    slt_group_name,
+                    f"{slt}_zeeman",
+                    (
+                        f"Dataset containing {name}Zeeman splitting averaged"
+                        " over grid of directions with shape: (field,"
+                        f" energy) calculated from group: {group}."
+                    ),
+                    (
+                        f"Group({slt}) containing {name}Zeeman splitting"
+                        f" calculated from group: {group}."
+                    ),
+                ] = zeeman_array[:, :, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    (
+                        "Dataset containing magnetic field H values used in"
+                        f" simulation of {name}Zeeman splitting from group:"
+                        f" {group}."
+                    ),
+                ] = fields[:]
+                if average:
+                    self[
+                        slt_group_name,
+                        f"{slt}_orientations",
+                        (
+                            "Dataset containing magnetic field orientation"
+                            " grid with weights used in simulation of"
+                            f" {name}Zeeman splitting from group: {group}."
+                        ),
+                    ] = grid[:, :]
+                else:
+                    self[
+                        slt_group_name,
+                        f"{slt}_orientations",
+                        (
+                            "Dataset containing magnetic field orientations"
+                            " used in simulation of"
+                            f" {name}Zeeman splitting from group: {group}."
+                        ),
+                    ] = grid[:, :3]
+
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save Zeeman splitting to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
+
+        return zeeman_array
+
+    def zeeman_matrix(
+        self, group: str, states_cutoff, field, orientation, slt: str = None
+    ):
+        if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
+            raise ValueError(
+                "Invalid states cutoff, set it to positive integer or 0 for"
+                " all states."
+            )
+
+        try:
+            zeeman_matrix_array = _get_zeeman_matrix(
+                self._hdf5, group, states_cutoff, field, orientation
+            )
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            raise Exception(
+                "Error encountered while trying to get Zeeman matrix from"
+                f" file: {self._hdf5} - group {group}: {error_type}:"
+                f" {error_message}"
+            )
+
+        if slt is not None:
+            try:
+                with h5py.File(self._hdf5, "r+") as file:
+                    new_group = file.create_group(f"{slt}_zeeman_matrix")
+                    new_group.attrs["Description"] = (
+                        f"Group({slt}) containing Zeeman matrix calculated"
+                        f" from group: {group}."
+                    )
+                    zeeman_matrix_dataset = new_group.create_dataset(
+                        f"{slt}_zeeman_matrix",
+                        shape=zeeman_matrix_array.shape,
+                        dtype=np.complex128,
+                    )
+                    zeeman_matrix_dataset.attrs["Description"] = (
+                        "Dataset containing Zeeman matrix calculated from"
+                        f" group: {group}."
+                    )
+                    states_dataset = new_group.create_dataset(
+                        f"{slt}_states",
+                        shape=(zeeman_matrix_array.shape[1],),
+                        dtype=np.int64,
+                    )
+                    states_dataset.attrs["Description"] = (
+                        "Dataset containing states indexes of Zeeman matrix"
+                        f" from group: {group}."
+                    )
+
+                    zeeman_matrix_dataset[:] = zeeman_matrix_array[:]
+                    states_dataset[:] = np.arange(
+                        zeeman_matrix_array.shape[1], dtype=np.int64
+                    )
+
+                self._get_hdf5_groups_datasets_and_attributes()
+
+            except Exception as e:
+                error_type = type(e).__name__
+                error_message = str(e)
+                raise Exception(
+                    "Error encountered while trying to save Zeeman matrix to"
+                    f" file: {self._hdf5} - group {slt}: {error_type}:"
+                    f" {error_message}"
+                )
+
+        return zeeman_matrix_array
+
     def soc_energies_cm_1(
         self, group: str, num_of_states: int = None, slt: str = None
     ) -> np.ndarray[np.float64]:
@@ -2614,147 +2957,6 @@ class Compound:
                 )
 
         return total_angular_momenta_array
-
-    def calculate_zeeman_splitting(
-        self,
-        group: str,
-        states_cutoff: int,
-        num_of_states: int,
-        fields: np.ndarray[np.float64],
-        grid: np.ndarray[np.float64],
-        num_cpu: int,
-        num_threads: int,
-        average: bool = False,
-        slt: str = None,
-    ) -> np.ndarray[np.float64]:
-        """Calculates directional or powder-averaged Zeeman splitting for a given number of states and list of field values.
-
-        Args:
-            group (str): Name of a group containing results of relativistic ab initio calculations used for the computation Zeeman splitting.
-            states_cutoff (int): Number of states that will be taken into account for construction of Zeeman Hamiltonian.
-            num_of_states (int): Number of states whose energy splitting will be given in result array.
-            fields (np.ndarray[np.float64]): ArrayLike structure (can be converted to numpy.NDArray) of field values (T) at which Zeeman splitting will be computed.
-            grid (np.ndarray[np.float64]): ArrayLike (can be converted to numpy.NDArray) list of directions in the form: [[direction_x, direction_y, direction_z], ...] for which Zeeman splitting will
-                be calculated. If the grid is set to integer from 0-11 then the prescribed Lebedev-Laikov grids over hemisphere will be used
-                (see grids_over_hemisphere documentation) for powder-averaging of energy splitting.
-            num_cpu (int): Number of physical CPUs to be assigned to perform calculation.
-            num_threads (int): Number of threads used in multithreaded implementation of the linear algebra libraries used during calculation. Values higher than 2 benefit
-                with the increasing size of matrices (states_cutoff) over the MPI parallelization over field values.
-            average (bool, optional): Switch on powder-averaging using list of directions and weights in the form of ArrayLike structure: [[direction_x, direction_y, direction_z, weight],...]. Defaults to False.
-            slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _zeeman. Defaults to None.
-
-        Raises:
-            Exception: If the calculation of Zeeman splitting is unsuccessful.
-            Exception: If the program is unable to correctly save the results to .slt file.
-
-        Returns:
-            np.ndarray[np.float64]: The resulting array gives Zeeman splitting of (num_of_states) energy levels in cm^(-1) for each direction (or average) in the form (orientations, fields, energies) - the first dimension
-              runs over different orientations, the second over field values.
-        """
-
-        fields = np.array(fields)
-
-        if isinstance(grid, int):
-            grid = lebedev_laikov_grid(grid)
-            average = True
-        else:
-            grid = normalize_grid_vectors(grid)
-
-        try:
-            zeeman_array = zeeman_splitting(
-                self._hdf5,
-                group,
-                states_cutoff,
-                num_of_states,
-                fields,
-                grid,
-                num_cpu,
-                num_threads,
-                average,
-            )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to compute Zeeman splitting"
-                f" from file: {self._hdf5} - group {group}: {error_type}:"
-                f" {error_message}"
-            )
-
-        if slt is not None:
-            try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_zeeman_splitting")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing Zeeman splitting calculated"
-                        f" from group: {group}."
-                    )
-                    zeeman_splitting_dataset = new_group.create_dataset(
-                        f"{slt}_zeeman",
-                        shape=zeeman_array.shape,
-                        dtype=np.float64,
-                    )
-                    if average:
-                        zeeman_splitting_dataset.attrs["Description"] = (
-                            "Dataset containing Zeeman splitting averaged"
-                            " over grid of directions with shape: (field,"
-                            f" energy) calculated from group: {group}."
-                        )
-                    else:
-                        zeeman_splitting_dataset.attrs["Description"] = (
-                            "Dataset containing Zeeman splitting with shape:"
-                            " (orientation, field, energy) calculated from"
-                            f" group: {group}."
-                        )
-                    fields_dataset = new_group.create_dataset(
-                        f"{slt}_fields",
-                        shape=(fields.shape[0],),
-                        dtype=np.float64,
-                    )
-                    fields_dataset.attrs["Description"] = (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of Zeeman splitting from group: {group}."
-                    )
-                    if average:
-                        orientations_dataset = new_group.create_dataset(
-                            f"{slt}_orientations",
-                            shape=(grid.shape[0], grid.shape[1]),
-                            dtype=np.float64,
-                        )
-                        orientations_dataset.attrs["Description"] = (
-                            "Dataset containing magnetic field orientation"
-                            " grid with weights used in simulation of"
-                            f" averaged Zeeman splitting from group: {group}."
-                        )
-                        orientations_dataset[:] = grid[:]
-                    else:
-                        orientations_dataset = new_group.create_dataset(
-                            f"{slt}_orientations",
-                            shape=(grid.shape[0], 3),
-                            dtype=np.float64,
-                        )
-                        orientations_dataset.attrs["Description"] = (
-                            "Dataset containing orientations of magnetic"
-                            " field used in simulation of Zeeman splitting"
-                            f" from group: {group}."
-                        )
-                        orientations_dataset[:] = grid[:, :3]
-
-                    zeeman_splitting_dataset[:, :] = zeeman_array[:, :]
-                    fields_dataset[:] = fields[:]
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save Zeeman splitting"
-                    f" to file: {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
-
-        return zeeman_array
 
     def total_angular_momenta_matrix(
         self,
@@ -3323,73 +3525,6 @@ class Compound:
                 )
 
         return cfp_return
-
-    def zeeman_matrix(
-        self, group: str, states_cutoff, field, orientation, slt: str = None
-    ):
-        if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
-            raise ValueError(
-                "Invalid states cutoff, set it to positive integer or 0 for"
-                " all states."
-            )
-
-        try:
-            zeeman_matrix_array = get_zeeman_matrix(
-                self._hdf5, group, states_cutoff, field, orientation
-            )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get Zeeman matrix from"
-                f" file: {self._hdf5} - group {group}: {error_type}:"
-                f" {error_message}"
-            )
-
-        if slt is not None:
-            try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_zeeman_matrix")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing Zeeman matrix calculated"
-                        f" from group: {group}."
-                    )
-                    zeeman_matrix_dataset = new_group.create_dataset(
-                        f"{slt}_zeeman_matrix",
-                        shape=zeeman_matrix_array.shape,
-                        dtype=np.complex128,
-                    )
-                    zeeman_matrix_dataset.attrs["Description"] = (
-                        "Dataset containing Zeeman matrix calculated from"
-                        f" group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_states",
-                        shape=(zeeman_matrix_array.shape[1],),
-                        dtype=np.int64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing states indexes of Zeeman matrix"
-                        f" from group: {group}."
-                    )
-
-                    zeeman_matrix_dataset[:] = zeeman_matrix_array[:]
-                    states_dataset[:] = np.arange(
-                        zeeman_matrix_array.shape[1], dtype=np.int64
-                    )
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save Zeeman matrix to"
-                    f" file: {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
-
-        return zeeman_matrix_array
 
     def matrix_from_ito(
         self,
@@ -4385,7 +4520,7 @@ class Compound:
             for i, orientation in enumerate(orientations):
                 data = {
                     f"data_x{i}": fields,
-                    "data_y": mth,
+                    "data_y": zeeman,
                     f"comment{i}": orientation,
                 }
         except Exception as e:
@@ -4466,10 +4601,17 @@ class Compound:
                             multiple_plots.tick_params(
                                 which="minor", left=False, length=3.5
                             )
-                            plt.title(
-                                "Orientation"
-                                f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
-                            )
+                            ################
+                            ################
+                            ################
+                            # Zmienilem zeby wyswietlalo usrednione
+                            if orientations.shape[1] != 3:
+                                plt.title("Averaged Splitting")
+                            else:
+                                plt.title(
+                                    "Orientation"
+                                    f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
+                                )
                             if xlim:
                                 if len(xlim) == 2:
                                     multiple_plots.set_xlim(xlim[0], xlim[1])
@@ -4514,10 +4656,13 @@ class Compound:
                                 multiple_plots.yaxis.set_minor_locator(
                                     AutoMinorLocator(2)
                                 )
-                                plt.title(
-                                    "Orientation"
-                                    f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
-                                )
+                                if orientations.shape[1] != 3:
+                                    plt.title("Averaged Splitting")
+                                else:
+                                    plt.title(
+                                        "Orientation"
+                                        f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
+                                    )
                                 if xlim:
                                     if len(xlim) == 2:
                                         multiple_plots.set_xlim(
@@ -4564,10 +4709,13 @@ class Compound:
                                 multiple_plots.yaxis.set_minor_locator(
                                     AutoMinorLocator(2)
                                 )
-                                plt.title(
-                                    "Orientation"
-                                    f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
-                                )
+                                if orientations.shape[1] == 3:
+                                    plt.title("Averaged Splitting")
+                                else:
+                                    plt.title(
+                                        "Orientation"
+                                        f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
+                                    )
                                 if xlim:
                                     if len(xlim) == 2:
                                         multiple_plots.set_xlim(
@@ -4601,7 +4749,13 @@ class Compound:
                         )
                         fig, ax = plt.subplots()
                         ax.plot(fields, zee, linewidth=0.75)
-                        plt.title(f"Orientation {orientations[i]}")
+                        if orientations.shape[1] != 3:
+                            plt.title("Averaged Splitting")
+                        else:
+                            plt.title(
+                                "Orientation"
+                                f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
+                            )
                         if field == "B":
                             ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
                         elif field == "H":

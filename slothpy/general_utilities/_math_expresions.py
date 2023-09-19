@@ -140,7 +140,6 @@ def decomposition_of_hermitian_matrix(matrix):
 
 def _normalize_grid_vectors(grid):
     grid = array(grid, dtype=float64)
-    print(grid.ndim)
 
     if grid.ndim != 2 or grid.shape[1] != 4:
         raise SltInputError(
@@ -151,11 +150,16 @@ def _normalize_grid_vectors(grid):
         )
 
     for vector_index in range(grid.shape[0]):
-        grid[vector_index][:3] = grid[vector_index][:3] / sqrt(
+        length = sqrt(
             grid[vector_index][0] ** 2
             + grid[vector_index][1] ** 2
             + grid[vector_index][2] ** 2
         )
+        if length == 0:
+            raise SltInputError(
+                ValueError("Vector of length zero detected in the input grid.")
+            )
+        grid[vector_index][:3] = grid[vector_index][:3] / length
 
     return grid
 

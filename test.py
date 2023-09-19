@@ -58,14 +58,14 @@ if __name__ == "__main__":
     # print(temperatures)
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
-    CeCoN3 = slt.compound_from_molcas(
-        ".", "hensell", "bas3", ".", "DyCo_DG_bas3"
-    )
+    # CeCoN3 = slt.compound_from_molcas(
+    #     ".", "hensell", "bas3", ".", "DyCo_DG_bas3"
+    # )
     CeCoN3 = slt.compound_from_slt(".", "hensell")
 
     # CeCoN3.delete_group_dataset("dupaadaaaaaas")
-    nazwa = "12"
-    fields = linspace(0.01, 10, 100, dtype=float64)
+    nazwa = "1243445r6"
+    fields = linspace(0.01, 10, 300, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
@@ -99,17 +99,33 @@ if __name__ == "__main__":
     #     autotune=True,
     # )
 
-    CeCoN3.calculate_hemholtz_energy_3d(
+    # CeCoN3.calculate_hemholtz_energy_3d(
+    #     "bas3",
+    #     fields,
+    #     40,
+    #     temperatures,
+    #     64,
+    #     128,
+    #     3,
+    #     slt=nazwa,
+    #     internal_energy=True,
+    #     autotune=True,
+    # )
+
+    CeCoN3.calculate_zeeman_splitting(
         "bas3",
+        8,
         fields,
-        40,
-        temperatures,
-        64,
+        [
+            [1, 1, 1, 0],
+            [1, 0, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 1, 1],
+        ],
+        898,
         128,
-        3,
+        1,
         slt=nazwa,
-        internal_energy=True,
-        autotune=True,
     )
 
     # mth = CeCoN3.calculate_mth(
@@ -167,7 +183,8 @@ if __name__ == "__main__":
     # CeCoN3.plot_hemholtz_energyth(nazwa)
     # print(chitensor)
     # print(b)
-    CeCoN3.interactive_plot_3d(nazwa, "internal_energy")
+    CeCoN3.plot_zeeman(nazwa)
+    # CeCoN3.interactive_plot_3d(nazwa, "internal_energy")
     # CeCoN3.interactive_plot_3d(nazwa, "chit")
     # CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
 

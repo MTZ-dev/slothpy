@@ -1,11 +1,11 @@
 """Module for storing custom exception clasess with error reporting modes."""
 
 from slothpy.general_utilities._constants import RED, GREEN, YELLOW, RESET
-from slothpy.general_utilities.system import set_plain_error_reporting_mode
+from slothpy.general_utilities._system import set_plain_error_reporting_mode
 
 # The default is chosen to omit the tracebacks  completely. To change it use
 # slt.set_default_error_reporting_mode method for the printing of tracebacks.
-# set_plain_error_reporting_mode()
+set_plain_error_reporting_mode()
 
 
 class SltFileError(Exception):

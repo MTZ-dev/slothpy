@@ -1,8 +1,6 @@
 import sys
-import os
-import IPython
-
-# os.cpu_count()!!! make it default with thread = 1 across whole slothpy
+from os import cpu_count
+from IPython import get_ipython
 
 
 def _get_num_of_processes(num_cpu, num_threads):
@@ -16,7 +14,7 @@ def _get_num_of_processes(num_cpu, num_threads):
             "Numbers of CPUs and Threads have to be positive integers."
         )
 
-    total_num_of_cpu = int(os.cpu_count())
+    total_num_of_cpu = int(cpu_count())
 
     if num_cpu == 0:
         num_cpu = total_num_of_cpu
@@ -55,14 +53,14 @@ def _is_notebook():
 # for system and Jupyter Notebook. Edit it for debugging.
 def set_plain_error_reporting_mode():
     if _is_notebook():
-        IPython.get_ipython().run_line_magic("xmode", "Plain")
+        get_ipython().run_line_magic("xmode", "Plain")
     else:
         sys.tracebacklimit = 0
 
 
 def set_default_error_reporting_mode():
     if _is_notebook():
-        IPython.get_ipython().run_line_magic("xmode", "Context")
+        get_ipython().run_line_magic("xmode", "Context")
     else:
         sys.tracebacklimit = None
 

@@ -22,7 +22,7 @@ from numpy import (
 from numpy.linalg import eigvalsh
 from numba import jit
 from slothpy.general_utilities._constants import KB, MU_B, H_CM_1
-from slothpy.general_utilities.system import _get_num_of_processes
+from slothpy.general_utilities._system import _get_num_of_processes
 from slothpy.general_utilities.io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )

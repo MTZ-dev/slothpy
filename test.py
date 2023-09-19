@@ -3,7 +3,6 @@ from time import perf_counter
 # os.environ['OMP_NUM_THREADS'] = '2'
 import slothpy as slt
 from numpy import linspace, float64
-import matplotlib.pyplot as plt
 
 # from slothpy.general_utilities._math_expresions import normalize_grid_vectors
 
@@ -125,7 +124,7 @@ if __name__ == "__main__":
         898,
         128,
         1,
-        slt=nazwa,
+        slt=111111111,
     )
 
     # mth = CeCoN3.calculate_mth(

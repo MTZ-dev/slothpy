@@ -1,9 +1,9 @@
-import numpy as np
+from numpy import ndarray, array
 
 
-def _lebedev_laikov_grid(grid: int) -> np.ndarray:
+def _lebedev_laikov_grid(grid: int) -> ndarray:
     if grid == 0:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.047619047619],
                 [-1.0, 0.0, 0.0, 0.047619047619],
@@ -32,7 +32,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 1:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.012698412698],
                 [-1.0, 0.0, 0.0, 0.012698412698],
@@ -128,7 +128,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 2:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.005544842902],
                 [-1.0, 0.0, 0.0, 0.005544842902],
@@ -533,7 +533,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 3:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.000854591173],
                 [-1.0, 0.0, 0.0, 0.000854591173],
@@ -1301,7 +1301,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 4:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.003006796749],
                 [-1.0, 0.0, 0.0, 0.003006796749],
@@ -2203,7 +2203,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 5:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.000526589797],
                 [-1.0, 0.0, 0.0, 0.000526589797],
@@ -3344,7 +3344,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 6:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.00030951213],
                 [-1.0, 0.0, 0.0, 0.00030951213],
@@ -4910,7 +4910,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 7:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.000219294209],
                 [-1.0, 0.0, 0.0, 0.000219294209],
@@ -6973,7 +6973,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 8:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 0.000143829419],
                 [-1.0, 0.0, 0.0, 0.000143829419],
@@ -9575,7 +9575,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 9:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 6.3090494e-05],
                 [-1.0, 0.0, 0.0, 6.3090494e-05],
@@ -14196,7 +14196,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 10:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 2.9986751e-05],
                 [-1.0, 0.0, 0.0, 2.9986751e-05],
@@ -21679,7 +21679,7 @@ def _lebedev_laikov_grid(grid: int) -> np.ndarray:
         return grid_array
 
     if grid == 11:
-        grid_array = np.array(
+        grid_array = array(
             [
                 [1.0, 0.0, 0.0, 9.735348e-06],
                 [-1.0, 0.0, 0.0, 9.735348e-06],

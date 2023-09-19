@@ -1,5 +1,21 @@
-import numpy as np
-import math
+from math import factorial
+from numpy.linalg import eigh
+from numpy import (
+    ndarray,
+    zeros,
+    zeros_like,
+    ascontiguousarray,
+    diag,
+    real,
+    imag,
+    trace,
+    abs,
+    sqrt,
+    int32,
+    int64,
+    float64,
+    complex128,
+)
 from slothpy.general_utilities.io import (
     get_soc_magnetic_momenta_and_energies_from_hdf5,
     get_soc_total_angular_momenta_and_energies_from_hdf5,
@@ -9,7 +25,7 @@ from slothpy.general_utilities._math_expresions import (
     decomposition_of_hermitian_matrix,
     Wigner_3j,
 )
-from slothpy.magnetism.zeeman import _calculate_zeeman_matrix
+from slothpy.magnetism._zeeman import _calculate_zeeman_matrix
 
 # from sympy.physics.quantum.cg import (CG, Wigner3j)
 
@@ -24,25 +40,25 @@ def set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
     Jz = real, diag"""
 
     # Transform momenta to "z" basis
-    _, eigenvectors = np.linalg.eigh(momenta_matrix[2, :, :])
+    _, eigenvectors = eigh(momenta_matrix[2, :, :])
     for i in range(3):
         momenta_matrix[i, :, :] = (
             eigenvectors.conj().T @ momenta_matrix[i, :, :] @ eigenvectors
         )
 
     # Initialize phases of vectors with the first one = 1
-    c = np.zeros(momenta_matrix.shape[1], dtype=np.complex128)
+    c = zeros(momenta_matrix.shape[1], dtype=complex128)
     c[0] = 1.0
 
     # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
     for i in range(momenta_matrix[0, :, :].shape[0] - 1):
         if (
-            np.real(momenta_matrix[0, i, i + 1]).any() > 1e-12
-            or np.abs(np.imag(momenta_matrix[1, i, i + 1])).any() > 1e-12
+            real(momenta_matrix[0, i, i + 1]).any() > 1e-12
+            or abs(imag(momenta_matrix[1, i, i + 1])).any() > 1e-12
         ):
             c[i + 1] = (
                 momenta_matrix[0, i, i + 1].conj()
-                / np.abs(momenta_matrix[0, i, i + 1])
+                / abs(momenta_matrix[0, i, i + 1])
                 / c[i].conj()
             )
         else:
@@ -52,7 +68,7 @@ def set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
         if momenta_matrix[0, i, i + 1] * c[i].conj() * c[i + 1] > 0:
             c[i + 1] = -c[i + 1]
 
-    matrix_out = np.zeros_like(matrix)
+    matrix_out = zeros_like(matrix)
 
     for i in range(matrix_out.shape[0]):
         for j in range(matrix_out.shape[0]):
@@ -72,7 +88,7 @@ def get_soc_matrix_in_z_magnetic_momentum_basis(
     )
     magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
-    soc_matrix = np.diag(soc_energies).astype(np.complex128)
+    soc_matrix = diag(soc_energies).astype(complex128)
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(
         soc_matrix, magnetic_momenta[2, :, :]
     )
@@ -96,7 +112,7 @@ def get_soc_matrix_in_z_total_angular_momentum_basis(
         :, start_state:, start_state:
     ]
     soc_energies = soc_energies[start_state:]
-    soc_matrix = np.diag(soc_energies).astype(np.complex128)
+    soc_matrix = diag(soc_energies).astype(complex128)
     soc_matrix = hermitian_x_in_basis_of_hermitian_y(
         soc_matrix, total_angular_momenta[2, :, :]
     )
@@ -186,9 +202,9 @@ def get_decomposition_in_z_total_angular_momentum_basis(
 
 # @jit('float64[:,:](float64, float64, float64)', nopython=True, cache=True, nogil=True)
 def ito_matrix(J, k, q):
-    dim = np.int64(2 * J + 1)
+    dim = int64(2 * J + 1)
 
-    matrix = np.zeros((dim, dim), dtype=np.float64)
+    matrix = zeros((dim, dim), dtype=float64)
 
     for i in range(dim):
         mj1 = i - J
@@ -196,14 +212,14 @@ def ito_matrix(J, k, q):
             mj2 = p - J
             matrix[i, p] = (-1) ** (J - mj1) * Wigner_3j(J, k, J, -mj1, q, mj2)
 
-    coeff = np.float64(1.0)
+    coeff = float64(1.0)
 
     for i in range(int(-k), int(k + 1)):
         coeff *= 2 * J + 1 + i
 
-    coeff /= math.factorial(2 * k)
-    coeff = np.sqrt(coeff)
-    coeff *= ((-1) ** k) * math.factorial(k)
+    coeff /= factorial(2 * k)
+    coeff = sqrt(coeff)
+    coeff *= ((-1) ** k) * factorial(k)
 
     # you can implement conventions from the article here
     N_k_k = ((-1) ** k) / (2 ** (k / 2))
@@ -211,23 +227,23 @@ def ito_matrix(J, k, q):
     return matrix * N_k_k * coeff
 
 
-def calculate_b_k_q(matrix: np.ndarray, k: np.int32, q: np.int32):
+def calculate_b_k_q(matrix: ndarray, k: int32, q: int32):
     J = (matrix.shape[0] - 1) / 2
 
-    matrix = np.ascontiguousarray(matrix)
+    matrix = ascontiguousarray(matrix)
     ITO_plus = ito_matrix(J, k, q)
-    ITO_plus = np.ascontiguousarray(ITO_plus).astype(np.complex128)
+    ITO_plus = ascontiguousarray(ITO_plus).astype(np.complex128)
     ITO_minus = ito_matrix(J, k, -q)
-    ITO_minus = np.ascontiguousarray(ITO_minus).astype(np.complex128)
+    ITO_minus = ascontiguousarray(ITO_minus).astype(np.complex128)
 
-    numerator = np.trace(matrix @ ITO_minus)
-    denominator = np.trace(ITO_plus @ ITO_minus)
+    numerator = trace(matrix @ ITO_minus)
+    denominator = trace(ITO_plus @ ITO_minus)
 
     return numerator / denominator
 
 
 def ito_complex_decomp_matrix(
-    matrix: np.ndarray, order: int, even_order: bool = False
+    matrix: ndarray, order: int, even_order: bool = False
 ):
     step = 1
 
@@ -245,9 +261,9 @@ def ito_complex_decomp_matrix(
 
 
 def matrix_from_ito_complex(J, coefficients):
-    dim = np.int64(2 * J + 1)
+    dim = int64(2 * J + 1)
 
-    matrix = np.zeros((dim, dim), dtype=np.complex128)
+    matrix = zeros((dim, dim), dtype=complex128)
 
     for i in coefficients:
         matrix += ito_matrix(J, int(i[0].real), int(i[1].real)) * i[2]
@@ -280,7 +296,7 @@ def matrix_from_ito_complex(J, coefficients):
 
 
 def ito_real_decomp_matrix(
-    matrix: np.ndarray, order: int, even_order: bool = False
+    matrix: ndarray, order: int, even_order: bool = False
 ):
     step = 1
 
@@ -290,21 +306,21 @@ def ito_real_decomp_matrix(
     result = []
 
     J = (matrix.shape[0] - 1) / 2
-    matrix = np.ascontiguousarray(matrix)
+    matrix = ascontiguousarray(matrix)
 
     for k in range(0, order + 1, step):
         for q in range(k, 0, -1):
             ITO_plus = ito_matrix(J, k, q)
-            ITO_plus = np.ascontiguousarray(ITO_plus).astype(np.complex128)
+            ITO_plus = ascontiguousarray(ITO_plus).astype(complex128)
             ITO_minus = ito_matrix(J, k, -q)
-            ITO_minus = np.ascontiguousarray(ITO_minus).astype(np.complex128)
+            ITO_minus = ascontiguousarray(ITO_minus).astype(complex128)
             B_k_q = (
                 -1j
                 * (
-                    np.trace(matrix @ ITO_plus)
-                    - ((-1) ** (-q)) * np.trace(matrix @ ITO_minus)
+                    trace(matrix @ ITO_plus)
+                    - ((-1) ** (-q)) * trace(matrix @ ITO_minus)
                 )
-                / np.trace(ITO_plus @ ITO_minus)
+                / trace(ITO_plus @ ITO_minus)
             )  # 1/np.sqrt(2) *
 
             result.append([k, -q, B_k_q.real])
@@ -314,13 +330,13 @@ def ito_real_decomp_matrix(
 
         for q in range(1, k + 1):
             ITO_plus = ito_matrix(J, k, q)
-            ITO_plus = np.ascontiguousarray(ITO_plus).astype(np.complex128)
+            ITO_plus = ascontiguousarray(ITO_plus).astype(complex128)
             ITO_minus = ito_matrix(J, k, -q)
-            ITO_minus = np.ascontiguousarray(ITO_minus).astype(np.complex128)
+            ITO_minus = ascontiguousarray(ITO_minus).astype(complex128)
             B_k_q = (
-                np.trace(matrix @ ITO_plus)
-                + ((-1) ** (-q)) * np.trace(matrix @ ITO_minus)
-            ) / np.trace(
+                trace(matrix @ ITO_plus)
+                + ((-1) ** (-q)) * trace(matrix @ ITO_minus)
+            ) / trace(
                 ITO_plus @ ITO_minus
             )  # 1/np.sqrt(2) *
 
@@ -351,13 +367,13 @@ def ito_real_decomp_matrix(
 
 
 def matrix_from_ito_real(J, coefficients):
-    dim = np.int64(2 * J + 1)
+    dim = int64(2 * J + 1)
 
-    matrix = np.zeros((dim, dim), dtype=np.complex128)
+    matrix = zeros((dim, dim), dtype=complex128)
 
     for i in coefficients:
-        k = np.int64(i[0])
-        q = np.int64(i[1])
+        k = int64(i[0])
+        q = int64(i[1])
 
         if q < 0:
             matrix += (

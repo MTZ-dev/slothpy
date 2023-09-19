@@ -23,7 +23,7 @@ from slothpy.general_utilities._constants import (
 from slothpy.magnetism._g_tensor import _g_tensor_and_axes_doublet
 from slothpy.magnetism._magnetisation import _mth, _mag_3d
 from slothpy.magnetism._susceptibility import _chitht, _chitht_tensor, _chit_3d
-from slothpy.magnetism.zeeman import (
+from slothpy.magnetism._zeeman import (
     _zeeman_splitting,
     _get_zeeman_matrix,
     _hemholtz_energyth,
@@ -2496,8 +2496,8 @@ class Compound:
         SltInputError
             If fields are not a one-diemsional array.
         SltInputError
-            If number of states is not an integer less or equal to the states
-            cutoff.
+            If number of states is not a positive integer less or equal to the
+            states cutoff.
         SltCompError
             If autotuning a number of processes and threads is unsuccessful.
         SltCompError
@@ -2545,6 +2545,7 @@ class Compound:
 
         if (
             not isinstance(number_of_states, int)
+            or number_of_states <= 0
             or number_of_states > states_cutoff
         ):
             raise SltInputError(

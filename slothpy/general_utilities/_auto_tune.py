@@ -17,8 +17,8 @@ from numpy import (
 )
 from threadpoolctl import threadpool_limits
 from slothpy.magnetism._magnetisation import _mt_over_grid
-from slothpy.magnetism.zeeman import _hemholtz_energyt_over_grid
-from slothpy.general_utilities.system import _get_num_of_processes
+from slothpy.magnetism._zeeman import _hemholtz_energyt_over_grid
+from slothpy.general_utilities._system import _get_num_of_processes
 from slothpy.general_utilities.io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )

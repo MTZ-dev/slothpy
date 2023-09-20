@@ -52,7 +52,10 @@ from slothpy.angular_momentum.pseudo_spin_ito import (
     matrix_from_ito_complex,
     matrix_from_ito_real,
 )
-from slothpy.general_utilities._math_expresions import _normalize_grid_vectors
+from slothpy.general_utilities._math_expresions import (
+    _normalize_grid_vectors,
+    _normalize_orientations,
+)
 from slothpy.general_utilities._auto_tune import _auto_tune
 
 # Experimental imports for plotting
@@ -909,8 +912,8 @@ class Compound:
                     + "already exists. Delete it manually.",
                 ) from None
         try:
-            temperatures = array(temperatures, dtype=np.float64)
-            fields = array(fields, dtype=np.float64)
+            temperatures = array(temperatures, dtype=float64)
+            fields = array(fields, dtype=float64)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -1299,7 +1302,15 @@ class Compound:
                         f" susceptibility calculated from group: {group}."
                     ),
                 ] = chitht_array[:, :]
-                self[slt_group_name, _description_] = fields[:]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    (
+                        "Dataset containing magnetic field H values used in"
+                        " simulation of magnetic susceptibility from group:"
+                        f" {group}."
+                    ),
+                ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
@@ -1740,8 +1751,8 @@ class Compound:
         and spherical_grid = 60, the intermediate array (before numerical
         differentiation) will take 7*100*300*2*60*60*8 bytes = 12.096 GB).
         """
-        temperatures = np.array(temperatures, dtype=np.float64)
-        fields = np.array(fields, dtype=np.float64)
+        temperatures = np.array(temperatures, dtype=float64)
+        fields = np.array(fields, dtype=float64)
 
         if slt is not None:
             slt_group_name = f"{slt}_3d_susceptibility"
@@ -2298,8 +2309,8 @@ class Compound:
                     + "already exists. Delete it manually.",
                 ) from None
         try:
-            temperatures = array(temperatures, dtype=np.float64)
-            fields = array(fields, dtype=np.float64)
+            temperatures = array(temperatures, dtype=float64)
+            fields = array(fields, dtype=float64)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -2429,8 +2440,8 @@ class Compound:
         self,
         group: str,
         number_of_states: int,
-        fields: ndarray[np.float64],
-        grid: ndarray[np.float64],
+        fields: ndarray[float64],
+        grid: ndarray[float64],
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
@@ -2438,7 +2449,7 @@ class Compound:
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 1,
-    ) -> ndarray[np.float64]:
+    ) -> ndarray[float64]:
         """
         Calculates directional or powder-averaged Zeeman splitting for a given
         number of states and list of field values.
@@ -2451,10 +2462,10 @@ class Compound:
         number_of_states : int
             Number of states whose energy splitting will be given in the
             result array.
-        fields : ndarray[np.float64]
+        fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which Zeeman splitting will be computed.
-        grid : ndarray[np.float64]
+        grid : ndarray[float64]
             If the grid is set to an integer from 0-11 then the prescribed
             Lebedev-Laikov grids over hemisphere will be used (see
             grids_over_hemisphere documentation) and powder-averaging will be
@@ -2462,9 +2473,9 @@ class Compound:
             be converted to numpy.NDArray) with the convention: [[direction_x,
             direction_y, direction_z, weight],...] with average = True for
             powder-averaging. If one wants a calculation for a list of
-            particular directions the list has to follow the above format with
-            arbitrary weights, which will not be taken into account. Custom
-            grids will be automatically normalized.
+            particular directions the list has to follow the format:
+            [[direction_x, direction_y, direction_z],...]. Custom grids will be
+            automatically normalized.
         states_cutoff : int, optional
             Number of states that will be taken into account for construction
             of Zeeman Hamiltonian. If set to zero, all available states from
@@ -2495,7 +2506,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[np.float64]
+        ndarray[float64]
             The resulting array gives Zeeman splitting of number_of_states
             energy levels in cm-1 for each direction (or average) in the form
             [orientations, fields, energies] - the first dimension
@@ -2549,7 +2560,7 @@ class Compound:
                 ) from None
 
         try:
-            fields = array(fields, dtype=np.float64)
+            fields = array(fields, dtype=float64)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -2573,8 +2584,10 @@ class Compound:
         if isinstance(grid, int):
             grid = _lebedev_laikov_grid(grid)
             average = True
-        else:
+        elif average:
             grid = _normalize_grid_vectors(grid)
+        else:
+            grid = _normalize_orientations(grid)
 
         if autotune:
             try:
@@ -2643,8 +2656,8 @@ class Compound:
                     slt_group_name,
                     f"{slt}_zeeman",
                     (
-                        f"Dataset containing {name}Zeeman splitting averaged"
-                        " over grid of directions with shape: (field,"
+                        f"Dataset containing {name}Zeeman splitting over grid"
+                        " of directions with shape: (orientations, field,"
                         f" energy) calculated from group: {group}."
                     ),
                     (
@@ -2700,7 +2713,7 @@ class Compound:
         return zeeman_array
 
     def zeeman_matrix(
-        self, group: str, states_cutoff, field, orientation, slt: str = None
+        self, group: str, states_cutoff, field, orientations, slt: str = None
     ):
         if slt is not None:
             slt_group_name = f"{slt}_zeeman_matrix"
@@ -2719,11 +2732,22 @@ class Compound:
                     + '" '
                     + "already exists. Delete it manually.",
                 ) from None
-        ########## Check field if array of floats, orientations and make everything works for multiple inputs,
-        ########## Returning many arrays over field and orientations (in the usual convention)
+
+        try:
+            fields = array(fields, dtype=float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
+
+        if fields.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
+
+        orientations = _normalize_orientations(orientations)
+
         try:
             zeeman_matrix_array = _get_zeeman_matrix(
-                self._hdf5, group, states_cutoff, field, orientation
+                self._hdf5, group, states_cutoff, field, orientations
             )
         except Exception as exc:
             raise SltCompError(
@@ -2753,7 +2777,25 @@ class Compound:
                         f"Group({slt}) containing Zeeman matrix calculated"
                         f" from group: {group}."
                     ),
-                ] = zeeman_matrix_array
+                ] = zeeman_matrix_array[:, :, :, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    (
+                        "Dataset containing magnetic field H values used in"
+                        " simulation of Zeeman matrices from group:"
+                        f" {group}."
+                    ),
+                ] = fields[:]
+                self[
+                    slt_group_name,
+                    f"{slt}_orientations",
+                    (
+                        "Dataset containing magnetic field orientations"
+                        " used in simulation of"
+                        f" Zeeman matrices from group: {group}."
+                    ),
+                ] = orientations[:, :]
 
             except Exception as exc:
                 raise SltFileError(
@@ -2774,7 +2816,7 @@ class Compound:
 
     def soc_energies_cm_1(
         self, group: str, num_of_states: int = None, slt: str = None
-    ) -> np.ndarray[np.float64]:
+    ) -> np.ndarray[float64]:
         """Returns energies in cm^(-1) of the given number of Spin-Orbit states.
 
         Args:
@@ -2786,7 +2828,7 @@ class Compound:
             Exception: If the program is unable to correctly save the results to .slt file.
 
         Returns:
-            np.ndarray[np.float64]: The resulting array gives SOC energies in cm^(-1) with indices corresponding to SO-state numbers.
+            np.ndarray[float64]: The resulting array gives SOC energies in cm^(-1) with indices corresponding to SO-state numbers.
         """
         if slt is not None:
             slt_group_name = f"{slt}_soc_energies"
@@ -2894,7 +2936,7 @@ class Compound:
                             magnetic_momenta_array.shape[0],
                             magnetic_momenta_array.shape[1],
                         ),
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     magnetic_momenta_dataset.attrs["Description"] = (
                         "Dataset containing states magnetic momenta"
@@ -2967,7 +3009,7 @@ class Compound:
                             total_angular_momenta_array.shape[0],
                             total_angular_momenta_array.shape[1],
                         ),
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     total_angular_momenta_dataset.attrs["Description"] = (
                         "Dataset containing states total angular momenta"
@@ -3191,7 +3233,7 @@ class Compound:
                     decomposition_dataset = new_group.create_dataset(
                         f"{slt}_magnetic_momenta_matrix",
                         shape=decomposition.shape,
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     decomposition_dataset.attrs["Description"] = (
                         "Dataset containing % decomposition (rows -"
@@ -3201,7 +3243,7 @@ class Compound:
                     states_dataset = new_group.create_dataset(
                         f"{slt}_pseudo_spin_states",
                         shape=(decomposition.shape[0],),
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     states_dataset.attrs["Description"] = (
                         "Dataset containing Sz pseudo-spin states"
@@ -3212,7 +3254,7 @@ class Compound:
                     decomposition_dataset[:] = decomposition[:]
                     dim = (decomposition.shape[1] - 1) / 2
                     states_dataset[:] = np.arange(
-                        -dim, dim + 1, step=1, dtype=np.float64
+                        -dim, dim + 1, step=1, dtype=float64
                     )
 
                 self._get_hdf5_groups_datasets_and_attributes()
@@ -3267,7 +3309,7 @@ class Compound:
                     decomposition_dataset = new_group.create_dataset(
                         f"{slt}_magnetic_momenta_matrix",
                         shape=decomposition.shape,
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     decomposition_dataset.attrs["Description"] = (
                         "Dataset containing % decomposition (rows SO-states,"
@@ -3277,7 +3319,7 @@ class Compound:
                     states_dataset = new_group.create_dataset(
                         f"{slt}_pseudo_spin_states",
                         shape=(decomposition.shape[0],),
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     states_dataset.attrs["Description"] = (
                         "Dataset containing Sz pseudo-spin states"
@@ -3288,7 +3330,7 @@ class Compound:
                     decomposition_dataset[:] = decomposition[:]
                     dim = (decomposition.shape[1] - 1) / 2
                     states_dataset[:] = np.arange(
-                        -dim, dim + 1, step=1, dtype=np.float64
+                        -dim, dim + 1, step=1, dtype=float64
                     )
 
                 self._get_hdf5_groups_datasets_and_attributes()
@@ -3405,7 +3447,7 @@ class Compound:
                     states_dataset = new_group.create_dataset(
                         f"{slt}_pseudo_spin_states",
                         shape=(1,),
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     states_dataset.attrs["Description"] = (
                         "Dataset containing S pseudo-spin number"
@@ -3545,7 +3587,7 @@ class Compound:
                     states_dataset = new_group.create_dataset(
                         f"{slt}_pseudo_spin_states",
                         shape=(1,),
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     states_dataset.attrs["Description"] = (
                         "Dataset containing S pseudo-spin number"
@@ -3671,7 +3713,7 @@ class Compound:
                     states_dataset = new_group.create_dataset(
                         f"{slt}_pseudo_spin_states",
                         shape=(1,),
-                        dtype=np.float64,
+                        dtype=float64,
                     )
                     states_dataset.attrs["Description"] = (
                         "Dataset containing S pseudo-spin number"
@@ -3711,7 +3753,7 @@ class Compound:
         ):
             raise ValueError(
                 'Only valid matrix_type are "soc" or "zeeman" and basis_type'
-                ' are "angular" or "magnetic"'
+                ' are "angular" or "magnetic".'
             )
 
         if matrix_type == "zeeman" and (

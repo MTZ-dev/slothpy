@@ -58,13 +58,14 @@ if __name__ == "__main__":
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
     # CeCoN3 = slt.compound_from_molcas(
-    #     ".", "hensell", "bas3", ".", "DyCo_DG_bas3"
+    #     ".", "12", "bas3", ".", "JH_YbCo_4py_dimer_bas2"
+
     # )
-    CeCoN3 = slt.compound_from_slt(".", "hensell")
+    CeCoN3 = slt.compound_from_slt(".", "12")
 
     # CeCoN3.delete_group_dataset("dupaadaaaaaas")
-    nazwa = "12434e45feededdf5rrr5erd6t"
-    fields = linspace(0.01, 10, 64, dtype=float64)
+    nazwa = "12434e4555feededdf5rrr5erd6t"
+    fields = linspace(0.0001, 10, 100, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
@@ -91,24 +92,21 @@ if __name__ == "__main__":
     #     fields,
     #     52,
     #     temperatures,
-    #     300,
+    #     0,
     #     128,
-    #     2,
+    #     1,
     #     slt=nazwa,
-    #     autotune=True,
     # )
 
     # CeCoN3.calculate_hemholtz_energy_3d(
     #     "bas3",
     #     fields,
-    #     40,
+    #     52,
     #     temperatures,
-    #     64,
+    #     0,
     #     128,
-    #     3,
+    #     1,
     #     slt=nazwa,
-    #     internal_energy=True,
-    #     autotune=True,
     # )
 
     # CeCoN3.calculate_zeeman_splitting(
@@ -130,15 +128,19 @@ if __name__ == "__main__":
     # mth = CeCoN3.calculate_mth(
     #     "bas3",
     #     fields,
-    #     5,
+    #     4,
     #     temperatures,
-    #     128,
+    #     0,
     #     128,
     #     1,
-    #     slt=nazwa,
     # )
-    soc = CeCoN3.soc_energies_cm_1("bas3", 16, slt="ergose")
-    print(soc)
+
+    # for mt in mth:
+    #     for i in mt:
+    #         print(i)
+
+    # soc = CeCoN3.soc_energies_cm_1("bas3", 16, slt="ergose")
+    # print(soc)
 
     # eth = CeCoN3.calculate_hemholtz_energyth(
     #     "bas3",
@@ -186,9 +188,9 @@ if __name__ == "__main__":
     # print(chitensor)
     # print(b)
     # CeCoN3.plot_zeeman(nazwa)
-    # CeCoN3.interactive_plot_3d(nazwa, "internal_energy")
+    # CeCoN3.interactive_plot_3d(nazwa, "hemholtz_energy")
     # CeCoN3.interactive_plot_3d(nazwa, "chit")
-    # CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
+    CeCoN3.interactive_plot_3d(nazwa, "magnetisation")
 
     # CeCoN3.plot_mth(nazwa)
 

@@ -263,19 +263,25 @@ def _get_zeeman_matrix(
     filename: str,
     group: str,
     states_cutoff: int,
-    field: float64,
-    orientation: ndarray,
+    fields: float64,
+    orientations: ndarray,
 ) -> ndarray:
+    zeeman_matrix = zeros(
+        (fields.shape[0], orientations.shape[0], states_cutoff, states_cutoff),
+        dtype=complex128,
+    )
     (
         magnetic_momenta,
         soc_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff
     )
-    ## 2x for loop fields and orient
-    zeeman_matrix = _calculate_zeeman_matrix(
-        magnetic_momenta, soc_energies, field, orientation
-    )
+
+    for f, field in enumerate(fields):
+        for o, orientation in enumerate(orientations):
+            zeeman_matrix[f, o, :, :] = _calculate_zeeman_matrix(
+                magnetic_momenta, soc_energies, field, orientation
+            )
 
     return zeeman_matrix
 

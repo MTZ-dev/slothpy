@@ -139,7 +139,10 @@ def decomposition_of_hermitian_matrix(matrix):
 
 
 def _normalize_grid_vectors(grid):
-    grid = array(grid, dtype=float64)
+    try:
+        grid = array(grid, dtype=float64)
+    except Exception as exc:
+        raise SltInputError(exc) from None
 
     if grid.ndim != 2 or grid.shape[1] != 4:
         raise SltInputError(
@@ -149,19 +152,56 @@ def _normalize_grid_vectors(grid):
             )
         )
 
+    norm = 0
+
     for vector_index in range(grid.shape[0]):
         length = sqrt(
             grid[vector_index][0] ** 2
             + grid[vector_index][1] ** 2
             + grid[vector_index][2] ** 2
         )
+        norm += grid[vector_index][3]
         if length == 0:
             raise SltInputError(
                 ValueError("Vector of length zero detected in the input grid.")
             )
         grid[vector_index][:3] = grid[vector_index][:3] / length
 
+    if norm != 0:
+        grid[:, 3] = grid[:, 3] / norm
+
     return grid
+
+
+def _normalize_orientations(orientations):
+    try:
+        orientations = array(orientations, dtype=float64)
+    except Exception as exc:
+        raise SltInputError(exc) from None
+
+    if orientations.ndim != 2 or orientations.shape[1] != 3:
+        raise SltInputError(
+            ValueError(
+                "Orientations has to be (n,3) array in the format:"
+                " [[direction_x, direction_y, direction_z],...]."
+            )
+        )
+
+    for vector_index in range(orientations.shape[0]):
+        length = sqrt(
+            orientations[vector_index][0] ** 2
+            + orientations[vector_index][1] ** 2
+            + orientations[vector_index][2] ** 2
+        )
+        if length == 0:
+            raise SltInputError(
+                ValueError(
+                    "Vector of length zero detected in the input orientations."
+                )
+            )
+        orientations[vector_index] = orientations[vector_index] / length
+
+    return orientations
 
 
 @jit(

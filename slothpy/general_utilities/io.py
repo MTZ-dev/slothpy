@@ -623,12 +623,7 @@ def get_states_magnetic_momenta(
 
     (
         _,
-        sx,
-        sy,
-        sz,
-        lx,
-        ly,
-        lz,
+        angular_momenta,
     ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
         filename, group, rotation
     )
@@ -653,14 +648,9 @@ def get_states_magnetic_momenta(
             magnetic_momenta = ascontiguousarray(
                 zeros((3, states), dtype=complex128)
             )
+            angular_momenta = angular_momenta[:, :states, :states]
 
-            # Slice arrays based on states_cutoff
-            sx = sx[:states, :states]
-            sy = sy[:states, :states]
-            sz = sz[:states, :states]
-            lx = lx[:states, :states]
-            ly = ly[:states, :states]
-            lz = lz[:states, :states]
+            ########### Przerwa
 
             # Compute and save magnetic momenta in a.u.
             magnetic_momenta[0] = diagonal(-(ge * sx + lx))

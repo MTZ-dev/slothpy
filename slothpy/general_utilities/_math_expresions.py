@@ -204,26 +204,26 @@ def _magnetic_momenta_from_angular_momenta(
     nogil=True,
     fastmath=True,
 )
-def _tot_angular_momenta_from_angular_momenta(
+def _total_angular_momenta_from_angular_momenta(
     angular_momenta: ndarray[complex128], start: int = 0, stop: int = 0
 ):
     if stop == 0:
         stop = angular_momenta.shape[0]
     size = stop - start
-    tot_angular_momenta = zeros((3, size, size), dtype=complex128)
+    total_angular_momenta = zeros((3, size, size), dtype=complex128)
 
     # Compute and save magnetic momenta in a.u.
-    tot_angular_momenta[0] = (
+    total_angular_momenta[0] = (
         angular_momenta[0, start:stop, start:stop]
         + angular_momenta[3, start:stop, start:stop]
     )
-    tot_angular_momenta[1] = (
+    total_angular_momenta[1] = (
         angular_momenta[1, start:stop, start:stop]
         + angular_momenta[4, start:stop, start:stop]
     )
-    tot_angular_momenta[2] = (
+    total_angular_momenta[2] = (
         angular_momenta[2, start:stop, start:stop]
         + angular_momenta[5, start:stop, start:stop]
     )
 
-    return tot_angular_momenta
+    return total_angular_momenta

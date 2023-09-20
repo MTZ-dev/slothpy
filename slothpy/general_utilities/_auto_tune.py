@@ -389,7 +389,12 @@ def _auto_tune(
         if new_processes != old_processes:
             num_processes = old_processes
             num_threads = threads - 1
-            fields = linspace(1, 10, 2 * num_processes, dtype=float64)
+            if num_processes <= num_to_parallelize:
+                fields = linspace(1, 10, 2 * num_processes, dtype=float64)
+            else:
+                fields = linspace(
+                    1, 10, num_processes + num_to_parallelize, dtype=float64
+                )
 
             exec_time = _mth_benchmark(
                 filename,
@@ -432,7 +437,7 @@ def _auto_tune(
             else:
                 info += RED + f"{current_time} s" + RESET + "."
 
-            info += " The best time: " + GREEN + f"{best_time}s" + RESET + "."
+            info += " The best time: " + GREEN + f"{best_time} s" + RESET + "."
 
             print(info)
 

@@ -272,6 +272,7 @@ def _get_zeeman_matrix(
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff
     )
+    ## 2x for loop fields and orient
     zeeman_matrix = _calculate_zeeman_matrix(
         magnetic_momenta, soc_energies, field, orientation
     )

@@ -18,7 +18,7 @@ from numpy import (
 )
 from slothpy.general_utilities.io import (
     get_soc_magnetic_momenta_and_energies_from_hdf5,
-    get_soc_total_angular_momenta_and_energies_from_hdf5,
+    _get_soc_total_angular_momenta_and_energies_from_hdf5,
 )
 from slothpy.general_utilities._math_expresions import (
     hermitian_x_in_basis_of_hermitian_y,

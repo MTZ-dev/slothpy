@@ -21,11 +21,12 @@ from numpy import (
 from numpy.linalg import eigh, eigvalsh
 from h5py import File
 from typing import Tuple
-from slothpy.general_utilities._constants import YELLOW, RESET
+from slothpy.general_utilities._constants import YELLOW, RESET, H_CM_1
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
 from slothpy.angular_momentum._rotation import _rotate_vector_operator
 from slothpy.general_utilities._math_expresions import (
     _magnetic_momenta_from_angular_momenta,
+    _total_angular_momenta_from_angular_momenta,
 )
 
 
@@ -138,9 +139,7 @@ def orca_spin_orbit_to_slt(
     hdf5_output: str,
     name: str,
     pt2: bool = False,
-) -> (
-    None
-):  # tutaj with open raczej dla hdf5, żeby zabezpieczyć plik! juz raz się zepsuł
+) -> None:
     """
     Converts spin-orbit calculations from an ORCA .out file to a HDF5 file format.
 
@@ -525,8 +524,8 @@ def _get_soc_magnetic_momenta_and_energies_from_hdf5(
 
     if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
         raise ValueError(
-            "Invalid states cutoff. Set it to positive integer less or equal"
-            " to the number of SO-states (or zero for all states)."
+            "Invalid states cutoff. Set it to a positive integer less or equal"
+            f" to the number of SO-states: {shape} (or zero for all states)."
         )
 
     if states_cutoff > shape:
@@ -546,144 +545,75 @@ def _get_soc_magnetic_momenta_and_energies_from_hdf5(
     return magnetic_momenta, soc_energies
 
 
-def get_soc_total_angular_momenta_and_energies_from_hdf5(
+def _get_soc_total_angular_momenta_and_energies_from_hdf5(
     filename: str, group: str, states_cutoff: int, rotation=None
 ) -> Tuple[ndarray, ndarray]:
-    shape = -1
+    (
+        soc_energies,
+        angular_momenta,
+    ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
+        filename, group, rotation
+    )
 
-    # Check matrix size
-    with File(filename, "r") as file:
-        try:
-            dataset = file[group]["SOC"]
-        except Exception as e:
-            error_type_1 = type(e).__name__
-            error_message_1 = str(e)
-            error_print_1 = f"{error_type_1}: {error_message_1}"
-            try:
-                dataset = file[group]["SOC_energies"]
-            except Exception as e:
-                error_type_2 = type(e).__name__
-                error_message_2 = str(e)
-                error_print_2 = f"{error_type_2}: {error_message_2}"
-                raise Exception(
-                    "Failed to acces SOC data sets due to the following"
-                    f" errors: {error_print_1}, {error_print_2}"
-                )
-
-        shape = dataset.shape[0]
-
-    if shape < 0:
-        raise Exception(
-            f"Failed to read size of SOC matrix from file {filename} due to"
-            f" the following errors:\n {error_print_1}, {error_print_2}"
-        )
+    shape = soc_energies.size
 
     if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
         raise ValueError(
-            f"Invalid states cutoff. Set it to positive integer less or equal"
-            f" to the number of SO-states"
+            "Invalid states cutoff. Set it to a positive integer less or equal"
+            " to the number of SO-states (or zero for all states)."
         )
 
     if states_cutoff > shape:
         raise ValueError(
             f"States cutoff is larger than the number of SO-states ({shape})."
-            " Please set it less or equal (or zero) for all states."
+            " Please set it less or equal (or zero for all states)."
         )
 
     if states_cutoff == 0:
         states_cutoff = shape
 
-    #  Initialize the result array
-    total_angular_momenta = ascontiguousarray(
-        zeros((3, states_cutoff, states_cutoff), dtype=complex128)
-    )
-
-    (
-        soc_energies,
-        sx,
-        sy,
-        sz,
-        lx,
-        ly,
-        lz,
-    ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
-        filename, group, rotation
-    )
-
-    # Slice arrays based on states_cutoff
-    sx = sx[:states_cutoff, :states_cutoff]
-    sy = sy[:states_cutoff, :states_cutoff]
-    sz = sz[:states_cutoff, :states_cutoff]
-    lx = lx[:states_cutoff, :states_cutoff]
-    ly = ly[:states_cutoff, :states_cutoff]
-    lz = lz[:states_cutoff, :states_cutoff]
     soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
-
-    # Compute and save magnetic momenta in a.u.
-    total_angular_momenta[0] = sx + lx
-    total_angular_momenta[1] = sy + ly
-    total_angular_momenta[2] = sz + lz
+    total_angular_momenta = _total_angular_momenta_from_angular_momenta(
+        angular_momenta, 0, states_cutoff
+    )
 
     return total_angular_momenta, soc_energies
 
 
-def get_soc_energies_cm_1(
+def _get_soc_energies_cm_1(
     filename: str, group: str, num_of_states: int = None
 ) -> ndarray:
-    hartree_to_cm_1 = 219474.6
-
     if num_of_states < 0 or (not isinstance(num_of_states, int)):
         raise ValueError(
-            f"Invalid number of states. Set it to positive integer or 0 for"
-            f" all states."
+            "Invalid number of states. Set it to positive integer or 0 for"
+            " all states."
         )
-
-    try:
-        # Read data from HDF5 file
-        with File(filename, "r") as file:
+    with File(filename, "r") as file:
+        try:
             soc_matrix = file[str(group)]["SOC"][:]
+            soc_energies = eigvalsh(soc_matrix)
+        except Exception as exc1:
+            error_message_1 = str(exc1)
+            try:
+                soc_energies = file[str(group)]["SOC_energies"][:]
+            except Exception as exc2:
+                error_message_2 = str(exc2)
+                if error_message_1 == error_message_2:
+                    error_message_2 = ""
+                raise RuntimeError(
+                    f"{error_message_1}. {error_message_2}."
+                ) from None
 
-        # Perform diagonalization on SOC matrix
-        soc_energies = eigvalsh(soc_matrix)
+        if num_of_states > soc_energies.shape[0]:
+            raise ValueError(
+                "Invalid number of states. Set it less or equal to the overal"
+                f" number of SOC states: {soc_energies.shape[0]}"
+            )
 
-        if (
-            isinstance(num_of_states, int)
-            and num_of_states > 0
-            and num_of_states <= soc_energies.shape[0]
-        ):
-            soc_energies = soc_energies[:num_of_states]
+        soc_energies = soc_energies[:num_of_states]
 
         # Return operators in SOC basis
-        return (soc_energies - soc_energies[0]) * hartree_to_cm_1
-
-    except Exception as e:
-        error_type_1 = type(e).__name__
-        error_message_1 = str(e)
-        error_print_1 = f"{error_type_1}: {error_message_1}"
-
-    try:
-        with File(filename, "r") as file:
-            soc_energies = file[str(group)]["SOC_energies"][:]
-
-        if (
-            isinstance(num_of_states, int)
-            and num_of_states > 0
-            and num_of_states <= soc_energies.shape[0]
-        ):
-            soc_energies = soc_energies[:num_of_states]
-
-        return (soc_energies - soc_energies[0]) * hartree_to_cm_1
-
-    except Exception as e:
-        error_type_2 = type(e).__name__
-        error_message_2 = str(e)
-        error_print_2 = f"{error_type_2}: {error_message_2}"
-
-    raise Exception(
-        "Failed to load SOC, spin and angular momenta data from HDF5 file.\n"
-        f" Error(s) encountered while trying read the data: {error_print_1},"
-        f" {error_print_2}"
-    )
+        return (soc_energies - soc_energies[0]) * H_CM_1
 
 
 def get_states_magnetic_momenta(
@@ -827,7 +757,7 @@ def get_states_total_angular_momneta(
             total_angular_momenta[1] = diagonal(sy + ly)
             total_angular_momenta[2] = diagonal(sz + lz)
 
-        elif np.any(states != 0):
+        elif any(states != 0):
             # Convert states to ndarray without repetitions
             states = unique(array(states).astype(int64))
 

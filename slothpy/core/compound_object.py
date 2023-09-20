@@ -34,7 +34,7 @@ from slothpy.general_utilities._grids_over_hemisphere import (
 )
 from slothpy.general_utilities.io import (
     _group_exists,
-    get_soc_energies_cm_1,
+    _get_soc_energies_cm_1,
     get_states_magnetic_momenta,
     get_states_total_angular_momneta,
     get_total_angular_momneta_matrix,
@@ -101,6 +101,21 @@ mpl.use("Qt5Agg")
 ## You should probably move loops over fields to the new iterator with shared memory arrays to speed everything up
 
 ## get_soc_magnetic_momenta_and_energies_from_hdf5 should be out of mag_3d there are seconds wasted for reading over and over
+
+print(
+    """                      ____  _       _   _     ____        
+                     / ___|| | ___ | |_| |__ |  _ \ _   _ 
+                     \___ \| |/ _ \| __| '_ \| |_) | | | |
+                      ___) | | (_) | |_| | | |  __/| |_| |
+                     |____/|_|\___/ \__|_| |_|_|    \__, |
+                                                    |___/  by MTZ
+                                                    """
+)
+print(
+    "The default is chosen to omit the tracebacks completely. To change it"
+    " use slt.set_default_error_reporting_mode method for the printing of"
+    " tracebacks."
+)
 
 
 class Compound:
@@ -2687,67 +2702,73 @@ class Compound:
     def zeeman_matrix(
         self, group: str, states_cutoff, field, orientation, slt: str = None
     ):
-        if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
-            raise ValueError(
-                "Invalid states cutoff, set it to positive integer or 0 for"
-                " all states."
-            )
-
+        if slt is not None:
+            slt_group_name = f"{slt}_zeeman_matrix"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+        ########## Check field if array of floats, orientations and make everything works for multiple inputs,
+        ########## Returning many arrays over field and orientations (in the usual convention)
         try:
             zeeman_matrix_array = _get_zeeman_matrix(
                 self._hdf5, group, states_cutoff, field, orientation
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get Zeeman matrix from"
-                f" file: {self._hdf5} - group {group}: {error_type}:"
-                f" {error_message}"
-            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to calculate Zeeman matrix from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_zeeman_matrix")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing Zeeman matrix calculated"
-                        f" from group: {group}."
-                    )
-                    zeeman_matrix_dataset = new_group.create_dataset(
-                        f"{slt}_zeeman_matrix",
-                        shape=zeeman_matrix_array.shape,
-                        dtype=np.complex128,
-                    )
-                    zeeman_matrix_dataset.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_matrix",
+                    (
                         "Dataset containing Zeeman matrix calculated from"
                         f" group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_states",
-                        shape=(zeeman_matrix_array.shape[1],),
-                        dtype=np.int64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing states indexes of Zeeman matrix"
+                    ),
+                    (
+                        f"Group({slt}) containing Zeeman matrix calculated"
                         f" from group: {group}."
-                    )
+                    ),
+                ] = zeeman_matrix_array
 
-                    zeeman_matrix_dataset[:] = zeeman_matrix_array[:]
-                    states_dataset[:] = np.arange(
-                        zeeman_matrix_array.shape[1], dtype=np.int64
-                    )
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save Zeeman matrix to"
-                    f" file: {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save Zeeman matrix to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return zeeman_matrix_array
 
@@ -2767,49 +2788,71 @@ class Compound:
         Returns:
             np.ndarray[np.float64]: The resulting array gives SOC energies in cm^(-1) with indices corresponding to SO-state numbers.
         """
+        if slt is not None:
+            slt_group_name = f"{slt}_soc_energies"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
 
         try:
-            soc_energies_array = get_soc_energies_cm_1(
+            soc_energies_array = _get_soc_energies_cm_1(
                 self._hdf5, group, num_of_states
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get SOC energies from file:"
-                f" {self._hdf5} - group {group}: {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltReadError(
+                self._hdf5,
+                exc,
+                "Failed to read SOC energies from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_soc_energies")
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing SOC (Spin-Orbit Coupling)"
-                        f" energies calculated from group: {group}."
-                    )
-                    soc_energies_dataset = new_group.create_dataset(
-                        f"{slt}_soc_energies",
-                        shape=(soc_energies_array.shape[0],),
-                        dtype=np.float64,
-                    )
-                    soc_energies_dataset.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_energies",
+                    (
                         "Dataset containing SOC (Spin-Orbit Coupling) energies"
                         f" calculated from group: {group}."
-                    )
-
-                    soc_energies_dataset[:] = soc_energies_array[:]
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save SOC (Spin-Orbit"
-                    f" Coupling) energies to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
+                    ),
+                    (
+                        f"Group({slt}) containing SOC (Spin-Orbit Coupling)"
+                        f" energies calculated from group: {group}."
+                    ),
+                ] = soc_energies_array
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save SOC energies to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return soc_energies_array
 

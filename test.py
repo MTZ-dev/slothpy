@@ -63,8 +63,8 @@ if __name__ == "__main__":
     CeCoN3 = slt.compound_from_slt(".", "hensell")
 
     # CeCoN3.delete_group_dataset("dupaadaaaaaas")
-    nazwa = "1243445r6"
-    fields = linspace(0.01, 10, 300, dtype=float64)
+    nazwa = "12434e45feededdf5rrr5erd6t"
+    fields = linspace(0.01, 10, 64, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
@@ -111,31 +111,34 @@ if __name__ == "__main__":
     #     autotune=True,
     # )
 
-    CeCoN3.calculate_zeeman_splitting(
-        "bas3",
-        8,
-        fields,
-        [
-            [1, 1, 1, 0],
-            [1, 0, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 1, 1],
-        ],
-        898,
-        128,
-        1,
-        slt=111111111,
-    )
+    # CeCoN3.calculate_zeeman_splitting(
+    #     "bas3",
+    #     8,
+    #     fields,
+    #     [
+    #         [1, 1, 1, 0],
+    #         [1, 0, 0, 0],
+    #         [0, 0, 1, 0],
+    #         [0, 0, 1, 1],
+    #     ],
+    #     898,
+    #     128,
+    #     1,
+    #     slt=111111111,
+    # )
 
     # mth = CeCoN3.calculate_mth(
     #     "bas3",
     #     fields,
-    #     4,
+    #     5,
     #     temperatures,
-    #     600,
-    #     126,
-    #     3,
+    #     128,
+    #     128,
+    #     1,
+    #     slt=nazwa,
     # )
+    soc = CeCoN3.soc_energies_cm_1("bas3", 16, slt="ergose")
+    print(soc)
 
     # eth = CeCoN3.calculate_hemholtz_energyth(
     #     "bas3",
@@ -182,7 +185,7 @@ if __name__ == "__main__":
     # CeCoN3.plot_hemholtz_energyth(nazwa)
     # print(chitensor)
     # print(b)
-    CeCoN3.plot_zeeman(nazwa)
+    # CeCoN3.plot_zeeman(nazwa)
     # CeCoN3.interactive_plot_3d(nazwa, "internal_energy")
     # CeCoN3.interactive_plot_3d(nazwa, "chit")
     # CeCoN3.interactive_plot_3d(nazwa, "magnetisation")

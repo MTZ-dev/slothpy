@@ -17,7 +17,7 @@ from numpy import (
     complex128,
 )
 from slothpy.general_utilities.io import (
-    get_soc_magnetic_momenta_and_energies_from_hdf5,
+    _get_soc_magnetic_momenta_and_energies_from_hdf5,
     _get_soc_total_angular_momenta_and_energies_from_hdf5,
 )
 from slothpy.general_utilities._math_expresions import (
@@ -83,7 +83,7 @@ def get_soc_matrix_in_z_magnetic_momentum_basis(
     (
         magnetic_momenta,
         soc_energies,
-    ) = get_soc_magnetic_momenta_and_energies_from_hdf5(
+    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, stop_state + 1, rotation
     )
     magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
@@ -105,7 +105,7 @@ def get_soc_matrix_in_z_total_angular_momentum_basis(
     (
         total_angular_momenta,
         soc_energies,
-    ) = get_soc_total_angular_momenta_and_energies_from_hdf5(
+    ) = _get_soc_total_angular_momenta_and_energies_from_hdf5(
         filename, group, stop_state + 1, rotation
     )
     total_angular_momenta = total_angular_momenta[
@@ -129,7 +129,7 @@ def get_zeeman_matrix_in_z_magnetic_momentum_basis(
     (
         magnetic_momenta,
         soc_energies,
-    ) = get_soc_magnetic_momenta_and_energies_from_hdf5(
+    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, stop_state + 1, rotation
     )
     magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
@@ -155,10 +155,10 @@ def get_zeeman_matrix_in_z_total_angular_momentum_basis(
     (
         total_angular_momenta,
         soc_energies,
-    ) = get_soc_total_angular_momenta_and_energies_from_hdf5(
+    ) = _get_soc_total_angular_momenta_and_energies_from_hdf5(
         filename, group, stop_state + 1
     )
-    magnetic_momenta, _ = get_soc_magnetic_momenta_and_energies_from_hdf5(
+    magnetic_momenta, _ = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, stop_state + 1, rotation
     )
     magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]

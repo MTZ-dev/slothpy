@@ -35,10 +35,10 @@ from slothpy.general_utilities._grids_over_hemisphere import (
 from slothpy.general_utilities.io import (
     _group_exists,
     _get_soc_energies_cm_1,
-    get_states_magnetic_momenta,
-    get_states_total_angular_momneta,
-    get_total_angular_momneta_matrix,
-    get_magnetic_momenta_matrix,
+    _get_states_magnetic_momenta,
+    _get_states_total_angular_momneta,
+    _get_total_angular_momneta_matrix,
+    _get_magnetic_momenta_matrix,
 )
 from slothpy.angular_momentum.pseudo_spin_ito import (
     get_decomposition_in_z_total_angular_momentum_basis,
@@ -87,23 +87,7 @@ mpl.use("Qt5Agg")
 
 ### MATRIX FROM ITO FIX MATRIX TYPE!!!!
 
-### Use os.cpu_count() to determine max numeber of cpu to be used
-### MPI memory management chunksize and how to minimize memory per process not sharing with the main one
-
 ### Effective charge distribution from CFPs.
-
-### Check files before computations to avoid errors after resulting with no return
-
-### change algorithm for 3d sus to improve memory usage (probably dont store whole stencils but compute elements on the fly, maybe with
-# properly constructed generator)
-
-### Add shared memory support as in zeeman_shared_1leak xd but learn more about this, use shared memory manger, and probably add index to the iterator
-# https://docs.python.org/3/library/multiprocessing.shared_memory.html, wrapper should form a tuple pointing to the  shared memory object (but try if x is something to try this)
-# after tests you should restart computer to cler the leaks and buffers
-
-## You should probably move loops over fields to the new iterator with shared memory arrays to speed everything up
-
-## get_soc_magnetic_momenta_and_energies_from_hdf5 should be out of mag_3d there are seconds wasted for reading over and over
 
 print(
     """                      ____  _       _   _     ____        
@@ -810,7 +794,7 @@ class Compound:
         number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 1,
+        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates 3D magnetisation over a spherical grid for a given list of
@@ -1050,7 +1034,7 @@ class Compound:
         grid: Union[int, np.ndarray[float64]] = None,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 1,
+        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates powder-averaged or directional molar magnetic susceptibility
@@ -1351,7 +1335,7 @@ class Compound:
         rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 1,
+        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates magnetic susceptibility chi(H,T) (Van Vleck) tensor for
@@ -1640,7 +1624,7 @@ class Compound:
         T: bool = True,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 1,
+        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates 3D magnetic susceptibility over a spherical grid for a given
@@ -2198,7 +2182,7 @@ class Compound:
         internal_energy: bool = False,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 1,
+        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates 3D Hemholtz (or internal) energy over a spherical grid for
@@ -2448,7 +2432,7 @@ class Compound:
         average: bool = False,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 1,
+        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates directional or powder-averaged Zeeman splitting for a given
@@ -2905,10 +2889,12 @@ class Compound:
         rotation=None,
         slt: str = None,
     ):
-        states = np.array(states)
+        states = np.array(states, dtype=int64)
+        #### tutaj blok try i do zapisu w .slt co to za stany (w funkcji też są array(states) ale potrzebujesz do zapisu
+        # i tak wszedzie)
 
         try:
-            states, magnetic_momenta_array = get_states_magnetic_momenta(
+            states, magnetic_momenta_array = _get_states_magnetic_momenta(
                 self._hdf5, group, states, rotation
             )
         except Exception as e:
@@ -2981,7 +2967,7 @@ class Compound:
             (
                 states,
                 total_angular_momenta_array,
-            ) = get_states_total_angular_momneta(
+            ) = _get_states_total_angular_momneta(
                 self._hdf5, group, states, rotation
             )
         except Exception as e:
@@ -3059,7 +3045,7 @@ class Compound:
 
         try:
             total_angular_momenta_matrix_array = (
-                get_total_angular_momneta_matrix(
+                _get_total_angular_momneta_matrix(
                     self._hdf5, group, states_cutoff, rotation
                 )
             )
@@ -3136,7 +3122,7 @@ class Compound:
             )
 
         try:
-            magnetic_momenta_matrix_array = get_magnetic_momenta_matrix(
+            magnetic_momenta_matrix_array = _get_magnetic_momenta_matrix(
                 self._hdf5, group, states_cutoff, rotation
             )
         except Exception as e:

@@ -616,240 +616,90 @@ def _get_soc_energies_cm_1(
         return (soc_energies - soc_energies[0]) * H_CM_1
 
 
-def get_states_magnetic_momenta(
-    filename: str, group: str, states: ndarray = None, rotation=None
+def _get_states_magnetic_momenta(
+    filename: str, group: str, states: ndarray = None, rotation: ndarray = None
 ):
-    ge = 2.00231930436256  # Electron g factor
+    if any(states < 0):
+        raise ValueError("States list contains negative values.")
 
-    (
-        _,
-        angular_momenta,
-    ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
-        filename, group, rotation
-    )
-
-    if (
-        (all(states is not None))
-        and (all(states != None))
-        and (any(states != 0))
-    ):
-        if (
-            any(states < 0)
-            or not issubdtype(states.dtype, integer)
-            or any(states > sx.shape[0])
-        ):
-            raise ValueError(
-                "States list contains negative values, non-integer elements"
-                " or indexes greater than the number of states:"
-                f" {sx.shape[0]}!"
-            )
-
-        if states.size == 1 and (any(states != 0)):
-            magnetic_momenta = ascontiguousarray(
-                zeros((3, states), dtype=complex128)
-            )
-            angular_momenta = angular_momenta[:, :states, :states]
-
-            ########### Przerwa
-
-            # Compute and save magnetic momenta in a.u.
-            magnetic_momenta[0] = diagonal(-(ge * sx + lx))
-            magnetic_momenta[1] = diagonal(-(ge * sy + ly))
-            magnetic_momenta[2] = diagonal(-(ge * sz + lz))
-
-        elif any(states != 0):
-            # Convert states to ndarray without repetitions
-            states = unique(array(states).astype(np.int64))
-
-            # Number of states desired
-            num_of_states = states.size
-
-            #  Initialize the result array
-            magnetic_momenta = ascontiguousarray(
-                zeros((3, num_of_states), dtype=complex128)
-            )
-
-            # Slice arrays based on states_cutoff
-            sx = sx[states, states]
-            sy = sy[states, states]
-            sz = sz[states, states]
-            lx = lx[states, states]
-            ly = ly[states, states]
-            lz = lz[states, states]
-
-            # Compute and save magnetic momenta in a.u.
-            magnetic_momenta[0] = -(ge * sx + lx)
-            magnetic_momenta[1] = -(ge * sy + ly)
-            magnetic_momenta[2] = -(ge * sz + lz)
-
-    else:
-        states = arange(sx.shape[0], dtype=int64)
-
-        #  Initialize the result array
-        magnetic_momenta = ascontiguousarray(
-            zeros((3, sx.shape[0]), dtype=complex128)
+    if isinstance(states, int):
+        states_cutoff = states
+        (
+            magnetic_momenta,
+            _,
+        ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+            filename, group, states_cutoff, rotation
         )
-
-        # Compute and save magnetic momenta in a.u.
-        magnetic_momenta[0] = diagonal(-(ge * sx + lx))
-        magnetic_momenta[1] = diagonal(-(ge * sy + ly))
-        magnetic_momenta[2] = diagonal(-(ge * sz + lz))
-
-    return states, magnetic_momenta.real
-
-
-def get_states_total_angular_momneta(
-    filename: str, group: str, states: ndarray = None, rotation=None
-):
-    (
-        _,
-        sx,
-        sy,
-        sz,
-        lx,
-        ly,
-        lz,
-    ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
-        filename, group, rotation
-    )
-
-    if (
-        (all(states is not None))
-        and (all(states != None))
-        and (any(states != 0))
-    ):
-        if (
-            any(states < 0)
-            or not issubdtype(states.dtype, integer)
-            or any(states > sx.shape[0])
-        ):
-            raise ValueError(
-                "States list contains negative values, non-integer elements"
-                " or indexes greater than the number of states:"
-                f" {sx.shape[0]}!"
-            )
-
-        if states.size == 1 and (any(states != 0)):
-            total_angular_momenta = ascontiguousarray(
-                zeros((3, states), dtype=complex128)
-            )
-
-            # Slice arrays based on states_cutoff
-            sx = sx[:states, :states]
-            sy = sy[:states, :states]
-            sz = sz[:states, :states]
-            lx = lx[:states, :states]
-            ly = ly[:states, :states]
-            lz = lz[:states, :states]
-
-            # Compute and save magnetic momenta in a.u.
-            total_angular_momenta[0] = diagonal(sx + lx)
-            total_angular_momenta[1] = diagonal(sy + ly)
-            total_angular_momenta[2] = diagonal(sz + lz)
-
-        elif any(states != 0):
-            # Convert states to ndarray without repetitions
-            states = unique(array(states).astype(int64))
-
-            # Number of states desired
-            num_of_states = states.size
-
-            #  Initialize the result array
-            total_angular_momenta = ascontiguousarray(
-                zeros((3, num_of_states), dtype=complex128)
-            )
-
-            # Slice arrays based on states_cutoff
-            sx = sx[states, states]
-            sy = sy[states, states]
-            sz = sz[states, states]
-            lx = lx[states, states]
-            ly = ly[states, states]
-            lz = lz[states, states]
-
-            # Compute and save magnetic momenta in a.u.
-            total_angular_momenta[0] = sx + lx
-            total_angular_momenta[1] = sy + ly
-            total_angular_momenta[2] = sz + lz
-
+        magnetic_momenta = diagonal(magnetic_momenta, axis1=1, axis2=2)
     else:
-        states = arange(sx.shape[0], dtype=int64)
+        states = array(states, dtype=int64)
+        if states.ndim == 1:
+            states_cutoff = max(states)
+            (
+                magnetic_momenta,
+                _,
+            ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+                filename, group, states_cutoff, rotation
+            )
+            magnetic_momenta = magnetic_momenta[:, states, states]
+        else:
+            raise ValueError("The list of states has to be a 1D array.")
 
-        #  Initialize the result array
-        total_angular_momenta = ascontiguousarray(
-            zeros((3, sx.shape[0]), dtype=complex128)
-        )
-
-        # Compute and save magnetic momenta in a.u.
-        total_angular_momenta[0] = diagonal(sx + lx)
-        total_angular_momenta[1] = diagonal(sy + ly)
-        total_angular_momenta[2] = diagonal(sz + lz)
-
-    return states, total_angular_momenta.real
+    return magnetic_momenta.real
 
 
-def get_magnetic_momenta_matrix(
-    filename: str, group: str, states_cutoff: ndarray, rotation=None
+def _get_states_total_angular_momneta(
+    filename: str, group: str, states: ndarray = None, rotation: ndarray = None
 ):
-    magnetic_momenta, _ = get_soc_magnetic_momenta_and_energies_from_hdf5(
+    if any(states < 0):
+        raise ValueError("States list contains negative values.")
+
+    if isinstance(states, int):
+        states_cutoff = states
+        (
+            total_angular_momenta,
+            _,
+        ) = _get_soc_total_angular_momenta_and_energies_from_hdf5(
+            filename, group, states_cutoff, rotation
+        )
+        total_angular_momenta = diagonal(
+            total_angular_momenta, axis1=1, axis2=2
+        )
+    else:
+        states = array(states, dtype=int64)
+        if states.ndim == 1:
+            states_cutoff = max(states)
+            (
+                total_angular_momenta,
+                _,
+            ) = _get_soc_total_angular_momenta_and_energies_from_hdf5(
+                filename, group, states_cutoff, rotation
+            )
+            total_angular_momenta = total_angular_momenta[:, states, states]
+        else:
+            raise ValueError("The list of states has to be a 1D array.")
+
+    return total_angular_momenta.real
+
+
+def _get_magnetic_momenta_matrix(
+    filename: str, group: str, states_cutoff: int, rotation: ndarray = None
+):
+    magnetic_momenta, _ = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff, rotation
     )
 
     return magnetic_momenta
 
 
-def get_total_angular_momneta_matrix(
-    filename: str, group: str, states_cutoff: int, rotation=None
+def _get_total_angular_momneta_matrix(
+    filename: str, group: str, states_cutoff: int, rotation: ndarray = None
 ):
     (
+        total_angular_momenta,
         _,
-        sx,
-        sy,
-        sz,
-        lx,
-        ly,
-        lz,
-    ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
-        filename, group, rotation
+    ) = _get_soc_total_angular_momenta_and_energies_from_hdf5(
+        filename, group, states_cutoff, rotation
     )
 
-    if (
-        (not isinstance(states_cutoff, int))
-        or (states_cutoff < 0)
-        or (states_cutoff > sx.shape[0])
-    ):
-        raise ValueError(
-            "Invalid states cutoff, set it to positive integer less than the"
-            f" number of states: {sx.shape[0]} or 0 for all states."
-        )
-
-    if states_cutoff != 0:
-        #  Initialize the result array
-        total_angular_momenta = ascontiguousarray(
-            zeros((3, states_cutoff, states_cutoff), dtype=complex128)
-        )
-
-        # Slice arrays based on states_cutoff
-        sx = sx[:states_cutoff, :states_cutoff]
-        sy = sy[:states_cutoff, :states_cutoff]
-        sz = sz[:states_cutoff, :states_cutoff]
-        lx = lx[:states_cutoff, :states_cutoff]
-        ly = ly[:states_cutoff, :states_cutoff]
-        lz = lz[:states_cutoff, :states_cutoff]
-
-    elif states_cutoff == 0:
-        #  Initialize the result array
-        total_angular_momenta = ascontiguousarray(
-            zeros((3, sx.shape[0], sx.shape[1]), dtype=complex128)
-        )
-
-    # Compute and save magnetic momenta in a.u.
-    total_angular_momenta[0] = sx + lx
-    total_angular_momenta[1] = sy + ly
-    total_angular_momenta[2] = sz + lz
-
     return total_angular_momenta
-
-
-def get_soc_magnetic_momenta_and_energies_from_hdf5():
-    pass

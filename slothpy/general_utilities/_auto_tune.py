@@ -347,12 +347,12 @@ def _mth_benchmark(
                         ),
                     )
 
-    exec_time = sorted(exec_time[len(exec_time) // 2 :])
+    exec_time = sorted(exec_time)[: ceil(len(exec_time) / 2)]
     return mean(
         exec_time[: ceil(len(exec_time) / 2)]
-    )  # Can return min, max or mean for different approaches depending on
-    # internal_loop_samples size in _auto_tune so be careful what you are
-    # doing.
+    )  # Can return min, max, median, or mean for different approaches
+    # depending on internal_loop_samples size in _auto_tune so be careful what
+    # you are doing.
 
 
 def _auto_tune(

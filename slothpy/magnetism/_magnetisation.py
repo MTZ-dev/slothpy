@@ -24,7 +24,7 @@ from numpy.linalg import eigh
 from numba import jit
 from slothpy.general_utilities._constants import KB, MU_B
 from slothpy.general_utilities._system import _get_num_of_processes
-from slothpy.general_utilities.io import (
+from slothpy.general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
 from slothpy.magnetism._zeeman import _calculate_zeeman_matrix

@@ -11,7 +11,7 @@ from numpy import (
 from numpy.linalg import eigh, det
 from numba import jit
 from numba.types import Tuple
-from slothpy.general_utilities.io import (
+from slothpy.general_utilities._io import (
     _get_soc_energies_and_soc_angular_momenta_from_hdf5,
 )
 from slothpy.general_utilities._math_expresions import (

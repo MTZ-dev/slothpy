@@ -1,7 +1,7 @@
 from slothpy.core.compound_object import Compound
-from slothpy.general_utilities.io import (
-    orca_spin_orbit_to_slt,
-    molcas_spin_orbit_to_slt,
+from slothpy.general_utilities._io import (
+    _orca_spin_orbit_to_slt,
+    _molcas_spin_orbit_to_slt,
 )
 
 
@@ -14,7 +14,7 @@ def compound_from_orca(
     pt2: bool = False,
 ) -> Compound:
     try:
-        orca_spin_orbit_to_slt(
+        _orca_spin_orbit_to_slt(
             orca_filepath,
             orca_filename,
             hdf5_filepath,
@@ -47,7 +47,7 @@ def compound_from_molcas(
     molcas_filename: str,
 ) -> Compound:
     try:
-        molcas_spin_orbit_to_slt(
+        _molcas_spin_orbit_to_slt(
             molcas_filepath,
             molcas_filename,
             hdf5_filepath,

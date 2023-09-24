@@ -67,22 +67,28 @@ if __name__ == "__main__":
 
     start_time = perf_counter()
 
+    print(
+        CeCoN3.soc_decomposition_in_z_pseudo_spin_basis(
+            "bas3", 0, 10, "magnetic"
+        )
+    )
+
     # a, b = CeCoN3.calculate_g_tensor_and_axes_doublet(
     #     "bas3", np.arange(0, 400, 1)
     # )
 
-    CeCoN3.calculate_chit_3d(
-        "bas3",
-        temperatures,
-        fields,
-        37,
-        1,
-        0.0001,
-        453,
-        128,
-        1,
-        autotune=True,
-    )
+    # CeCoN3.calculate_chit_3d(
+    #     "bas3",
+    #     temperatures,
+    #     fields,
+    #     37,
+    #     1,
+    #     0.0001,
+    #     453,
+    #     128,
+    #     1,
+    #     autotune=True,
+    # )
 
     # CeCoN3.calculate_mag_3d(
     #     "bas3",

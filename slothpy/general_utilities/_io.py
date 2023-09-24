@@ -7,13 +7,8 @@ from numpy import (
     ascontiguousarray,
     zeros,
     empty,
-    arange,
-    all,
     any,
-    issubdtype,
-    unique,
     diagonal,
-    integer,
     int64,
     float64,
     complex128,
@@ -30,7 +25,7 @@ from slothpy.general_utilities._math_expresions import (
 )
 
 
-def grep_to_file(
+def _grep_to_file(
     path_inp: str,
     inp_file: str,
     pattern: str,
@@ -92,7 +87,7 @@ def _dataset_exists(hdf5_file, group_name, dataset_name):
         return False
 
 
-def get_orca_so_blocks_size(
+def _get_orca_so_blocks_size(
     path: str, orca_file: str
 ) -> tuple[int, int, int, int]:
     """
@@ -132,7 +127,7 @@ def get_orca_so_blocks_size(
     return so_dim, block_size, num_of_whole_blocks, remaining_columns
 
 
-def orca_spin_orbit_to_slt(
+def _orca_spin_orbit_to_slt(
     path_orca: str,
     inp_orca: str,
     path_out: str,
@@ -162,7 +157,7 @@ def orca_spin_orbit_to_slt(
         block_size,
         num_of_whole_blocks,
         remaining_columns,
-    ) = get_orca_so_blocks_size(path_orca, inp_orca)
+    ) = _get_orca_so_blocks_size(path_orca, inp_orca)
 
     # Create HDF5 file and ORCA group
     output = File(f"{hdf5_file}.slt", "a")
@@ -188,7 +183,7 @@ def orca_spin_orbit_to_slt(
         pattern = f"{matrix_name} MATRIX IN CI BASIS\n"
 
         # Extract lines matching the pattern to a temporary file
-        grep_to_file(
+        _grep_to_file(
             path_orca, inp_orca, pattern, path_out, out_file, block_size + 4
         )  # The first 4 lines are titles
 
@@ -229,7 +224,7 @@ def orca_spin_orbit_to_slt(
         remove(out_file)
 
     # Extract and process SOC matrix
-    grep_to_file(
+    _grep_to_file(
         path_orca,
         inp_orca,
         r"SOC MATRIX \(A\.U\.\)\n",
@@ -308,7 +303,7 @@ def orca_spin_orbit_to_slt(
     output.close()
 
 
-def molcas_spin_orbit_to_slt(
+def _molcas_spin_orbit_to_slt(
     path_molcas: str,
     inp_molcas: str,
     path_out: str,

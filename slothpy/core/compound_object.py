@@ -32,7 +32,7 @@ from slothpy.magnetism._zeeman import (
 from slothpy.general_utilities._grids_over_hemisphere import (
     _lebedev_laikov_grid,
 )
-from slothpy.general_utilities.io import (
+from slothpy.general_utilities._io import (
     _group_exists,
     _get_soc_energies_cm_1,
     _get_states_magnetic_momenta,
@@ -40,17 +40,14 @@ from slothpy.general_utilities.io import (
     _get_total_angular_momneta_matrix,
     _get_magnetic_momenta_matrix,
 )
-from slothpy.angular_momentum.pseudo_spin_ito import (
-    get_decomposition_in_z_total_angular_momentum_basis,
-    get_decomposition_in_z_magnetic_momentum_basis,
-    ito_real_decomp_matrix,
-    ito_complex_decomp_matrix,
-    get_soc_matrix_in_z_magnetic_momentum_basis,
-    get_soc_matrix_in_z_total_angular_momentum_basis,
-    get_zeeman_matrix_in_z_magnetic_momentum_basis,
-    get_zeeman_matrix_in_z_total_angular_momentum_basis,
-    matrix_from_ito_complex,
-    matrix_from_ito_real,
+from slothpy.angular_momentum._pseudo_spin_ito import (
+    _get_decomposition_in_z_pseudo_spin_basis,
+    _ito_real_decomp_matrix,
+    _ito_complex_decomp_matrix,
+    _get_soc_matrix_in_z_pseudo_spin_basis,
+    _get_zeeman_matrix_in_z_pseudo_spin_basis,
+    _matrix_from_ito_complex,
+    _matrix_from_ito_real,
 )
 from slothpy.general_utilities._math_expresions import (
     _normalize_grid_vectors,
@@ -3183,8 +3180,15 @@ class Compound:
 
         return magnetic_momenta_matrix_array
 
-    def decomposition_in_z_magnetic_momentum_basis(
-        self, group, start_state, stop_state, rotation=None, slt: str = None
+    def matrix_decomposition_in_z_pseudo_spin_basis(
+        self,
+        group,
+        start_state,
+        stop_state,
+        matrix,
+        pseudo_kind,
+        rotation=None,
+        slt: str = None,
     ):
         if (not isinstance(stop_state, int)) or (stop_state < 0):
             raise ValueError(
@@ -3193,8 +3197,14 @@ class Compound:
             )
 
         try:
-            decomposition = get_decomposition_in_z_magnetic_momentum_basis(
-                self._hdf5, group, start_state, stop_state, rotation
+            decomposition = _get_decomposition_in_z_pseudo_spin_basis(
+                self._hdf5,
+                group,
+                start_state,
+                stop_state,
+                matrix,
+                pseudo_kind,
+                rotation,
             )
         except Exception as e:
             error_type = type(e).__name__
@@ -3204,7 +3214,7 @@ class Compound:
                 " magnetic momentum basis of SOC matrix from file:"
                 f" {self._hdf5} - group {group}: {error_type}: {error_message}"
             )
-
+        ## correct naming 4 options
         if slt is not None:
             try:
                 with h5py.File(self._hdf5, "r+") as file:
@@ -3257,121 +3267,35 @@ class Compound:
 
         return decomposition
 
-    def decomposition_in_z_total_angular_momentum_basis(
-        self, group, start_state, stop_state, rotation=None, slt: str = None
-    ):
-        if (not isinstance(stop_state, int)) or (stop_state < 0):
-            raise ValueError(
-                "Invalid states number, set it to positive integer or 0 for"
-                " all states."
-            )
-
-        try:
-            decomposition = (
-                get_decomposition_in_z_total_angular_momentum_basis(
-                    self._hdf5, group, start_state, stop_state, rotation
-                )
-            )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                'Error encountered while trying to get decomposition in "z"'
-                " total angular momentum basis of SOC matrix from file:"
-                f" {self._hdf5} - group {group}: {error_type}: {error_message}"
-            )
-
-        if slt is not None:
-            try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_total_angular_decomposition"
-                    )
-                    new_group.attrs["Description"] = (
-                        f'Group({slt}) containing decomposition in "z" total'
-                        " angular momentum basis of SOC matrix calculated"
-                        f" from group: {group}."
-                    )
-                    decomposition_dataset = new_group.create_dataset(
-                        f"{slt}_magnetic_momenta_matrix",
-                        shape=decomposition.shape,
-                        dtype=float64,
-                    )
-                    decomposition_dataset.attrs["Description"] = (
-                        "Dataset containing % decomposition (rows SO-states,"
-                        ' columns - basis) in "z" total angular momentum'
-                        f" basis of SOC matrix from group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_pseudo_spin_states",
-                        shape=(decomposition.shape[0],),
-                        dtype=float64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing Sz pseudo-spin states"
-                        " corresponding to the decomposition of SOC matrix"
-                        f" from group: {group}."
-                    )
-
-                    decomposition_dataset[:] = decomposition[:]
-                    dim = (decomposition.shape[1] - 1) / 2
-                    states_dataset[:] = np.arange(
-                        -dim, dim + 1, step=1, dtype=float64
-                    )
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save decomposition in"
-                    ' "z" total angular momentum basis of SOC matrix to file:'
-                    f" {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
-
-        return decomposition
-
     def soc_crystal_field_parameters(
         self,
         group,
         start_state,
         stop_state,
         order,
+        pseudo_kind: str,
         even_order: bool = True,
         complex: bool = False,
-        magnetic: bool = False,
         rotation=None,
         slt: str = None,
     ):
-        if magnetic:
-            try:
-                soc_matrix = get_soc_matrix_in_z_magnetic_momentum_basis(
-                    self._hdf5, group, start_state, stop_state, rotation
-                )
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    'Error encountered while trying to get SOC matrix in "z"'
-                    f" magnetic momentum basis from file: {self._hdf5} - group"
-                    f" {group}: {error_type}: {error_message}"
-                )
-
-        else:
-            try:
-                soc_matrix = get_soc_matrix_in_z_total_angular_momentum_basis(
-                    self._hdf5, group, start_state, stop_state, rotation
-                )
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    'Error encountered while trying to get SOC matrix in "z"'
-                    f" total angular momentum basis from file: {self._hdf5} -"
-                    f" group {group}: {error_type}: {error_message}"
-                )
+        try:
+            soc_matrix = _get_soc_matrix_in_z_pseudo_spin_basis(
+                self._hdf5,
+                group,
+                start_state,
+                stop_state,
+                pseudo_kind,
+                rotation,
+            )
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            raise Exception(
+                'Error encountered while trying to get SOC matrix in "z"'
+                f" magnetic momentum basis from file: {self._hdf5} - group"
+                f" {group}: {error_type}: {error_message}"
+            )
 
         dim = (soc_matrix.shape[1] - 1) / 2
 
@@ -3382,7 +3306,7 @@ class Compound:
 
         if complex:
             try:
-                cfp = ito_complex_decomp_matrix(soc_matrix, order, even_order)
+                cfp = _ito_complex_decomp_matrix(soc_matrix, order, even_order)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -3394,7 +3318,7 @@ class Compound:
                 )
         else:
             try:
-                cfp = ito_real_decomp_matrix(soc_matrix, order, even_order)
+                cfp = _ito_real_decomp_matrix(soc_matrix, order, even_order)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -3466,52 +3390,30 @@ class Compound:
         field,
         orientation,
         order,
+        pseudo_kind,
         imaginary: bool = False,
-        magnetic: bool = False,
         rotation=None,
         slt: str = None,
     ):
-        if magnetic:
-            try:
-                zeeman_matrix = get_zeeman_matrix_in_z_magnetic_momentum_basis(
-                    self._hdf5,
-                    group,
-                    field,
-                    orientation,
-                    start_state,
-                    stop_state,
-                    rotation,
-                )
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to get Zeeman matrix in"
-                    f' "z" magnetic momentum basis from file: {self._hdf5} -'
-                    f" group {group}: {error_type}: {error_message}"
-                )
-        else:
-            try:
-                zeeman_matrix = (
-                    get_zeeman_matrix_in_z_total_angular_momentum_basis(
-                        self._hdf5,
-                        group,
-                        field,
-                        orientation,
-                        start_state,
-                        stop_state,
-                        rotation,
-                    )
-                )
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to get Zeeman matrix in"
-                    ' "z" total angular momentum basis from file:'
-                    f" {self._hdf5} - group {group}: {error_type}:"
-                    f" {error_message}"
-                )
+        try:
+            zeeman_matrix = _get_zeeman_matrix_in_z_pseudo_spin_basis(
+                self._hdf5,
+                group,
+                field,
+                orientation,
+                start_state,
+                stop_state,
+                pseudo_kind,
+                rotation,
+            )
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+            raise Exception(
+                "Error encountered while trying to get Zeeman matrix in"
+                f' "z" magnetic momentum basis from file: {self._hdf5} -'
+                f" group {group}: {error_type}: {error_message}"
+            )
 
         dim = (zeeman_matrix.shape[1] - 1) / 2
 
@@ -3522,7 +3424,7 @@ class Compound:
 
         if imaginary:
             try:
-                cfp = ito_complex_decomp_matrix(zeeman_matrix, order)
+                cfp = _ito_complex_decomp_matrix(zeeman_matrix, order)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -3534,7 +3436,7 @@ class Compound:
                 )
         else:
             try:
-                cfp = ito_real_decomp_matrix(zeeman_matrix, order)
+                cfp = _ito_real_decomp_matrix(zeeman_matrix, order)
             except Exception as e:
                 error_type = type(e).__name__
                 error_message = str(e)
@@ -3605,7 +3507,6 @@ class Compound:
         dataset: str = None,
         pseudo_spin: str = None,
         slt: str = None,
-        matrix_type: str = None,
     ):
         if (
             (dataset is not None)
@@ -3616,9 +3517,9 @@ class Compound:
                 J = pseudo_spin
                 coefficients = self[f"{name}", f"{dataset}"]
                 if imaginary:
-                    matrix = matrix_from_ito_complex(J, coefficients)
+                    matrix = _matrix_from_ito_complex(J, coefficients)
                 else:
-                    matrix = matrix_from_ito_real(J, coefficients)
+                    matrix = _matrix_from_ito_real(J, coefficients)
 
             except Exception as e:
                 error_type_1 = type(e).__name__
@@ -3668,16 +3569,16 @@ class Compound:
                 else:
                     J_result = J[0]
                     if imaginary:
-                        matrix = matrix_from_ito_complex(J[0], coefficients)
+                        matrix = _matrix_from_ito_complex(J[0], coefficients)
                     else:
-                        matrix = matrix_from_ito_real(J[0], coefficients)
+                        matrix = _matrix_from_ito_real(J[0], coefficients)
 
             else:
                 J_result = J[0]
                 if imaginary:
-                    matrix = matrix_from_ito_complex(J[0], coefficients)
+                    matrix = _matrix_from_ito_complex(J[0], coefficients)
                 else:
-                    matrix = matrix_from_ito_real(J[0], coefficients)
+                    matrix = _matrix_from_ito_real(J[0], coefficients)
 
         if slt is not None:
             try:
@@ -3728,18 +3629,17 @@ class Compound:
         start_state,
         stop_state,
         matrix_type,
-        basis_type,
+        pseudo_kind,
         rotation=None,
         field=None,
         orientation=None,
         slt: str = None,
     ):
         if (matrix_type not in ["zeeman", "soc"]) or (
-            basis_type not in ["angular", "magnetic"]
+            pseudo_kind not in ["total_angular", "magnetic"]
         ):
-            raise ValueError(
-                'Only valid matrix_type are "soc" or "zeeman" and basis_type'
-                ' are "angular" or "magnetic".'
+            raise NotImplementedError(
+                'The only valid matrix types are "soc" or "zeeman".'
             )
 
         if matrix_type == "zeeman" and (
@@ -3751,43 +3651,31 @@ class Compound:
 
         try:
             if matrix_type == "zeeman":
-                if basis_type == "angular":
-                    matrix = (
-                        get_zeeman_matrix_in_z_total_angular_momentum_basis(
-                            self._hdf5,
-                            group,
-                            field,
-                            orientation,
-                            start_state,
-                            stop_state,
-                            rotation,
-                        )
-                    )
-                elif basis_type == "magnetic":
-                    matrix = get_zeeman_matrix_in_z_magnetic_momentum_basis(
-                        self._hdf5,
-                        group,
-                        field,
-                        orientation,
-                        start_state,
-                        stop_state,
-                        rotation,
-                    )
+                matrix = _get_zeeman_matrix_in_z_pseudo_spin_basis(
+                    self._hdf5,
+                    group,
+                    field,
+                    orientation,
+                    start_state,
+                    stop_state,
+                    pseudo_kind,
+                    rotation,
+                )
             elif matrix_type == "soc":
-                if basis_type == "angular":
-                    matrix = get_soc_matrix_in_z_total_angular_momentum_basis(
-                        self._hdf5, group, start_state, stop_state, rotation
-                    )
-                elif basis_type == "magnetic":
-                    matrix = get_soc_matrix_in_z_magnetic_momentum_basis(
-                        self._hdf5, group, start_state, stop_state, rotation
-                    )
+                matrix = _get_soc_matrix_in_z_pseudo_spin_basis(
+                    self._hdf5,
+                    group,
+                    start_state,
+                    stop_state,
+                    pseudo_kind,
+                    rotation,
+                )
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
             raise Exception(
                 f"Error encountered while trying to get {matrix_type} matrix"
-                f" from file in {basis_type} momentum basis: {self._hdf5} -"
+                f" from file in {pseudo_kind} momentum basis: {self._hdf5} -"
                 f" group {group}: {error_type}: {error_message}"
             )
 
@@ -3795,11 +3683,11 @@ class Compound:
             try:
                 with h5py.File(self._hdf5, "r+") as file:
                     new_group = file.create_group(
-                        f"{slt}_{matrix_type}_matrix_in_{basis_type}_basis"
+                        f"{slt}_{matrix_type}_matrix_in_{pseudo_kind}_basis"
                     )
                     new_group.attrs["Description"] = (
                         f"Group({slt}) containing {matrix_type} matrix in"
-                        f' {basis_type} momentum "z" basis calculated from'
+                        f' {pseudo_kind} momentum "z" basis calculated from'
                         f" group: {group}."
                     )
                     matrix_dataset = new_group.create_dataset(
@@ -3809,7 +3697,7 @@ class Compound:
                     )
                     matrix_dataset.attrs["Description"] = (
                         f"Dataset containing {matrix_type} matrix in"
-                        f' {basis_type} momentum "z" basis calculated from'
+                        f' {pseudo_kind} momentum "z" basis calculated from'
                         f" group: {group}."
                     )
                     states_dataset = new_group.create_dataset(
@@ -3819,7 +3707,7 @@ class Compound:
                     )
                     states_dataset.attrs["Description"] = (
                         "Dataset containing states indexes of"
-                        f' {matrix_type} matrix in {basis_type} momentum "z"'
+                        f' {matrix_type} matrix in {pseudo_kind} momentum "z"'
                         f" basis from group: {group}."
                     )
 
@@ -3835,9 +3723,9 @@ class Compound:
                 error_message = str(e)
                 raise Exception(
                     "Error encountered while trying to save"
-                    f' {matrix_type} matrix in {basis_type} momentum "z" basis'
-                    f" to file: {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
+                    f' {matrix_type} matrix in {pseudo_kind} momentum "z"'
+                    f" basis to file: {self._hdf5} - group {slt}:"
+                    f" {error_type}: {error_message}"
                 )
 
         return matrix

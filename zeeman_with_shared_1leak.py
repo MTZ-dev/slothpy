@@ -4,7 +4,7 @@ import multiprocessing.shared_memory
 import numpy as np
 from numba import jit
 from slothpy.general_utilities._system import get_num_of_processes
-from slothpy.general_utilities.io import (
+from slothpy.general_utilities._io import (
     get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
 

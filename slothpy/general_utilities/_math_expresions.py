@@ -92,7 +92,7 @@ def Clebsh_Gordan(j1, m1, j2, m2, j3, m3):
     cache=True,
     nogil=True,
 )
-def Wigner_3j(j1, j2, j3, m1, m2, m3):
+def _Wigner_3j(j1, j2, j3, m1, m2, m3):
     return (
         (-1) ** (j1 - j2 - m3)
         / sqrt(2 * j3 + 1)
@@ -126,13 +126,27 @@ def _finite_diff_stencil(diff_order: int, num_of_points: int, step: float64):
     return stencil_coeff
 
 
-def hermitian_x_in_basis_of_hermitian_y(x_matrix, y_matrix):
+@jit(
+    "complex128[:,:](complex128[:,:], complex128[:,:])",
+    nopython=True,
+    cache=True,
+    nogil=True,
+    fastmath=True,
+)
+def _hermitian_x_in_basis_of_hermitian_y(x_matrix, y_matrix):
     _, eigenvectors = eigh(y_matrix)
 
     return eigenvectors.conj().T @ x_matrix @ eigenvectors
 
 
-def decomposition_of_hermitian_matrix(matrix):
+@jit(
+    "float64[:,:](complex128[:,:])",
+    nopython=True,
+    cache=True,
+    nogil=True,
+    fastmath=True,
+)
+def _decomposition_of_hermitian_matrix(matrix):
     _, eigenvectors = eigh(matrix)
 
     return (eigenvectors * eigenvectors.conj()).real.T * 100

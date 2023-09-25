@@ -1,6 +1,5 @@
 from os import path
 from typing import Tuple, Union
-import h5py
 from h5py import File, Group, Dataset
 from numpy import ndarray, array, float64, int64, complex128
 import numpy as np

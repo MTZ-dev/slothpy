@@ -3790,43 +3790,53 @@ class Compound:
         Parameters
         ----------
         group : str
-            _description_
+            Name of a group containing results of relativistic ab initio
+            calculations used for obtaining the Zeeman matrix.
         start_state : int
-            _description_
+            Number of the first Zeeman state to be included.
         stop_state : int
-            _description_
+            Number of the last Zeeman state to be included. If both start and
+            stop are set to zero all available states from the file will be
+            used.
         field : float64
-            _description_
+            Magnetic field value at which Zeman matrix will be computed.
         orientation : ndarray[float64]
-            _description_
+            Orientation of the magnetic field in the form of an ArrayLike
+            structure (can be converted to numpy.NDArray) [direction_x,
+            direction_y, direction_z].
         order : int
-            _description_
-        pseudo_kind : Union[&quot;magnetic&quot;, &quot;total_angular&quot;]
-            _description_
+            Order of the highest ITO (CFP) to be included in the decomposition.
+        pseudo_kind : Union["magnetic", "total_angular"]
+            Kind of a pseudo-spin basis. Two options available: "magnetic" or
+            "total_angular" for the decomposition in a particular basis.
         complex : bool, optional
-            _description_, by default False
+            If True, instead of real ITOs (CFPs) complex ones will be given.,
+            by default False
         rotation : ndarray[float64], optional
-            _description_, by default None
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead., by default None
         slt : str, optional
-            _description_, by default None
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _zeeman_ito_decomposition., by default None
 
         Returns
         -------
         list
-            _description_
+            The resulting list gives ITOs - B_k_q in the form [k,q,B_k_q]
 
         Raises
         ------
         SltSaveError
-            _description_
+            If the name of the group already exists in the .slt file.
         SltCompError
-            _description_
+            If the program is unable to calculate Zeeman matrix from the file.
         SltInputError
-            _description_
+            If the order exceeds 2S pseudo-spin value
         SltCompError
-            _description_
+            If the ITO decomposition of the matrix is unsuccessful
         SltFileError
-            _description_
+            If the program is unable to correctly save results to .slt file.
         """
         if slt is not None:
             slt_group_name = f"{slt}_zeeman_ito_decomposition"
@@ -3950,152 +3960,243 @@ class Compound:
 
     def matrix_from_ito(
         self,
-        name,
-        imaginary: bool = False,
-        dataset: str = None,
-        pseudo_spin: str = None,
+        full_group_name: str,
+        complex: bool,
+        dataset_name: str = None,
+        pseudo_spin: float64 = None,
         slt: str = None,
-    ):
-        if (
-            (dataset is not None)
-            and (pseudo_spin is not None)
-            and pseudo_spin > 0
-        ):
-            try:
+    ) -> ndarray[complex128]:
+        """
+        Calculates matrix from a given ITO decomposition.
+
+        Parameters
+        ----------
+        full_group_name : str
+            Full name of a group containing ITO decomposition.
+        complex : bool
+            Determines the type of ITOs in the dataset. If True, instead of
+            real ITOs complex ones will be used., by default False
+        dataset_name : str, optional
+            A custom name for a user-created dataset within the group that
+            contains list of B_k_q parameters in the form [k,q,B_k_q].,
+            by default None
+        pseudo_spin : float64, optional
+            Pseudo spin S value for the user-defined dataset., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _matrix_from_ito., by default None
+
+        Returns
+        -------
+        ndarray[complex128]
+            Matrix reconstructed from a given ITO list.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltCompError
+            If the calculation of the matrix from ITOs is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_matrix_from_ito"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
+        try:
+            if (
+                (dataset_name is not None)
+                and (pseudo_spin is not None)
+                and isinstance(pseudo_spin, int)
+                and pseudo_spin > 0
+            ):
                 J = pseudo_spin
-                coefficients = self[f"{name}", f"{dataset}"]
-                if imaginary:
+                coefficients = self[f"{full_group_name}", f"{dataset_name}"]
+                if complex:
                     matrix = _matrix_from_ito_complex(J, coefficients)
                 else:
                     matrix = _matrix_from_ito_real(J, coefficients)
 
-            except Exception as e:
-                error_type_1 = type(e).__name__
-                error_message_1 = str(e)
-                error_print_1 = f"{error_type_1}: {error_message_1}"
-                raise Exception(
-                    "Failed to form matrix from ITO parameters.\n Error(s)"
-                    " encountered while trying compute the matrix:"
-                    f" {error_print_1}"
-                )
-
-        else:
-            try:
+            else:
+                dataset_name = full_group_name.split("_", 1)[0]
                 J = self[
-                    f"{name}_zeeman_ito_decomposition",
-                    f"{name}_pseudo_spin_states",
+                    f"{full_group_name}",
+                    f"{dataset_name}_pseudo_spin_states",
                 ]
                 coefficients = self[
-                    f"{name}_zeeman_ito_decomposition",
-                    f"{name}_ito_parameters",
+                    f"{full_group_name}",
+                    f"{dataset_name}_ito_parameters",
                 ]
-
-            except Exception as e:
-                error_type_2 = type(e).__name__
-                error_message_2 = str(e)
-                error_print_2 = f"{error_type_2}: {error_message_2}"
-                try:
-                    J = self[
-                        f"{name}_soc_ito_decomposition",
-                        f"{name}_pseudo_spin_states",
-                    ]
-                    coefficients = self[
-                        f"{name}_soc_ito_decomposition",
-                        f"{name}_ito_parameters",
-                    ]
-
-                except Exception as e:
-                    error_type_3 = type(e).__name__
-                    error_message_3 = str(e)
-                    error_print_3 = f"{error_type_3}: {error_message_3}"
-                    raise Exception(
-                        "Failed to form matrix from ITO parameters.\n Error(s)"
-                        " encountered while trying compute the matrix:"
-                        f" {error_print_2}, {error_print_3}"
-                    )
-
-                else:
-                    J_result = J[0]
-                    if imaginary:
-                        matrix = _matrix_from_ito_complex(J[0], coefficients)
-                    else:
-                        matrix = _matrix_from_ito_real(J[0], coefficients)
-
-            else:
-                J_result = J[0]
-                if imaginary:
+                if complex:
                     matrix = _matrix_from_ito_complex(J[0], coefficients)
                 else:
                     matrix = _matrix_from_ito_real(J[0], coefficients)
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute matrix from ITOs from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{full_group_name}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(f"{slt}_matrix")
-                    new_group.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_matrix",
+                    (
+                        "Dataset containing matrix from ITOs calculated from"
+                        f" group: {full_group_name}."
+                    ),
+                    (
                         f"Group({slt}) containing matrix from ITO calculated"
-                        f" from group: {name}."
-                    )
-                    matrix_dataset = new_group.create_dataset(
-                        f"{slt}_matrix",
-                        shape=matrix.shape,
-                        dtype=np.complex128,
-                    )
-                    matrix_dataset.attrs["Description"] = (
-                        "Dataset containing matrix from ITO calculated from"
-                        f" group: {name}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_pseudo_spin_states",
-                        shape=(1,),
-                        dtype=float64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing S pseudo-spin number"
-                        f" corresponding to the matrix from group: {name}."
-                    )
-
-                    matrix_dataset[:] = matrix[:]
-                    states_dataset[:] = J_result
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save matrix from ITO"
-                    f" to file: {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
+                        f" from group: {full_group_name}."
+                    ),
+                ] = matrix[:, :]
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save matrix from ITOs to"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return matrix
 
-    def soc_zeem_in_angular_magnetic_momentum_basis(
+    def soc_zeem_in_z_angular_magnetic_momentum_basis(
         self,
-        group,
-        start_state,
-        stop_state,
-        matrix_type,
-        pseudo_kind,
-        rotation=None,
-        field=None,
-        orientation=None,
+        group: str,
+        start_state: int,
+        stop_state: int,
+        matrix_type: Union["soc", "zeeman"],
+        basis_kind: Union["magnetic", "total_angular"],
+        rotation: ndarray[float64] = None,
+        field: float64 = None,
+        orientation: ndarray[float64] = None,
         slt: str = None,
-    ):
+    ) -> ndarray[complex128]:
+        """
+        Calculates SOC or Zeeman matrix in "z" magnetic or total angular
+        momentum basis.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for obtaining the SOC or Zeeman matrix.
+        start_state : int
+            Number of the first SOC state to be included.
+        stop_state : int
+            Number of the last SOC state to be included. If both start and stop
+            are set to zero all available states from the file will be used
+        matrix_type : Union["soc", "zeeman"]
+            Type of a matrix to be decomposed. Two options available: "soc" or
+            "zeeman".
+        basis_kind : Union["magnetic", "total_angular"]
+            Kind of a basis. Two options available: "magnetic" or
+            "total_angular" for the decomposition in a particular basis
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead., by default None
+        field : float64, optional
+            _description_, by default None
+        orientation : ndarray[float64], optional
+            Orientation of the magnetic field in the form of an ArrayLike
+            structure (can be converted to numpy.NDArray) [direction_x,
+            direction_y, direction_z]., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _{matrix_type}_matrix_in_{basis_kind}_basis.,
+            by default None
+
+        Returns
+        -------
+        ndarray[complex128]
+            Matrix in a given kind of basis.
+
+        Raises
+        ------
+        SltInputError
+            If an unsuported type of matrix or basis is provided.
+        SltInputError
+            If there is no field value or orientation provided for Zeeman
+            matrix.
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltCompError
+            If the calculation of a matrix in "z" basis is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
         if (matrix_type not in ["zeeman", "soc"]) or (
-            pseudo_kind not in ["total_angular", "magnetic"]
+            basis_kind not in ["total_angular", "magnetic"]
         ):
-            raise NotImplementedError(
-                'The only valid matrix types are "soc" or "zeeman".'
+            raise SltInputError(
+                NotImplementedError(
+                    "The only valid matrix types and pseudo spin kinds are"
+                    ' "soc" or "zeeman" and "magnetic" or "total_angular"'
+                    " respectively."
+                )
             )
 
         if matrix_type == "zeeman" and (
             (field is None) or (orientation is None)
         ):
-            raise ValueError(
-                "For Zeeman matrix provide filed value and orientation."
+            raise SltInputError(
+                ValueError(
+                    "For Zeeman matrix provide field value and orientation."
+                )
             )
+
+        if slt is not None:
+            slt_group_name = (
+                f"{slt}_{matrix_type}_matrix_in_{basis_kind}_basis"
+            )
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
 
         try:
             if matrix_type == "zeeman":
@@ -4106,7 +4207,7 @@ class Compound:
                     orientation,
                     start_state,
                     stop_state,
-                    pseudo_kind,
+                    basis_kind,
                     rotation,
                 )
             elif matrix_type == "soc":
@@ -4115,66 +4216,55 @@ class Compound:
                     group,
                     start_state,
                     stop_state,
-                    pseudo_kind,
+                    basis_kind,
                     rotation,
                 )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                f"Error encountered while trying to get {matrix_type} matrix"
-                f" from file in {pseudo_kind} momentum basis: {self._hdf5} -"
-                f" group {group}: {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute matrix from ITOs from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_{matrix_type}_matrix_in_{pseudo_kind}_basis"
-                    )
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing {matrix_type} matrix in"
-                        f' {pseudo_kind} momentum "z" basis calculated from'
-                        f" group: {group}."
-                    )
-                    matrix_dataset = new_group.create_dataset(
-                        f"{slt}_matrix",
-                        shape=matrix.shape,
-                        dtype=np.complex128,
-                    )
-                    matrix_dataset.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_matrix",
+                    (
                         f"Dataset containing {matrix_type} matrix in"
-                        f' {pseudo_kind} momentum "z" basis calculated from'
+                        f' {basis_kind} momentum "z" basis calculated from'
                         f" group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_states",
-                        shape=(matrix.shape[1],),
-                        dtype=np.int64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing states indexes of"
-                        f' {matrix_type} matrix in {pseudo_kind} momentum "z"'
-                        f" basis from group: {group}."
-                    )
-
-                    matrix_dataset[:] = matrix[:]
-                    states_dataset[:] = np.arange(
-                        matrix.shape[1], dtype=np.int64
-                    )
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save"
-                    f' {matrix_type} matrix in {pseudo_kind} momentum "z"'
-                    f" basis to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
+                    ),
+                    (
+                        f"Group({slt}) containing {matrix_type} matrix in"
+                        f' {basis_kind} momentum "z" basis calculated from'
+                        f" group: {group}."
+                    ),
+                ] = matrix[:, :]
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    f'Failed to save {matrix} matrix in "z"'
+                    f" {basis_kind} basis to"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return matrix
 

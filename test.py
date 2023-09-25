@@ -61,21 +61,21 @@ if __name__ == "__main__":
     CeCoN3 = slt.compound_from_slt(".", "123")
 
     # CeCoN3.delete_group_dataset("dupaadaaaaaas")
-    nazwa = "rrrerrrrrder"
-    fields = linspace(0.0001, 10, 33, dtype=float64)
+    nazwa = "rrrrerrrrrdrder"
+    fields = linspace(0.0001, 10, 100, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
 
-    print(
-        CeCoN3.matrix_decomposition_in_z_pseudo_spin_basis(
-            "bas3",
-            "soc",
-            "magnetic",
-            0,
-            10,
-        )
-    )
+    # print(
+    #     CeCoN3.matrix_decomposition_in_z_pseudo_spin_basis(
+    #         "bas3",
+    #         "soc",
+    #         "magnetic",
+    #         0,
+    #         10,
+    #     )
+    # )
 
     # a, b = CeCoN3.calculate_g_tensor_and_axes_doublet(
     #     "bas3", np.arange(0, 400, 1)
@@ -94,16 +94,15 @@ if __name__ == "__main__":
     #     autotune=True,
     # )
 
-    # CeCoN3.calculate_mag_3d(
-    #     "bas3",
-    #     fields,
-    #     52,
-    #     temperatures,
-    #     0,
-    #     128,
-    #     1,
-    #     slt=nazwa,
-    # )
+    CeCoN3.calculate_mag_3d(
+        "bas3",
+        fields,
+        60,
+        temperatures,
+        128,
+        128,
+        1,
+    )
 
     # CeCoN3.calculate_hemholtz_energy_3d(
     #     "bas3",
@@ -135,9 +134,9 @@ if __name__ == "__main__":
     # mth = CeCoN3.calculate_mth(
     #     "bas3",
     #     fields,
-    #     4,
+    #     6,
     #     temperatures,
-    #     1000,
+    #     256,
     #     128,
     #     2,
     # )

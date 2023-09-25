@@ -2,7 +2,7 @@ from os import path
 from typing import Tuple, Union
 import h5py
 from h5py import File, Group, Dataset
-from numpy import ndarray, array, float64, int64
+from numpy import ndarray, array, float64, int64, complex128
 import numpy as np
 from ._slothpy_exceptions import (
     SltFileError,
@@ -36,7 +36,7 @@ from slothpy.general_utilities._io import (
     _group_exists,
     _get_soc_energies_cm_1,
     _get_states_magnetic_momenta,
-    _get_states_total_angular_momneta,
+    _get_states_total_angular_momenta,
     _get_total_angular_momneta_matrix,
     _get_magnetic_momenta_matrix,
 )
@@ -81,8 +81,6 @@ mpl.use("Qt5Agg")
 ###       Hemholtz 3D plot, animate 3D all properties,
 ###       coloured prints and errors in terminal, numpy docstrings,
 ###       new diemnsions 3D, np.arrays of orient in decompositions
-
-### MATRIX FROM ITO FIX MATRIX TYPE!!!!
 
 ### Effective charge distribution from CFPs.
 
@@ -426,7 +424,7 @@ class Compound:
             corresponding to doublet labels (numbers).
         slt : str, optional
             If given, the results will be saved using this name to the .slt
-            file with the sufix: _g_tensors_axes, by default None.
+            file with the suffix: _g_tensors_axes, by default None.
 
         Returns
         -------
@@ -596,7 +594,7 @@ class Compound:
             the parallelization over CPUs., by default 1
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _magnetisation., by default None
+            file with suffix: _magnetisation., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -826,7 +824,7 @@ class Compound:
             the parallelization over CPUs., by default 1
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _3d_magnetisation., by default None
+            file with suffix: _3d_magnetisation., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -1093,7 +1091,7 @@ class Compound:
             by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _susceptibility., by default None
+            file with suffix: _susceptibility., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -1387,7 +1385,7 @@ class Compound:
             reference frame instead., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _susceptibility_tensor., by default None
+            file with suffix: _susceptibility_tensor., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -1676,7 +1674,7 @@ class Compound:
             by default True
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _3d_magnetisation., by default None
+            file with suffix: _3d_magnetisation., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -1971,7 +1969,7 @@ class Compound:
             Turns on the calculation of internal energy., by default False
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _hemholtz_energy or _internal_energy., by default
+            file with suffix: _hemholtz_energy or _internal_energy., by default
             None
         autotune : bool, optional
             If True the program will automatically try to choose the best
@@ -2216,7 +2214,7 @@ class Compound:
             Turns on the calculation of internal energy., by default False
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _3d_hemholtz_energy or _3d_internal_energy.,
+            file with suffix: _3d_hemholtz_energy or _3d_internal_energy.,
             by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
@@ -2475,7 +2473,7 @@ class Compound:
             direction_z, weight],...].
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with sufix: _zeeman_splitting., by default None
+            file with suffix: _zeeman_splitting., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -2694,8 +2692,58 @@ class Compound:
         return zeeman_array
 
     def zeeman_matrix(
-        self, group: str, states_cutoff, field, orientations, slt: str = None
-    ):
+        self,
+        group: str,
+        states_cutoff: int,
+        fields: ndarray[float64],
+        orientations: ndarray[float64],
+        slt: str = None,
+    ) -> ndarray[complex128]:
+        """
+        Calculates Zeeman matrices for a given list of magnetic fields and
+        their orientations.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the Zeeman matrices.
+        states_cutoff : int
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0
+        fields : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) for which Zeeman matrices will be computed.
+        orientations : ndarray[float64]
+            List (ArrayLike structure) of particular magnetic field directions
+            for which Zeeman matrices will be constructed. The list has to
+            follow the format: [[direction_x, direction_y, direction_z],...].
+            The vectors will be automatically normalized.
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _zeeman_matrix., by default None
+
+        Returns
+        -------
+        ndarray[complex128]
+            The resulting array gives Zeeman matrices for each field value and
+            orientation in the form [fields, orientations, matrix, matrix] in
+            atomic units a.u. (Hartree).
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
+            If fields are not a one-diemsional array.
+        SltCompError
+            If the calculation of Zeeman matrices is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
         if slt is not None:
             slt_group_name = f"{slt}_zeeman_matrix"
             if _group_exists(self._hdf5, slt_group_name):
@@ -2728,7 +2776,7 @@ class Compound:
 
         try:
             zeeman_matrix_array = _get_zeeman_matrix(
-                self._hdf5, group, states_cutoff, field, orientations
+                self._hdf5, group, states_cutoff, fields, orientations
             )
         except Exception as exc:
             raise SltCompError(
@@ -2751,11 +2799,12 @@ class Compound:
                     slt_group_name,
                     f"{slt}_matrix",
                     (
-                        "Dataset containing Zeeman matrix calculated from"
-                        f" group: {group}."
+                        "Dataset containing Zeeman matrices calculated from"
+                        f" group: {group} in the form [fields, orientations,"
+                        " matrix, matrix]."
                     ),
                     (
-                        f"Group({slt}) containing Zeeman matrix calculated"
+                        f"Group({slt}) containing Zeeman matrices calculated"
                         f" from group: {group}."
                     ),
                 ] = zeeman_matrix_array[:, :, :, :]
@@ -2796,20 +2845,38 @@ class Compound:
         return zeeman_matrix_array
 
     def soc_energies_cm_1(
-        self, group: str, num_of_states: int = None, slt: str = None
+        self, group: str, number_of_states: int = 0, slt: str = None
     ) -> np.ndarray[float64]:
-        """Returns energies in cm^(-1) of the given number of Spin-Orbit states.
+        """
+        Returns energies for the given number of first spin-orbit
+        states in cm-1.
 
-        Args:
-            group (str): Name of a group containing results of relativistic ab initio calculations used for the SOC energy simulation.
-            num_of_states (int, optional): Number of states (couted from the ground one) whose energies will be calculated. If None or 0 all accessible states will be considered. Defaults to None.
-            slt (str, optional): If not None the results will be saved using this name to .slt file with sufix: _soc_energies. Defaults to None.
-        Raises:
-            Exception: If the program is unable to get energies from .slt file.
-            Exception: If the program is unable to correctly save the results to .slt file.
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations.
+        number_of_states : int, optional
+            Number of states whose energy will be returned. If set to zero, all
+            available states will be inculded., by default 0
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _soc_energies., by default None
 
-        Returns:
-            np.ndarray[float64]: The resulting array gives SOC energies in cm^(-1) with indices corresponding to SO-state numbers.
+        Returns
+        -------
+        np.ndarray[float64]
+            The resulting array is one-dimensional and contains the energy of
+            first number_of_states states in cm-1.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltReadError
+            If the program is unable to get SOC energies from the .slt file.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
         """
         if slt is not None:
             slt_group_name = f"{slt}_soc_energies"
@@ -2831,7 +2898,7 @@ class Compound:
 
         try:
             soc_energies_array = _get_soc_energies_cm_1(
-                self._hdf5, group, num_of_states
+                self._hdf5, group, number_of_states
             )
         except Exception as exc:
             raise SltReadError(
@@ -2882,163 +2949,439 @@ class Compound:
     def states_magnetic_momenta(
         self,
         group: str,
-        states: Union[int, np.ndarray[int]] = None,
-        rotation=None,
+        states: Union[int, np.ndarray[int]] = 0,
+        rotation: ndarray[float64] = None,
         slt: str = None,
-    ):
-        states = np.array(states, dtype=int64)
-        #### tutaj blok try i do zapisu w .slt co to za stany (w funkcji też są array(states) ale potrzebujesz do zapisu
-        # i tak wszedzie)
+    ) -> ndarray[float64]:
+        """
+        Calculates magnetic momenta of a given list (or number) of SOC states.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the magnetic momenta.
+        states : Union[int, np.ndarray[int]], optional
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            states indexes for which magnetic momenta will be calculated. If
+            set to an integer it acts as a states cutoff (first n states will
+            be given). For all available states set it to zero., by default 0
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _states_magnetic_momenta., by default None
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting array is one-dimensional and contains the magnetic
+            momenta corresponding to the given states indexes in atomic units.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltCompError
+            If the calculation of magnetic momenta is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_states_magnetic_momenta"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
+        if not isinstance(states, int):
+            try:
+                states = np.array(states, dtype=int64)
+            except Exception as exc:
+                raise SltInputError(exc) from None
 
         try:
-            states, magnetic_momenta_array = _get_states_magnetic_momenta(
+            magnetic_momenta_array = _get_states_magnetic_momenta(
                 self._hdf5, group, states, rotation
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get states magnetic"
-                f" momenta from file: {self._hdf5} - group {group}:"
-                f" {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute states magnetic momenta from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_states_magnetic_momenta"
-                    )
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing states magnetic momenta"
-                        f" calculated from group: {group}."
-                    )
-                    magnetic_momenta_dataset = new_group.create_dataset(
-                        f"{slt}_magnetic_momenta",
-                        shape=(
-                            magnetic_momenta_array.shape[0],
-                            magnetic_momenta_array.shape[1],
-                        ),
-                        dtype=float64,
-                    )
-                    magnetic_momenta_dataset.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_magnetic_momenta",
+                    (
                         "Dataset containing states magnetic momenta"
                         f" (0-x,1-y,2-z) calculated from group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_states",
-                        shape=(states.shape[0],),
-                        dtype=np.int64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing indexes of states used in"
-                        f" simulation of magnetic momenta from group: {group}."
-                    )
+                    ),
+                    (
+                        f"Group({slt}) containing states magnetic momenta"
+                        f" calculated from group: {group}."
+                    ),
+                ] = magnetic_momenta_array
+                self[
+                    slt_group_name,
+                    f"{slt}_states",
+                    (
+                        "Dataset containing indexes of states (or states"
+                        " cutoff) used in simulation of magnetic momenta from"
+                        f" group: {group}."
+                    ),
+                ] = array(states)
 
-                    magnetic_momenta_dataset[:] = magnetic_momenta_array[:]
-                    states_dataset[:] = states[:]
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save states magnetic"
-                    f" momenta to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save states magnetic momenta to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return magnetic_momenta_array
 
     def states_total_angular_momenta(
         self,
         group: str,
-        states: np.ndarray = None,
-        rotation=None,
+        states: Union[int, np.ndarray[int]] = 0,
+        rotation: ndarray[float64] = None,
         slt: str = None,
-    ):
-        states = np.array(states)
+    ) -> ndarray[float64]:
+        """
+        Calculates total angular momenta of a given list (or number) of SOC
+        states.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the magnetic momenta.
+        states : Union[int, np.ndarray[int]], optional
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            states indexes for which total angular momenta will be calculated.
+            If set to an integer it acts as a states cutoff (first n states
+            will be given). For all available states set it to zero.
+            , by default 0
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _states_total_angular_momenta., by default None
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting array is one-dimensional and contains the total
+            angular momenta corresponding to the given states indexes in atomic
+            units.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltCompError
+            If the calculation of total angular momenta is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_states_total_angular_momenta"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
+        if not isinstance(states, int):
+            try:
+                states = np.array(states, dtype=int64)
+            except Exception as exc:
+                raise SltInputError(exc) from None
 
         try:
-            (
-                states,
-                total_angular_momenta_array,
-            ) = _get_states_total_angular_momneta(
+            total_angular_momenta_array = _get_states_total_angular_momenta(
                 self._hdf5, group, states, rotation
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get states total angular"
-                f" momenta from file: {self._hdf5} - group {group}:"
-                f" {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute states total angular momenta from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_states_total_angular_momenta"
-                    )
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing states total angular momenta"
-                        f" calculated from group: {group}."
-                    )
-                    total_angular_momenta_dataset = new_group.create_dataset(
-                        f"{slt}_total_angular_momenta",
-                        shape=(
-                            total_angular_momenta_array.shape[0],
-                            total_angular_momenta_array.shape[1],
-                        ),
-                        dtype=float64,
-                    )
-                    total_angular_momenta_dataset.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_total_angular_momenta",
+                    (
                         "Dataset containing states total angular momenta"
                         f" (0-x,1-y,2-z) calculated from group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_states",
-                        shape=(states.shape[0],),
-                        dtype=np.int64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing indexes of states used in"
-                        " simulation of total angular momenta from group:"
-                        f" {group}."
-                    )
+                    ),
+                    (
+                        f"Group({slt}) containing states total angular momenta"
+                        f" calculated from group: {group}."
+                    ),
+                ] = total_angular_momenta_array
+                self[
+                    slt_group_name,
+                    f"{slt}_states",
+                    (
+                        "Dataset containing indexes of states (or states"
+                        " cutoff) used in simulation of total angular momenta"
+                        f" from group: {group}."
+                    ),
+                ] = array(states)
 
-                    total_angular_momenta_dataset[
-                        :
-                    ] = total_angular_momenta_array[:]
-                    states_dataset[:] = states[:]
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save states total"
-                    f" angular momenta to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save states total angular momenta to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return total_angular_momenta_array
+
+    def magnetic_momenta_matrix(
+        self,
+        group: str,
+        states_cutoff: np.ndarray = 0,
+        rotation: ndarray[float64] = None,
+        slt: str = None,
+    ) -> ndarray[complex128]:
+        """
+        Calculates magnetic momenta matrix for a given number of SOC states.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the magnetic momenta
+            matrix.
+        states_cutoff : np.ndarray, optional
+            Number of states that will be taken into account for construction
+            of the magnetic momenta matrix. If set to zero, all available
+            states from the file will be included., by default 0
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _magnetic_momenta_matrix., by default None
+
+        Returns
+        -------
+        ndarray[complex128]
+            The resulting magnetic_momenta_matrix_array gives magnetic momenta
+            in atomic units and is in the form [coordinates, matrix, matrix]
+            - the first dimension runs over coordinates (0-x, 1-y, 2-z).
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltCompError
+            If the calculation of magetic momenta matrix is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_magnetic_momenta_matrix"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
+        try:
+            magnetic_momenta_matrix_array = _get_magnetic_momenta_matrix(
+                self._hdf5, group, states_cutoff, rotation
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute magnetic momenta matrix from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+
+        if slt is not None:
+            try:
+                self[
+                    slt_group_name,
+                    f"{slt}_magnetic_momenta_matrix",
+                    (
+                        "Dataset containing magnetic momenta matrix"
+                        f" (0-x, 1-y, 2-z) calculated from group: {group}."
+                    ),
+                    (
+                        f"Group {group} containing magnetic momenta"
+                        f" matrix calculated from group: {group}."
+                    ),
+                ] = magnetic_momenta_matrix_array[:, :]
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save states magnetic momenta to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
+
+        return magnetic_momenta_matrix_array
 
     def total_angular_momenta_matrix(
         self,
         group: str,
-        states_cutoff: np.int64 = None,
-        rotation=None,
+        states_cutoff: int = None,
+        rotation: ndarray[float64] = None,
         slt: str = None,
-    ):
-        if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
-            raise ValueError(
-                "Invalid states cutoff, set it to positive integer or 0 for"
-                " all states."
-            )
+    ) -> ndarray[complex128]:
+        """
+        Calculates total angular momenta matrix for a given number of SOC
+        states.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the total angular momenta
+            matrix.
+        states_cutoff : np.ndarray, optional
+            Number of states that will be taken into account for construction
+            of the total angular momenta matrix. If set to zero, all available
+            states from the file will be included., by default 0
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _total angular_momenta_matrix., by default None
+
+        Returns
+        -------
+        ndarray[complex128]
+            The resulting total_angular_momenta_matrix_array gives total
+            angular momenta in atomic units and is in the form [coordinates,
+            matrix, matrix] - the first dimension runs over coordinates
+            (0-x, 1-y, 2-z).
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltCompError
+            If the calculation of total angular momenta matrix is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_total_angular_momenta_matrix"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
 
         try:
             total_angular_momenta_matrix_array = (
@@ -3046,239 +3389,288 @@ class Compound:
                     self._hdf5, group, states_cutoff, rotation
                 )
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get total angular momenta"
-                f" matrix from file: {self._hdf5} - group {group}:"
-                f" {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute total angular momenta matrix from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_total_angular_momenta_matrix"
-                    )
-                    total_angular_momenta_matrix_dataset = (
-                        new_group.create_dataset(
-                            f"{slt}_total_angular_momenta_matrix",
-                            shape=total_angular_momenta_matrix_array.shape,
-                            dtype=np.complex128,
-                        )
-                    )
-                    total_angular_momenta_matrix_dataset.attrs[
-                        "Description"
-                    ] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_total_angular_momenta_matrix",
+                    (
                         "Dataset containing total angular momenta matrix"
                         f" (0-x, 1-y, 2-z) calculated from group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_states",
-                        shape=(total_angular_momenta_matrix_array.shape[1],),
-                        dtype=np.int64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing states indexes of total angular"
-                        f" momenta matrix from group: {group}."
-                    )
-
-                    total_angular_momenta_matrix_dataset[
-                        :
-                    ] = total_angular_momenta_matrix_array[:]
-                    states_dataset[:] = np.arange(
-                        total_angular_momenta_matrix_array.shape[1],
-                        dtype=np.int64,
-                    )
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save total angular"
-                    f" momenta matrix to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
+                    ),
+                    (
+                        f"Group {group} containing total angular momenta"
+                        f" matrix calculated from group: {group}."
+                    ),
+                ] = total_angular_momenta_matrix_array[:, :]
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save states total angular momenta to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return total_angular_momenta_matrix_array
 
-    def magnetic_momenta_matrix(
-        self,
-        group: str,
-        states_cutoff: np.ndarray = None,
-        rotation=None,
-        slt: str = None,
-    ):
-        if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
-            raise ValueError(
-                "Invalid states cutoff, set it to positive integer or 0 for"
-                " all states."
-            )
-
-        try:
-            magnetic_momenta_matrix_array = _get_magnetic_momenta_matrix(
-                self._hdf5, group, states_cutoff, rotation
-            )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get total angular momenta"
-                f" matrix from file: {self._hdf5} - group {group}:"
-                f" {error_type}: {error_message}"
-            )
-
-        if slt is not None:
-            try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_magnetic_momenta_matrix"
-                    )
-                    new_group.attrs["Description"] = (
-                        f"Group({slt}) containing magnetic momenta calculated"
-                        f" from group: {group}."
-                    )
-                    magnetic_momenta_matrix_dataset = new_group.create_dataset(
-                        f"{slt}_magnetic_momenta_matrix",
-                        shape=magnetic_momenta_matrix_array.shape,
-                        dtype=np.complex128,
-                    )
-                    magnetic_momenta_matrix_dataset.attrs["Description"] = (
-                        "Dataset containing magnetic momenta matrix (0-x,"
-                        f" 1-y, 2-z) calculated from group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_states",
-                        shape=(magnetic_momenta_matrix_array.shape[1],),
-                        dtype=np.int64,
-                    )
-                    states_dataset.attrs["Description"] = (
-                        "Dataset containing states indexes of magnetic"
-                        f" momenta matrix from group: {group}."
-                    )
-
-                    magnetic_momenta_matrix_dataset[
-                        :
-                    ] = magnetic_momenta_matrix_array[:]
-                    states_dataset[:] = np.arange(
-                        magnetic_momenta_matrix_array.shape[1], dtype=np.int64
-                    )
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save magnetic momenta"
-                    f" matrix to file: {self._hdf5} - group {slt}:"
-                    f" {error_type}: {error_message}"
-                )
-
-        return magnetic_momenta_matrix_array
-
     def matrix_decomposition_in_z_pseudo_spin_basis(
         self,
-        group,
-        start_state,
-        stop_state,
-        matrix,
-        pseudo_kind,
-        rotation=None,
+        group: str,
+        matrix: Union["soc", "zeeman"],
+        pseudo_kind: Union["magnetic", "total_angular"],
+        start_state: int = 0,
+        stop_state: int = 0,
+        rotation: ndarray[float64] = None,
+        field: float64 = None,
+        orientation: ndarray[float64] = None,
         slt: str = None,
-    ):
-        if (not isinstance(stop_state, int)) or (stop_state < 0):
-            raise ValueError(
-                "Invalid states number, set it to positive integer or 0 for"
-                " all states."
-            )
+    ) -> ndarray[float64]:
+        """
+        Calculates decomposition of a given matrix in "z" pseudo-spin basis.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the construction of the matrix.
+        matrix : Union["soc", "zeeman"]
+            Type of a matrix to be decomposed. Two options available: "soc" or
+            "zeeman".
+        pseudo_kind : Union["magnetic", "total_angular"]
+            Kind of a pseudo-spin basis. Two options available: "magnetic" or
+            "total_angular" for the decomposition in a particular basis.
+        start_state : int, optional
+            Number of the first SOC state to be included., by default 0
+        stop_state : int, optional
+            Number of the last SOC state to be included. If both start and stop
+            are set to zero all available states from the file will be used.
+            , by default 0
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead., by default None
+        field : float64, optional
+            If matrix type = "zeeman" it controls a magnetic field value at
+            which Zeman matrix will be computed., by default None
+        orientation : ndarray[float64], optional
+            If matrix type = "zeeman" it controls the orientation of the
+            magnetic field and has to be in the form [direction_x, direction_y,
+            direction_z] and be an ArrayLike structure (can be converted to
+            numpy.NDArray)., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _magnetic/total_angular_decomposition.
+            , by default None
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting array gives decomposition in % where rows are
+            SOC/Zeeman states and columns are associated with pseudo spin basis
+            (from -Sz to Sz).
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltCompError
+            If the decomposition of the matrix is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_{pseudo_kind}_decomposition"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
 
         try:
+            if orientation is not None:
+                orientation = array(orientation)
             decomposition = _get_decomposition_in_z_pseudo_spin_basis(
                 self._hdf5,
                 group,
-                start_state,
-                stop_state,
                 matrix,
                 pseudo_kind,
+                start_state,
+                stop_state,
                 rotation,
+                field,
+                orientation,
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                'Error encountered while trying to get decomposition in "z"'
-                " magnetic momentum basis of SOC matrix from file:"
-                f" {self._hdf5} - group {group}: {error_type}: {error_message}"
-            )
-        ## correct naming 4 options
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                f"Failed to decompose {matrix} matrix from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + f'". in {pseudo_kind} basis.',
+            ) from None
+
         if slt is not None:
+            dim = (decomposition.shape[1] - 1) / 2
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_magnetic_decomposition"
-                    )
-                    new_group.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_{pseudo_kind}_decomposition",
+                    (
+                        "Dataset containing decomposition (rows - SO-states,"
+                        f' columns - basis) in "z" {pseudo_kind} momentum'
+                        f" basis of {matrix} matrix from group: {group}."
+                    ),
+                    (
                         f'Group({slt}) containing decomposition in "z"'
-                        " magnetic momentum basis of SOC matrix calculated"
+                        f" {pseudo_kind} basis of {matrix} matrix calculated"
                         f" from group: {group}."
-                    )
-                    decomposition_dataset = new_group.create_dataset(
-                        f"{slt}_magnetic_momenta_matrix",
-                        shape=decomposition.shape,
-                        dtype=float64,
-                    )
-                    decomposition_dataset.attrs["Description"] = (
-                        "Dataset containing % decomposition (rows -"
-                        ' SO-states, columns - basis) in "z" magnetic'
-                        f" momentum basis of SOC matrix from group: {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_pseudo_spin_states",
-                        shape=(decomposition.shape[0],),
-                        dtype=float64,
-                    )
-                    states_dataset.attrs["Description"] = (
+                    ),
+                ] = decomposition[:, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_pseudo_spin_states",
+                    (
                         "Dataset containing Sz pseudo-spin states"
-                        " corresponding to the decomposition of SOC matrix"
-                        f" from group: {group}."
-                    )
-
-                    decomposition_dataset[:] = decomposition[:]
-                    dim = (decomposition.shape[1] - 1) / 2
-                    states_dataset[:] = np.arange(
-                        -dim, dim + 1, step=1, dtype=float64
-                    )
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save decomposition in"
-                    ' "z" magnetic momentum basis of SOC matrix to file:'
-                    f" {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
+                        " corresponding to the decomposition of"
+                        f" {matrix} matrix from group: {group}."
+                    ),
+                ] = np.arange(-dim, dim + 1, step=1, dtype=float64)
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save {pseudo_kind} decomposition of"
+                    f" {matrix} matrix"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return decomposition
 
     def soc_crystal_field_parameters(
         self,
-        group,
-        start_state,
-        stop_state,
-        order,
-        pseudo_kind: str,
+        group: str,
+        start_state: int,
+        stop_state: int,
+        order: int,
+        pseudo_kind: Union["magnetic", "total_angular"],
         even_order: bool = True,
         complex: bool = False,
-        rotation=None,
+        rotation: ndarray[float64] = None,
         slt: str = None,
-    ):
+    ) -> list:
+        """
+        Calculates ITO decomposition (CFPs) of SOC matrix.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for obtaining the SOC matrix.
+        start_state : int
+            Number of the first SOC state to be included.
+        stop_state : int
+            Number of the last SOC state to be included. If both start and stop
+            are set to zero all available states from the file will be used.
+        order : int
+            Order of the highest ITO (CFP) to be included in the decomposition.
+        pseudo_kind : Union["magnetic", "total_angular"]
+            Kind of a pseudo-spin basis. Two options available: "magnetic" or
+            "total_angular" for the decomposition in a particular basis.
+        even_order : bool, optional
+            If True, only even order ITOs (CFPs) will be included in the
+            decomposition., by default True
+        complex : bool, optional
+            If True, instead of real ITOs (CFPs) complex ones will be given.,
+            by default False
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead., by default None
+        slt : str, optional
+            If given the results will be saved in a group of this name to .slt
+            file with suffix: _soc_ito_decomposition., by default None
+
+        Returns
+        -------
+        list
+            The resulting list gives CFP - B_k_q (ITO) in the form [k,q,B_k_q].
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltReadError
+            If the program is unable to read SOC matrix from the file.
+        SltInputError
+            If the order exceeds 2S pseudo-spin value.
+        SltCompError
+            If the ITO decomposition of the matrix is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_soc_ito_decomposition"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
         try:
             soc_matrix = _get_soc_matrix_in_z_pseudo_spin_basis(
                 self._hdf5,
@@ -3288,46 +3680,50 @@ class Compound:
                 pseudo_kind,
                 rotation,
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                'Error encountered while trying to get SOC matrix in "z"'
-                f" magnetic momentum basis from file: {self._hdf5} - group"
-                f" {group}: {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltReadError(
+                self._hdf5,
+                exc,
+                "Failed to read SOC matrix from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + f'". in {pseudo_kind} basis.',
+            ) from None
 
         dim = (soc_matrix.shape[1] - 1) / 2
 
-        if order > 2 * dim:
-            raise ValueError(
-                "Order of ITO parameters exeeds 2S. Set it less or equal."
+        if not isinstance(order, int) or order < 0 or order > 2 * dim:
+            raise SltInputError(
+                ValueError(
+                    "Order of ITO parameters has to be a positive integer or"
+                    " it exceeds 2S. Set it less or equal."
+                )
             )
 
-        if complex:
-            try:
+        try:
+            if complex:
                 cfp = _ito_complex_decomp_matrix(soc_matrix, order, even_order)
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to ITO decompose SOC"
-                    ' matrix in "z" magnetic momentum basis from file:'
-                    f" {self._hdf5} - group {group}: {error_type}:"
-                    f" {error_message}"
-                )
-        else:
-            try:
+            else:
                 cfp = _ito_real_decomp_matrix(soc_matrix, order, even_order)
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to ITO decompose SOC"
-                    ' matrix in "z" total angular momentum basis from file:'
-                    f" {self._hdf5} - group {group}: {error_type}:"
-                    f" {error_message}"
-                )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to ITO decompose SOC matrix from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + f'". in {pseudo_kind} basis.',
+            ) from None
 
         cfp_return = cfp
 
@@ -3335,66 +3731,121 @@ class Compound:
             cfp = np.array(cfp)
 
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_soc_ito_decomposition"
-                    )
-                    new_group.attrs["Description"] = (
-                        f'Group({slt}) containing ITO decomposition in "z"'
-                        " pseudo-spin basis of SOC matrix calculated from"
-                        f" group: {group}."
-                    )
-                    cfp_dataset = new_group.create_dataset(
-                        f"{slt}_ito_parameters",
-                        shape=cfp.shape,
-                        dtype=cfp.dtype,
-                    )
-                    cfp_dataset.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_ito_parameters",
+                    (
                         'Dataset containing ITO decomposition in "z"'
                         " pseudo-spin basis of SOC matrix from group:"
                         f" {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_pseudo_spin_states",
-                        shape=(1,),
-                        dtype=float64,
-                    )
-                    states_dataset.attrs["Description"] = (
+                    ),
+                    (
+                        f'Group({slt}) containing ITO decomposition in "z"'
+                        " pseudo-spin basis of SOC matrix calculated from"
+                        f" group: {group}."
+                    ),
+                ] = cfp[:, :, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_pseudo_spin_states",
+                    (
                         "Dataset containing S pseudo-spin number"
                         " corresponding to the decomposition of SOC matrix"
                         f" from group: {group}."
-                    )
-
-                    cfp_dataset[:] = cfp[:]
-                    states_dataset[:] = dim
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save ITO decomposition"
-                    ' in "z" pseudo-spin basis of SOC matrix to file:'
-                    f" {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
+                    ),
+                ] = dim
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save ITO decomposition of SOC matrix to"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
         return cfp_return
 
     def zeeman_matrix_ito_decpomosition(
         self,
-        group,
-        start_state,
-        stop_state,
-        field,
-        orientation,
-        order,
-        pseudo_kind,
-        imaginary: bool = False,
-        rotation=None,
+        group: str,
+        start_state: int,
+        stop_state: int,
+        field: float64,
+        orientation: ndarray[float64],
+        order: int,
+        pseudo_kind: Union["magnetic", "total_angular"],
+        complex: bool = False,
+        rotation: ndarray[float64] = None,
         slt: str = None,
-    ):
+    ) -> list:
+        """
+        Calculates ITO decomposition of Zeeman matrix.
+
+        Parameters
+        ----------
+        group : str
+            _description_
+        start_state : int
+            _description_
+        stop_state : int
+            _description_
+        field : float64
+            _description_
+        orientation : ndarray[float64]
+            _description_
+        order : int
+            _description_
+        pseudo_kind : Union[&quot;magnetic&quot;, &quot;total_angular&quot;]
+            _description_
+        complex : bool, optional
+            _description_, by default False
+        rotation : ndarray[float64], optional
+            _description_, by default None
+        slt : str, optional
+            _description_, by default None
+
+        Returns
+        -------
+        list
+            _description_
+
+        Raises
+        ------
+        SltSaveError
+            _description_
+        SltCompError
+            _description_
+        SltInputError
+            _description_
+        SltCompError
+            _description_
+        SltFileError
+            _description_
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_zeeman_ito_decomposition"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
         try:
             zeeman_matrix = _get_zeeman_matrix_in_z_pseudo_spin_basis(
                 self._hdf5,
@@ -3406,99 +3857,96 @@ class Compound:
                 pseudo_kind,
                 rotation,
             )
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get Zeeman matrix in"
-                f' "z" magnetic momentum basis from file: {self._hdf5} -'
-                f" group {group}: {error_type}: {error_message}"
-            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to calculate Zeeman matrix from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + f'". in {pseudo_kind} basis.',
+            ) from None
 
         dim = (zeeman_matrix.shape[1] - 1) / 2
 
-        if order > 2 * dim:
-            raise ValueError(
-                "Order of ITO parameters exeeds 2S. Set it less or equal."
+        if not isinstance(order, int) or order < 0 or order > 2 * dim:
+            raise SltInputError(
+                ValueError(
+                    "Order of ITO parameters has to be a positive integer or"
+                    " it exceeds 2S. Set it less or equal."
+                )
             )
 
-        if imaginary:
-            try:
-                cfp = _ito_complex_decomp_matrix(zeeman_matrix, order)
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to ITO decompose Zeeman"
-                    ' matrix in "z" magnetic momentum basis from file:'
-                    f" {self._hdf5} - group {group}: {error_type}:"
-                    f" {error_message}"
-                )
-        else:
-            try:
-                cfp = _ito_real_decomp_matrix(zeeman_matrix, order)
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to ITO decompose Zeeman"
-                    ' matrix in "z" total angular momentum basis from file:'
-                    f" {self._hdf5} - group {group}: {error_type}:"
-                    f" {error_message}"
-                )
+        try:
+            if complex:
+                ito = _ito_complex_decomp_matrix(zeeman_matrix, order)
+            else:
+                ito = _ito_real_decomp_matrix(zeeman_matrix, order)
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to ITO decompose Zeeman matrix from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + f'". in {pseudo_kind} basis.',
+            ) from None
 
-        cfp_return = cfp
+        ito_return = ito
 
         if slt is not None:
-            cfp = np.array(cfp)
+            ito = np.array(ito)
 
             try:
-                with h5py.File(self._hdf5, "r+") as file:
-                    new_group = file.create_group(
-                        f"{slt}_zeeman_ito_decomposition"
-                    )
-                    new_group.attrs["Description"] = (
-                        f'Group({slt}) containing ITO decomposition in "z"'
-                        " pseudo-spin basis of Zeeman matrix calculated from"
-                        f" group: {group}."
-                    )
-                    cfp_dataset = new_group.create_dataset(
-                        f"{slt}_ito_parameters",
-                        shape=cfp.shape,
-                        dtype=cfp.dtype,
-                    )
-                    cfp_dataset.attrs["Description"] = (
+                self[
+                    slt_group_name,
+                    f"{slt}_ito_parameters",
+                    (
                         'Dataset containing ITO decomposition in "z"'
                         " pseudo-spin basis of Zeeman matrix from group:"
                         f" {group}."
-                    )
-                    states_dataset = new_group.create_dataset(
-                        f"{slt}_pseudo_spin_states",
-                        shape=(1,),
-                        dtype=float64,
-                    )
-                    states_dataset.attrs["Description"] = (
+                    ),
+                    (
+                        f'Group({slt}) containing ITO decomposition in "z"'
+                        " pseudo-spin basis of Zeeman matrix calculated from"
+                        f" group: {group}."
+                    ),
+                ] = ito[:, :, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_pseudo_spin_states",
+                    (
                         "Dataset containing S pseudo-spin number"
                         " corresponding to the decomposition of Zeeman matrix"
                         f" from group: {group}."
-                    )
+                    ),
+                ] = dim
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save ITO decomposition of Zeeman matrix to"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
 
-                    cfp_dataset[:] = cfp[:]
-                    states_dataset[:] = dim
-
-                self._get_hdf5_groups_datasets_and_attributes()
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to save ITO decomposition"
-                    ' in "z" pseudo-spin basis of Zeeman matrix to file:'
-                    f" {self._hdf5} - group {slt}: {error_type}:"
-                    f" {error_message}"
-                )
-
-        return cfp_return
+        return ito_return
 
     def matrix_from_ito(
         self,

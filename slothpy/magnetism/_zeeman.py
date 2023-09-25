@@ -263,7 +263,7 @@ def _get_zeeman_matrix(
     filename: str,
     group: str,
     states_cutoff: int,
-    fields: float64,
+    fields: ndarray[float64],
     orientations: ndarray,
 ) -> ndarray:
     zeeman_matrix = zeros(

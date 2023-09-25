@@ -68,8 +68,12 @@ if __name__ == "__main__":
     start_time = perf_counter()
 
     print(
-        CeCoN3.soc_decomposition_in_z_pseudo_spin_basis(
-            "bas3", 0, 10, "magnetic"
+        CeCoN3.matrix_decomposition_in_z_pseudo_spin_basis(
+            "bas3",
+            "soc",
+            "magnetic",
+            0,
+            10,
         )
     )
 

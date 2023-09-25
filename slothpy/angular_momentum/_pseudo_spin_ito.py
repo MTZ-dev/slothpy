@@ -112,19 +112,40 @@ def _get_soc_matrix_in_z_pseudo_spin_basis(
 
 
 def _get_decomposition_in_z_pseudo_spin_basis(
-    filename, group, start_state, stop_state, matrix, kind, rotation=None
+    filename,
+    group,
+    matrix,
+    pseudo_kind,
+    start_state,
+    stop_state,
+    rotation=None,
+    field=None,
+    orientation=None,
 ):
     if matrix == "soc":
         soc_matrix = _get_soc_matrix_in_z_pseudo_spin_basis(
-            filename, group, start_state, stop_state, kind, rotation
+            filename, group, start_state, stop_state, pseudo_kind, rotation
         )
-    elif matrix == "zeeman":
+    elif (
+        (matrix == "zeeman")
+        and (field != None and field is not None)
+        and (orientation != None and orientation is not None)
+    ):
         soc_matrix = _get_zeeman_matrix_in_z_pseudo_spin_basis(
-            filename, group, start_state, stop_state, kind, rotation
+            filename,
+            group,
+            field,
+            orientation,
+            start_state,
+            stop_state,
+            pseudo_kind,
+            rotation,
         )
     else:
         raise NotImplementedError(
-            'The only options for matrix are: "soc" and "zeeman".'
+            'The only options for matrix are: "soc" and "zeeman". For the'
+            " second option one needs to provide magnetic field value and its"
+            " orientation."
         )
     decopmosition = _decomposition_of_hermitian_matrix(soc_matrix)
 

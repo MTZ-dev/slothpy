@@ -576,7 +576,7 @@ def _get_soc_total_angular_momenta_and_energies_from_hdf5(
 
 
 def _get_soc_energies_cm_1(
-    filename: str, group: str, num_of_states: int = None
+    filename: str, group: str, num_of_states: int = 0
 ) -> ndarray:
     if num_of_states < 0 or (not isinstance(num_of_states, int)):
         raise ValueError(
@@ -605,7 +605,8 @@ def _get_soc_energies_cm_1(
                 f" number of SOC states: {soc_energies.shape[0]}"
             )
 
-        soc_energies = soc_energies[:num_of_states]
+        if num_of_states != 0:
+            soc_energies = soc_energies[:num_of_states]
 
         # Return operators in SOC basis
         return (soc_energies - soc_energies[0]) * H_CM_1
@@ -643,7 +644,7 @@ def _get_states_magnetic_momenta(
     return magnetic_momenta.real
 
 
-def _get_states_total_angular_momneta(
+def _get_states_total_angular_momenta(
     filename: str, group: str, states: ndarray = None, rotation: ndarray = None
 ):
     if any(states < 0):

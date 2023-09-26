@@ -11,7 +11,7 @@ from ._slothpy_exceptions import (
     SltInputError,
     SltPlotError,
 )
-from slothpy.general_utilities._constants import (
+from slothpy._general_utilities._constants import (
     RED,
     GREEN,
     YELLOW,
@@ -19,19 +19,23 @@ from slothpy.general_utilities._constants import (
     PURPLE,
     RESET,
 )
-from slothpy.magnetism._g_tensor import _g_tensor_and_axes_doublet
-from slothpy.magnetism._magnetisation import _mth, _mag_3d
-from slothpy.magnetism._susceptibility import _chitht, _chitht_tensor, _chit_3d
-from slothpy.magnetism._zeeman import (
+from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
+from slothpy._magnetism._magnetisation import _mth, _mag_3d
+from slothpy._magnetism._susceptibility import (
+    _chitht,
+    _chitht_tensor,
+    _chit_3d,
+)
+from slothpy._magnetism._zeeman import (
     _zeeman_splitting,
     _get_zeeman_matrix,
     _hemholtz_energyth,
     _hemholtz_energy_3d,
 )
-from slothpy.general_utilities._grids_over_hemisphere import (
-    _lebedev_laikov_grid,
+from slothpy._general_utilities._grids_over_hemisphere import (
+    lebedev_laikov_grid,
 )
-from slothpy.general_utilities._io import (
+from slothpy._general_utilities._io import (
     _group_exists,
     _get_soc_energies_cm_1,
     _get_states_magnetic_momenta,
@@ -39,7 +43,7 @@ from slothpy.general_utilities._io import (
     _get_total_angular_momneta_matrix,
     _get_magnetic_momenta_matrix,
 )
-from slothpy.angular_momentum._pseudo_spin_ito import (
+from slothpy._angular_momentum._pseudo_spin_ito import (
     _get_decomposition_in_z_pseudo_spin_basis,
     _ito_real_decomp_matrix,
     _ito_complex_decomp_matrix,
@@ -48,11 +52,11 @@ from slothpy.angular_momentum._pseudo_spin_ito import (
     _matrix_from_ito_complex,
     _matrix_from_ito_real,
 )
-from slothpy.general_utilities._math_expresions import (
+from slothpy._general_utilities._math_expresions import (
     _normalize_grid_vectors,
     _normalize_orientations,
 )
-from slothpy.general_utilities._auto_tune import _auto_tune
+from slothpy._general_utilities._auto_tune import _auto_tune
 
 # Experimental imports for plotting
 from cycler import cycler
@@ -101,7 +105,7 @@ print(
 
 class Compound:
     """
-    The core object constituting the API and access to the all methods.
+    The core object constituting the API and access to all the methods.
     """
 
     @classmethod
@@ -630,7 +634,7 @@ class Compound:
         See Also
         --------
         slothpy.lebedev_laikov_grid : For the description of the prescribed
-        Lebedev-Laikov grids
+                                      Lebedev-Laikov grids.
 
         Notes
         -----
@@ -672,7 +676,7 @@ class Compound:
             ) from None
 
         if isinstance(grid, int):
-            grid = _lebedev_laikov_grid(grid)
+            grid = lebedev_laikov_grid(grid)
         else:
             grid = _normalize_grid_vectors(grid)
 
@@ -1186,7 +1190,7 @@ class Compound:
             ) from None
 
         if isinstance(grid, int):
-            grid = _lebedev_laikov_grid(grid)
+            grid = lebedev_laikov_grid(grid)
         elif grid is not None:
             grid = _normalize_grid_vectors(grid)
 
@@ -2006,7 +2010,7 @@ class Compound:
         See Also
         --------
         slothpy.lebedev_laikov_grid : For the description of the prescribed
-        Lebedev-Laikov grids
+                                      Lebedev-Laikov grids.
 
         Notes
         -----
@@ -2055,7 +2059,7 @@ class Compound:
             ) from None
 
         if isinstance(grid, int):
-            grid = _lebedev_laikov_grid(grid)
+            grid = lebedev_laikov_grid(grid)
         else:
             grid = _normalize_grid_vectors(grid)
 
@@ -2512,7 +2516,7 @@ class Compound:
         See Also
         --------
         slothpy.lebedev_laikov_grid : For the description of the prescribed
-        Lebedev-Laikov grids
+                                      Lebedev-Laikov grids.
 
         Notes
         -----
@@ -2560,7 +2564,7 @@ class Compound:
             ) from None
 
         if isinstance(grid, int):
-            grid = _lebedev_laikov_grid(grid)
+            grid = lebedev_laikov_grid(grid)
             average = True
         elif average:
             grid = _normalize_grid_vectors(grid)

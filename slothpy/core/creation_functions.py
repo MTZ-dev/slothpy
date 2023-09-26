@@ -1,6 +1,6 @@
 from os.path import join
 from slothpy.core.compound_object import Compound
-from slothpy.general_utilities._io import (
+from slothpy._general_utilities._io import (
     _orca_spin_orbit_to_slt,
     _molcas_spin_orbit_to_slt,
 )
@@ -16,7 +16,7 @@ def compound_from_orca(
     pt2: bool = False,
 ) -> Compound:
     """
-    Create the Compound from ORCA output file.
+    Create a Compound from ORCA output file.
 
     Parameters
     ----------
@@ -77,7 +77,7 @@ def compound_from_molcas(
     molcas_filename: str,
 ) -> Compound:
     """
-    Create the Compound from MOLCAS rassi.h5 file.
+    Create a Compound from MOLCAS rassi.h5 file.
 
     Parameters
     ----------
@@ -130,7 +130,7 @@ def compound_from_molcas(
 
 def compound_from_slt(slt_filepath: str, slt_filename: str) -> Compound:
     """
-    Create the Compound from the existing .slt file.
+    Create a Compound from the existing .slt file.
 
     Parameters
     ----------

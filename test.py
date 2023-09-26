@@ -3,11 +3,17 @@ from time import perf_counter
 # os.environ['OMP_NUM_THREADS'] = '2'
 import slothpy as slt
 from numpy import linspace, float64
+from slothpy._general_utilities._grids_over_hemisphere import (
+    lebedev_laikov_grid,
+)
 
 # from slothpy.general_utilities._math_expresions import normalize_grid_vectors
 
 
 if __name__ == "__main__":
+    # for i in range(12):
+    #     k = lebedev_laikov_grid(i).shape[0]
+    #     print(f"{i} - {k} points")
     # test = slt.compound_from_slt(".", "Lorenzo_Co")
 
     # test.states_magnetic_momenta("rot_orca", 0)

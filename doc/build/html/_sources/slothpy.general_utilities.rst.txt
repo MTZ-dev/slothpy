@@ -1,0 +1,10 @@
+slothpy.general\_utilities package
+==================================
+
+Module contents
+---------------
+
+.. automodule:: slothpy.general_utilities
+   :members:
+   :undoc-members:
+   :show-inheritance:

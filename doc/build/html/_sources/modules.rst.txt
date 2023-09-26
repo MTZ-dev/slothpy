@@ -1,0 +1,7 @@
+slothpy
+=======
+
+.. toctree::
+   :maxdepth: 4
+
+   slothpy

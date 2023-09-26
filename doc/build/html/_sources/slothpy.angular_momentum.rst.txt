@@ -1,0 +1,10 @@
+slothpy.angular\_momentum package
+=================================
+
+Module contents
+---------------
+
+.. automodule:: slothpy.angular_momentum
+   :members:
+   :undoc-members:
+   :show-inheritance:

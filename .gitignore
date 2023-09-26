@@ -1,7 +1,7 @@
+.*
 *.out
 *.hdf5
 *.h5
-*.txt
 *.slt
 *.gif
 *.dat

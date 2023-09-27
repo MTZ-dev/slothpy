@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # print(temperatures)
 
     # CeCoN3 = slt.compound_from_orca(".", "testu", "error", ".", "geom.out")
-    # CeCoN3 = slt.compound_from_molcas(".", "123", "bas3", ".", "SmCo_DG_bas3")
+    # CeCoN3 = slt.compound_from_molcas(".", "123", "bas3", ".", "HoCo_DG_bas3")
     CeCoN3 = slt.compound_from_slt(".", "123")
 
     # CeCoN3.delete_group_dataset("dupaadaaaaaas")
@@ -87,28 +87,27 @@ if __name__ == "__main__":
     #     "bas3", np.arange(0, 400, 1)
     # )
 
-    # CeCoN3.calculate_chit_3d(
-    #     "bas3",
-    #     temperatures,
-    #     fields,
-    #     37,
-    #     1,
-    #     0.0001,
-    #     453,
-    #     128,
-    #     1,
-    #     autotune=True,
-    # )
-
-    CeCoN3.calculate_mag_3d(
+    CeCoN3.calculate_chit_3d(
         "bas3",
-        fields,
-        60,
         temperatures,
-        128,
-        128,
+        fields,
+        50,
+        1,
+        0.0001,
+        64,
+        64,
         1,
     )
+
+    # CeCoN3.calculate_mag_3d(
+    #     "bas3",
+    #     fields,
+    #     60,
+    #     temperatures,
+    #     128,
+    #     128,
+    #     1,
+    # )
 
     # CeCoN3.calculate_hemholtz_energy_3d(
     #     "bas3",
@@ -140,10 +139,10 @@ if __name__ == "__main__":
     # mth = CeCoN3.calculate_mth(
     #     "bas3",
     #     fields,
-    #     6,
+    #     5,
     #     temperatures,
-    #     256,
-    #     128,
+    #     898,
+    #     64,
     #     2,
     # )
 

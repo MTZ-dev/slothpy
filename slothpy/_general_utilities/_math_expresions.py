@@ -134,6 +134,7 @@ def _finite_diff_stencil(diff_order: int, num_of_points: int, step: float64):
     fastmath=True,
 )
 def _hermitian_x_in_basis_of_hermitian_y(x_matrix, y_matrix):
+    x_matrix = ascontiguousarray(x_matrix)
     _, eigenvectors = eigh(y_matrix)
 
     return eigenvectors.conj().T @ x_matrix @ eigenvectors

@@ -8,3 +8,5 @@
 *.in
 *.ipynb
 __pycache__
+.vscode
+.ipynb_checkpoints

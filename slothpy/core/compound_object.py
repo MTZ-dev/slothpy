@@ -449,8 +449,8 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
 
-        Notes
-        -----
+        Note
+        ----
         Magnetic axes are returned in the form of rotation matrices that
         diagonalise the Abragam-Bleaney tensor (G = gg.T). Coordinates of the
         main axes XYZ in the initial xzy frame are columns of such matrices

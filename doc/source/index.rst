@@ -6,11 +6,17 @@
 Welcome to SlothPy
 ===================================
 
-.. toctree::
-   :maxdepth: 4
-   :caption: SlothPy:
+Welcome to the best program. 
 
+
+.. toctree::
+   :maxdepth: 6
+
+   about
+   installation
+   how_to_start
    slothpy
+   how_to_cite
 
 Indices and tables
 ==================

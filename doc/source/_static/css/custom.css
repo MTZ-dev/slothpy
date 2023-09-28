@@ -3,5 +3,8 @@ html {
   --pst-sidebar-font-size: 12px;
 }
 
+.bd-sidebar-primary {
+  width: auto;
+}
 
 

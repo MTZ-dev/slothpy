@@ -1,5 +1,5 @@
-SlothPy
-===============
+Reference Manual
+================
 
 .. automodule:: slothpy
    :members:

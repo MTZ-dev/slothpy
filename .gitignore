@@ -1,6 +1,5 @@
 *.out
 *.hdf5
-*.h5
 *.slt
 *.gif
 *.dat

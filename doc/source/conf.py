@@ -49,6 +49,7 @@ autodoc_member_order = "bysource"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "pydata_sphinx_theme"
+toc_object_entries_show_parents = "hide"
 html_theme_options = {
     "show_nav_level": 6,
     "navigation_depth": 6,
@@ -58,7 +59,11 @@ html_theme_options = {
         "alt_text": "SlothPy",
     },
     "show_toc_level": 1,
-    "navbar_align": "left",
+    "secondary_sidebar_items": [
+        "edit-this-page",
+        "sourcelink",
+    ],  # Here add "page-toc" for table of contents on the right
+    "navbar_align": "content",
     "navbar_center": ["version-switcher", "navbar-nav"],
     "icon_links": [
         {
@@ -105,8 +110,3 @@ html_sidebars = {
 
 html_logo = "_static/slothpy.png"
 html_favicon = "_static/slothpy.png"
-
-html_js_files = [
-    "https://code.jquery.com/jquery-3.6.0.min.js",
-    "_static/custom.js",
-]

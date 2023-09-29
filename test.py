@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     # CeCoN3.delete_group_dataset("dupaadaaaaaas")
     nazwa = "rrrrerrrrrdrder"
-    fields = linspace(0.0001, 10, 100, dtype=float64)
+    fields = linspace(0.0001, 10, 40, dtype=float64)
     temperatures = linspace(1, 300, 300, dtype=float64)
 
     start_time = perf_counter()
@@ -87,17 +87,17 @@ if __name__ == "__main__":
     #     "bas3", np.arange(0, 400, 1)
     # )
 
-    CeCoN3.calculate_chit_3d(
-        "bas3",
-        temperatures,
-        fields,
-        50,
-        1,
-        0.0001,
-        64,
-        64,
-        1,
-    )
+    # CeCoN3.calculate_chit_3d(
+    #     "bas3",
+    #     temperatures,
+    #     fields,
+    #     50,
+    #     1,
+    #     0.0001,
+    #     128,
+    #     128,
+    #     1,
+    # )
 
     # CeCoN3.calculate_mag_3d(
     #     "bas3",
@@ -136,15 +136,16 @@ if __name__ == "__main__":
     #     slt=111111111,
     # )
 
-    # mth = CeCoN3.calculate_mth(
-    #     "bas3",
-    #     fields,
-    #     5,
-    #     temperatures,
-    #     898,
-    #     64,
-    #     2,
-    # )
+    mth = CeCoN3.calculate_mth(
+        "bas3",
+        fields,
+        5,
+        temperatures,
+        898,
+        128,
+        1,
+        autotune=True,
+    )
 
     # for mt in mth:
     #     for i in mt:

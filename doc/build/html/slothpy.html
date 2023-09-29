@@ -35,7 +35,7 @@
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css?v=572af1d6" />
     <link rel="stylesheet" type="text/css" href="_static/thebelab.css" />
-    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=f3bf278e" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=dd5636d6" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=ac02cc09edc035673794" />
@@ -125,7 +125,7 @@
   </label>
   
   
-  <div class=" navbar-header-items__start">
+  <div class="col-lg-3 navbar-header-items__start">
     
       <div class="navbar-item">
   
@@ -150,7 +150,7 @@
     
   </div>
   
-  <div class=" navbar-header-items">
+  <div class="col-lg-9 navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -492,6 +492,7 @@ document.write(`
 </form></div>
         <div class="sidebar-primary-item">
 <h3><a href="index.html">Table of Contents</a></h3>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
@@ -501,36 +502,36 @@ document.write(`
 <li class="toctree-l2"><a class="reference internal" href="#slothpy.compound_from_orca"><code class="docutils literal notranslate"><span class="pre">compound_from_orca()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#slothpy.compound_from_molcas"><code class="docutils literal notranslate"><span class="pre">compound_from_molcas()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#slothpy.Compound"><code class="docutils literal notranslate"><span class="pre">Compound</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.delete_group_dataset"><code class="docutils literal notranslate"><span class="pre">Compound.delete_group_dataset()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_g_tensor_and_axes_doublet()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_mth"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_mth()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_mag_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chitht"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_chitht()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chit_tensorht"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_chit_tensorht()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chit_3d"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_chit_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_hemholtz_energyth()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energy_3d"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_hemholtz_energy_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_zeeman_splitting"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_zeeman_splitting()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix"><code class="docutils literal notranslate"><span class="pre">Compound.zeeman_matrix()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_energies_cm_1"><code class="docutils literal notranslate"><span class="pre">Compound.soc_energies_cm_1()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.states_magnetic_momenta"><code class="docutils literal notranslate"><span class="pre">Compound.states_magnetic_momenta()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.states_total_angular_momenta"><code class="docutils literal notranslate"><span class="pre">Compound.states_total_angular_momenta()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.magnetic_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">Compound.magnetic_momenta_matrix()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.total_angular_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">Compound.total_angular_momenta_matrix()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis"><code class="docutils literal notranslate"><span class="pre">Compound.matrix_decomposition_in_z_pseudo_spin_basis()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_crystal_field_parameters"><code class="docutils literal notranslate"><span class="pre">Compound.soc_crystal_field_parameters()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix_ito_decpomosition"><code class="docutils literal notranslate"><span class="pre">Compound.zeeman_matrix_ito_decpomosition()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.matrix_from_ito"><code class="docutils literal notranslate"><span class="pre">Compound.matrix_from_ito()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_zeem_in_z_angular_magnetic_momentum_basis"><code class="docutils literal notranslate"><span class="pre">Compound.soc_zeem_in_z_angular_magnetic_momentum_basis()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.colour_map"><code class="docutils literal notranslate"><span class="pre">Compound.colour_map()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.custom_colour_cycler"><code class="docutils literal notranslate"><span class="pre">Compound.custom_colour_cycler()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_mth"><code class="docutils literal notranslate"><span class="pre">Compound.plot_mth()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_chitht"><code class="docutils literal notranslate"><span class="pre">Compound.plot_chitht()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">Compound.plot_hemholtz_energyth()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_zeeman"><code class="docutils literal notranslate"><span class="pre">Compound.plot_zeeman()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_3d"><code class="docutils literal notranslate"><span class="pre">Compound.plot_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.animate_3d"><code class="docutils literal notranslate"><span class="pre">Compound.animate_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.interactive_plot_3d"><code class="docutils literal notranslate"><span class="pre">Compound.interactive_plot_3d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.delete_group_dataset"><code class="docutils literal notranslate"><span class="pre">delete_group_dataset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="docutils literal notranslate"><span class="pre">calculate_g_tensor_and_axes_doublet()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_mth"><code class="docutils literal notranslate"><span class="pre">calculate_mth()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d"><code class="docutils literal notranslate"><span class="pre">calculate_mag_3d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chitht"><code class="docutils literal notranslate"><span class="pre">calculate_chitht()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chit_tensorht"><code class="docutils literal notranslate"><span class="pre">calculate_chit_tensorht()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chit_3d"><code class="docutils literal notranslate"><span class="pre">calculate_chit_3d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">calculate_hemholtz_energyth()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energy_3d"><code class="docutils literal notranslate"><span class="pre">calculate_hemholtz_energy_3d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_zeeman_splitting"><code class="docutils literal notranslate"><span class="pre">calculate_zeeman_splitting()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix"><code class="docutils literal notranslate"><span class="pre">zeeman_matrix()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_energies_cm_1"><code class="docutils literal notranslate"><span class="pre">soc_energies_cm_1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.states_magnetic_momenta"><code class="docutils literal notranslate"><span class="pre">states_magnetic_momenta()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.states_total_angular_momenta"><code class="docutils literal notranslate"><span class="pre">states_total_angular_momenta()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.magnetic_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">magnetic_momenta_matrix()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.total_angular_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">total_angular_momenta_matrix()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis"><code class="docutils literal notranslate"><span class="pre">matrix_decomposition_in_z_pseudo_spin_basis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_crystal_field_parameters"><code class="docutils literal notranslate"><span class="pre">soc_crystal_field_parameters()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix_ito_decpomosition"><code class="docutils literal notranslate"><span class="pre">zeeman_matrix_ito_decpomosition()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.matrix_from_ito"><code class="docutils literal notranslate"><span class="pre">matrix_from_ito()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_zeem_in_z_angular_magnetic_momentum_basis"><code class="docutils literal notranslate"><span class="pre">soc_zeem_in_z_angular_magnetic_momentum_basis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.colour_map"><code class="docutils literal notranslate"><span class="pre">colour_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.custom_colour_cycler"><code class="docutils literal notranslate"><span class="pre">custom_colour_cycler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_mth"><code class="docutils literal notranslate"><span class="pre">plot_mth()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_chitht"><code class="docutils literal notranslate"><span class="pre">plot_chitht()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">plot_hemholtz_energyth()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_zeeman"><code class="docutils literal notranslate"><span class="pre">plot_zeeman()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_3d"><code class="docutils literal notranslate"><span class="pre">plot_3d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.animate_3d"><code class="docutils literal notranslate"><span class="pre">animate_3d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.interactive_plot_3d"><code class="docutils literal notranslate"><span class="pre">interactive_plot_3d()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#slothpy.lebedev_laikov_grid"><code class="docutils literal notranslate"><span class="pre">lebedev_laikov_grid()</span></code></a></li>
@@ -2301,54 +2302,6 @@ SlothPy-style error printing without tracebacks.</p>
             
               
                 <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
-
-  <div class="sidebar-secondary-item">
-  <div class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav class="bd-toc-nav page-toc">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.compound_from_slt"><code class="docutils literal notranslate"><span class="pre">compound_from_slt()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.compound_from_orca"><code class="docutils literal notranslate"><span class="pre">compound_from_orca()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.compound_from_molcas"><code class="docutils literal notranslate"><span class="pre">compound_from_molcas()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound"><code class="docutils literal notranslate"><span class="pre">Compound</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.delete_group_dataset"><code class="docutils literal notranslate"><span class="pre">Compound.delete_group_dataset()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_g_tensor_and_axes_doublet()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_mth"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_mth()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_mag_3d"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_mag_3d()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_chitht"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_chitht()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_chit_tensorht"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_chit_tensorht()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_chit_3d"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_chit_3d()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_hemholtz_energyth()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_hemholtz_energy_3d"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_hemholtz_energy_3d()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.calculate_zeeman_splitting"><code class="docutils literal notranslate"><span class="pre">Compound.calculate_zeeman_splitting()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.zeeman_matrix"><code class="docutils literal notranslate"><span class="pre">Compound.zeeman_matrix()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.soc_energies_cm_1"><code class="docutils literal notranslate"><span class="pre">Compound.soc_energies_cm_1()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.states_magnetic_momenta"><code class="docutils literal notranslate"><span class="pre">Compound.states_magnetic_momenta()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.states_total_angular_momenta"><code class="docutils literal notranslate"><span class="pre">Compound.states_total_angular_momenta()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.magnetic_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">Compound.magnetic_momenta_matrix()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.total_angular_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">Compound.total_angular_momenta_matrix()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis"><code class="docutils literal notranslate"><span class="pre">Compound.matrix_decomposition_in_z_pseudo_spin_basis()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.soc_crystal_field_parameters"><code class="docutils literal notranslate"><span class="pre">Compound.soc_crystal_field_parameters()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.zeeman_matrix_ito_decpomosition"><code class="docutils literal notranslate"><span class="pre">Compound.zeeman_matrix_ito_decpomosition()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.matrix_from_ito"><code class="docutils literal notranslate"><span class="pre">Compound.matrix_from_ito()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.soc_zeem_in_z_angular_magnetic_momentum_basis"><code class="docutils literal notranslate"><span class="pre">Compound.soc_zeem_in_z_angular_magnetic_momentum_basis()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.colour_map"><code class="docutils literal notranslate"><span class="pre">Compound.colour_map()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.custom_colour_cycler"><code class="docutils literal notranslate"><span class="pre">Compound.custom_colour_cycler()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.plot_mth"><code class="docutils literal notranslate"><span class="pre">Compound.plot_mth()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.plot_chitht"><code class="docutils literal notranslate"><span class="pre">Compound.plot_chitht()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.plot_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">Compound.plot_hemholtz_energyth()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.plot_zeeman"><code class="docutils literal notranslate"><span class="pre">Compound.plot_zeeman()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.plot_3d"><code class="docutils literal notranslate"><span class="pre">Compound.plot_3d()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.animate_3d"><code class="docutils literal notranslate"><span class="pre">Compound.animate_3d()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.Compound.interactive_plot_3d"><code class="docutils literal notranslate"><span class="pre">Compound.interactive_plot_3d()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.lebedev_laikov_grid"><code class="docutils literal notranslate"><span class="pre">lebedev_laikov_grid()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.set_default_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_default_error_reporting_mode()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slothpy.set_plain_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_plain_error_reporting_mode()</span></code></a></li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
   

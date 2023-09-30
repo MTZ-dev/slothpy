@@ -57,8 +57,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'slothpy';</script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="_static/_static/custom.js"></script>
     <link rel="icon" href="_static/slothpy.png"/>
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
@@ -498,45 +496,54 @@ document.write(`
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_start.html">How to Start</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Reference Manual</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#slothpy.compound_from_slt"><code class="docutils literal notranslate"><span class="pre">compound_from_slt()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#slothpy.compound_from_orca"><code class="docutils literal notranslate"><span class="pre">compound_from_orca()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#slothpy.compound_from_molcas"><code class="docutils literal notranslate"><span class="pre">compound_from_molcas()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#slothpy.Compound"><code class="docutils literal notranslate"><span class="pre">Compound</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.delete_group_dataset"><code class="docutils literal notranslate"><span class="pre">delete_group_dataset()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="docutils literal notranslate"><span class="pre">calculate_g_tensor_and_axes_doublet()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_mth"><code class="docutils literal notranslate"><span class="pre">calculate_mth()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d"><code class="docutils literal notranslate"><span class="pre">calculate_mag_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chitht"><code class="docutils literal notranslate"><span class="pre">calculate_chitht()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chit_tensorht"><code class="docutils literal notranslate"><span class="pre">calculate_chit_tensorht()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_chit_3d"><code class="docutils literal notranslate"><span class="pre">calculate_chit_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">calculate_hemholtz_energyth()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energy_3d"><code class="docutils literal notranslate"><span class="pre">calculate_hemholtz_energy_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.calculate_zeeman_splitting"><code class="docutils literal notranslate"><span class="pre">calculate_zeeman_splitting()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix"><code class="docutils literal notranslate"><span class="pre">zeeman_matrix()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_energies_cm_1"><code class="docutils literal notranslate"><span class="pre">soc_energies_cm_1()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.states_magnetic_momenta"><code class="docutils literal notranslate"><span class="pre">states_magnetic_momenta()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.states_total_angular_momenta"><code class="docutils literal notranslate"><span class="pre">states_total_angular_momenta()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.magnetic_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">magnetic_momenta_matrix()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.total_angular_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">total_angular_momenta_matrix()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis"><code class="docutils literal notranslate"><span class="pre">matrix_decomposition_in_z_pseudo_spin_basis()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_crystal_field_parameters"><code class="docutils literal notranslate"><span class="pre">soc_crystal_field_parameters()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix_ito_decpomosition"><code class="docutils literal notranslate"><span class="pre">zeeman_matrix_ito_decpomosition()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.matrix_from_ito"><code class="docutils literal notranslate"><span class="pre">matrix_from_ito()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.soc_zeem_in_z_angular_magnetic_momentum_basis"><code class="docutils literal notranslate"><span class="pre">soc_zeem_in_z_angular_magnetic_momentum_basis()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.colour_map"><code class="docutils literal notranslate"><span class="pre">colour_map()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.custom_colour_cycler"><code class="docutils literal notranslate"><span class="pre">custom_colour_cycler()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_mth"><code class="docutils literal notranslate"><span class="pre">plot_mth()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_chitht"><code class="docutils literal notranslate"><span class="pre">plot_chitht()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">plot_hemholtz_energyth()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_zeeman"><code class="docutils literal notranslate"><span class="pre">plot_zeeman()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.plot_3d"><code class="docutils literal notranslate"><span class="pre">plot_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.animate_3d"><code class="docutils literal notranslate"><span class="pre">animate_3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound.interactive_plot_3d"><code class="docutils literal notranslate"><span class="pre">interactive_plot_3d()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-slothpy">Creation Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.compound_from_slt"><code class="docutils literal notranslate"><span class="pre">compound_from_slt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.compound_from_molcas"><code class="docutils literal notranslate"><span class="pre">compound_from_molcas()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.compound_from_orca"><code class="docutils literal notranslate"><span class="pre">compound_from_orca()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#slothpy.lebedev_laikov_grid"><code class="docutils literal notranslate"><span class="pre">lebedev_laikov_grid()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#slothpy.set_default_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_default_error_reporting_mode()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#slothpy.set_plain_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_plain_error_reporting_mode()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compound">Compound</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.Compound"><code class="docutils literal notranslate"><span class="pre">Compound</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.delete_group_dataset"><code class="docutils literal notranslate"><span class="pre">delete_group_dataset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="docutils literal notranslate"><span class="pre">calculate_g_tensor_and_axes_doublet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_mth"><code class="docutils literal notranslate"><span class="pre">calculate_mth()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d"><code class="docutils literal notranslate"><span class="pre">calculate_mag_3d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_chitht"><code class="docutils literal notranslate"><span class="pre">calculate_chitht()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_chit_tensorht"><code class="docutils literal notranslate"><span class="pre">calculate_chit_tensorht()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_chit_3d"><code class="docutils literal notranslate"><span class="pre">calculate_chit_3d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">calculate_hemholtz_energyth()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energy_3d"><code class="docutils literal notranslate"><span class="pre">calculate_hemholtz_energy_3d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.calculate_zeeman_splitting"><code class="docutils literal notranslate"><span class="pre">calculate_zeeman_splitting()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix"><code class="docutils literal notranslate"><span class="pre">zeeman_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.soc_energies_cm_1"><code class="docutils literal notranslate"><span class="pre">soc_energies_cm_1()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.states_magnetic_momenta"><code class="docutils literal notranslate"><span class="pre">states_magnetic_momenta()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.states_total_angular_momenta"><code class="docutils literal notranslate"><span class="pre">states_total_angular_momenta()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.magnetic_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">magnetic_momenta_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.total_angular_momenta_matrix"><code class="docutils literal notranslate"><span class="pre">total_angular_momenta_matrix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis"><code class="docutils literal notranslate"><span class="pre">matrix_decomposition_in_z_pseudo_spin_basis()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.soc_crystal_field_parameters"><code class="docutils literal notranslate"><span class="pre">soc_crystal_field_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix_ito_decpomosition"><code class="docutils literal notranslate"><span class="pre">zeeman_matrix_ito_decpomosition()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.matrix_from_ito"><code class="docutils literal notranslate"><span class="pre">matrix_from_ito()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.soc_zeem_in_z_angular_magnetic_momentum_basis"><code class="docutils literal notranslate"><span class="pre">soc_zeem_in_z_angular_magnetic_momentum_basis()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.colour_map"><code class="docutils literal notranslate"><span class="pre">colour_map()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.custom_colour_cycler"><code class="docutils literal notranslate"><span class="pre">custom_colour_cycler()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.plot_mth"><code class="docutils literal notranslate"><span class="pre">plot_mth()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.plot_chitht"><code class="docutils literal notranslate"><span class="pre">plot_chitht()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.plot_hemholtz_energyth"><code class="docutils literal notranslate"><span class="pre">plot_hemholtz_energyth()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.plot_zeeman"><code class="docutils literal notranslate"><span class="pre">plot_zeeman()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.plot_3d"><code class="docutils literal notranslate"><span class="pre">plot_3d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.animate_3d"><code class="docutils literal notranslate"><span class="pre">animate_3d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.interactive_plot_3d"><code class="docutils literal notranslate"><span class="pre">interactive_plot_3d()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-0">General Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.lebedev_laikov_grid"><code class="docutils literal notranslate"><span class="pre">lebedev_laikov_grid()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.set_default_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_default_error_reporting_mode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.set_plain_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_plain_error_reporting_mode()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_cite.html">How to Cite</a></li>
@@ -593,8 +600,10 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="module-slothpy">
-<span id="reference-manual"></span><h1>Reference Manual<a class="headerlink" href="#module-slothpy" title="Link to this heading">#</a></h1>
+  <section id="reference-manual">
+<h1>Reference Manual<a class="headerlink" href="#reference-manual" title="Link to this heading">#</a></h1>
+<section id="module-slothpy">
+<span id="creation-methods"></span><h2>Creation Methods<a class="headerlink" href="#module-slothpy" title="Link to this heading">#</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="slothpy.compound_from_slt">
 <span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">compound_from_slt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt_filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/creation_functions.html#compound_from_slt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.compound_from_slt" title="Link to this definition">#</a></dt>
@@ -615,6 +624,35 @@ serves as an user interface, holding all the available methods.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>SltFileError</strong> – If the program is unable to create a Compound from a given file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.compound_from_molcas">
+<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">compound_from_molcas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molcas_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molcas_filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/creation_functions.html#compound_from_molcas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.compound_from_molcas" title="Link to this definition">#</a></dt>
+<dd><p>Create a Compound from MOLCAS rassi.h5 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path of existing .slt file or to which the resulting .slt file will be
+saved.</p></li>
+<li><p><strong>slt_filename</strong> (<em>str</em>) – Name of the .slt file to be created/accessed.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of a group to which results of relativistic ab initio calculations
+will be saved.</p></li>
+<li><p><strong>molcas_filepath</strong> (<em>str</em>) – Path to the MOLCAS .rassi.h5 file.</p></li>
+<li><p><strong>molcas_filename</strong> (<em>str</em>) – Name of the MOLCAS .rassi.h5 file (without the suffix).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An instance of Compound class associated with the given .slt file, that
+serves as an user interface, holding all the available methods.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#slothpy.Compound" title="slothpy.Compound">Compound</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>SltFileError</strong> – If the program is unable to create a Compound from given files.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -650,35 +688,9 @@ serves as an user interface, holding all the available methods.</p>
 </dl>
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="slothpy.compound_from_molcas">
-<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">compound_from_molcas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molcas_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molcas_filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/creation_functions.html#compound_from_molcas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.compound_from_molcas" title="Link to this definition">#</a></dt>
-<dd><p>Create a Compound from MOLCAS rassi.h5 file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path of existing .slt file or to which the resulting .slt file will be
-saved.</p></li>
-<li><p><strong>slt_filename</strong> (<em>str</em>) – Name of the .slt file to be created/accessed.</p></li>
-<li><p><strong>name</strong> (<em>str</em>) – Name of a group to which results of relativistic ab initio calculations
-will be saved.</p></li>
-<li><p><strong>molcas_filepath</strong> (<em>str</em>) – Path to the MOLCAS .rassi.h5 file.</p></li>
-<li><p><strong>molcas_filename</strong> (<em>str</em>) – Name of the MOLCAS .rassi.h5 file (without the suffix).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>An instance of Compound class associated with the given .slt file, that
-serves as an user interface, holding all the available methods.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#slothpy.Compound" title="slothpy.Compound">Compound</a></p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>SltFileError</strong> – If the program is unable to create a Compound from given files.</p>
-</dd>
-</dl>
-</dd></dl>
-
+</section>
+<section id="compound">
+<h2>Compound<a class="headerlink" href="#compound" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="slothpy.Compound">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">Compound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound" title="Link to this definition">#</a></dt>
@@ -920,9 +932,11 @@ over temperature values, and the second over fields.</p>
 </dd>
 </dl>
 </div>
-<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over the provided field values.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -987,13 +1001,15 @@ for 3D plots as xyz.</p>
 </ul>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
 aware that the resulting arrays and computations can quickly consume
 much memory (e.g. for a calculation with 100 field values 1-10 T, 300
 temperatures 1-300 K, and spherical_grid = 60, the resulting array will
 take 3*100*300*2*60*60*8 bytes = 5.184 GB).</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1082,9 +1098,11 @@ a possitive real number.</p></li>
 </ul>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over fields.size*(2*number_of_points+1) tasks.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1168,9 +1186,11 @@ unsuccessful.</p></li>
 </ul>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over fields.size*(2*number_of_points+1) tasks.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1256,7 +1276,8 @@ a possitive real number.</p></li>
 </ul>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over len(fields)*(2*number_of_points + 1)
 <a href="#id1"><span class="problematic" id="id2">*</span></a>2*shperical_grid**2 tasks. Be aware that the resulting arrays and
@@ -1264,6 +1285,7 @@ computations can quickly consume much memory (e.g. for calculation with
 100 field values 1-10 T, 300 temperatures 1-300 K, number_of_points=3,
 and spherical_grid = 60, the intermediate array (before numerical
 differentiation) will take 7*100*300*2*60*60*8 bytes = 12.096 GB).</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1339,9 +1361,11 @@ values, and the second over fields.</p>
 </dd>
 </dl>
 </div>
-<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over the provided field values.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1408,13 +1432,15 @@ for 3D plots as xyz.</p>
 </ul>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
 aware that the resulting arrays and computations can quickly consume
 much memory (e.g. for a calculation with 100 field values 1-10 T, 300
 temperatures 1-300 K, and spherical_grid = 60, the resulting array will
 take 3*100*300*2*60*60*8 bytes = 5.184 GB).</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1495,9 +1521,11 @@ states cutoff.</p></li>
 </dd>
 </dl>
 </div>
-<p class="rubric">Notes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over the provided field values.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -2200,6 +2228,9 @@ hemholtz_energy or magnetisation</p></li>
 
 </dd></dl>
 
+</section>
+<section id="module-0">
+<span id="general-utilities"></span><h2>General Utilities<a class="headerlink" href="#module-0" title="Link to this heading">#</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="slothpy.lebedev_laikov_grid">
 <span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">lebedev_laikov_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/_general_utilities/_grids_over_hemisphere.html#lebedev_laikov_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.lebedev_laikov_grid" title="Link to this definition">#</a></dt>
@@ -2264,6 +2295,7 @@ tracebacks.</p>
 SlothPy-style error printing without tracebacks.</p>
 </dd></dl>
 
+</section>
 </section>
 
 

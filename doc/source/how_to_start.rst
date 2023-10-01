@@ -1,4 +1,4 @@
 How to Start
 ============
 
-jupyter notebook
+See SlothPy_tutorial.ipnby Notebook

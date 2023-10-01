@@ -2,7 +2,16 @@ from os import path
 from typing import Tuple, Union
 
 from h5py import File, Group, Dataset
-from numpy import ndarray, array, float64, int64, complex128, linspace, arange, max
+from numpy import (
+    ndarray,
+    array,
+    float64,
+    int64,
+    complex128,
+    linspace,
+    arange,
+    max,
+)
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import rcParams, use
 from matplotlib.style import use as mplstyle_use

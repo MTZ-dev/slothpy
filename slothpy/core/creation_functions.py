@@ -46,6 +46,11 @@ def compound_from_orca(
     ------
     SltFileError
         If the program is unable to create a Compound from given files.
+
+    Note
+    ----
+    ORCA calculations have to be done with the "printlevel 3" keyword for
+    outputs to be readable by SlothPy.
     """
     try:
         _orca_spin_orbit_to_slt(
@@ -104,6 +109,12 @@ def compound_from_molcas(
     ------
     SltFileError
         If the program is unable to create a Compound from given files.
+
+    Note
+    ----
+    MOLCAS calculations have to be done with the "MESO" keyword within the
+    RASSI section and the installation has to support HDF5 files for .rassi.h5
+    files to be readable by SlothPy.
     """
     try:
         _molcas_spin_orbit_to_slt(

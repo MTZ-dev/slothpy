@@ -8,8 +8,8 @@ from .core import Compound
 
 __all__ = [
     "compound_from_slt",
-    "compound_from_orca",
     "compound_from_molcas",
+    "compound_from_orca",
     "Compound",
     "lebedev_laikov_grid",
     "set_default_error_reporting_mode",

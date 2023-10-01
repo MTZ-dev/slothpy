@@ -636,7 +636,7 @@ class Compound:
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
 
-        Notes
+        Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.
@@ -866,7 +866,7 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
 
-        Notes
+        Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
@@ -1022,7 +1022,7 @@ class Compound:
         group: str,
         temperatures: ndarray[float64],
         fields: ndarray[float64],
-        number_of_points: int,
+        number_of_points: int = 1,
         delta_h: float = 0.0001,
         states_cutoff: int = 0,
         number_cpu: int = 0,
@@ -1050,14 +1050,15 @@ class Compound:
         fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which magnetic susceptibility will be computed.
-        number_of_points : int
+        number_of_points : int, optional
             Controls the number of points for numerical differentiation over
             the magnetic field values using the finite difference method with
             a symmetrical stencil. The total number of used points =
             (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain
             the first derivative using 3 points - including the value at the
             point at which the derivative is taken. In this regard, the value 0
-            triggers the experimentalist model for susceptibility.
+            triggers the experimentalist model for susceptibility.,
+            by default 1
         delta_h : float64, optional
             Value of field step used for numerical differentiation using finite
             difference method. 0.0001 (T) = 1 Oe is recommended as a starting
@@ -1135,7 +1136,7 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
 
-        Notes
+        Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over fields.size*(2*number_of_points+1) tasks.
@@ -1323,7 +1324,7 @@ class Compound:
         group: str,
         temperatures: ndarray[float64],
         fields: ndarray[float64],
-        number_of_points: int,
+        number_of_points: int = 1,
         delta_h: float = 0.0001,
         states_cutoff: int = 0,
         number_cpu: int = 0,
@@ -1352,14 +1353,15 @@ class Compound:
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which magnetic susceptibility tensor will be
             computed.
-        number_of_points : int
+        number_of_points : int, optional
             Controls the number of points for numerical differentiation over
             the magnetic field values using the finite difference method with
             a symmetrical stencil. The total number of used points =
             (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain
             the first derivative using 3 points - including the value at the
             point at which the derivative is taken. In this regard, the value 0
-            triggers the experimentalist model for susceptibility.
+            triggers the experimentalist model for susceptibility.,
+            by default 1
         delta_h : float64, optional
             Value of field step used for numerical differentiation using finite
             difference method. 0.0001 (T) = 1 Oe is recommended as a starting
@@ -1431,7 +1433,7 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
 
-        Notes
+        Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over fields.size*(2*number_of_points+1) tasks.
@@ -1613,7 +1615,7 @@ class Compound:
         temperatures: ndarray[float64],
         fields: ndarray[float64],
         spherical_grid: int,
-        number_of_points: int,
+        number_of_points: int = 1,
         delta_h: float = 0.0001,
         states_cutoff: int = 0,
         number_cpu: int = 0,
@@ -1645,14 +1647,15 @@ class Compound:
             Controls the density of the angular grid for the 3D susceptibility
             calculation. A grid of dimension (spherical_grid*2*spherical_grid)
             for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
-        number_of_points : int
+        number_of_points : int, optional
             Controls the number of points for numerical differentiation over
             the magnetic field values using the finite difference method with
             a symmetrical stencil. The total number of used points =
             (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain
             the first derivative using 3 points - including the value at the
             point at which the derivative is taken. In this regard, the value 0
-            triggers the experimentalist model for susceptibility.
+            triggers the experimentalist model for susceptibility.,
+            by default 1
         delta_h : float64, optional
             Value of field step used for numerical differentiation using finite
             difference method. 0.0001 (T) = 1 Oe is recommended as a starting
@@ -1723,7 +1726,7 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
 
-        Notes
+        Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over len(fields)*(2*number_of_points + 1)
@@ -1828,6 +1831,13 @@ class Compound:
                     + '".',
                 ) from None
 
+        if T:
+            chi_name = "chiT(H,T)"
+            chi_file = "chit"
+        else:
+            chi_name = "chi(H,T)"
+            chi_file = "chi"
+
         try:
             chit_3d_array = _chit_3d(
                 self._hdf5,
@@ -1860,13 +1870,6 @@ class Compound:
             ) from None
 
         if slt is not None:
-            if T:
-                chi_name = "chiT(H,T)"
-                chi_file = "chit"
-            else:
-                chi_name = "chi(H,T)"
-                chi_file = "chi"
-
             try:
                 self[
                     slt_group_name,
@@ -2012,7 +2015,7 @@ class Compound:
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
 
-        Notes
+        Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.
@@ -2257,7 +2260,7 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
 
-        Notes
+        Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
@@ -2518,7 +2521,7 @@ class Compound:
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
 
-        Notes
+        Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.

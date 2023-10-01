@@ -6,7 +6,7 @@
 SlothPy 
 ===================================
 
-Welcome to the best program. 
+Welcome to the program. 
 
 
 .. toctree::

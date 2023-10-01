@@ -57,7 +57,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'slothpy';</script>
-    <link rel="icon" href="_static/slothpy.png"/>
+    <link rel="icon" href="_static/slothpy_2.jpg"/>
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -138,8 +138,8 @@
       
     
     
-    <img src="_static/slothpy.png" class="logo__image only-light" alt="SlothPy"/>
-    <script>document.write(`<img src="_static/slothpy.png" class="logo__image only-dark" alt="SlothPy"/>`);</script>
+    <img src="_static/slothpy_2.jpg" class="logo__image only-light" alt="SlothPy"/>
+    <script>document.write(`<img src="_static/slothpy_2.jpg" class="logo__image only-dark" alt="SlothPy"/>`);</script>
   
   
     <p class="title logo__title">SlothPy</p>
@@ -635,8 +635,8 @@ serves as an user interface, holding all the available methods.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path of existing .slt file or to which the resulting .slt file will be
-saved.</p></li>
+<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path of the existing or new .slt file to which the results will
+be saved.</p></li>
 <li><p><strong>slt_filename</strong> (<em>str</em>) – Name of the .slt file to be created/accessed.</p></li>
 <li><p><strong>name</strong> (<em>str</em>) – Name of a group to which results of relativistic ab initio calculations
 will be saved.</p></li>
@@ -655,6 +655,12 @@ serves as an user interface, holding all the available methods.</p>
 <dd class="field-even"><p><strong>SltFileError</strong> – If the program is unable to create a Compound from given files.</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>MOLCAS calculations have to be done with the “MESO” keyword within the
+RASSI section and the installation has to support HDF5 files for .rassi.h5
+files to be readable by SlothPy.</p>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -664,8 +670,8 @@ serves as an user interface, holding all the available methods.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path of existing .slt file or to which the resulting .slt file will be
-saved.</p></li>
+<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path of the existing or new .slt file to which the results will
+be saved.</p></li>
 <li><p><strong>slt_filename</strong> (<em>str</em>) – Name of the .slt file to be created/accessed.</p></li>
 <li><p><strong>name</strong> (<em>str</em>) – Name of a group to which results of relativistic ab initio calculations
 will be saved.</p></li>
@@ -686,6 +692,11 @@ serves as an user interface, holding all the available methods.</p>
 <dd class="field-even"><p><strong>SltFileError</strong> – If the program is unable to create a Compound from given files.</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>ORCA calculations have to be done with the “printlevel 3” keyword for
+outputs to be readable by SlothPy.</p>
+</div>
 </dd></dl>
 
 </section>
@@ -699,41 +710,47 @@ serves as an user interface, holding all the available methods.</p>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_chit_3d" title="slothpy.Compound.calculate_chit_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_chit_3d</span></code></a>(group, temperatures, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.animate_3d" title="slothpy.Compound.animate_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">animate_3d</span></code></a>(group, data_type, ...[, i_start, ...])</p></td>
+<td><p>Creates animations of 3d plots of data dependent on field B[T] and temperature T[K]</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_chit_3d" title="slothpy.Compound.calculate_chit_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_chit_3d</span></code></a>(group, temperatures, ...)</p></td>
 <td><p>Calculates 3D magnetic susceptibility over a spherical grid for a given list of temperature and field values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_chit_tensorht" title="slothpy.Compound.calculate_chit_tensorht"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_chit_tensorht</span></code></a>(group, temperatures, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_chit_tensorht" title="slothpy.Compound.calculate_chit_tensorht"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_chit_tensorht</span></code></a>(group, temperatures, ...)</p></td>
 <td><p>Calculates magnetic susceptibility chi(H,T) (Van Vleck) tensor for a given list of field and temperature values.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_chitht" title="slothpy.Compound.calculate_chitht"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_chitht</span></code></a>(group, temperatures, ...[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_chitht" title="slothpy.Compound.calculate_chitht"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_chitht</span></code></a>(group, temperatures, fields)</p></td>
 <td><p>Calculates powder-averaged or directional molar magnetic susceptibility chi(T)(H,T) for a given list of field and temperatures values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_g_tensor_and_axes_doublet" title="slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_g_tensor_and_axes_doublet</span></code></a>(group, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_g_tensor_and_axes_doublet" title="slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_g_tensor_and_axes_doublet</span></code></a>(group, ...)</p></td>
 <td><p>Calculates pseudo-g-tensor components (for S = 1/2) and main magnetic axes for a given list of doublet states.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energy_3d" title="slothpy.Compound.calculate_hemholtz_energy_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_hemholtz_energy_3d</span></code></a>(group, fields, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energy_3d" title="slothpy.Compound.calculate_hemholtz_energy_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_hemholtz_energy_3d</span></code></a>(group, fields, ...)</p></td>
 <td><p>Calculates 3D Hemholtz (or internal) energy over a spherical grid for a given list of temperature and field values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energyth" title="slothpy.Compound.calculate_hemholtz_energyth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_hemholtz_energyth</span></code></a>(group, fields, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_hemholtz_energyth" title="slothpy.Compound.calculate_hemholtz_energyth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_hemholtz_energyth</span></code></a>(group, fields, ...)</p></td>
 <td><p>Calculates powder-averaged or directional Hemholtz (or internal) energy for a given list of temperature and field values.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d" title="slothpy.Compound.calculate_mag_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_mag_3d</span></code></a>(group, fields, ...[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d" title="slothpy.Compound.calculate_mag_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_mag_3d</span></code></a>(group, fields, ...[, ...])</p></td>
 <td><p>Calculates 3D magnetisation over a spherical grid for a given list of temperature and field values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_mth" title="slothpy.Compound.calculate_mth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_mth</span></code></a>(group, fields, grid, temperatures)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_mth" title="slothpy.Compound.calculate_mth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_mth</span></code></a>(group, fields, grid, temperatures)</p></td>
 <td><p>Calculates powder-averaged or directional molar magnetisation M(T,H) for a given list of temperature and field values.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_zeeman_splitting" title="slothpy.Compound.calculate_zeeman_splitting"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_zeeman_splitting</span></code></a>(group, ...[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_zeeman_splitting" title="slothpy.Compound.calculate_zeeman_splitting"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_zeeman_splitting</span></code></a>(group, ...[, ...])</p></td>
 <td><p>Calculates directional or powder-averaged Zeeman splitting for a given number of states and list of field values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.colour_map" title="slothpy.Compound.colour_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">colour_map</span></code></a>(name)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.colour_map" title="slothpy.Compound.colour_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">colour_map</span></code></a>(name)</p></td>
 <td><p>Creates matplotlib colour map object.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.custom_colour_cycler" title="slothpy.Compound.custom_colour_cycler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">custom_colour_cycler</span></code></a>(number_of_colours, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.custom_colour_cycler" title="slothpy.Compound.custom_colour_cycler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">custom_colour_cycler</span></code></a>(number_of_colours, ...)</p></td>
 <td><p>Creates colour cycler from two colour maps in alternating pattern, suitable for use in matplotlib plots.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.delete_group_dataset" title="slothpy.Compound.delete_group_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">delete_group_dataset</span></code></a>(first[, second])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.delete_group_dataset" title="slothpy.Compound.delete_group_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">delete_group_dataset</span></code></a>(first[, second])</p></td>
 <td><p>Deletes a group/dataset provided its full name/path from the .slt file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.interactive_plot_3d" title="slothpy.Compound.interactive_plot_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interactive_plot_3d</span></code></a>(group, data_type[, ...])</p></td>
+<td><p>Creates interactive widget plot dependent on  field and temperature.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.magnetic_momenta_matrix" title="slothpy.Compound.magnetic_momenta_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">magnetic_momenta_matrix</span></code></a>(group[, ...])</p></td>
 <td><p>Calculates magnetic momenta matrix for a given number of SOC states.</p></td>
@@ -745,19 +762,19 @@ serves as an user interface, holding all the available methods.</p>
 <td><p>Calculates matrix from a given ITO decomposition.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.plot_3d" title="slothpy.Compound.plot_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_3d</span></code></a>(group, data_type, field_i, temp_i[, ...])</p></td>
-<td><p>Function that creates 3d plots of data dependent on field (B[T]) and temperature(T[K])</p></td>
+<td><p>Function that creates 3d plots of data dependent on field B[T] and temperature T[K].</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.plot_chitht" title="slothpy.Compound.plot_chitht"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_chitht</span></code></a>(group[, show, origin, save, ...])</p></td>
-<td><p>Function that creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group in HDF5 file, graphs can be optionally shown, saved, colour palettes can be changed.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.plot_chitht" title="slothpy.Compound.plot_chitht"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_chitht</span></code></a>(group[, save, colour_map_name, ...])</p></td>
+<td><p>Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.plot_hemholtz_energyth" title="slothpy.Compound.plot_hemholtz_energyth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hemholtz_energyth</span></code></a>(group[, ...])</p></td>
+<td><p>Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.plot_mth" title="slothpy.Compound.plot_mth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_mth</span></code></a>(group[, save, colour_map_name, ...])</p></td>
 <td><p>Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown, saved, colour palettes can be changed.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.plot_mth" title="slothpy.Compound.plot_mth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_mth</span></code></a>(group[, show, origin, save, ...])</p></td>
-<td><p>Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown, saved, colour palettes can be changed.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.plot_zeeman" title="slothpy.Compound.plot_zeeman"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_zeeman</span></code></a>(group[, show, origin, save, ...])</p></td>
-<td><p>Function that creates graphs of E(H,orientation) given name of the group in HDF5 file, graphs can be optionally shown, saved, colour palettes can be changed.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.plot_zeeman" title="slothpy.Compound.plot_zeeman"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_zeeman</span></code></a>(group[, save, colour_map_name1, ...])</p></td>
+<td><p>Function that creates graphs of E(H,orientation) given name of the group in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.soc_crystal_field_parameters" title="slothpy.Compound.soc_crystal_field_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">soc_crystal_field_parameters</span></code></a>(group, ...[, ...])</p></td>
 <td><p>Calculates ITO decomposition (CFPs) of SOC matrix.</p></td>
@@ -782,16 +799,6 @@ serves as an user interface, holding all the available methods.</p>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.zeeman_matrix_ito_decpomosition" title="slothpy.Compound.zeeman_matrix_ito_decpomosition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zeeman_matrix_ito_decpomosition</span></code></a>(group, ...)</p></td>
 <td><p>Calculates ITO decomposition of Zeeman matrix.</p></td>
-</tr>
-</tbody>
-</table>
-<table class="table">
-<tbody>
-<tr class="row-odd"><td><p><strong>animate_3d</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><strong>interactive_plot_3d</strong></p></td>
-<td></td>
 </tr>
 </tbody>
 </table>
@@ -1014,7 +1021,7 @@ take 3*100*300*2*60*60*8 bytes = 5.184 GB).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.calculate_chitht">
-<span class="sig-name descname"><span class="pre">calculate_chitht</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperatures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_h</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autotune</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_autotune_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.calculate_chitht"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.calculate_chitht" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">calculate_chitht</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperatures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_h</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autotune</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_autotune_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.calculate_chitht"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.calculate_chitht" title="Link to this definition">#</a></dt>
 <dd><p>Calculates powder-averaged or directional molar magnetic susceptibility
 chi(T)(H,T) for a given list of field and temperatures values.</p>
 <dl class="field-list simple">
@@ -1027,13 +1034,14 @@ temeperature values (K) at which magnetic susceptibility will
 be computed.</p></li>
 <li><p><strong>fields</strong> (<em>ndarray</em><em>[</em><em>float64</em><em>]</em>) – ArrayLike structure (can be converted to numpy.NDArray) of field
 values (T) at which magnetic susceptibility will be computed.</p></li>
-<li><p><strong>number_of_points</strong> (<em>int</em>) – Controls the number of points for numerical differentiation over
+<li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Controls the number of points for numerical differentiation over
 the magnetic field values using the finite difference method with
 a symmetrical stencil. The total number of used points =
 (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain
 the first derivative using 3 points - including the value at the
 point at which the derivative is taken. In this regard, the value 0
-triggers the experimentalist model for susceptibility.</p></li>
+triggers the experimentalist model for susceptibility.,
+by default 1</p></li>
 <li><p><strong>delta_h</strong> (<em>float64</em><em>, </em><em>optional</em>) – Value of field step used for numerical differentiation using finite
 difference method. 0.0001 (T) = 1 Oe is recommended as a starting
 point., by default 0.0001</p></li>
@@ -1050,7 +1058,7 @@ the parallelization over CPUs., by default 1</p></li>
 by default False</p></li>
 <li><p><strong>T</strong> (<em>bool</em><em>, </em><em>optional</em>) – Results are returned as a product with temperature chiT(H,T).,
 by default True</p></li>
-<li><p><strong>grid</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>np.ndarray</em><em>[</em><em>float64</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – If the grid is set to an integer from 0-11 then the prescribed
+<li><p><strong>grid</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>ndarray</em><em>[</em><em>float64</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – If the grid is set to an integer from 0-11 then the prescribed
 Lebedev-Laikov grids over the hemisphere will be used (see
 grids_over_hemisphere documentation), otherwise, the user can
 provide an ArrayLike structure (can be converted to numpy.NDArray)
@@ -1107,7 +1115,7 @@ distribute the workload over fields.size*(2*number_of_points+1) tasks.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.calculate_chit_tensorht">
-<span class="sig-name descname"><span class="pre">calculate_chit_tensorht</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperatures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_h</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autotune</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_autotune_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.calculate_chit_tensorht"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.calculate_chit_tensorht" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">calculate_chit_tensorht</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperatures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_h</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autotune</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_autotune_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.calculate_chit_tensorht"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.calculate_chit_tensorht" title="Link to this definition">#</a></dt>
 <dd><p>Calculates magnetic susceptibility chi(H,T) (Van Vleck) tensor for
 a given list of field and temperature values.</p>
 <dl class="field-list simple">
@@ -1121,13 +1129,14 @@ will be computed.</p></li>
 <li><p><strong>fields</strong> (<em>ndarray</em><em>[</em><em>float64</em><em>]</em>) – ArrayLike structure (can be converted to numpy.NDArray) of field
 values (T) at which magnetic susceptibility tensor will be
 computed.</p></li>
-<li><p><strong>number_of_points</strong> (<em>int</em>) – Controls the number of points for numerical differentiation over
+<li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Controls the number of points for numerical differentiation over
 the magnetic field values using the finite difference method with
 a symmetrical stencil. The total number of used points =
 (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain
 the first derivative using 3 points - including the value at the
 point at which the derivative is taken. In this regard, the value 0
-triggers the experimentalist model for susceptibility.</p></li>
+triggers the experimentalist model for susceptibility.,
+by default 1</p></li>
 <li><p><strong>delta_h</strong> (<em>float64</em><em>, </em><em>optional</em>) – Value of field step used for numerical differentiation using finite
 difference method. 0.0001 (T) = 1 Oe is recommended as a starting
 point., by default 0.0001,</p></li>
@@ -1195,7 +1204,7 @@ distribute the workload over fields.size*(2*number_of_points+1) tasks.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.calculate_chit_3d">
-<span class="sig-name descname"><span class="pre">calculate_chit_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperatures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spherical_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_h</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autotune</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_autotune_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.calculate_chit_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.calculate_chit_3d" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">calculate_chit_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperatures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spherical_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_h</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autotune</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_autotune_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.calculate_chit_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.calculate_chit_3d" title="Link to this definition">#</a></dt>
 <dd><p>Calculates 3D magnetic susceptibility over a spherical grid for a given
 list of temperature and field values.</p>
 <dl class="field-list simple">
@@ -1212,13 +1221,14 @@ values (T) at which 3D magnetic susceptibility will be computed.</p></li>
 <li><p><strong>spherical_grid</strong> (<em>int</em>) – Controls the density of the angular grid for the 3D susceptibility
 calculation. A grid of dimension (spherical_grid*2*spherical_grid)
 for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.</p></li>
-<li><p><strong>number_of_points</strong> (<em>int</em>) – Controls the number of points for numerical differentiation over
+<li><p><strong>number_of_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Controls the number of points for numerical differentiation over
 the magnetic field values using the finite difference method with
 a symmetrical stencil. The total number of used points =
 (2 * num_of_opints + 1), therefore 1 is a minimum value to obtain
 the first derivative using 3 points - including the value at the
 point at which the derivative is taken. In this regard, the value 0
-triggers the experimentalist model for susceptibility.</p></li>
+triggers the experimentalist model for susceptibility.,
+by default 1</p></li>
 <li><p><strong>delta_h</strong> (<em>float64</em><em>, </em><em>optional</em>) – Value of field step used for numerical differentiation using finite
 difference method. 0.0001 (T) = 1 Oe is recommended as a starting
 point., by default 0.0001</p></li>
@@ -1592,7 +1602,7 @@ file with suffix: _soc_energies., by default None</p></li>
 first number_of_states states in cm-1.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.ndarray[float64]</p>
+<dd class="field-odd"><p>ndarray[float64]</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -1613,7 +1623,7 @@ first number_of_states states in cm-1.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>group</strong> (<em>str</em>) – Name of a group containing results of relativistic ab initio
 calculations used for the computation of the magnetic momenta.</p></li>
-<li><p><strong>states</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>np.ndarray</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – ArrayLike structure (can be converted to numpy.NDArray) of
+<li><p><strong>states</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>ndarray</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – ArrayLike structure (can be converted to numpy.NDArray) of
 states indexes for which magnetic momenta will be calculated. If
 set to an integer it acts as a states cutoff (first n states will
 be given). For all available states set it to zero., by default 0</p></li>
@@ -1652,7 +1662,7 @@ states.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>group</strong> (<em>str</em>) – Name of a group containing results of relativistic ab initio
 calculations used for the computation of the magnetic momenta.</p></li>
-<li><p><strong>states</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>np.ndarray</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – ArrayLike structure (can be converted to numpy.NDArray) of
+<li><p><strong>states</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>ndarray</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – ArrayLike structure (can be converted to numpy.NDArray) of
 states indexes for which total angular momenta will be calculated.
 If set to an integer it acts as a states cutoff (first n states
 will be given). For all available states set it to zero.
@@ -1693,7 +1703,7 @@ units.</p>
 <li><p><strong>group</strong> (<em>str</em>) – Name of a group containing results of relativistic ab initio
 calculations used for the computation of the magnetic momenta
 matrix.</p></li>
-<li><p><strong>states_cutoff</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – Number of states that will be taken into account for construction
+<li><p><strong>states_cutoff</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Number of states that will be taken into account for construction
 of the magnetic momenta matrix. If set to zero, all available
 states from the file will be included., by default 0</p></li>
 <li><p><strong>rotation</strong> (<em>ndarray</em><em>[</em><em>float64</em><em>]</em><em>, </em><em>optional</em>) – A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
@@ -1732,7 +1742,7 @@ states.</p>
 <li><p><strong>group</strong> (<em>str</em>) – Name of a group containing results of relativistic ab initio
 calculations used for the computation of the total angular momenta
 matrix.</p></li>
-<li><p><strong>states_cutoff</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – Number of states that will be taken into account for construction
+<li><p><strong>states_cutoff</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Number of states that will be taken into account for construction
 of the total angular momenta matrix. If set to zero, all available
 states from the file will be included., by default 0</p></li>
 <li><p><strong>rotation</strong> (<em>ndarray</em><em>[</em><em>float64</em><em>]</em><em>, </em><em>optional</em>) – A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
@@ -1989,32 +1999,25 @@ matrix.</p></li>
 <dd><p>Creates matplotlib colour map object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – (str or lst) one of defined names for colour maps: BuPi, rainbow, dark_rainbow, light_rainbow,</p></li>
-<li><p><strong>light_rainbow_alt</strong> – </p></li>
-<li><p><strong>BuOr</strong> – </p></li>
-<li><p><strong>BuYl</strong> – </p></li>
-<li><p><strong>BuRd</strong> – </p></li>
-<li><p><strong>GnYl</strong> – </p></li>
-<li><p><strong>PrOr</strong> – </p></li>
-<li><p><strong>GnRd</strong> – </p></li>
-<li><p><strong>funmat</strong> – </p></li>
-<li><p><strong>NdCoN322bpdo</strong> – </p></li>
-<li><p><strong>NdCoNO222bpdo</strong> – </p></li>
-<li><p><strong>NdCoI22bpdo</strong> – </p></li>
-</ul>
+<dd class="field-odd"><p><strong>name</strong> (<em>Unity</em><em>[</em><em>&quot;BuPi&quot;</em><em>, </em><em>&quot;rainbow&quot;</em><em>, </em><em>&quot;dark_rainbow&quot;</em><em>, </em><em>&quot;light_rainbow&quot;</em><em>,</em>) – “light_rainbow_alt”, “BuOr”, “BuYl”, “BuRd”, “GnYl”, “PrOr”, “GnRd”, “funmat”, “NdCoN322bpdo”,
+“NdCoNO222bpdo”, “NdCoI22bpdo”, “viridis”, “plasma”, “inferno”, “magma”, “cividis”] or list[str]
+One of defined names for colour maps: BuPi, rainbow, dark_rainbow, light_rainbow,light_rainbow_alt, BuOr,
+BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo,
+viridis, plasma, inferno, magma, cividis or list of HTML colour codes from which colour map will be created
+by interpolation of colours between ones on a list. For predefined names modifiers can be applied: _l loops
+the list in a way that it starts and ends with the same colour, _r reverses the list.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib’s colour map object used for plotting.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>matplotlib.colors.LinearSegmentedColormap</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If input is not acceptable for creating colour map from list of colour codes or name of predefined colour
+map was incorrectly written.</p>
 </dd>
 </dl>
-<p>:param :
-:param viridis:
-:param plasma:
-:param inferno:
-:param magma:
-:param cividis or list of colour from which colour map will be created by:
-:param interpolation of colours between ones on a list; for predefined names modifiers can be applyed: _l loops
-:param the list in a way that it starts and ends with the same colour:
-:param _r reverses the list:</p>
-<p>Returns:</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2024,175 +2027,179 @@ matrix.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>number_of_colours</strong> (<em>int</em>) – (int) number of colour in cycle</p></li>
-<li><p><strong>cmap1</strong> (<em>str</em>) – (str or lst) colour map name or list of colours (valid input for Compoud.colour_map())</p></li>
-<li><p><strong>cmap2</strong> (<em>str</em>) – (str or lst) colour map name or list of colours (valid input for Compoud.colour_map())</p></li>
+<li><p><strong>number_of_colours</strong> (<em>int</em>) – Number of colour in cycle.</p></li>
+<li><p><strong>cmap1</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>]</em>) – Input of Compound.colour_map function.</p></li>
+<li><p><strong>cmap2</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>]</em>) – Input of Compound.colour_map function.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>cycler object created based on two input colourmaps</p>
+<dd class="field-even"><p>Cycler object created based on two input colour maps.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>cycler.cycler</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If unable to use given inputs. It should not be possible to trigger this error.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.plot_mth">
-<span class="sig-name descname"><span class="pre">plot_mth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rainbow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_mth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_mth" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">plot_mth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rainbow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_mth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_mth" title="Link to this definition">#</a></dt>
 <dd><p>Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown,
-saved, colour palettes can be changed. If origin=True it returns data packed into a dictionary for exporting
-to Origin.</p>
-<blockquote>
-<div><dl class="simple">
-<dt>Args:</dt><dd><p>group (str): name of a group in HDF5 file
-show (bool): determines if matplotlib graph is created
-and shown if True
-origin (bool): determines if function should return raw data
-save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
-colour_map_name (str) or (list): sets colours used to create graphs, valid options are returned by
-Compound.colour_map staticmethod
-xlim (tuple): tuple of two or one numbers that set corresponding axe limits
-ylim (tuple): tuple of two or one numbers that set corresponding axe limits
-xticks (int): frequency of x major ticks
-yticks (int): frequency of x major ticks
-field (‘B’ or ‘H’): chooses field type and unit: Tesla for B and kOe for H</p>
-</dd>
-<dt>Returns:</dt><dd><dl class="simple">
-<dt>if origin=True:</dt><dd><p>dict[origin_column (str), data (np.array)]: contains data used to create graph in origin</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</div></blockquote>
+saved, colour palettes can be changed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>group</strong> (<em>str</em>) – </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
+<li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’chitht_{group}.tiff’</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'funmat'</em>) – input of Compound.colour_map function</p></li>
+<li><p><strong>xlim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</p></li>
+<li><p><strong>ylim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</p></li>
+<li><p><strong>xticks</strong> (<em>int = 100</em>) – determines frequency of x major ticks</p></li>
+<li><p><strong>yticks</strong> (<em>int = 0</em>) – determines frequency of y major ticks</p></li>
+<li><p><strong>field</strong> (<em>Unity</em><em>[</em><em>'B'</em><em>,</em><em>'H'</em><em>] </em><em>= 'B'</em>) – determines field unit - B[T] or H[kOe]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SltFileError</strong> – if unable to load data file, most likely encountered if group name is incorrect</p></li>
+<li><p><strong>SltPlotError</strong> – if unable to create plot</p></li>
+<li><p><strong>SltSaveError</strong> – if unable to save plot as image</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.plot_chitht">
-<span class="sig-name descname"><span class="pre">plot_chitht</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'funmat'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_chitht"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_chitht" title="Link to this definition">#</a></dt>
-<dd><p>Function that creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group
-in HDF5 file, graphs can be optionally shown, saved, colour palettes can be changed. If origin=True it returns
-data packed into a dictionary for exporting to Origin.</p>
-<blockquote>
-<div><dl class="simple">
-<dt>Args:</dt><dd><p>group (str): name of a group in HDF5 file
-show (bool): determines if matplotlib graph is created
-and shown if True
-origin (bool): determines if function should return raw data
-save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
-colour_map_name (str): sets colours used to create graphs, valid options are returned by
-Compound.colour_map staticmethod
-xlim (tuple): tuple of two or one numbers that set corresponding axe limits
-ylim (tuple): tuple of two or one numbers that set corresponding axe limits
-xticks (int): frequency of x major ticks
-yticks (int): frequency of x major ticks
-field (‘B’ or ‘H’): chooses field type and unit: Tesla for B and kOe for H</p>
+<span class="sig-name descname"><span class="pre">plot_chitht</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'funmat'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_chitht"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_chitht" title="Link to this definition">#</a></dt>
+<dd><p>Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group
+in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
+<li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’chitht_{group}.tiff’</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'funmat'</em>) – input of Compound.colour_map function</p></li>
+<li><p><strong>xlim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</p></li>
+<li><p><strong>ylim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</p></li>
+<li><p><strong>xticks</strong> (<em>int = 100</em>) – determines freqency of x major ticks</p></li>
+<li><p><strong>yticks</strong> (<em>int = 0</em>) – determines freqency of y major ticks</p></li>
+<li><p><strong>field</strong> (<em>Unity</em><em>[</em><em>'B'</em><em>,</em><em>'H'</em><em>] </em><em>= 'B'</em>) – determines field unit - B[T] or H[kOe]</p></li>
+</ul>
 </dd>
-<dt>Returns:</dt><dd><dl class="simple">
-<dt>if origin=True:</dt><dd><p>dict[origin_column (str), data (np.array)]: contains data used to create graph in origin</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SltFileError</strong> – if unable to load data file, most likely encountered if group name is incorrect</p></li>
+<li><p><strong>SltPlotError</strong> – if unable to create plot</p></li>
+<li><p><strong>SltSaveError</strong> – if unable to save plot as image</p></li>
+</ul>
 </dd>
 </dl>
-</dd>
-</dl>
-</div></blockquote>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.plot_hemholtz_energyth">
-<span class="sig-name descname"><span class="pre">plot_hemholtz_energyth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internal_energy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rainbow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_hemholtz_energyth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_hemholtz_energyth" title="Link to this definition">#</a></dt>
-<dd><p>Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown,
-saved, colour palettes can be changed. If origin=True it returns data packed into a dictionary for exporting
-to Origin.</p>
-<blockquote>
-<div><dl class="simple">
-<dt>Args:</dt><dd><p>group (str): name of a group in HDF5 file
-show (bool): determines if matplotlib graph is created
-and shown if True
-origin (bool): determines if function should return raw data
-save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
-colour_map_name (str) or (list): sets colours used to create graphs, valid options are returned by
-Compound.colour_map staticmethod
-xlim (tuple): tuple of two or one numbers that set corresponding axe limits
-ylim (tuple): tuple of two or one numbers that set corresponding axe limits
-xticks (int): frequency of x major ticks
-yticks (int): frequency of x major ticks
-field (‘B’ or ‘H’): chooses field type and unit: Tesla for B and kOe for H</p>
-</dd>
-<dt>Returns:</dt><dd><dl class="simple">
-<dt>if origin=True:</dt><dd><p>dict[origin_column (str), data (np.array)]: contains data used to create graph in origin</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</div></blockquote>
+<span class="sig-name descname"><span class="pre">plot_hemholtz_energyth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internal_energy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'PrOr'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_hemholtz_energyth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_hemholtz_energyth" title="Link to this definition">#</a></dt>
+<dd><p>Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group
+in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>group</strong> (<em>str</em>) – </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
+<li><p><strong>internal_energy</strong> (<em>bool = False</em>) – #TODO: ???</p></li>
+<li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’chitht_{group}.tiff’</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'PrOr'</em>) – input of Compound.colour_map function</p></li>
+<li><p><strong>xlim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</p></li>
+<li><p><strong>ylim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</p></li>
+<li><p><strong>xticks</strong> (<em>int = 100</em>) – determines freqency of x major ticks</p></li>
+<li><p><strong>yticks</strong> (<em>int = 0</em>) – determines freqency of y major ticks</p></li>
+<li><p><strong>field</strong> (<em>Unity</em><em>[</em><em>'B'</em><em>,</em><em>'H'</em><em>] </em><em>= 'B'</em>) – determines field unit - B[T] or H[kOe]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SltFileError</strong> – if unable to load data file, most likely encountered if group name is incorrect</p></li>
+<li><p><strong>SltPlotError</strong> – if unable to create plot</p></li>
+<li><p><strong>SltSaveError</strong> – if unable to save plot as image</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.plot_zeeman">
-<span class="sig-name descname"><span class="pre">plot_zeeman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BuPi'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BuPi_r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">single</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_zeeman"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_zeeman" title="Link to this definition">#</a></dt>
-<dd><p>Function that creates graphs of E(H,orientation) given name of the group in HDF5 file, graphs can be optionally shown,
-saved, colour palettes can be changed. If origin=True it returns data packed into a dictionary for exporting
-to Origin.</p>
-<blockquote>
-<div><dl class="simple">
-<dt>Args:</dt><dd><p>group (str): name of a group in HDF5 file
-show (bool): determines if matplotlib graph is created
-and shown if True
-origin (bool): determines if function should return raw data
-save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
-colour_map_name1 (str) or (list): sets colours used to create graphs, valid options are returned by
-Compound.colour_map staticmethod
-colour_map_name2 (str) or (list): sets colours used to create graphs, valid options are returned by
-Compound.colour_map staticmethod
-single (bool): determines if graph should be created for each orientation given separately
-xlim (tuple): tuple of two or one numbers that set corresponding axe limits
-ylim (tuple): tuple of two or one numbers that set corresponding axe limits
-xticks (int): frequency of x major ticks
-yticks (int): frequency of y major ticks
-field (‘B’ or ‘H’): chooses field type and unit: Tesla for B and kOe for H</p>
-</dd>
-<dt>Returns:</dt><dd><dl class="simple">
-<dt>if origin=True:</dt><dd><p>dict[origin_column (str), data (np.array)]: contains data used to create graph in origin</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</div></blockquote>
+<span class="sig-name descname"><span class="pre">plot_zeeman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BuPi'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BuPi_r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">single</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_zeeman"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_zeeman" title="Link to this definition">#</a></dt>
+<dd><p>Function that creates graphs of E(H,orientation) given name of the group in HDF5 file, graphs can be optionally
+saved, colour palettes can be changed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>group</strong> (<em>str</em>) – </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
+<li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’zeeman_{group}.tiff’ or
+f’zeeman_{group}_Orientation {orientations[i]}.tiff’</p></li>
+<li><p><strong>colour_map_name1</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi'</em>) – input of Compound.colour_map function, determines colour of lower set of split lines</p></li>
+<li><p><strong>colour_map_name2</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi_r'</em>) – input of Compound.colour_map function, determines colour of higher set of split lines</p></li>
+<li><p><strong>single</strong> (<em>bool = False</em>) – determines if all orientations are plotted together</p></li>
+<li><p><strong>xlim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</p></li>
+<li><p><strong>ylim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</p></li>
+<li><p><strong>xticks</strong> (<em>int = 1</em>) – determines frequency of x major ticks</p></li>
+<li><p><strong>yticks</strong> (<em>int = 0</em>) – determines frequency of y major ticks</p></li>
+<li><p><strong>field</strong> (<em>Unity</em><em>[</em><em>'B'</em><em>,</em><em>'H'</em><em>] </em><em>= 'B'</em>) – determines field unit - B[T] or H[kOe]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SltFileError</strong> – if unable to load data file, most likely encountered if group name is incorrect</p></li>
+<li><p><strong>SltPlotError</strong> – if unable to create plot</p></li>
+<li><p><strong>SltSaveError</strong> – if unable to save plot as image</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.plot_3d">
-<span class="sig-name descname"><span class="pre">plot_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dark_rainbow_r_l'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lim_scalar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis_off</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_3d" title="Link to this definition">#</a></dt>
-<dd><p>Function that creates 3d plots of data dependent on field (B[T]) and temperature(T[K])</p>
+<span class="sig-name descname"><span class="pre">plot_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dark_rainbow_r_l'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lim_scalar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis_off</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_3d" title="Link to this definition">#</a></dt>
+<dd><p>Function that creates 3d plots of data dependent on field B[T] and temperature T[K].</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>group</strong> (<em>str</em>) – name of a group from hdf5 file for which plot will be created</p></li>
-<li><p><strong>data_type</strong> (<em>str</em>) – type of data that will be used to create plot, can only be one from 3 types: susceptibility,
-hemholtz_energy or magnetisation</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
+<li><p><strong>data_type</strong> (<em>Unity</em><em>[</em><em>&quot;chit&quot;</em><em>, </em><em>&quot;chi&quot;</em><em>, </em><em>&quot;hemholtz_energy&quot;</em><em>, </em><em>&quot;magnetisation&quot;</em><em>]</em>) – type of data that will be used to create plot</p></li>
 <li><p><strong>field_i</strong> (<em>int</em>) – index of field from dataset that will be used for plot</p></li>
 <li><p><strong>temp_i</strong> (<em>int</em>) – index of temperature from dataset that will be used for plot</p></li>
-<li><p><strong>show</strong> (<em>bool = True</em>) – determines if plot is shown, currently there is no reason to setting it to False</p></li>
 <li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’{group}_3d_{data_type}.tiff’</p></li>
-<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function</p></li>
-<li><p><strong>lim_scalar</strong> (<em>float = 1.</em>) – scalar used to set limits of axes, smaller values magm</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function</p></li>
+<li><p><strong>lim_scalar</strong> (<em>float = 1.</em>) – scalar used to set limits of axes, smaller values magnify plotted figure</p></li>
 <li><p><strong>ticks</strong> (<em>float = 1.</em>) – </p></li>
 <li><p><strong>r_density</strong> (<em>int = 0</em>) – determines rcount of 3D plot</p></li>
 <li><p><strong>c_density</strong> (<em>int = 0</em>) – determines ccount of 3D plot</p></li>
 <li><p><strong>axis_off</strong> (<em>bool = False</em>) – determines if axes are turned off</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SltFileError</strong> – if unable to load data file, most likely encountered if group name is incorrect</p></li>
+<li><p><strong>SltPlotError</strong> – if unable to create plot</p></li>
+<li><p><strong>SltSaveError</strong> – if unable to save plot as image</p></li>
 </ul>
 </dd>
 </dl>
@@ -2201,13 +2208,39 @@ hemholtz_energy or magnetisation</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.animate_3d">
 <span class="sig-name descname"><span class="pre">animate_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">animation_variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_constant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dark_rainbow_r_l'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lim_scalar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis_off</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bar_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bar_colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dark_rainbow_r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_rounding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_rounding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.animate_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.animate_3d" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Creates animations of 3d plots of data dependent on field B[T] and temperature T[K]</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>group</strong> (<em>str</em>) – </p></li>
-<li><p><strong>data_type</strong> (<em>str</em>) – </p></li>
-<li><p><strong>animation_variable</strong> (<em>str</em>) – </p></li>
-<li><p><strong>filename</strong> (<em>str</em>) – </p></li>
+<li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
+<li><p><strong>data_type</strong> (<em>Unity</em><em>[</em><em>&quot;chit&quot;</em><em>, </em><em>&quot;chi&quot;</em><em>, </em><em>&quot;hemholtz_energy&quot;</em><em>, </em><em>&quot;magnetisation&quot;</em><em>]</em>) – type of data that will be used to create plot</p></li>
+<li><p><strong>animation_variable</strong> (<em>str</em>) – variable changing during animation, can take one of two values: temperature or field</p></li>
+<li><p><strong>filename</strong> (<em>str</em>) – name of the output .gif file</p></li>
+<li><p><strong>i_start</strong> (<em>int</em>) – index of first frame’s field/temperature</p></li>
+<li><p><strong>i_end</strong> (<em>int</em>) – index of last frame’s field/temperature</p></li>
+<li><p><strong>i_constant</strong> (<em>int</em>) – index of constant temperature/field</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function, determines colour of main figure</p></li>
+<li><p><strong>lim_scalar</strong> (<em>float = 1.</em>) – scalar used to set limits of axes, smaller values magnify plotted figure</p></li>
+<li><p><strong>ticks</strong> (<em>float = 1</em>) – determines ticks spacing</p></li>
+<li><p><strong>r_density</strong> (<em>int = 0</em>) – determines rcount of 3D plot</p></li>
+<li><p><strong>c_density</strong> (<em>int = 0</em>) – determines ccount of 3D plot</p></li>
+<li><p><strong>axis_off</strong> (<em>bool = False</em>) – determines if axes are turned off</p></li>
+<li><p><strong>fps</strong> (<em>int</em>) – number of frames per second in animation</p></li>
+<li><p><strong>dpi</strong> (<em>int</em>) – dots per inch resolution of frames</p></li>
+<li><p><strong>bar</strong> (<em>bool = True</em>) – determines if bar representing animation variable is shown</p></li>
+<li><p><strong>bar_scale</strong> (<em>bool = False</em>) – determines if scale should be shown for bar</p></li>
+<li><p><strong>bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function, determines colour of bar</p></li>
+<li><p><strong>temp_rounding</strong> (<em>int = 0</em>) – determines how many decimal places are shown in bar/plot labels for temperature</p></li>
+<li><p><strong>field_rounding</strong> (<em>int = 0</em>) – determines how many decimal places are shown in bar/plot labels for field</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SltFileError</strong> – if unable to load data file, most likely encountered if group name is incorrect</p></li>
+<li><p><strong>SltPlotError</strong> – if unable to create and save animated plot</p></li>
 </ul>
 </dd>
 </dl>
@@ -2215,12 +2248,34 @@ hemholtz_energy or magnetisation</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.interactive_plot_3d">
-<span class="sig-name descname"><span class="pre">interactive_plot_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dark_rainbow_r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_slider_colour</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'#77f285'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B_slider_colour</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'#794285'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_bar_colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BuRd'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_bar_colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BuPi'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lim_scalar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis_off</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.interactive_plot_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.interactive_plot_3d" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
+<span class="sig-name descname"><span class="pre">interactive_plot_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dark_rainbow_r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_slider_colour</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'#77f285'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B_slider_colour</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'#794285'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_bar_colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BuRd'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_bar_colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BuPi'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lim_scalar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bar_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_rounding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_rounding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis_off</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.interactive_plot_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.interactive_plot_3d" title="Link to this definition">#</a></dt>
+<dd><p>Creates interactive widget plot dependent on  field and temperature.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>group</strong> (<em>str</em>) – </p></li>
-<li><p><strong>data_type</strong> (<em>str</em>) – </p></li>
+<li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
+<li><p><strong>data_type</strong> (<em>Unity</em><em>[</em><em>&quot;chit&quot;</em><em>, </em><em>&quot;chi&quot;</em><em>, </em><em>&quot;hemholtz_energy&quot;</em><em>, </em><em>&quot;magnetisation&quot;</em><em>, </em><em>&quot;internal_energy&quot;</em><em>]</em>) – type of data that will be used to create plot</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function, determines colour of main figure</p></li>
+<li><p><strong>T_slider_colour</strong> (<em>str</em>) – determines colour of temperature slider</p></li>
+<li><p><strong>B_slider_colour</strong> (<em>str</em>) – determines colour of field slider</p></li>
+<li><p><strong>temp_bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuRd'</em>) – input of Compound.colour_map function, determines colour map of temperature bar</p></li>
+<li><p><strong>field_bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi'</em>) – input of Compound.colour_map function, determines colour map of field bar</p></li>
+<li><p><strong>lim_scalar</strong> (<em>float = 1.</em>) – scalar used to set limits of axes, smaller values magnify plotted figure</p></li>
+<li><p><strong>ticks</strong> (<em>float = 1</em>) – determines ticks spacing</p></li>
+<li><p><strong>bar</strong> (<em>bool = True</em>) – determines if bar is shown</p></li>
+<li><p><strong>bar_scale</strong> (<em>bool = False</em>) – determines if bar scale is shown</p></li>
+<li><p><strong>temp_rounding</strong> (<em>int = 2</em>) – determines how many significant digits are shown relative to int(value) for temperature</p></li>
+<li><p><strong>temp_rounding</strong> – determines how many significant digits are shown relative to int(value) for field</p></li>
+<li><p><strong>axis_off</strong> (<em>bool = False</em>) – determines if axes are turned off</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SltFileError</strong> – if unable to load data file, most likely encountered if group name is incorrect</p></li>
+<li><p><strong>SltPlotError</strong> – if unable to create animated plot</p></li>
 </ul>
 </dd>
 </dl>

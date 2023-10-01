@@ -1,8 +1,30 @@
 from os import path
 from typing import Tuple, Union
+
 from h5py import File, Group, Dataset
-from numpy import ndarray, array, float64, int64, complex128
-import numpy as np
+from numpy import ndarray, array, float64, int64, complex128, linspace, arange, max
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib import rcParams, use
+from matplotlib.style import use as mplstyle_use
+from matplotlib.ticker import AutoMinorLocator, MultipleLocator
+from matplotlib.gridspec import GridSpec
+from matplotlib.animation import PillowWriter
+from matplotlib.widgets import Slider
+from matplotlib.ticker import FuncFormatter
+from matplotlib.pyplot import (
+    Normalize,
+    plot,
+    figure,
+    subplots,
+    rc,
+    tight_layout,
+    title,
+    show,
+    cla,
+)
+from cycler import cycler
+import matplotlib.cm
+
 from ._slothpy_exceptions import (
     SltFileError,
     SltCompError,
@@ -14,7 +36,6 @@ from ._slothpy_exceptions import (
 from slothpy._general_utilities._constants import (
     RED,
     GREEN,
-    YELLOW,
     BLUE,
     PURPLE,
     RESET,
@@ -58,34 +79,10 @@ from slothpy._general_utilities._math_expresions import (
 )
 from slothpy._general_utilities._auto_tune import _auto_tune
 
-# Experimental imports for plotting
-from cycler import cycler
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator, MultipleLocator
-import matplotlib.colors
-import matplotlib.cm
-import matplotlib.gridspec
-from matplotlib.animation import PillowWriter
-from matplotlib.widgets import Slider
-
-# faster plot
-import matplotlib.style as mplstyle
-
-mplstyle.use("fast")
-mpl.rcParams["path.simplify"] = True
-mpl.rcParams["path.simplify_threshold"] = 1.0
-
-mpl.use("Qt5Agg")
-
-# Promote set_plain_error_reporting_mode and set_default_error_reporting_mode and rise it from system to main with doc string
-
-###To do: orinetation print in zeeman splitting
-###       Hemholtz 3D plot, animate 3D all properties,
-###       coloured prints and errors in terminal, numpy docstrings,
-###       new diemnsions 3D, np.arrays of orient in decompositions
-
-### Effective charge distribution from CFPs.
+mplstyle_use("fast")
+rcParams["path.simplify"] = True
+rcParams["path.simplify_threshold"] = 1.0
+use("Qt5Agg")
 
 print(
     """                      ____  _       _   _     ____        
@@ -216,8 +213,8 @@ class Compound:
             A string or a 2/3/4-tuple of strings representing a dataset or
             group/dataset/dataset atribute/group atribute (Description),
             respectively, to be created or added (to the existing group).
-        value : np.ndarray
-            An ArrayLike structure (can be converted to np.ndarray) that will
+        value : ndarray
+            An ArrayLike structure (can be converted to ndarray) that will
             be stored in the dataset or group/dataset provided by the key.
 
         Raises
@@ -1029,7 +1026,7 @@ class Compound:
         number_threads: int = 1,
         exp: bool = False,
         T: bool = True,
-        grid: Union[int, np.ndarray[float64]] = None,
+        grid: Union[int, ndarray[float64]] = None,
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 2,
@@ -1081,7 +1078,7 @@ class Compound:
         T : bool, optional
             Results are returned as a product with temperature chiT(H,T).,
             by default True
-        grid : Union[int, np.ndarray[float64]], optional
+        grid : Union[int, ndarray[float64]], optional
             If the grid is set to an integer from 0-11 then the prescribed
             Lebedev-Laikov grids over the hemisphere will be used (see
             grids_over_hemisphere documentation), otherwise, the user can
@@ -1736,8 +1733,8 @@ class Compound:
         and spherical_grid = 60, the intermediate array (before numerical
         differentiation) will take 7*100*300*2*60*60*8 bytes = 12.096 GB).
         """
-        temperatures = np.array(temperatures, dtype=float64)
-        fields = np.array(fields, dtype=float64)
+        temperatures = array(temperatures, dtype=float64)
+        fields = array(fields, dtype=float64)
 
         if slt is not None:
             slt_group_name = f"{slt}_3d_susceptibility"
@@ -2852,7 +2849,7 @@ class Compound:
 
     def soc_energies_cm_1(
         self, group: str, number_of_states: int = 0, slt: str = None
-    ) -> np.ndarray[float64]:
+    ) -> ndarray[float64]:
         """
         Returns energies for the given number of first spin-orbit
         states in cm-1.
@@ -2871,7 +2868,7 @@ class Compound:
 
         Returns
         -------
-        np.ndarray[float64]
+        ndarray[float64]
             The resulting array is one-dimensional and contains the energy of
             first number_of_states states in cm-1.
 
@@ -2955,7 +2952,7 @@ class Compound:
     def states_magnetic_momenta(
         self,
         group: str,
-        states: Union[int, np.ndarray[int]] = 0,
+        states: Union[int, ndarray[int]] = 0,
         rotation: ndarray[float64] = None,
         slt: str = None,
     ) -> ndarray[float64]:
@@ -2967,7 +2964,7 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the magnetic momenta.
-        states : Union[int, np.ndarray[int]], optional
+        states : Union[int, ndarray[int]], optional
             ArrayLike structure (can be converted to numpy.NDArray) of
             states indexes for which magnetic momenta will be calculated. If
             set to an integer it acts as a states cutoff (first n states will
@@ -3017,7 +3014,7 @@ class Compound:
 
         if not isinstance(states, int):
             try:
-                states = np.array(states, dtype=int64)
+                states = array(states, dtype=int64)
             except Exception as exc:
                 raise SltInputError(exc) from None
 
@@ -3084,7 +3081,7 @@ class Compound:
     def states_total_angular_momenta(
         self,
         group: str,
-        states: Union[int, np.ndarray[int]] = 0,
+        states: Union[int, ndarray[int]] = 0,
         rotation: ndarray[float64] = None,
         slt: str = None,
     ) -> ndarray[float64]:
@@ -3097,7 +3094,7 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the magnetic momenta.
-        states : Union[int, np.ndarray[int]], optional
+        states : Union[int, ndarray[int]], optional
             ArrayLike structure (can be converted to numpy.NDArray) of
             states indexes for which total angular momenta will be calculated.
             If set to an integer it acts as a states cutoff (first n states
@@ -3149,7 +3146,7 @@ class Compound:
 
         if not isinstance(states, int):
             try:
-                states = np.array(states, dtype=int64)
+                states = array(states, dtype=int64)
             except Exception as exc:
                 raise SltInputError(exc) from None
 
@@ -3216,7 +3213,7 @@ class Compound:
     def magnetic_momenta_matrix(
         self,
         group: str,
-        states_cutoff: np.ndarray = 0,
+        states_cutoff: ndarray = 0,
         rotation: ndarray[float64] = None,
         slt: str = None,
     ) -> ndarray[complex128]:
@@ -3229,7 +3226,7 @@ class Compound:
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the magnetic momenta
             matrix.
-        states_cutoff : np.ndarray, optional
+        states_cutoff : ndarray, optional
             Number of states that will be taken into account for construction
             of the magnetic momenta matrix. If set to zero, all available
             states from the file will be included., by default 0
@@ -3342,7 +3339,7 @@ class Compound:
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the total angular momenta
             matrix.
-        states_cutoff : np.ndarray, optional
+        states_cutoff : ndarray, optional
             Number of states that will be taken into account for construction
             of the total angular momenta matrix. If set to zero, all available
             states from the file will be included., by default 0
@@ -3578,7 +3575,7 @@ class Compound:
                         " corresponding to the decomposition of"
                         f" {matrix} matrix from group: {group}."
                     ),
-                ] = np.arange(-dim, dim + 1, step=1, dtype=float64)
+                ] = arange(-dim, dim + 1, step=1, dtype=float64)
             except Exception as exc:
                 raise SltFileError(
                     self._hdf5,
@@ -3734,7 +3731,7 @@ class Compound:
         cfp_return = cfp
 
         if slt is not None:
-            cfp = np.array(cfp)
+            cfp = array(cfp)
 
             try:
                 self[
@@ -3921,7 +3918,7 @@ class Compound:
         ito_return = ito
 
         if slt is not None:
-            ito = np.array(ito)
+            ito = array(ito)
 
             try:
                 self[
@@ -4274,21 +4271,30 @@ class Compound:
 
         return matrix
 
-    ####Experimental plotting
     @staticmethod
     def colour_map(name):
         """
         Creates matplotlib colour map object.
 
-        Args:
-            name: (str or lst) one of defined names for colour maps: BuPi, rainbow, dark_rainbow, light_rainbow,
-            light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo,
-            viridis, plasma, inferno, magma, cividis or list of colour from which colour map will be created by
-            interpolation of colours between ones on a list; for predefined names modifiers can be applyed: _l loops
-            the list in a way that it starts and ends with the same colour, _r reverses the list
-
-        Returns:
-
+        Parameters
+        ----------
+        name: Unity["BuPi", "rainbow", "dark_rainbow", "light_rainbow",
+            "light_rainbow_alt", "BuOr", "BuYl", "BuRd", "GnYl", "PrOr", "GnRd", "funmat", "NdCoN322bpdo",
+            "NdCoNO222bpdo", "NdCoI22bpdo", "viridis", "plasma", "inferno", "magma", "cividis"] or list[str]
+            One of defined names for colour maps: BuPi, rainbow, dark_rainbow, light_rainbow,light_rainbow_alt, BuOr,
+            BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo,
+            viridis, plasma, inferno, magma, cividis or list of HTML colour codes from which colour map will be created
+            by interpolation of colours between ones on a list. For predefined names modifiers can be applied: _l loops
+            the list in a way that it starts and ends with the same colour, _r reverses the list.
+        Returns
+        -------
+        matplotlib.colors.LinearSegmentedColormap
+            Matplotlib's colour map object used for plotting.
+        Raises
+        ------
+        ValueError
+            If input is not acceptable for creating colour map from list of colour codes or name of predefined colour
+            map was incorrectly written.
         """
         cmap_list = []
         reverse = False
@@ -4296,287 +4302,299 @@ class Compound:
         if name[-2:] == "_l":
             name = name[:-2]
             loop = True
-        try:
-            if name[-2:] == "_r":
-                reverse = True
-                name = name[:-2]
-            if type(name) == list:
-                cmap_list = name
-            elif name == "BuPi":
-                cmap_list = [
-                    "#0091ad",
-                    "#1780a1",
-                    "#2e6f95",
-                    "#455e89",
-                    "#5c4d7d",
-                    "#723c70",
-                    "#a01a58",
-                    "#b7094c",
-                ]
-            elif name == "rainbow":
-                cmap_list = [
-                    "#ff0000",
-                    "#ff8700",
-                    "#ffd300",
-                    "#deff0a",
-                    "#a1ff0a",
-                    "#0aff99",
-                    "#0aefff",
-                    "#147df5",
-                    "#580aff",
-                    "#be0aff",
-                ]
-            elif name == "dark_rainbow":
-                cmap_list = [
-                    "#F94144",
-                    "#F3722C",
-                    "#F8961E",
-                    "#F9844A",
-                    "#F9C74F",
-                    "#90BE6D",
-                    "#43AA8B",
-                    "#4D908E",
-                    "#577590",
-                    "#277DA1",
-                ]
-            elif name == "light_rainbow":
-                cmap_list = [
-                    "#FFADAD",
-                    "#FFD6A5",
-                    "#FDFFB6",
-                    "#CAFFBF",
-                    "#9BF6FF",
-                    "#A0C4FF",
-                    "#BDB2FF",
-                    "#FFC6FF",
-                ]
-            elif name == "light_rainbow_alt":
-                cmap_list = [
-                    "#FBF8CC",
-                    "#FDE4CF",
-                    "#FFCFD2",
-                    "#F1C0E8",
-                    "#CFBAF0",
-                    "#A3C4F3",
-                    "#90DBF4",
-                    "#8EECF5",
-                    "#98F5E1",
-                    "#B9FBC0",
-                ]
-            elif name == "BuOr":
-                cmap_list = [
-                    "#03045e",
-                    "#023e8a",
-                    "#0077b6",
-                    "#0096c7",
-                    "#00b4d8",
-                    "#ff9e00",
-                    "#ff9100",
-                    "#ff8500",
-                    "#ff6d00",
-                    "#ff5400",
-                ]
-            elif name == "BuRd":
-                cmap_list = [
-                    "#033270",
-                    "#1368aa",
-                    "#4091c9",
-                    "#9dcee2",
-                    "#fedfd4",
-                    "#f29479",
-                    "#ef3c2d",
-                    "#cb1b16",
-                    "#65010c",
-                ]
-            elif name == "BuYl":
-                cmap_list = [
-                    "#184e77",
-                    "#1e6091",
-                    "#1a759f",
-                    "#168aad",
-                    "#34a0a4",
-                    "#52b69a",
-                    "#76c893",
-                    "#99d98c",
-                    "#b5e48c",
-                    "#d9ed92",
-                ]
-            elif name == "GnYl":
-                cmap_list = [
-                    "#007f5f",
-                    "#2b9348",
-                    "#55a630",
-                    "#80b918",
-                    "#aacc00",
-                    "#bfd200",
-                    "#d4d700",
-                    "#dddf00",
-                    "#eeef20",
-                    "#ffff3f",
-                ]
-            elif name == "PrOr":
-                cmap_list = [
-                    "#240046",
-                    "#3c096c",
-                    "#5a189a",
-                    "#7b2cbf",
-                    "#9d4edd",
-                    "#ff9e00",
-                    "#ff9100",
-                    "#ff8500",
-                    "#ff7900",
-                    "#ff6d00",
-                ]
-            elif name == "GnRd":
-                cmap_list = [
-                    "#005C00",
-                    "#2D661B",
-                    "#2A850E",
-                    "#27A300",
-                    "#A9FFA5",
-                    "#FFA5A5",
-                    "#FF0000",
-                    "#BA0C0C",
-                    "#751717",
-                    "#5C0000",
-                ]
-            elif name == "funmat":
-                cmap_list = [
-                    "#1f6284",
-                    "#277ba5",
-                    "#2f94c6",
-                    "#49a6d4",
-                    "#6ab6dc",
-                    "#ffe570",
-                    "#ffe15c",
-                    "#ffda33",
-                    "#ffd20a",
-                    "#e0b700",
-                ]
-            elif name == "NdCoN322bpdo":
-                cmap_list = [
-                    "#00268f",
-                    "#0046ff",
-                    "#009cf4",
-                    "#E5E4E2",
-                    "#ede76d",
-                    "#ffb900",
-                    "#b88700",
-                ]
-            elif name == "NdCoNO222bpdo":
-                cmap_list = [
-                    "#A90F97",
-                    "#E114C9",
-                    "#f9bbf2",
-                    "#77f285",
-                    "#11BB25",
-                    "#0C831A",
-                ]
-            elif name == "NdCoI22bpdo":
-                cmap_list = [
-                    "#075F5F",
-                    "#0B9898",
-                    "#0fd1d1",
-                    "#FAB3B3",
-                    "#d10f0f",
-                    "#720808",
-                ]
-            if cmap_list:
-                if reverse:
-                    cmap_list.reverse()
-                if loop:
-                    new_cmap_list = cmap_list.copy()
-                    for i in range(len(cmap_list)):
-                        new_cmap_list.append(cmap_list[-(i + 1)])
-                    cmap_list = new_cmap_list
-                cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
-                    "", cmap_list
-                )
-            elif name == "viridis":
-                cmap = matplotlib.cm.viridis
-                if reverse:
-                    cmap = matplotlib.cm.viridis_r
-            elif name == "plasma":
-                cmap = matplotlib.cm.plasma
-                if reverse:
-                    cmap = matplotlib.cm.plasma_r
-            elif name == "inferno":
-                cmap = matplotlib.cm.inferno
-                if reverse:
-                    cmap = matplotlib.cm.inferno_r
-            elif name == "magma":
-                cmap = matplotlib.cm.magma
-                if reverse:
-                    cmap = matplotlib.cm.magma_r
-            elif name == "cividis":
-                cmap = matplotlib.cm.cividis
-                if reverse:
-                    cmap = matplotlib.cm.cividis_r
-            else:
-                print(
-                    f"""There is no such colour map as {name} use one of those: BuPi, rainbow, dark_rainbow, light_rainbow, 
-            light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo,
-            viridis, plasma, inferno, magma, cividis or enter list of colours"""
-                )
-            return cmap
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to find palette/colour map:"
-                f" {error_type}: {error_message}"
-            )
+
+        if name[-2:] == "_r":
+            reverse = True
+            name = name[:-2]
+        if type(name) == list:
+            cmap_list = name
+        elif name == "BuPi":
+            cmap_list = [
+                "#0091ad",
+                "#1780a1",
+                "#2e6f95",
+                "#455e89",
+                "#5c4d7d",
+                "#723c70",
+                "#a01a58",
+                "#b7094c",
+            ]
+        elif name == "rainbow":
+            cmap_list = [
+                "#ff0000",
+                "#ff8700",
+                "#ffd300",
+                "#deff0a",
+                "#a1ff0a",
+                "#0aff99",
+                "#0aefff",
+                "#147df5",
+                "#580aff",
+                "#be0aff",
+            ]
+        elif name == "dark_rainbow":
+            cmap_list = [
+                "#F94144",
+                "#F3722C",
+                "#F8961E",
+                "#F9844A",
+                "#F9C74F",
+                "#90BE6D",
+                "#43AA8B",
+                "#4D908E",
+                "#577590",
+                "#277DA1",
+            ]
+        elif name == "light_rainbow":
+            cmap_list = [
+                "#FFADAD",
+                "#FFD6A5",
+                "#FDFFB6",
+                "#CAFFBF",
+                "#9BF6FF",
+                "#A0C4FF",
+                "#BDB2FF",
+                "#FFC6FF",
+            ]
+        elif name == "light_rainbow_alt":
+            cmap_list = [
+                "#FBF8CC",
+                "#FDE4CF",
+                "#FFCFD2",
+                "#F1C0E8",
+                "#CFBAF0",
+                "#A3C4F3",
+                "#90DBF4",
+                "#8EECF5",
+                "#98F5E1",
+                "#B9FBC0",
+            ]
+        elif name == "BuOr":
+            cmap_list = [
+                "#03045e",
+                "#023e8a",
+                "#0077b6",
+                "#0096c7",
+                "#00b4d8",
+                "#ff9e00",
+                "#ff9100",
+                "#ff8500",
+                "#ff6d00",
+                "#ff5400",
+            ]
+        elif name == "BuRd":
+            cmap_list = [
+                "#033270",
+                "#1368aa",
+                "#4091c9",
+                "#9dcee2",
+                "#fedfd4",
+                "#f29479",
+                "#ef3c2d",
+                "#cb1b16",
+                "#65010c",
+            ]
+        elif name == "BuYl":
+            cmap_list = [
+                "#184e77",
+                "#1e6091",
+                "#1a759f",
+                "#168aad",
+                "#34a0a4",
+                "#52b69a",
+                "#76c893",
+                "#99d98c",
+                "#b5e48c",
+                "#d9ed92",
+            ]
+        elif name == "GnYl":
+            cmap_list = [
+                "#007f5f",
+                "#2b9348",
+                "#55a630",
+                "#80b918",
+                "#aacc00",
+                "#bfd200",
+                "#d4d700",
+                "#dddf00",
+                "#eeef20",
+                "#ffff3f",
+            ]
+        elif name == "PrOr":
+            cmap_list = [
+                "#240046",
+                "#3c096c",
+                "#5a189a",
+                "#7b2cbf",
+                "#9d4edd",
+                "#ff9e00",
+                "#ff9100",
+                "#ff8500",
+                "#ff7900",
+                "#ff6d00",
+            ]
+        elif name == "GnRd":
+            cmap_list = [
+                "#005C00",
+                "#2D661B",
+                "#2A850E",
+                "#27A300",
+                "#A9FFA5",
+                "#FFA5A5",
+                "#FF0000",
+                "#BA0C0C",
+                "#751717",
+                "#5C0000",
+            ]
+        elif name == "funmat":
+            cmap_list = [
+                "#1f6284",
+                "#277ba5",
+                "#2f94c6",
+                "#49a6d4",
+                "#6ab6dc",
+                "#ffe570",
+                "#ffe15c",
+                "#ffda33",
+                "#ffd20a",
+                "#e0b700",
+            ]
+        elif name == "NdCoN322bpdo":
+            cmap_list = [
+                "#00268f",
+                "#0046ff",
+                "#009cf4",
+                "#E5E4E2",
+                "#ede76d",
+                "#ffb900",
+                "#b88700",
+            ]
+        elif name == "NdCoNO222bpdo":
+            cmap_list = [
+                "#A90F97",
+                "#E114C9",
+                "#f9bbf2",
+                "#77f285",
+                "#11BB25",
+                "#0C831A",
+            ]
+        elif name == "NdCoI22bpdo":
+            cmap_list = [
+                "#075F5F",
+                "#0B9898",
+                "#0fd1d1",
+                "#FAB3B3",
+                "#d10f0f",
+                "#720808",
+            ]
+        if cmap_list:
+            if reverse:
+                cmap_list.reverse()
+            if loop:
+                new_cmap_list = cmap_list.copy()
+                for i in range(len(cmap_list)):
+                    new_cmap_list.append(cmap_list[-(i + 1)])
+                cmap_list = new_cmap_list
+            cmap = LinearSegmentedColormap.from_list("", cmap_list)
+        elif name == "viridis":
+            cmap = matplotlib.cm.viridis
+            if reverse:
+                cmap = matplotlib.cm.viridis_r
+        elif name == "plasma":
+            cmap = matplotlib.cm.plasma
+            if reverse:
+                cmap = matplotlib.cm.plasma_r
+        elif name == "inferno":
+            cmap = matplotlib.cm.inferno
+            if reverse:
+                cmap = matplotlib.cm.inferno_r
+        elif name == "magma":
+            cmap = matplotlib.cm.magma
+            if reverse:
+                cmap = matplotlib.cm.magma_r
+        elif name == "cividis":
+            cmap = matplotlib.cm.cividis
+            if reverse:
+                cmap = matplotlib.cm.cividis_r
+        else:
+            raise ValueError(
+                f"""There is no such colour map as {name} use one of those: BuPi, rainbow, dark_rainbow, light_rainbow, 
+                    light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo,
+                    NdCoI22bpdo, viridis, plasma, inferno, magma, cividis or enter list of HTML colour codes"""
+            ) from None
+
+        return cmap
 
     @staticmethod
     def custom_colour_cycler(number_of_colours: int, cmap1: str, cmap2: str):
         """
         Creates colour cycler from two colour maps in alternating pattern, suitable for use in matplotlib plots.
 
-        Args:
-            number_of_colours: (int) number of colour in cycle
-            cmap1: (str or lst) colour map name or list of colours (valid input for Compoud.colour_map())
-            cmap2: (str or lst) colour map name or list of colours (valid input for Compoud.colour_map())
+        Parameters
+        ----------
+        number_of_colours: int
+            Number of colour in cycle.
+        cmap1: str or list[str]
+            Input of Compound.colour_map function.
+        cmap2: str or list[str]
+            Input of Compound.colour_map function.
 
-        Returns:
-            cycler object created based on two input colourmaps
+        Returns
+        -------
+        cycler.cycler
+            Cycler object created based on two input colour maps.
+
+        Raises
+        ------
+        ValueError
+            If unable to use given inputs. It should not be possible to trigger this error.
         """
-        if number_of_colours % 2 == 0:
-            increment = 0
-            lst1 = Compound.colour_map(cmap1)(
-                np.linspace(0, 1, int(number_of_colours / 2))
+        try:
+            if number_of_colours % 2 == 0:
+                increment = 0
+                lst1 = Compound.colour_map(cmap1)(
+                    linspace(0, 1, int(number_of_colours / 2))
+                )
+                lst2 = Compound.colour_map(cmap2)(
+                    linspace(0, 1, int(number_of_colours / 2))
+                )
+                colour_cycler_list = []
+                while increment < number_of_colours:
+                    if increment % 2 == 0:
+                        colour_cycler_list.append(lst1[int(increment / 2)])
+                    else:
+                        colour_cycler_list.append(
+                            lst2[int((increment - 1) / 2)]
+                        )
+                    increment += 1
+            else:
+                increment = 0
+                lst1 = Compound.colour_map(cmap1)(
+                    linspace(0, 1, int((number_of_colours / 2) + 1))
+                )
+                lst2 = Compound.colour_map(cmap2)(
+                    linspace(0, 1, int(number_of_colours / 2))
+                )
+                colour_cycler_list = []
+                while increment < number_of_colours:
+                    if increment % 2 == 0:
+                        colour_cycler_list.append(lst1[int(increment / 2)])
+                    else:
+                        colour_cycler_list.append(
+                            lst2[int((increment - 1) / 2)]
+                        )
+                    increment += 1
+            return cycler(color=colour_cycler_list)
+        except Exception as exc:
+            raise ValueError(
+                "If you see this message function you try to use has an error."
+                " Contact us at email:"
             )
-            lst2 = Compound.colour_map(cmap2)(
-                np.linspace(0, 1, int(number_of_colours / 2))
-            )
-            colour_cycler_list = []
-            while increment < number_of_colours:
-                if increment % 2 == 0:
-                    colour_cycler_list.append(lst1[int(increment / 2)])
-                else:
-                    colour_cycler_list.append(lst2[int((increment - 1) / 2)])
-                increment += 1
-        else:
-            increment = 0
-            lst1 = Compound.colour_map(cmap1)(
-                np.linspace(0, 1, int((number_of_colours / 2) + 1))
-            )
-            lst2 = Compound.colour_map(cmap2)(
-                np.linspace(0, 1, int(number_of_colours / 2))
-            )
-            colour_cycler_list = []
-            while increment < number_of_colours:
-                if increment % 2 == 0:
-                    colour_cycler_list.append(lst1[int(increment / 2)])
-                else:
-                    colour_cycler_list.append(lst2[int((increment - 1) / 2)])
-                increment += 1
-        return cycler(color=colour_cycler_list)
+        # TODO: mail kontaktowy
 
     def plot_mth(
         self,
         group: str,
-        show=True,
-        origin=False,
         save=False,
         colour_map_name="rainbow",
         xlim=(),
@@ -4587,25 +4605,39 @@ class Compound:
     ):
         """
         Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown,
-        saved, colour palettes can be changed. If origin=True it returns data packed into a dictionary for exporting
-        to Origin.
+        saved, colour palettes can be changed.
 
-            Args:
-                group (str): name of a group in HDF5 file
-                show (bool): determines if matplotlib graph is created
-                and shown if True
-                origin (bool): determines if function should return raw data
-                save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
-                colour_map_name (str) or (list): sets colours used to create graphs, valid options are returned by
-                Compound.colour_map staticmethod
-                xlim (tuple): tuple of two or one numbers that set corresponding axe limits
-                ylim (tuple): tuple of two or one numbers that set corresponding axe limits
-                xticks (int): frequency of x major ticks
-                yticks (int): frequency of x major ticks
-                field ('B' or 'H'): chooses field type and unit: Tesla for B and kOe for H
-            Returns:
-                if origin=True:
-                    dict[origin_column (str), data (np.array)]: contains data used to create graph in origin
+        Parameters
+        ----------
+        group: str
+            name of a group from HDF5 file for which plot will be created
+        save: bool = False
+            determines if plot is saved, name of the file will be in following format: f'chitht_{group}.tiff'
+        colour_map_name: str or list[str] = 'funmat'
+            input of Compound.colour_map function
+        xlim: tuple of 1-2 floats = ()
+            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed
+        ylim: tuple of 1-2 floats = ()
+            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed
+        xticks: int = 100
+            determines frequency of x major ticks
+        yticks: int = 0
+            determines frequency of y major ticks
+        field: Unity['B','H'] = 'B'
+            determines field unit - B[T] or H[kOe]
+
+        Returns
+        -------
+        Nothing
+
+        Raises
+        ------
+        SltFileError
+            if unable to load data file, most likely encountered if group name is incorrect
+        SltPlotError
+            if unable to create plot
+        SltSaveError
+            if unable to save plot as image
         """
         try:
             """Getting data from hdf5 or sloth file"""
@@ -4615,95 +4647,109 @@ class Compound:
                 fields *= 10
                 xticks *= 10
             temps = self[f"{group}_magnetisation", f"{group}_temperatures"]
-            """Creates dataset suitable to be exported to Origin"""
-            data = {"data_x": fields, "data_y": mth, "comment": temps}
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get data to create graph"
-                f" of M(H, T): {self._hdf5} - group {group}: {error_type}:"
-                f" {error_message}"
+        except Exception as exc:
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                f"Failed to load magnetisation file"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".'
+                + RED
+                + "Check if group exist.",
+            ) from None
+
+        try:
+            """Plotting in matplotlib"""
+            fig, ax = subplots()
+            """Defining colour maps for graphs"""
+            colour = iter(
+                Compound.colour_map(colour_map_name)(
+                    linspace(0, 1, len(temps))
+                )
             )
-        if show:
+            """Creating a plot"""
+            for i, mh in enumerate(mth):
+                c = next(colour)
+                ax.plot(fields, mh, linewidth=2, c=c, label=f"{temps[i]} K")
+
+            if yticks:
+                ax.yaxis.set_major_locator(MultipleLocator(yticks))
+            ax.xaxis.set_major_locator(MultipleLocator(xticks))
+            ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+            ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+            ax.tick_params(which="major", length=7)
+            ax.tick_params(which="minor", length=3.5)
+            if field == "B":
+                ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
+            elif field == "H":
+                ax.set_xlabel(r"$H\ /\ \mathrm{kOe}$")
+            ax.set_ylabel(r"$M\ /\ \mathrm{\mu_{B}}$")
+            if xlim:
+                if len(xlim) == 2:
+                    ax.set_ylim(xlim[0], xlim[1])
+                else:
+                    ax.set_ylim(xlim[0])
+            else:
+                if len(temps) > 17:
+                    ax.set_xlim(0)
+                    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+
+                else:
+                    ax.set_xlim(0, fields[-1] + 0.3 * fields[-1])
+                    ax.legend()
+            if ylim:
+                if len(ylim) == 2:
+                    ax.set_ylim(ylim[0], ylim[1])
+                else:
+                    ax.set_ylim(ylim[0])
+            else:
+                ax.set_ylim(0)
+            tight_layout()
+            show()
+        except Exception as exc:
+            raise SltPlotError(
+                self._hdf5,
+                exc,
+                f"Failed to plot magnetisation data"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+        if save:
             try:
-                """Plotting in matplotlib"""
-                fig, ax = plt.subplots()
-                """Defining colour maps for graphs"""
-                colour = iter(
-                    Compound.colour_map(colour_map_name)(
-                        np.linspace(0, 1, len(temps))
-                    )
-                )
-                """Creating a plot"""
-                for i, mh in enumerate(mth):
-                    c = next(colour)
-                    ax.plot(
-                        fields, mh, linewidth=2, c=c, label=f"{temps[i]} K"
-                    )
-
-                if yticks:
-                    ax.yaxis.set_major_locator(MultipleLocator(yticks))
-                ax.xaxis.set_major_locator(MultipleLocator(xticks))
-                ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-                ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-                ax.tick_params(which="major", length=7)
-                ax.tick_params(which="minor", length=3.5)
-                if field == "B":
-                    ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
-                elif field == "H":
-                    ax.set_xlabel(r"$H\ /\ \mathrm{kOe}$")
-                ax.set_ylabel(r"$M\ /\ \mathrm{\mu_{B}}$")
-                if xlim:
-                    if len(xlim) == 2:
-                        ax.set_ylim(xlim[0], xlim[1])
-                    else:
-                        ax.set_ylim(xlim[0])
-                else:
-                    if len(temps) > 17:
-                        ax.set_xlim(0)
-                        ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-
-                    else:
-                        ax.set_xlim(0, fields[-1] + 0.3 * fields[-1])
-                        ax.legend()
-                if ylim:
-                    if len(ylim) == 2:
-                        ax.set_ylim(ylim[0], ylim[1])
-                    else:
-                        ax.set_ylim(ylim[0])
-                else:
-                    ax.set_ylim(0)
-                plt.tight_layout()
-                plt.show()
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to create graph of M(H,"
-                    f" T): {self._hdf5} - group {group}: {error_type}:"
-                    f" {error_message}"
-                )
-            if save:
-                try:
-                    """Saving plot figure"""
-                    fig.savefig(f"mgh_{group}.tiff", dpi=300)
-                except Exception as e:
-                    error_type = type(e).__name__
-                    error_message = str(e)
-                    raise Exception(
-                        "Error encountered while trying to save graph of M(H,"
-                        f" T): {self._hdf5} - group {group}: {error_type}:"
-                        f" {error_message}"
-                    )
-        if origin:
-            return data
+                """Saving plot figure"""
+                fig.savefig(f"mgh_{group}.tiff", dpi=300)
+            except Exception as exc:
+                raise SltSaveError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save magnetisation data plot"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '", filename: '
+                    + PURPLE
+                    + f"mgh_{group}.tiff",
+                ) from None
 
     def plot_chitht(
         self,
         group,
-        show=True,
-        origin=False,
         save=False,
         colour_map_name="funmat",
         xlim=(),
@@ -4713,26 +4759,40 @@ class Compound:
         field="B",
     ):
         """
-        Function that creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group
-        in HDF5 file, graphs can be optionally shown, saved, colour palettes can be changed. If origin=True it returns
-        data packed into a dictionary for exporting to Origin.
+        Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group
+        in HDF5 file, graphs can be optionally saved, colour palettes can be changed.
 
-            Args:
-                group (str): name of a group in HDF5 file
-                show (bool): determines if matplotlib graph is created
-                and shown if True
-                origin (bool): determines if function should return raw data
-                save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
-                colour_map_name (str): sets colours used to create graphs, valid options are returned by
-                Compound.colour_map staticmethod
-                xlim (tuple): tuple of two or one numbers that set corresponding axe limits
-                ylim (tuple): tuple of two or one numbers that set corresponding axe limits
-                xticks (int): frequency of x major ticks
-                yticks (int): frequency of x major ticks
-                field ('B' or 'H'): chooses field type and unit: Tesla for B and kOe for H
-            Returns:
-                if origin=True:
-                    dict[origin_column (str), data (np.array)]: contains data used to create graph in origin
+        Parameters
+        ----------
+        group: str
+            name of a group from HDF5 file for which plot will be created
+        save: bool = False
+            determines if plot is saved, name of the file will be in following format: f'chitht_{group}.tiff'
+        colour_map_name: str or list[str] = 'funmat'
+            input of Compound.colour_map function
+        xlim: tuple of 1-2 floats = ()
+            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed
+        ylim: tuple of 1-2 floats = ()
+            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed
+        xticks: int = 100
+            determines freqency of x major ticks
+        yticks: int = 0
+            determines freqency of y major ticks
+        field: Unity['B','H'] = 'B'
+            determines field unit - B[T] or H[kOe]
+
+        Returns
+        -------
+        Nothing
+
+        Raises
+        ------
+        SltFileError
+            if unable to load data file, most likely encountered if group name is incorrect
+        SltPlotError
+            if unable to create plot
+        SltSaveError
+            if unable to save plot as image
         """
         try:
             """Getting data from hdf5 or sloth file"""
@@ -4746,106 +4806,118 @@ class Compound:
             if field == "H":
                 fields *= 10
             temps = self[f"{group}_susceptibility", f"{group}_temperatures"]
-            """Creates dataset suitable to be exported to Origin"""
-            data = {"data_x": temps, "data_y": chi, "comment": fields, "T": T}
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get data to create graph"
-                f" of chiT(H,T) or chi(H,T): {self._hdf5} - group {group}:"
-                f" {error_type}: {error_message}"
-            )
-        if show:
-            try:
-                """Plotting in matplotlib"""
-                fig, ax = plt.subplots()
-                """Defining colour maps for graphs"""
-                colour = iter(
-                    Compound.colour_map(colour_map_name)(
-                        np.linspace(0, 1, len(fields))
-                    )
-                )
-                """Creating a plot"""
-                for i, ch in enumerate(chi):
-                    c = next(colour)
-                    ax.plot(
-                        temps,
-                        ch,
-                        linewidth=2,
-                        c=c,
-                        label=(
-                            f'{round(fields[i], 2)} {"kOe" if field == "H" else "T"}'
-                        ),
-                    )
-                ax.xaxis.set_major_locator(MultipleLocator(xticks))
-                if yticks:
-                    ax.yaxis.set_major_locator(MultipleLocator(yticks))
-                ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-                ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-                ax.tick_params(which="major", length=7)
-                ax.tick_params(which="minor", length=3.5)
-                ax.set_xlabel(r"$T\ /\ \mathrm{K}$")
-                if T:
-                    ax.set_ylabel(
-                        r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                    )
-                else:
-                    ax.set_ylabel(
-                        r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
-                    )
-                if xlim:
-                    if len(xlim) == 2:
-                        ax.set_ylim(xlim[0], xlim[1])
-                    else:
-                        ax.set_ylim(xlim[0])
-                else:
-                    ax.set_xlim(0, temps[-1])
-                if ylim:
-                    if len(ylim) == 2:
-                        ax.set_ylim(ylim[0], ylim[1])
-                    else:
-                        ax.set_ylim(ylim[0])
-                else:
-                    ax.set_ylim(0)
-                ax.legend()
-                plt.tight_layout()
-                plt.show()
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to create graph of"
-                    f" chiT(H,T) or chi(H,T): {self._hdf5} - group {group}:"
-                    f" {error_type}: {error_message}"
-                )
-            if save:
-                try:
-                    """Saving plot figure"""
-                    fig.savefig(f"chitht_{group}.tiff", dpi=300)
-                except Exception as e:
-                    error_type = type(e).__name__
-                    error_message = str(e)
-                    raise Exception(
-                        "Error encountered while trying to save graph of"
-                        f" chiT(H,T) or chi(H,T): {self._hdf5} - group"
-                        f" {group}: {error_type}: {error_message}"
-                    )
-        if origin:
-            return data
+        except Exception as exc:
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                f"Failed to load susceptibility file"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".'
+                + RED
+                + "Check if group exist.",
+            ) from None
 
-    #################
-    #################
-    #################
-    # To tutaj dodalem zeby zobaczyc wykresy
+        try:
+            """Plotting in matplotlib"""
+            fig, ax = subplots()
+            """Defining colour maps for graphs"""
+            colour = iter(
+                Compound.colour_map(colour_map_name)(
+                    linspace(0, 1, len(fields))
+                )
+            )
+            """Creating a plot"""
+            for i, ch in enumerate(chi):
+                c = next(colour)
+                ax.plot(
+                    temps,
+                    ch,
+                    linewidth=2,
+                    c=c,
+                    label=(
+                        f'{round(fields[i], 2)} {"kOe" if field == "H" else "T"}'
+                    ),
+                )
+            ax.xaxis.set_major_locator(MultipleLocator(xticks))
+            if yticks:
+                ax.yaxis.set_major_locator(MultipleLocator(yticks))
+            ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+            ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+            ax.tick_params(which="major", length=7)
+            ax.tick_params(which="minor", length=3.5)
+            ax.set_xlabel(r"$T\ /\ \mathrm{K}$")
+            if T:
+                ax.set_ylabel(
+                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
+                )
+            else:
+                ax.set_ylabel(
+                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
+                )
+            if xlim:
+                if len(xlim) == 2:
+                    ax.set_ylim(xlim[0], xlim[1])
+                else:
+                    ax.set_ylim(xlim[0])
+            else:
+                ax.set_xlim(0, temps[-1])
+            if ylim:
+                if len(ylim) == 2:
+                    ax.set_ylim(ylim[0], ylim[1])
+                else:
+                    ax.set_ylim(ylim[0])
+            else:
+                ax.set_ylim(0)
+            ax.legend()
+            tight_layout()
+            show()
+        except Exception as exc:
+            raise SltPlotError(
+                self._hdf5,
+                exc,
+                f"Failed to plot susceptibility data"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+        if save:
+            try:
+                """Saving plot figure"""
+                fig.savefig(f"chitht_{group}.tiff", dpi=300)
+            except Exception as exc:
+                raise SltSaveError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save susceptibility data plot"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '", filename: '
+                    + PURPLE
+                    + f"chitht_{group}.tiff",
+                ) from None
+
     def plot_hemholtz_energyth(
         self,
         group: str,
         internal_energy=False,
-        show=True,
-        origin=False,
         save=False,
-        colour_map_name="rainbow",
+        colour_map_name="PrOr",
         xlim=(),
         ylim=(),
         xticks=1,
@@ -4853,26 +4925,42 @@ class Compound:
         field="B",
     ):
         """
-        Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown,
-        saved, colour palettes can be changed. If origin=True it returns data packed into a dictionary for exporting
-        to Origin.
+        Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group
+        in HDF5 file, graphs can be optionally saved, colour palettes can be changed.
 
-            Args:
-                group (str): name of a group in HDF5 file
-                show (bool): determines if matplotlib graph is created
-                and shown if True
-                origin (bool): determines if function should return raw data
-                save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
-                colour_map_name (str) or (list): sets colours used to create graphs, valid options are returned by
-                Compound.colour_map staticmethod
-                xlim (tuple): tuple of two or one numbers that set corresponding axe limits
-                ylim (tuple): tuple of two or one numbers that set corresponding axe limits
-                xticks (int): frequency of x major ticks
-                yticks (int): frequency of x major ticks
-                field ('B' or 'H'): chooses field type and unit: Tesla for B and kOe for H
-            Returns:
-                if origin=True:
-                    dict[origin_column (str), data (np.array)]: contains data used to create graph in origin
+        Parameters
+        ----------
+        group: str
+            name of a group from HDF5 file for which plot will be created
+        internal_energy: bool = False
+            #TODO: ???
+        save: bool = False
+            determines if plot is saved, name of the file will be in following format: f'chitht_{group}.tiff'
+        colour_map_name: str or list[str] = 'PrOr'
+            input of Compound.colour_map function
+        xlim: tuple of 1-2 floats = ()
+            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed
+        ylim: tuple of 1-2 floats = ()
+            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed
+        xticks: int = 100
+            determines freqency of x major ticks
+        yticks: int = 0
+            determines freqency of y major ticks
+        field: Unity['B','H'] = 'B'
+            determines field unit - B[T] or H[kOe]
+
+        Returns
+        -------
+        Nothing
+
+        Raises
+        ------
+        SltFileError
+            if unable to load data file, most likely encountered if group name is incorrect
+        SltPlotError
+            if unable to create plot
+        SltSaveError
+            if unable to save plot as image
         """
         if internal_energy:
             name = "internal"
@@ -4886,95 +4974,109 @@ class Compound:
                 fields *= 10
                 xticks *= 10
             temps = self[f"{group}_{name}_energy", f"{group}_temperatures"]
-            """Creates dataset suitable to be exported to Origin"""
-            data = {"data_x": fields, "data_y": mth, "comment": temps}
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get data to create graph"
-                f" of M(H, T): {self._hdf5} - group {group}: {error_type}:"
-                f" {error_message}"
+        except Exception as exc:
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                f"Failed to load hemholtz energy file"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".'
+                + RED
+                + "Check if group exist.",
+            ) from None
+
+        try:
+            """Plotting in matplotlib"""
+            fig, ax = subplots()
+            """Defining colour maps for graphs"""
+            colour = iter(
+                Compound.colour_map(colour_map_name)(
+                    linspace(0, 1, len(temps))
+                )
             )
-        if show:
+            """Creating a plot"""
+            for i, mh in enumerate(mth):
+                c = next(colour)
+                ax.plot(fields, mh, linewidth=2, c=c, label=f"{temps[i]} K")
+
+            if yticks:
+                ax.yaxis.set_major_locator(MultipleLocator(yticks))
+            ax.xaxis.set_major_locator(MultipleLocator(xticks))
+            ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+            ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+            ax.tick_params(which="major", length=7)
+            ax.tick_params(which="minor", length=3.5)
+            if field == "B":
+                ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
+            elif field == "H":
+                ax.set_xlabel(r"$H\ /\ \mathrm{kOe}$")
+            ax.set_ylabel(r"$M\ /\ \mathrm{\mu_{B}}$")
+            if xlim:
+                if len(xlim) == 2:
+                    ax.set_ylim(xlim[0], xlim[1])
+                else:
+                    ax.set_ylim(xlim[0])
+            else:
+                if len(temps) > 17:
+                    ax.set_xlim(0)
+                    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+
+                else:
+                    ax.set_xlim(0, fields[-1] + 0.3 * fields[-1])
+                    ax.legend()
+            if ylim:
+                if len(ylim) == 2:
+                    ax.set_ylim(ylim[0], ylim[1])
+                else:
+                    ax.set_ylim(ylim[0])
+            else:
+                ax.set_ylim(0)
+            tight_layout()
+            show()
+        except Exception as exc:
+            raise SltPlotError(
+                self._hdf5,
+                exc,
+                f"Failed to plot hemholtz energy data"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+        if save:
             try:
-                """Plotting in matplotlib"""
-                fig, ax = plt.subplots()
-                """Defining colour maps for graphs"""
-                colour = iter(
-                    Compound.colour_map(colour_map_name)(
-                        np.linspace(0, 1, len(temps))
-                    )
-                )
-                """Creating a plot"""
-                for i, mh in enumerate(mth):
-                    c = next(colour)
-                    ax.plot(
-                        fields, mh, linewidth=2, c=c, label=f"{temps[i]} K"
-                    )
-
-                if yticks:
-                    ax.yaxis.set_major_locator(MultipleLocator(yticks))
-                ax.xaxis.set_major_locator(MultipleLocator(xticks))
-                ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-                ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-                ax.tick_params(which="major", length=7)
-                ax.tick_params(which="minor", length=3.5)
-                if field == "B":
-                    ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
-                elif field == "H":
-                    ax.set_xlabel(r"$H\ /\ \mathrm{kOe}$")
-                ax.set_ylabel(r"$M\ /\ \mathrm{\mu_{B}}$")
-                if xlim:
-                    if len(xlim) == 2:
-                        ax.set_ylim(xlim[0], xlim[1])
-                    else:
-                        ax.set_ylim(xlim[0])
-                else:
-                    if len(temps) > 17:
-                        ax.set_xlim(0)
-                        ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-
-                    else:
-                        ax.set_xlim(0, fields[-1] + 0.3 * fields[-1])
-                        ax.legend()
-                if ylim:
-                    if len(ylim) == 2:
-                        ax.set_ylim(ylim[0], ylim[1])
-                    else:
-                        ax.set_ylim(ylim[0])
-                else:
-                    ax.set_ylim(0)
-                plt.tight_layout()
-                plt.show()
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to create graph of M(H,"
-                    f" T): {self._hdf5} - group {group}: {error_type}:"
-                    f" {error_message}"
-                )
-            if save:
-                try:
-                    """Saving plot figure"""
-                    fig.savefig(f"mgh_{group}.tiff", dpi=300)
-                except Exception as e:
-                    error_type = type(e).__name__
-                    error_message = str(e)
-                    raise Exception(
-                        "Error encountered while trying to save graph of M(H,"
-                        f" T): {self._hdf5} - group {group}: {error_type}:"
-                        f" {error_message}"
-                    )
-        if origin:
-            return data
+                """Saving plot figure"""
+                fig.savefig(f"hemholtz_{group}.tiff", dpi=300)
+            except Exception as exc:
+                raise SltSaveError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save hemholtz energy data plot"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '", filename: '
+                    + PURPLE
+                    + f"hemholtz_{group}.tiff",
+                ) from None
 
     def plot_zeeman(
         self,
         group: str,
-        show=True,
-        origin=False,
         save=False,
         colour_map_name1="BuPi",
         colour_map_name2="BuPi_r",
@@ -4986,29 +5088,45 @@ class Compound:
         field="B",
     ):
         """
-        Function that creates graphs of E(H,orientation) given name of the group in HDF5 file, graphs can be optionally shown,
-        saved, colour palettes can be changed. If origin=True it returns data packed into a dictionary for exporting
-        to Origin.
+        Function that creates graphs of E(H,orientation) given name of the group in HDF5 file, graphs can be optionally
+        saved, colour palettes can be changed.
 
-            Args:
-                group (str): name of a group in HDF5 file
-                show (bool): determines if matplotlib graph is created
-                and shown if True
-                origin (bool): determines if function should return raw data
-                save (bool): determines if matplotlib graph should be saved, saved graphs are TIFF files
-                colour_map_name1 (str) or (list): sets colours used to create graphs, valid options are returned by
-                Compound.colour_map staticmethod
-                colour_map_name2 (str) or (list): sets colours used to create graphs, valid options are returned by
-                Compound.colour_map staticmethod
-                single (bool): determines if graph should be created for each orientation given separately
-                xlim (tuple): tuple of two or one numbers that set corresponding axe limits
-                ylim (tuple): tuple of two or one numbers that set corresponding axe limits
-                xticks (int): frequency of x major ticks
-                yticks (int): frequency of y major ticks
-                field ('B' or 'H'): chooses field type and unit: Tesla for B and kOe for H
-            Returns:
-                if origin=True:
-                    dict[origin_column (str), data (np.array)]: contains data used to create graph in origin
+        Parameters
+        ----------
+        group: str
+            name of a group from HDF5 file for which plot will be created
+        save: bool = False
+            determines if plot is saved, name of the file will be in following format: f'zeeman_{group}.tiff' or
+            f'zeeman_{group}_Orientation {orientations[i]}.tiff'
+        colour_map_name1: str or list[str] = 'BuPi'
+            input of Compound.colour_map function, determines colour of lower set of split lines
+        colour_map_name2: str or list[str] = 'BuPi_r'
+            input of Compound.colour_map function, determines colour of higher set of split lines
+        single: bool = False
+            determines if all orientations are plotted together
+        xlim: tuple of 1-2 floats = ()
+            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed
+        ylim: tuple of 1-2 floats = ()
+            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed
+        xticks: int = 1
+            determines frequency of x major ticks
+        yticks: int = 0
+            determines frequency of y major ticks
+        field: Unity['B','H'] = 'B'
+            determines field unit - B[T] or H[kOe]
+
+        Returns
+        -------
+        Nothing
+
+        Raises
+        ------
+        SltFileError
+            if unable to load data file, most likely encountered if group name is incorrect
+        SltPlotError
+            if unable to create plot
+        SltSaveError
+            if unable to save plot as image
         """
         try:
             """Getting data from hdf5 or sloth file"""
@@ -5020,58 +5138,102 @@ class Compound:
             orientations = self[
                 f"{group}_zeeman_splitting", f"{group}_orientations"
             ]
-            """Creates dataset suitable to be exported to Origin"""
-            for i, orientation in enumerate(orientations):
-                data = {
-                    f"data_x{i}": fields,
-                    "data_y": zeeman,
-                    f"comment{i}": orientation,
-                }
-        except Exception as e:
-            error_type = type(e).__name__
-            error_message = str(e)
-            raise Exception(
-                "Error encountered while trying to get data to create graph"
-                f" of E(H,orientation): {self._hdf5} - group {group}:"
-                f" {error_type}: {error_message}"
-            )
-        if show:
-            try:
-                """Plotting in matplotlib"""
-                if not single:
-                    number_of_plots = len(orientations)
-                    if number_of_plots % 5 == 0:
-                        fig = plt.figure(
-                            figsize=(16, 3.2 * (number_of_plots / 5))
+
+        except Exception as exc:
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                f"Failed to load Zeeman splitting file"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".'
+                + RED
+                + "Check if group exist.",
+            ) from None
+
+        try:
+            """Plotting in matplotlib"""
+            if not single:
+                number_of_plots = len(orientations)
+                if number_of_plots % 5 == 0:
+                    fig = figure(figsize=(16, 3.2 * (number_of_plots / 5)))
+                    gs = GridSpec(int(number_of_plots / 5), 5)
+                    divisor = 5
+                elif number_of_plots % 3 == 0:
+                    fig = figure(figsize=(9.6, 3.2 * (number_of_plots / 3)))
+                    gs = GridSpec(int(number_of_plots / 3), 3)
+                    divisor = 3
+                elif number_of_plots % 2 == 0:
+                    fig = figure(figsize=(6.4, 3.2 * (number_of_plots / 2)))
+                    gs = GridSpec(int(number_of_plots / 2), 2)
+                    divisor = 2
+                else:
+                    fig = figure(figsize=(6.4, 3.2 * number_of_plots))
+                    gs = GridSpec(1, number_of_plots)
+                    divisor = 1
+                """Creating a plot"""
+                for i, zee in enumerate(zeeman):
+                    if i % divisor != 0:
+                        rc(
+                            "axes",
+                            prop_cycle=Compound.custom_colour_cycler(
+                                len(zeeman[0][0]),
+                                colour_map_name1,
+                                colour_map_name2,
+                            ),
                         )
-                        gs = matplotlib.gridspec.GridSpec(
-                            int(number_of_plots / 5), 5
+                        multiple_plots = fig.add_subplot(
+                            gs[i // divisor, i % divisor]
                         )
-                        devisor = 5
-                    elif number_of_plots % 3 == 0:
-                        fig = plt.figure(
-                            figsize=(9.6, 3.2 * (number_of_plots / 3))
+                        plot(fields, zee, linewidth=0.75)
+                        multiple_plots.xaxis.set_major_locator(
+                            MultipleLocator(xticks * 2)
                         )
-                        gs = matplotlib.gridspec.GridSpec(
-                            int(number_of_plots / 3), 3
+                        if yticks:
+                            multiple_plots.yaxis.set_major_locator(
+                                MultipleLocator(yticks)
+                            )
+                        multiple_plots.xaxis.set_minor_locator(
+                            AutoMinorLocator(2)
                         )
-                        devisor = 3
-                    elif number_of_plots % 2 == 0:
-                        fig = plt.figure(
-                            figsize=(6.4, 3.2 * (number_of_plots / 2))
+                        multiple_plots.yaxis.set_minor_locator(
+                            AutoMinorLocator(2)
                         )
-                        gs = matplotlib.gridspec.GridSpec(
-                            int(number_of_plots / 2), 2
+                        multiple_plots.tick_params(
+                            which="major",
+                            left=False,
+                            labelleft=False,
+                            length=7,
                         )
-                        devisor = 2
+                        multiple_plots.tick_params(
+                            which="minor", left=False, length=3.5
+                        )
+                        if orientations.shape[1] != 3:
+                            title("Averaged Splitting")
+                        else:
+                            title(
+                                f"Orientation [{round(orientations[i][0], 3)}"
+                                + f"{round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
+                            )
+                        if xlim:
+                            if len(xlim) == 2:
+                                multiple_plots.set_xlim(xlim[0], xlim[1])
+                            else:
+                                multiple_plots.set_xlim(xlim[0])
+                        if ylim:
+                            if len(ylim) == 2:
+                                multiple_plots.set_ylim(ylim[0], ylim[1])
+                            else:
+                                multiple_plots.set_ylim(ylim[0])
+
                     else:
-                        fig = plt.figure(figsize=(6.4, 3.2 * number_of_plots))
-                        gs = matplotlib.gridspec.GridSpec(1, number_of_plots)
-                        devisor = 1
-                    """Creating a plot"""
-                    for i, zee in enumerate(zeeman):
-                        if i % devisor != 0:
-                            plt.rc(
+                        if (i // divisor) == 0:
+                            rc(
                                 "axes",
                                 prop_cycle=Compound.custom_colour_cycler(
                                     len(zeeman[0][0]),
@@ -5080,9 +5242,9 @@ class Compound:
                                 ),
                             )
                             multiple_plots = fig.add_subplot(
-                                gs[i // devisor, i % devisor]
+                                gs[i // divisor, i % divisor]
                             )
-                            plt.plot(fields, zee, linewidth=0.75)
+                            plot(fields, zee, linewidth=0.75)
                             multiple_plots.xaxis.set_major_locator(
                                 MultipleLocator(xticks * 2)
                             )
@@ -5093,28 +5255,20 @@ class Compound:
                             multiple_plots.xaxis.set_minor_locator(
                                 AutoMinorLocator(2)
                             )
+                            multiple_plots.tick_params(which="major", length=7)
+                            multiple_plots.tick_params(
+                                which="minor", length=3.5
+                            )
                             multiple_plots.yaxis.set_minor_locator(
                                 AutoMinorLocator(2)
                             )
-                            multiple_plots.tick_params(
-                                which="major",
-                                left=False,
-                                labelleft=False,
-                                length=7,
-                            )
-                            multiple_plots.tick_params(
-                                which="minor", left=False, length=3.5
-                            )
-                            ################
-                            ################
-                            ################
-                            # Zmienilem zeby wyswietlalo usrednione
                             if orientations.shape[1] != 3:
-                                plt.title("Averaged Splitting")
+                                title("Averaged Splitting")
                             else:
-                                plt.title(
+                                title(
                                     "Orientation"
-                                    f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
+                                    f" [{round(orientations[i][0], 3)} "
+                                    f"{round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
                                 )
                             if xlim:
                                 if len(xlim) == 2:
@@ -5126,206 +5280,167 @@ class Compound:
                                     multiple_plots.set_ylim(ylim[0], ylim[1])
                                 else:
                                     multiple_plots.set_ylim(ylim[0])
-
                         else:
-                            if (i // devisor) == 0:
-                                plt.rc(
-                                    "axes",
-                                    prop_cycle=Compound.custom_colour_cycler(
-                                        len(zeeman[0][0]),
-                                        colour_map_name1,
-                                        colour_map_name2,
-                                    ),
-                                )
-                                multiple_plots = fig.add_subplot(
-                                    gs[i // devisor, i % devisor]
-                                )
-                                plt.plot(fields, zee, linewidth=0.75)
-                                multiple_plots.xaxis.set_major_locator(
-                                    MultipleLocator(xticks * 2)
-                                )
-                                if yticks:
-                                    multiple_plots.yaxis.set_major_locator(
-                                        MultipleLocator(yticks)
-                                    )
-                                multiple_plots.xaxis.set_minor_locator(
-                                    AutoMinorLocator(2)
-                                )
-                                multiple_plots.tick_params(
-                                    which="major", length=7
-                                )
-                                multiple_plots.tick_params(
-                                    which="minor", length=3.5
-                                )
-                                multiple_plots.yaxis.set_minor_locator(
-                                    AutoMinorLocator(2)
-                                )
-                                if orientations.shape[1] != 3:
-                                    plt.title("Averaged Splitting")
-                                else:
-                                    plt.title(
-                                        "Orientation"
-                                        f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
-                                    )
-                                if xlim:
-                                    if len(xlim) == 2:
-                                        multiple_plots.set_xlim(
-                                            xlim[0], xlim[1]
-                                        )
-                                    else:
-                                        multiple_plots.set_xlim(xlim[0])
-                                if ylim:
-                                    if len(ylim) == 2:
-                                        multiple_plots.set_ylim(
-                                            ylim[0], ylim[1]
-                                        )
-                                    else:
-                                        multiple_plots.set_ylim(ylim[0])
-                            else:
-                                plt.rc(
-                                    "axes",
-                                    prop_cycle=Compound.custom_colour_cycler(
-                                        len(zeeman[0][0]),
-                                        colour_map_name1,
-                                        colour_map_name2,
-                                    ),
-                                )
-                                multiple_plots = fig.add_subplot(
-                                    gs[i // devisor, i % devisor]
-                                )
-                                plt.plot(fields, zee, linewidth=0.75)
-                                multiple_plots.xaxis.set_major_locator(
-                                    MultipleLocator(xticks * 2)
-                                )
-                                if yticks:
-                                    multiple_plots.yaxis.set_major_locator(
-                                        MultipleLocator(yticks)
-                                    )
-                                multiple_plots.xaxis.set_minor_locator(
-                                    AutoMinorLocator(2)
-                                )
-                                multiple_plots.tick_params(
-                                    which="major", length=7
-                                )
-                                multiple_plots.tick_params(
-                                    which="minor", length=3.5
-                                )
-                                multiple_plots.yaxis.set_minor_locator(
-                                    AutoMinorLocator(2)
-                                )
-                                if orientations.shape[1] == 3:
-                                    plt.title("Averaged Splitting")
-                                else:
-                                    plt.title(
-                                        "Orientation"
-                                        f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
-                                    )
-                                if xlim:
-                                    if len(xlim) == 2:
-                                        multiple_plots.set_xlim(
-                                            xlim[0], xlim[1]
-                                        )
-                                    else:
-                                        multiple_plots.set_xlim(xlim[0])
-                                if ylim:
-                                    if len(ylim) == 2:
-                                        multiple_plots.set_ylim(
-                                            ylim[0], ylim[1]
-                                        )
-                                    else:
-                                        multiple_plots.set_ylim(ylim[0])
-                    if field == "B":
-                        fig.supxlabel(r"$B\ /\ \mathrm{T}$")
-                    if field == "H":
-                        fig.supxlabel(r"$H\ /\ \mathrm{kOe}$")
-                    fig.supylabel(r"$\mathrm{Energy\ /\ cm^{-1}}$")
-                    plt.tight_layout()
-                    plt.show()
-                elif single:
-                    for i, zee in enumerate(zeeman):
-                        plt.rc(
-                            "axes",
-                            prop_cycle=Compound.custom_colour_cycler(
-                                len(zeeman[0][0]),
-                                colour_map_name1,
-                                colour_map_name2,
-                            ),
-                        )
-                        fig, ax = plt.subplots()
-                        ax.plot(fields, zee, linewidth=0.75)
-                        if orientations.shape[1] != 3:
-                            plt.title("Averaged Splitting")
-                        else:
-                            plt.title(
-                                "Orientation"
-                                f" [{round(orientations[i][0], 3)} {round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
+                            rc(
+                                "axes",
+                                prop_cycle=Compound.custom_colour_cycler(
+                                    len(zeeman[0][0]),
+                                    colour_map_name1,
+                                    colour_map_name2,
+                                ),
                             )
-                        if field == "B":
-                            ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
-                        elif field == "H":
-                            ax.set_xlabel(r"$H\ /\ \mathrm{kOe}$")
-                        ax.set_ylabel(r"$\mathrm{Energy\ /\ cm^{-1}}$")
-                        ax.tick_params(which="major", length=7)
-                        ax.tick_params(which="minor", length=3.5)
-                        ax.xaxis.set_major_locator(MultipleLocator(xticks))
-                        if yticks:
-                            ax.yaxis.set_major_locator(MultipleLocator(yticks))
-                        ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-                        ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-                        if xlim:
-                            if len(xlim) == 2:
-                                ax.set_xlim(xlim[0], xlim[1])
-                            else:
-                                ax.set_xlim(xlim[0])
-                        if ylim:
-                            if len(ylim) == 2:
-                                ax.set_ylim(ylim[0], ylim[1])
-                            else:
-                                ax.set_ylim(ylim[0])
-                        plt.tight_layout()
-                        plt.show()
-                        if save:
-                            try:
-                                """Saving plot figure"""
-                                fig.savefig(
-                                    (
-                                        f"zeeman_{group}_Orientation"
-                                        f" {orientations[i]}.tiff"
-                                    ),
-                                    dpi=300,
+                            multiple_plots = fig.add_subplot(
+                                gs[i // divisor, i % divisor]
+                            )
+                            plot(fields, zee, linewidth=0.75)
+                            multiple_plots.xaxis.set_major_locator(
+                                MultipleLocator(xticks * 2)
+                            )
+                            if yticks:
+                                multiple_plots.yaxis.set_major_locator(
+                                    MultipleLocator(yticks)
                                 )
-                            except Exception as e:
-                                error_type = type(e).__name__
-                                error_message = str(e)
-                                raise Exception(
-                                    "Error encountered while trying to save"
-                                    " graph of E(H,orientation):"
-                                    f" {self._hdf5} - group {group}:"
-                                    f" {error_type}: {error_message}"
+                            multiple_plots.xaxis.set_minor_locator(
+                                AutoMinorLocator(2)
+                            )
+                            multiple_plots.tick_params(which="major", length=7)
+                            multiple_plots.tick_params(
+                                which="minor", length=3.5
+                            )
+                            multiple_plots.yaxis.set_minor_locator(
+                                AutoMinorLocator(2)
+                            )
+                            if orientations.shape[1] == 3:
+                                title("Averaged Splitting")
+                            else:
+                                title(
+                                    "Orientation"
+                                    f" [{round(orientations[i][0], 3)} "
+                                    f"{round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
                                 )
-
-            except Exception as e:
-                error_type = type(e).__name__
-                error_message = str(e)
-                raise Exception(
-                    "Error encountered while trying to create graph of"
-                    f" E(H,orientation): {self._hdf5} - group {group}:"
-                    f" {error_type}: {error_message}"
-                )
-            if save and not single:
-                try:
-                    """Saving plot figure"""
-                    fig.savefig(f"zeeman_{group}.tiff", dpi=300)
-                except Exception as e:
-                    error_type = type(e).__name__
-                    error_message = str(e)
-                    raise Exception(
-                        "Error encountered while trying to save graph of"
-                        f" E(H,orientation): {self._hdf5} - group {group}:"
-                        f" {error_type}: {error_message}"
+                            if xlim:
+                                if len(xlim) == 2:
+                                    multiple_plots.set_xlim(xlim[0], xlim[1])
+                                else:
+                                    multiple_plots.set_xlim(xlim[0])
+                            if ylim:
+                                if len(ylim) == 2:
+                                    multiple_plots.set_ylim(ylim[0], ylim[1])
+                                else:
+                                    multiple_plots.set_ylim(ylim[0])
+                if field == "B":
+                    fig.supxlabel(r"$B\ /\ \mathrm{T}$")
+                if field == "H":
+                    fig.supxlabel(r"$H\ /\ \mathrm{kOe}$")
+                fig.supylabel(r"$\mathrm{Energy\ /\ cm^{-1}}$")
+                tight_layout()
+                show()
+            elif single:
+                for i, zee in enumerate(zeeman):
+                    rc(
+                        "axes",
+                        prop_cycle=Compound.custom_colour_cycler(
+                            len(zeeman[0][0]),
+                            colour_map_name1,
+                            colour_map_name2,
+                        ),
                     )
-        if origin:
-            return data
+                    fig, ax = subplots()
+                    ax.plot(fields, zee, linewidth=0.75)
+                    if orientations.shape[1] != 3:
+                        title("Averaged Splitting")
+                    else:
+                        title(
+                            "Orientation"
+                            f" [{round(orientations[i][0], 3)} "
+                            f"{round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
+                        )
+                    if field == "B":
+                        ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
+                    elif field == "H":
+                        ax.set_xlabel(r"$H\ /\ \mathrm{kOe}$")
+                    ax.set_ylabel(r"$\mathrm{Energy\ /\ cm^{-1}}$")
+                    ax.tick_params(which="major", length=7)
+                    ax.tick_params(which="minor", length=3.5)
+                    ax.xaxis.set_major_locator(MultipleLocator(xticks))
+                    if yticks:
+                        ax.yaxis.set_major_locator(MultipleLocator(yticks))
+                    ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+                    ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+                    if xlim:
+                        if len(xlim) == 2:
+                            ax.set_xlim(xlim[0], xlim[1])
+                        else:
+                            ax.set_xlim(xlim[0])
+                    if ylim:
+                        if len(ylim) == 2:
+                            ax.set_ylim(ylim[0], ylim[1])
+                        else:
+                            ax.set_ylim(ylim[0])
+                    tight_layout()
+                    show()
+                    if save:
+                        try:
+                            """Saving plot figure"""
+                            fig.savefig(
+                                (
+                                    f"zeeman_{group}_Orientation"
+                                    f" {orientations[i]}.tiff"
+                                ),
+                                dpi=300,
+                            )
+                        except Exception as exc:
+                            raise SltSaveError(
+                                self._hdf5,
+                                exc,
+                                f"Failed to save zeeman splitting data plot"
+                                + BLUE
+                                + "Group "
+                                + RESET
+                                + '"'
+                                + BLUE
+                                + f"{group}"
+                                + RESET
+                                + '", filename: '
+                                + PURPLE
+                                + f"zeeman_{group}_Orientation"
+                                + f" {orientations[i]}.tiff",
+                            ) from None
+
+        except Exception as exc:
+            raise SltPlotError(
+                self._hdf5,
+                exc,
+                f"Failed to plot zeeman splitting data"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+        if save and not single:
+            try:
+                """Saving plot figure"""
+                fig.savefig(f"zeeman_{group}.tiff", dpi=300)
+            except Exception as exc:
+                raise SltSaveError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save zeeman splitting data plot"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '", filename: '
+                    + PURPLE
+                    + f"zeeman_{group}.tiff",
+                ) from None
 
     def plot_3d(
         self,
@@ -5333,7 +5448,6 @@ class Compound:
         data_type: str,
         field_i: int,
         temp_i: int,
-        show=True,
         save=False,
         colour_map_name="dark_rainbow_r_l",
         lim_scalar=1.0,
@@ -5343,27 +5457,24 @@ class Compound:
         axis_off=False,
     ):
         """
-        Function that creates 3d plots of data dependent on field (B[T]) and temperature(T[K])
+        Function that creates 3d plots of data dependent on field B[T] and temperature T[K].
 
         Parameters
         ----------
         group: str
-            name of a group from hdf5 file for which plot will be created
-        data_type: str
-            type of data that will be used to create plot, can only be one from 3 types: susceptibility,
-            hemholtz_energy or magnetisation
+            name of a group from HDF5 file for which plot will be created
+        data_type: Unity["chit", "chi", "hemholtz_energy", "magnetisation"]
+            type of data that will be used to create plot
         field_i: int
             index of field from dataset that will be used for plot
         temp_i: int
             index of temperature from dataset that will be used for plot
-        show: bool = True
-            determines if plot is shown, currently there is no reason to setting it to False
         save: bool = False
             determines if plot is saved, name of the file will be in following format: f'{group}_3d_{data_type}.tiff'
-        colour_map_name: str or list = 'dark_rainbow_r_l'
+        colour_map_name: str or list[str] = 'dark_rainbow_r_l'
             input of Compound.colour_map function
         lim_scalar: float = 1.
-            scalar used to set limits of axes, smaller values magm
+            scalar used to set limits of axes, smaller values magnify plotted figure
         ticks: float = 1.
         r_density: int = 0
             determines rcount of 3D plot
@@ -5374,76 +5485,105 @@ class Compound:
 
         Returns
         -------
+        Nothing
 
+        Raises
+        ------
+        SltFileError
+            if unable to load data file, most likely encountered if group name is incorrect
+        SltPlotError
+            if unable to create plot
+        SltSaveError
+            if unable to save plot as image
         """
-        T = False
-        if data_type == "chit":
-            x = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                0, field_i, temp_i, :, :
-            ]
-            y = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                1, field_i, temp_i, :, :
-            ]
-            z = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                2, field_i, temp_i, :, :
-            ]
-            description = (
-                "ChiT dependance on direction,"
-                f" B={self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i]} T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i]}"
-            )
-            T = True
-        elif data_type == "chi":
-            x = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
-                0, field_i, temp_i, :, :
-            ]
-            y = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
-                1, field_i, temp_i, :, :
-            ]
-            z = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
-                2, field_i, temp_i, :, :
-            ]
-            description = (
-                "Chi dependance on direction,"
-                f" B={self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i]} T,"
-                f" T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i]} K"
-            )
-        elif data_type == "hemholtz_energy":
-            x = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                0, field_i, temp_i, :, :
-            ]
-            y = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                1, field_i, temp_i, :, :
-            ]
-            z = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                2, field_i, temp_i, :, :
-            ]
-            description = (
-                "Energy dependence on direction,"
-                f" B={self[f'{group}_3d_hemholtz_energy', f'{group}_fields'][field_i]} T,"
-                f" T={self[f'{group}_3d_hemholtz_energy', f'{group}_temperatures'][temp_i]} K"
-            )
-        elif data_type == "magnetisation":
-            x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                0, field_i, temp_i, :, :
-            ]
-            y = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                1, field_i, temp_i, :, :
-            ]
-            z = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                2, field_i, temp_i, :, :
-            ]
-            description = (
-                "Magnetisation dependence on direction,"
-                f" B={self[f'{group}_3d_magnetisation', f'{group}_fields'][field_i]} T,"
-                f" T={self[f'{group}_3d_magnetisation', f'{group}_temperatures'][temp_i]} K"
-            )
-        title = description
-        if show:
-            fig = plt.figure()
+        try:
+            T = False
+            if data_type == "chit":
+                x = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                    0, field_i, temp_i, :, :
+                ]
+                y = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                    1, field_i, temp_i, :, :
+                ]
+                z = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                    2, field_i, temp_i, :, :
+                ]
+                description = (
+                    "ChiT dependance on direction,"
+                    f" B={self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i]} "
+                    f"T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i]}"
+                )
+                T = True
+            elif data_type == "chi":
+                x = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
+                    0, field_i, temp_i, :, :
+                ]
+                y = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
+                    1, field_i, temp_i, :, :
+                ]
+                z = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
+                    2, field_i, temp_i, :, :
+                ]
+                description = (
+                    "Chi dependance on direction,"
+                    f" B={self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i]} T,"
+                    f" T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i]} K"
+                )
+            elif data_type == "hemholtz_energy":
+                x = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    0, field_i, temp_i, :, :
+                ]
+                y = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    1, field_i, temp_i, :, :
+                ]
+                z = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    2, field_i, temp_i, :, :
+                ]
+                description = (
+                    "Energy dependence on direction,"
+                    f" B={self[f'{group}_3d_hemholtz_energy', f'{group}_fields'][field_i]} T,"
+                    f" T={self[f'{group}_3d_hemholtz_energy', f'{group}_temperatures'][temp_i]} K"
+                )
+            elif data_type == "magnetisation":
+                x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                    0, field_i, temp_i, :, :
+                ]
+                y = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                    1, field_i, temp_i, :, :
+                ]
+                z = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                    2, field_i, temp_i, :, :
+                ]
+                description = (
+                    "Magnetisation dependence on direction,"
+                    f" B={self[f'{group}_3d_magnetisation', f'{group}_fields'][field_i]} T,"
+                    f" T={self[f'{group}_3d_magnetisation', f'{group}_temperatures'][temp_i]} K"
+                )
+            else:
+                raise ValueError
+            # title = description
+        except Exception as exc:
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                f"Failed to load 3d data file"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".'
+                + RED
+                + "Check if group exist.",
+            ) from None
+        try:
+            fig = figure()
             ax = fig.add_subplot(projection="3d")
-            max_array = np.array([np.max(x), np.max(y), np.max(z)])
-            lim = np.max(max_array)
-            norm = plt.Normalize(z.min(), z.max())
+            max_array = array([max(x), max(y), max(z)])
+            lim = max(max_array)
+            norm = Normalize(z.min(), z.max())
             colors = Compound.colour_map(colour_map_name)(norm(z))
             rcount, ccount, _ = colors.shape
             if not r_density:
@@ -5539,13 +5679,26 @@ class Compound:
             ax.grid(False)
 
             ax.set_box_aspect([1, 1, 1])
-            plt.title(title)
+            title(description)
             if axis_off:
-                plt.axis("off")
-            # plt.tight_layout()
-            plt.show()
-
-            if save:
+                axis("off")
+            show()
+        except Exception as exc:
+            raise SltPlotError(
+                self._hdf5,
+                exc,
+                f"Failed to plot 3d data"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+        if save:
+            try:
                 if axis_off:
                     fig.savefig(
                         f"{group}_3d_{data_type}.tiff",
@@ -5553,6 +5706,22 @@ class Compound:
                         dpi=600,
                     )
                 fig.savefig(f"{group}_3d_{data_type}.tiff", dpi=600)
+            except Exception as exc:
+                raise SltSaveError(
+                    self._hdf5,
+                    exc,
+                    f"Failed to save 3d data plot"
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '", filename: '
+                    + PURPLE
+                    + f"{group}_3d_{data_type}.tiff",
+                ) from None
 
     def animate_3d(
         self,
@@ -5577,355 +5746,515 @@ class Compound:
         temp_rounding=0,
         field_rounding=0,
     ):
-        T = False
-        if data_type == "chit":
-            x0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][0]
-            y0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][1]
-            z0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][2]
-            fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
-            temps = self[f"{group}_3d_susceptibility", f"{group}_temperatures"]
-            T = True
-        elif data_type == "chi":
-            x0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][0]
-            y0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][1]
-            z0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][2]
-            fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
-            temps = self[f"{group}_3d_susceptibility", f"{group}_temperatures"]
-        elif data_type == "hemholtz_energy":
-            x0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][0]
-            y0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][1]
-            z0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][2]
-            fields = self[f"{group}_3d_hemholtz_energy", f"{group}_fields"]
-            temps = self[
-                f"{group}_3d_hemholtz_energy", f"{group}_temperatures"
-            ]
-        elif data_type == "magnetisation":
-            x0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][0]
-            y0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][1]
-            z0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][2]
-            fields = self[f"{group}_3d_magnetisation", f"{group}_fields"]
-            temps = self[f"{group}_3d_magnetisation", f"{group}_temperatures"]
-        else:
-            raise ValueError
-        if animation_variable == "temperature":
-            description = f"B={fields[i_constant]:.4f} T"
-        else:
-            description = f"T={temps[i_constant]:.4f} K"
-        title = description
+        """
+        Creates animations of 3d plots of data dependent on field B[T] and temperature T[K]
 
-        fig = plt.figure()
-        ax = fig.add_subplot(projection="3d")
-        if bar:
-            colour = iter(
-                Compound.colour_map(bar_colour_map_name)(
-                    np.linspace(0, 1, i_end - i_start)
+        Parameters
+        ----------
+        group: str
+            name of a group from HDF5 file for which plot will be created
+        data_type: Unity["chit", "chi", "hemholtz_energy", "magnetisation"]
+            type of data that will be used to create plot
+        animation_variable: str
+            variable changing during animation, can take one of two values: temperature or field
+        filename: str
+            name of the output .gif file
+        i_start: int
+            index of first frame's field/temperature
+        i_end: int
+            index of last frame's field/temperature
+        i_constant: int
+            index of constant temperature/field
+        colour_map_name: str or list = 'dark_rainbow_r_l'
+            input of Compound.colour_map function, determines colour of main figure
+        lim_scalar: float = 1.
+            scalar used to set limits of axes, smaller values magnify plotted figure
+        ticks: float = 1
+            determines ticks spacing
+        r_density: int = 0
+            determines rcount of 3D plot
+        c_density: int = 0
+            determines ccount of 3D plot
+        axis_off: bool = False
+            determines if axes are turned off
+        fps: int
+            number of frames per second in animation
+        dpi: int
+            dots per inch resolution of frames
+        bar: bool = True
+            determines if bar representing animation variable is shown
+        bar_scale: bool = False
+            determines if scale should be shown for bar
+        bar_colour_map_name: str or list = 'dark_rainbow_r_l'
+            input of Compound.colour_map function, determines colour of bar
+        temp_rounding: int = 0
+            determines how many decimal places are shown in bar/plot labels for temperature
+        field_rounding: int = 0
+            determines how many decimal places are shown in bar/plot labels for field
+        Returns
+        -------
+        Nothing
+
+        Raises
+        ------
+        SltFileError
+            if unable to load data file, most likely encountered if group name is incorrect
+        SltPlotError
+            if unable to create and save animated plot
+        """
+        try:
+            T = False
+            if data_type == "chit":
+                x0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][0]
+                y0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][1]
+                z0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][2]
+                fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_susceptibility", f"{group}_temperatures"
+                ]
+                T = True
+            elif data_type == "chi":
+                x0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][0]
+                y0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][1]
+                z0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][2]
+                fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_susceptibility", f"{group}_temperatures"
+                ]
+            elif data_type == "hemholtz_energy":
+                x0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    0
+                ]
+                y0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    1
+                ]
+                z0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    2
+                ]
+                fields = self[f"{group}_3d_hemholtz_energy", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_hemholtz_energy", f"{group}_temperatures"
+                ]
+            elif data_type == "magnetisation":
+                x0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][0]
+                y0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][1]
+                z0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][2]
+                fields = self[f"{group}_3d_magnetisation", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_magnetisation", f"{group}_temperatures"
+                ]
+            else:
+                raise ValueError(
+                    "Acceptable data types: chit, chi, hemholtz_energy and"
+                    " magnetisation"
                 )
+        except Exception as exc:
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                f"Failed to load 3d data file"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".'
+                + RED
+                + "Check if group exist.",
+            ) from None
+        if animation_variable == "temperature":
+            description = (
+                "Magnetisation dependence on direction,"
+                f" B={fields[i_constant]:.4f} T"
             )
-            indicator = np.linspace(0, 1, i_end - i_start)
-            if bar_scale:
+        elif animation_variable == "field":
+            description = (
+                "Magnetisation dependence on direction,"
+                f" T={temps[i_constant]:.4f} K"
+            )
+        else:
+            raise ValueError(
+                "There exist only two animation variables: field and"
+                " temperature"
+            )
+        # title = description
 
-                def my_ticks(x, pos):
-                    if animation_variable == "temperature":
-                        return f"{round(x * temps[-1], temp_rounding)} K"
-                    else:
-                        return f"{round(x * fields[-1], field_rounding)} T"
-
-        writer = PillowWriter(fps=fps)
-        with writer.saving(fig, f"{filename}.gif", dpi):
-            if animation_variable == "temperature":
-                for i_temp in range(i_start, i_end):
-                    x = x0[i_constant, i_temp, :, :]
-                    y = y0[i_constant, i_temp, :, :]
-                    z = z0[i_constant, i_temp, :, :]
-                    if data_type == "chit":
-                        ax.set_xlabel(
-                            (
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                            ),
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_ylabel(
-                            (
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                            ),
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_zlabel(
-                            (
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                            ),
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                    elif data_type == "chi":
-                        ax.set_xlabel(
-                            r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_ylabel(
-                            r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_zlabel(
-                            r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                    elif data_type == "hemholtz_energy":
-                        ax.set_xlabel(
-                            r"$E\ /\ \mathrm{cm^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_ylabel(
-                            r"$E\ /\ \mathrm{cm^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_zlabel(
-                            r"$E\ /\ \mathrm{cm^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                    elif data_type == "magnetisation":
-                        ax.set_xlabel(
-                            r"$M\ /\ \mathrm{\mu_{B}}$",
-                            labelpad=10 * len(str(ticks)) / 4,
-                        )
-                        ax.set_ylabel(
-                            r"$M\ /\ \mathrm{\mu_{B}}$",
-                            labelpad=10 * len(str(ticks)) / 4,
-                        )
-                        ax.set_zlabel(
-                            r"$M\ /\ \mathrm{\mu_{B}}$",
-                            labelpad=10 * len(str(ticks)) / 4,
-                        )
-                    max_array = np.array([np.max(x), np.max(y), np.max(z)])
-                    lim = np.max(max_array)
-                    norm = plt.Normalize(z.min(), z.max())
-                    colors = Compound.colour_map(colour_map_name)(norm(z))
-                    rcount, ccount, _ = colors.shape
-                    if not r_density:
-                        r_density = rcount
-                    if not c_density:
-                        c_density = ccount
-                    surface = ax.plot_surface(
-                        x,
-                        y,
-                        z,
-                        rcount=r_density,
-                        ccount=c_density,
-                        facecolors=colors,
-                        shade=False,
+        try:
+            fig = figure()
+            ax = fig.add_subplot(projection="3d")
+            if bar:
+                colour = iter(
+                    Compound.colour_map(bar_colour_map_name)(
+                        linspace(0, 1, i_end - i_start)
                     )
-                    surface.set_facecolor((0, 0, 0, 0))
-                    ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
-                    ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
-                    ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
-                    # Important order of operations!
+                )
+                indicator = linspace(0, 1, i_end - i_start)
+                if bar_scale:
 
-                    if ticks == 0:
-                        for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                            axis.set_ticklabels([])
-                            axis._axinfo["axisline"]["linewidth"] = 1
-                            axis._axinfo["axisline"]["color"] = (0, 0, 0)
-                            axis._axinfo["grid"]["linewidth"] = 0.5
-                            axis._axinfo["grid"]["linestyle"] = "-"
-                            axis._axinfo["grid"]["color"] = (0, 0, 0)
-                            axis._axinfo["tick"]["inward_factor"] = 0.0
-                            axis._axinfo["tick"]["outward_factor"] = 0.0
-                            axis.set_pane_color((0.95, 0.95, 0.95))
-                    else:
-                        ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-                        ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-                        ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                        if not (not T and ticks == 1):
-                            ax.xaxis.set_major_locator(MultipleLocator(ticks))
-                            ax.yaxis.set_major_locator(MultipleLocator(ticks))
-                            ax.zaxis.set_major_locator(MultipleLocator(ticks))
-                    ax.grid(False)
+                    def my_ticks(x, pos):
+                        if animation_variable == "temperature":
+                            return f"{round(x * temps[-1], temp_rounding)} K"
+                        else:
+                            return f"{round(x * fields[-1], field_rounding)} T"
 
-                    ax.set_box_aspect([1, 1, 1])
-                    ax.set_title(title)
-                    if axis_off:
-                        plt.axis("off")
-
-                    if bar:
-                        c = next(colour)
-                        axins = ax.inset_axes([0, 0.6, 0.098, 0.2])
-                        axins.bar(
-                            1, indicator[i_temp - i_start], width=0.2, color=c
-                        )
-                        axins.set_ylim(0, 1)
-                        if not bar_scale:
-                            axins.text(
-                                1,
-                                1,
-                                s=f"{round(temps[-1], temp_rounding)} K",
-                                verticalalignment="bottom",
-                                horizontalalignment="center",
+            writer = PillowWriter(fps=fps)
+            with writer.saving(fig, f"{filename}.gif", dpi):
+                if animation_variable == "temperature":
+                    for i_temp in range(i_start, i_end):
+                        x = x0[i_constant, i_temp, :, :]
+                        y = y0[i_constant, i_temp, :, :]
+                        z = z0[i_constant, i_temp, :, :]
+                        if data_type == "chit":
+                            ax.set_xlabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
                             )
-                            axins.text(
+                            ax.set_ylabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                        elif data_type == "chi":
+                            ax.set_xlabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_ylabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                        elif data_type == "hemholtz_energy":
+                            ax.set_xlabel(
+                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_ylabel(
+                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                        elif data_type == "magnetisation":
+                            ax.set_xlabel(
+                                r"$M\ /\ \mathrm{\mu_{B}}$",
+                                labelpad=10 * len(str(ticks)) / 4,
+                            )
+                            ax.set_ylabel(
+                                r"$M\ /\ \mathrm{\mu_{B}}$",
+                                labelpad=10 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                r"$M\ /\ \mathrm{\mu_{B}}$",
+                                labelpad=10 * len(str(ticks)) / 4,
+                            )
+                        else:
+                            raise ValueError(
+                                "Acceptable data types: chit, chi,"
+                                " hemholtz_energy and magnetisation"
+                            )
+                        max_array = array([max(x), max(y), max(z)])
+                        lim = max(max_array)
+                        norm = Normalize(z.min(), z.max())
+                        colors = Compound.colour_map(colour_map_name)(norm(z))
+                        rcount, ccount, _ = colors.shape
+                        if not r_density:
+                            r_density = rcount
+                        if not c_density:
+                            c_density = ccount
+                        surface = ax.plot_surface(
+                            x,
+                            y,
+                            z,
+                            rcount=r_density,
+                            ccount=c_density,
+                            facecolors=colors,
+                            shade=False,
+                        )
+                        surface.set_facecolor((0, 0, 0, 0))
+                        ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
+                        ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
+                        ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
+                        # Important order of operations!
+
+                        if ticks == 0:
+                            for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                                axis.set_ticklabels([])
+                                axis._axinfo["axisline"]["linewidth"] = 1
+                                axis._axinfo["axisline"]["color"] = (0, 0, 0)
+                                axis._axinfo["grid"]["linewidth"] = 0.5
+                                axis._axinfo["grid"]["linestyle"] = "-"
+                                axis._axinfo["grid"]["color"] = (0, 0, 0)
+                                axis._axinfo["tick"]["inward_factor"] = 0.0
+                                axis._axinfo["tick"]["outward_factor"] = 0.0
+                                axis.set_pane_color((0.95, 0.95, 0.95))
+                        else:
+                            ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+                            ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+                            ax.zaxis.set_minor_locator(AutoMinorLocator(2))
+                            if not (not T and ticks == 1):
+                                ax.xaxis.set_major_locator(
+                                    MultipleLocator(ticks)
+                                )
+                                ax.yaxis.set_major_locator(
+                                    MultipleLocator(ticks)
+                                )
+                                ax.zaxis.set_major_locator(
+                                    MultipleLocator(ticks)
+                                )
+                        ax.grid(False)
+
+                        ax.set_box_aspect([1, 1, 1])
+                        ax.set_title(title)
+                        if axis_off:
+                            matplotlib.pyplot.axis("off")
+
+                        if bar:
+                            c = next(colour)
+                            axins = ax.inset_axes([0, 0.6, 0.098, 0.2])
+                            axins.bar(
                                 1,
-                                -0.03,
-                                s=f"{round(temps[0], temp_rounding)} K",
-                                verticalalignment="top",
-                                horizontalalignment="center",
+                                indicator[i_temp - i_start],
+                                width=0.2,
+                                color=c,
                             )
-                            axins.axison = False
-                        if bar_scale:
-                            axins.get_xaxis().set_visible(False)
-                            axins.xaxis.set_tick_params(labelbottom=False)
-                            axins.yaxis.set_major_formatter(
-                                matplotlib.ticker.FuncFormatter(my_ticks)
+                            axins.set_ylim(0, 1)
+                            if not bar_scale:
+                                axins.text(
+                                    1,
+                                    1,
+                                    s=f"{round(temps[-1], temp_rounding)} K",
+                                    verticalalignment="bottom",
+                                    horizontalalignment="center",
+                                )
+                                axins.text(
+                                    1,
+                                    -0.03,
+                                    s=f"{round(temps[0], temp_rounding)} K",
+                                    verticalalignment="top",
+                                    horizontalalignment="center",
+                                )
+                                axins.axison = False
+                            if bar_scale:
+                                axins.get_xaxis().set_visible(False)
+                                axins.xaxis.set_tick_params(labelbottom=False)
+                                axins.yaxis.set_major_formatter(
+                                    FuncFormatter(my_ticks)
+                                )
+                                axins.yaxis.set_minor_locator(
+                                    AutoMinorLocator(2)
+                                )
+
+                        writer.grab_frame()
+                        cla()
+
+                elif animation_variable == "field":
+                    for i_field in range(i_start, i_end):
+                        x = x0[i_field, i_constant, :, :]
+                        y = y0[i_field, i_constant, :, :]
+                        z = z0[i_field, i_constant, :, :]
+                        if data_type == "chit":
+                            ax.set_xlabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
                             )
+                            ax.set_ylabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                        elif data_type == "chi":
+                            ax.set_xlabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_ylabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                (
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
+                                ),
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                        elif data_type == "hemholtz_energy":
+                            ax.set_xlabel(
+                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_ylabel(
+                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                        elif data_type == "magnetisation":
+                            ax.set_xlabel(
+                                r"$M\ /\ \mathrm{\mu_{B}}$",
+                                labelpad=10 * len(str(ticks)) / 4,
+                            )
+                            ax.set_ylabel(
+                                r"$M\ /\ \mathrm{\mu_{B}}$",
+                                labelpad=10 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                r"$M\ /\ \mathrm{\mu_{B}}$",
+                                labelpad=10 * len(str(ticks)) / 4,
+                            )
+                        else:
+                            raise ValueError(
+                                "Acceptable data types: chit, chi,"
+                                " hemholtz_energy and magnetisation"
+                            )
+                        # title = description
+                        max_array = array([max(x), max(y), max(z)])
+                        lim = max(max_array)
+                        norm = Normalize(z.min(), z.max())
+                        colors = Compound.colour_map(colour_map_name)(norm(z))
+                        rcount, ccount, _ = colors.shape
+                        if not r_density:
+                            r_density = rcount
+                        if not c_density:
+                            c_density = ccount
+                        surface = ax.plot_surface(
+                            x,
+                            y,
+                            z,
+                            rcount=r_density,
+                            ccount=c_density,
+                            facecolors=colors,
+                            shade=False,
+                        )
+                        surface.set_facecolor((0, 0, 0, 0))
+                        ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
+                        ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
+                        ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
+                        # Important order of operations!
 
-                    writer.grab_frame()
-                    plt.cla()
+                        if ticks == 0:
+                            for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                                axis.set_ticklabels([])
+                                axis._axinfo["axisline"]["linewidth"] = 1
+                                axis._axinfo["axisline"]["color"] = (0, 0, 0)
+                                axis._axinfo["grid"]["linewidth"] = 0.5
+                                axis._axinfo["grid"]["linestyle"] = "-"
+                                axis._axinfo["grid"]["color"] = (0, 0, 0)
+                                axis._axinfo["tick"]["inward_factor"] = 0.0
+                                axis._axinfo["tick"]["outward_factor"] = 0.0
+                                axis.set_pane_color((0.95, 0.95, 0.95))
+                        else:
+                            ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+                            ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+                            ax.zaxis.set_minor_locator(AutoMinorLocator(2))
+                            if not (not T and ticks == 1):
+                                ax.xaxis.set_major_locator(
+                                    MultipleLocator(ticks)
+                                )
+                                ax.yaxis.set_major_locator(
+                                    MultipleLocator(ticks)
+                                )
+                                ax.zaxis.set_major_locator(
+                                    MultipleLocator(ticks)
+                                )
+                        ax.grid(False)
 
-            elif animation_variable == "field":
-                for i_field in range(i_start, i_end):
-                    x = x0[i_field, i_constant, :, :]
-                    y = y0[i_field, i_constant, :, :]
-                    z = z0[i_field, i_constant, :, :]
-                    if data_type == "chit":
-                        ax.set_xlabel(
-                            (
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                            ),
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_ylabel(
-                            (
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                            ),
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_zlabel(
-                            (
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                            ),
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                    elif data_type == "chi":
-                        ax.set_xlabel(
-                            r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_ylabel(
-                            r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_zlabel(
-                            r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                    elif data_type == "hemholtz_energy":
-                        ax.set_xlabel(
-                            r"$E\ /\ \mathrm{cm^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_ylabel(
-                            r"$E\ /\ \mathrm{cm^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                        ax.set_zlabel(
-                            r"$E\ /\ \mathrm{cm^{-1}}$",
-                            labelpad=20 * len(str(ticks)) / 4,
-                        )
-                    elif data_type == "magnetisation":
-                        ax.set_xlabel(
-                            r"$M\ /\ \mathrm{\mu_{B}}$",
-                            labelpad=10 * len(str(ticks)) / 4,
-                        )
-                        ax.set_ylabel(
-                            r"$M\ /\ \mathrm{\mu_{B}}$",
-                            labelpad=10 * len(str(ticks)) / 4,
-                        )
-                        ax.set_zlabel(
-                            r"$M\ /\ \mathrm{\mu_{B}}$",
-                            labelpad=10 * len(str(ticks)) / 4,
-                        )
-                    title = description
-                    max_array = np.array([np.max(x), np.max(y), np.max(z)])
-                    lim = np.max(max_array)
-                    norm = plt.Normalize(z.min(), z.max())
-                    colors = Compound.colour_map(colour_map_name)(norm(z))
-                    rcount, ccount, _ = colors.shape
-                    if not r_density:
-                        r_density = rcount
-                    if not c_density:
-                        c_density = ccount
-                    surface = ax.plot_surface(
-                        x,
-                        y,
-                        z,
-                        rcount=r_density,
-                        ccount=c_density,
-                        facecolors=colors,
-                        shade=False,
+                        ax.set_box_aspect([1, 1, 1])
+                        title(description)
+                        if axis_off:
+                            axis("off")
+
+                        if bar:
+                            c = next(colour)
+                            axins = ax.inset_axes([0, 0.6, 0.098, 0.2])
+                            axins.bar(
+                                1,
+                                indicator[i_field - i_start],
+                                width=0.2,
+                                color=c,
+                            )
+                            axins.set_ylim(0, 1)
+
+                            if not bar_scale:
+                                axins.text(
+                                    1,
+                                    1,
+                                    s=f"{round(fields[-1], field_rounding)} T",
+                                    verticalalignment="bottom",
+                                    horizontalalignment="center",
+                                )
+                                axins.text(
+                                    1,
+                                    -0.03,
+                                    s=f"{round(fields[0], field_rounding)} T",
+                                    verticalalignment="top",
+                                    horizontalalignment="center",
+                                )
+                                axins.axison = False
+                            if bar_scale:
+                                axins.get_xaxis().set_visible(False)
+                                axins.xaxis.set_tick_params(labelbottom=False)
+                                axins.yaxis.set_major_formatter(
+                                    FuncFormatter(my_ticks)
+                                )
+                        writer.grab_frame()
+                        cla()
+                else:
+                    raise ValueError(
+                        "There exist only two animation variables: field and"
+                        " temperature"
                     )
-                    surface.set_facecolor((0, 0, 0, 0))
-                    ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
-                    ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
-                    ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
-                    # Important order of operations!
-
-                    if ticks == 0:
-                        for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                            axis.set_ticklabels([])
-                            axis._axinfo["axisline"]["linewidth"] = 1
-                            axis._axinfo["axisline"]["color"] = (0, 0, 0)
-                            axis._axinfo["grid"]["linewidth"] = 0.5
-                            axis._axinfo["grid"]["linestyle"] = "-"
-                            axis._axinfo["grid"]["color"] = (0, 0, 0)
-                            axis._axinfo["tick"]["inward_factor"] = 0.0
-                            axis._axinfo["tick"]["outward_factor"] = 0.0
-                            axis.set_pane_color((0.95, 0.95, 0.95))
-                    else:
-                        ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-                        ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-                        ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                        if not (not T and ticks == 1):
-                            ax.xaxis.set_major_locator(MultipleLocator(ticks))
-                            ax.yaxis.set_major_locator(MultipleLocator(ticks))
-                            ax.zaxis.set_major_locator(MultipleLocator(ticks))
-                    ax.grid(False)
-
-                    ax.set_box_aspect([1, 1, 1])
-                    plt.title(title)
-                    if axis_off:
-                        plt.axis("off")
-
-                    if bar:
-                        c = next(colour)
-                        axins = ax.inset_axes([0, 0.6, 0.098, 0.2])
-                        axins.bar(
-                            1, indicator[i_field - i_start], width=0.2, color=c
-                        )
-                        axins.set_ylim(0, 1)
-
-                        if not bar_scale:
-                            axins.text(
-                                1,
-                                1,
-                                s=f"{round(fields[-1], field_rounding)} T",
-                                verticalalignment="bottom",
-                                horizontalalignment="center",
-                            )
-                            axins.text(
-                                1,
-                                -0.03,
-                                s=f"{round(fields[0], field_rounding)} T",
-                                verticalalignment="top",
-                                horizontalalignment="center",
-                            )
-                            axins.axison = False
-                        if bar_scale:
-                            axins.get_xaxis().set_visible(False)
-                            axins.xaxis.set_tick_params(labelbottom=False)
-                            axins.yaxis.set_major_formatter(
-                                matplotlib.ticker.FuncFormatter(my_ticks)
-                            )
-
-                    writer.grab_frame()
-                    plt.cla()
-        plt.close()
+        except Exception as exc:
+            raise SltPlotError(
+                self._hdf5,
+                exc,
+                f"Failed to plot and save 3d data"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
     def interactive_plot_3d(
         self,
@@ -5939,248 +6268,159 @@ class Compound:
         lim_scalar=1,
         ticks=1,
         bar=True,
+        bar_scale=False,
+        temp_rounding=2,
+        field_rounding=2,
         axis_off=False,
     ):
+        """
+        Creates interactive widget plot dependent on  field and temperature.
+
+        Parameters
+        ----------
+        group: str
+            name of a group from HDF5 file for which plot will be created
+        data_type: Unity["chit", "chi", "hemholtz_energy", "magnetisation", "internal_energy"]
+            type of data that will be used to create plot
+        colour_map_name: str or list = 'dark_rainbow_r_l'
+            input of Compound.colour_map function, determines colour of main figure
+        T_slider_colour: str
+            determines colour of temperature slider
+        B_slider_colour: str
+            determines colour of field slider
+        temp_bar_colour_map_name: str or list[str] = 'BuRd'
+            input of Compound.colour_map function, determines colour map of temperature bar
+        field_bar_colour_map_name: str or list[str] = 'BuPi'
+            input of Compound.colour_map function, determines colour map of field bar
+        lim_scalar: float = 1.
+            scalar used to set limits of axes, smaller values magnify plotted figure
+        ticks: float = 1
+            determines ticks spacing
+        bar: bool = True
+            determines if bar is shown
+        bar_scale: bool = False
+            determines if bar scale is shown
+        temp_rounding: int = 2
+            determines how many significant digits are shown relative to int(value) for temperature
+        temp_rounding: int = 2
+            determines how many significant digits are shown relative to int(value) for field
+        axis_off: bool = False
+            determines if axes are turned off
+        Returns
+        -------
+        Nothing
+
+        Raises
+        ------
+        SltFileError
+            if unable to load data file, most likely encountered if group name is incorrect
+        SltPlotError
+            if unable to create animated plot
+        """
         field_i, temp_i = 0, 0
+        try:
+            T = False
+            if data_type == "chit":
+                x0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][0]
+                y0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][1]
+                z0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][2]
+                fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_susceptibility", f"{group}_temperatures"
+                ]
+                T = True
+            if data_type == "chi":
+                x0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][0]
+                y0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][1]
+                z0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][2]
+                fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_susceptibility", f"{group}_temperatures"
+                ]
 
-        T = False
-        if data_type == "chit":
-            x0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][0]
-            y0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][1]
-            z0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][2]
-            fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
-            temps = self[f"{group}_3d_susceptibility", f"{group}_temperatures"]
-            T = True
-        if data_type == "chi":
-            x0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][0]
-            y0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][1]
-            z0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][2]
-            fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
-            temps = self[f"{group}_3d_susceptibility", f"{group}_temperatures"]
+            elif data_type == "hemholtz_energy":
+                x0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    0
+                ]
+                y0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    1
+                ]
+                z0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                    2
+                ]
+                fields = self[f"{group}_3d_hemholtz_energy", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_hemholtz_energy", f"{group}_temperatures"
+                ]
 
-        elif data_type == "hemholtz_energy":
-            x0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][0]
-            y0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][1]
-            z0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][2]
-            fields = self[f"{group}_3d_hemholtz_energy", f"{group}_fields"]
-            temps = self[
-                f"{group}_3d_hemholtz_energy", f"{group}_temperatures"
-            ]
-        ##############
-        ##############
-        ##############
-        # Dodalem internal do plotow nowy
+            elif data_type == "internal_energy":
+                x0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    0
+                ]
+                y0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    1
+                ]
+                z0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    2
+                ]
+                fields = self[f"{group}_3d_internal_energy", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_internal_energy", f"{group}_temperatures"
+                ]
 
-        elif data_type == "internal_energy":
-            x0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][0]
-            y0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][1]
-            z0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][2]
-            fields = self[f"{group}_3d_internal_energy", f"{group}_fields"]
-            temps = self[
-                f"{group}_3d_internal_energy", f"{group}_temperatures"
-            ]
-
-        elif data_type == "magnetisation":
-            x0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][0]
-            y0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][1]
-            z0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][2]
-            fields = self[f"{group}_3d_magnetisation", f"{group}_fields"]
-            temps = self[f"{group}_3d_magnetisation", f"{group}_temperatures"]
-
-        fig = plt.figure()
-        global ax
-        ax = fig.add_subplot(projection="3d")
-
-        colour1 = Compound.colour_map(temp_bar_colour_map_name)(
-            np.linspace(0, 1, len(temps))
-        )
-        colour2 = Compound.colour_map(field_bar_colour_map_name)(
-            np.linspace(0, 1, len(fields))
-        )
-
-        indicator1 = np.linspace(0, 1, len(temps))
-        indicator2 = np.linspace(0, 1, len(fields))
-
-        x = x0[field_i, temp_i, :, :]
-        y = y0[field_i, temp_i, :, :]
-        z = z0[field_i, temp_i, :, :]
-
-        max_array = np.array([np.max(x), np.max(y), np.max(z)])
-        lim = np.max(max_array)
-        norm = plt.Normalize(z.min(), z.max())
-        colors = Compound.colour_map(colour_map_name)(norm(z))
-        rcount, ccount, _ = colors.shape
-        r_density = rcount
-        c_density = ccount
-        surface = ax.plot_surface(
-            x,
-            y,
-            z,
-            rcount=r_density,
-            ccount=c_density,
-            facecolors=colors,
-            shade=False,
-        )
-        surface.set_facecolor((0, 0, 0, 0))
-        ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
-        ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
-        ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
-        # Important order of operations!
-        if data_type in "chit":
-            if T:
-                ax.set_xlabel(
-                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
-                    labelpad=20 * len(str(ticks)) / 4,
+            elif data_type == "magnetisation":
+                x0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][0]
+                y0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][1]
+                z0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][2]
+                fields = self[f"{group}_3d_magnetisation", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_magnetisation", f"{group}_temperatures"
+                ]
+        except Exception as exc:
+            raise SltFileError(
+                self._hdf5,
+                exc,
+                f"Failed to load 3d data file"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".'
+                + RED
+                + "Check if group exist.",
+            ) from None
+        try:
+            fig = figure()
+            global ax
+            ax = fig.add_subplot(projection="3d")
+            if bar:
+                colour1 = Compound.colour_map(temp_bar_colour_map_name)(
+                    linspace(0, 1, len(temps))
                 )
-                ax.set_ylabel(
-                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
-                    labelpad=20 * len(str(ticks)) / 4,
+                colour2 = Compound.colour_map(field_bar_colour_map_name)(
+                    linspace(0, 1, len(fields))
                 )
-                ax.set_zlabel(
-                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
-                    labelpad=20 * len(str(ticks)) / 4,
-                )
-            else:
-                ax.set_xlabel(
-                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                    labelpad=20 * len(str(ticks)) / 4,
-                )
-                ax.set_ylabel(
-                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                    labelpad=20 * len(str(ticks)) / 4,
-                )
-                ax.set_zlabel(
-                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                    labelpad=20 * len(str(ticks)) / 4,
-                )
-        elif data_type == "hemholtz_energy":
-            ax.set_xlabel(
-                r"$E\ /\ \mathrm{cm^{-1}}$", labelpad=20 * len(str(ticks)) / 4
-            )
-            ax.set_ylabel(
-                r"$E\ /\ \mathrm{cm^{-1}}$", labelpad=20 * len(str(ticks)) / 4
-            )
-            ax.set_zlabel(
-                r"$E\ /\ \mathrm{cm^{-1}}$", labelpad=20 * len(str(ticks)) / 4
-            )
-        elif data_type == "magnetisation":
-            ax.set_xlabel(
-                r"$M\ /\ \mathrm{\mu_{B}}$", labelpad=20 * len(str(ticks)) / 4
-            )
-            ax.set_ylabel(
-                r"$M\ /\ \mathrm{\mu_{B}}$", labelpad=20 * len(str(ticks)) / 4
-            )
-            ax.set_zlabel(
-                r"$M\ /\ \mathrm{\mu_{B}}$", labelpad=20 * len(str(ticks)) / 4
-            )
-        if ticks == 0:
-            for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                axis.set_ticklabels([])
-                axis._axinfo["axisline"]["linewidth"] = 1
-                axis._axinfo["axisline"]["color"] = (0, 0, 0)
-                axis._axinfo["grid"]["linewidth"] = 0.5
-                axis._axinfo["grid"]["linestyle"] = "-"
-                axis._axinfo["grid"]["color"] = (0, 0, 0)
-                axis._axinfo["tick"]["inward_factor"] = 0.0
-                axis._axinfo["tick"]["outward_factor"] = 0.0
-                axis.set_pane_color((0.95, 0.95, 0.95))
-        else:
-            ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-            ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-            ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-            if not (not T and ticks == 1):
-                ax.xaxis.set_major_locator(MultipleLocator(ticks))
-                ax.yaxis.set_major_locator(MultipleLocator(ticks))
-                ax.zaxis.set_major_locator(MultipleLocator(ticks))
-        ax.grid(False)
 
-        ax.set_box_aspect([1, 1, 1])
-        # plt.title(title)
-        fig.subplots_adjust(left=0.1)
-        if bar:
-            c = colour1[temp_i]
-            axins = ax.inset_axes([-0.05, 0.7, 0.1, 0.2])
-            axins.bar(1, indicator1[temp_i], width=0.2, color=c)
-            axins.set_ylim(0, 1)
-            axins.text(
-                1,
-                1,
-                s=f"{round(temps[-1], 1)} K",
-                verticalalignment="bottom",
-                horizontalalignment="center",
-            )
-            axins.text(
-                1,
-                -0.03,
-                s=f"{round(temps[0], 1)} K",
-                verticalalignment="top",
-                horizontalalignment="center",
-            )
+                indicator1 = linspace(0, 1, len(temps))
+                indicator2 = linspace(0, 1, len(fields))
+                if bar_scale:
 
-            # axins.get_xaxis().set_visible(False)
-            # axins.xaxis.set_tick_params(labelbottom=False)
+                    def my_ticks(x, pos):
+                        return f"{round(x * temps[-1], temp_rounding)} K"
 
-            axins.axison = False
+                    def my_ticks2(x, pos):
+                        return f"{round(x * fields[-1], field_rounding)} T"
 
-            c = colour2[field_i]
-            axins2 = ax.inset_axes([-0.05, 0.2, 0.1, 0.2])
-            axins2.bar(1, indicator2[field_i], width=0.2, color=c)
-            axins2.set_ylim(0, 1)
-            axins2.text(
-                1,
-                1,
-                s=f"{round(fields[-1], 1)} T",
-                verticalalignment="bottom",
-                horizontalalignment="center",
-            )
-            axins2.text(
-                1,
-                -0.03,
-                s=f"{round(fields[0], 1)} T",
-                verticalalignment="top",
-                horizontalalignment="center",
-            )
-            axins2.axison = False
-
-        ax_temp = fig.add_axes([0.05, 0.6, 0.1, 0.2])
-        ax_temp.axison = False
-
-        ax_field = fig.add_axes([0.05, 0.3, 0.1, 0.2])
-        ax_field.axison = False
-
-        slider_temp = Slider(
-            ax_temp,
-            "T [index]",
-            valmin=0,
-            valmax=temps.size - 1,
-            orientation="vertical",
-            valstep=1,
-            initcolor=None,
-            color=T_slider_colour,
-        )
-        slider_field = Slider(
-            ax_field,
-            "B [index]",
-            valmin=0,
-            valmax=fields.size - 1,
-            orientation="vertical",
-            initcolor=None,
-            valstep=1,
-            color=B_slider_colour,
-        )
-
-        def slider_update(val):
-            temp_i = slider_temp.val
-            field_i = slider_field.val
-
-            ax.cla()
             x = x0[field_i, temp_i, :, :]
             y = y0[field_i, temp_i, :, :]
             z = z0[field_i, temp_i, :, :]
 
-            max_array = np.array([np.max(x), np.max(y), np.max(z)])
-            lim = np.max(max_array)
-            norm = plt.Normalize(z.min(), z.max())
+            max_array = array([max(x), max(y), max(z)])
+            lim = max(max_array)
+            norm = Normalize(z.min(), z.max())
             colors = Compound.colour_map(colour_map_name)(norm(z))
             rcount, ccount, _ = colors.shape
             r_density = rcount
@@ -6198,55 +6438,101 @@ class Compound:
             ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
-            ax.set_title(f"B={fields[field_i]:.4f} T, T={temps[temp_i]:.4f} K")
             # Important order of operations!
-            # if data_type in 'chit':
-            #     if T:
-            #         ax.set_xlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
-            #                       labelpad=20 * len(str(ticks)) / 4)
-            #         ax.set_ylabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
-            #                       labelpad=20 * len(str(ticks)) / 4)
-            #         ax.set_zlabel(r'$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$',
-            #                       labelpad=20 * len(str(ticks)) / 4)
-            #     else:
-            #         ax.set_xlabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-            #         ax.set_ylabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-            #         ax.set_zlabel(r'$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-            # elif data_type == 'hemholtz_energy':
-            #     ax.set_xlabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-            #     ax.set_ylabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-            #     ax.set_zlabel(r'$E\ /\ \mathrm{cm^{-1}}$', labelpad=20 * len(str(ticks)) / 4)
-            # elif data_type == 'magnetisation':
-            #     ax.set_xlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-            #     ax.set_ylabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-            #     ax.set_zlabel(r'$M\ /\ \mathrm{\mu_{B}}$', labelpad=10 * len(str(ticks)) / 4)
-            # if ticks == 0:
-            #     for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-            #         axis.set_ticklabels([])
-            #         axis._axinfo['axisline']['linewidth'] = 1
-            #         axis._axinfo['axisline']['color'] = (0, 0, 0)
-            #         axis._axinfo['grid']['linewidth'] = 0.5
-            #         axis._axinfo['grid']['linestyle'] = "-"
-            #         axis._axinfo['grid']['color'] = (0, 0, 0)
-            #         axis._axinfo['tick']['inward_factor'] = 0.0
-            #         axis._axinfo['tick']['outward_factor'] = 0.0
-            #         axis.set_pane_color((0.95, 0.95, 0.95))
-            # else:
-            #     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-            #     ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-            #     ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-            #     if not (not T and ticks == 1):
-            #         ax.xaxis.set_major_locator(MultipleLocator(ticks))
-            #         ax.yaxis.set_major_locator(MultipleLocator(ticks))
-            #         ax.zaxis.set_major_locator(MultipleLocator(ticks))
+            labelpad = 20 * len(str(ticks)) / 4
+            if data_type in "chit":
+                if T:
+                    ax_label = (
+                        r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
+                    )
+                else:
+                    ax_label = (
+                        r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
+                    )
+            elif data_type == "hemholtz_energy":
+                ax_label = r"$E\ /\ \mathrm{cm^{-1}}$"
+            elif data_type == "magnetisation":
+                ax_label = r"$M\ /\ \mathrm{\mu_{B}}$"
+            ax.set_xlabel(ax_label, labelpad=labelpad)
+            ax.set_ylabel(ax_label, labelpad=labelpad)
+            ax.set_zlabel(ax_label, labelpad=labelpad)
+            if ticks == 0:
+                for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                    axis.set_ticklabels([])
+                    axis._axinfo["axisline"]["linewidth"] = 1
+                    axis._axinfo["axisline"]["color"] = (0, 0, 0)
+                    axis._axinfo["grid"]["linewidth"] = 0.5
+                    axis._axinfo["grid"]["linestyle"] = "-"
+                    axis._axinfo["grid"]["color"] = (0, 0, 0)
+                    axis._axinfo["tick"]["inward_factor"] = 0.0
+                    axis._axinfo["tick"]["outward_factor"] = 0.0
+                    axis.set_pane_color((0.95, 0.95, 0.95))
+            else:
+                ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+                ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+                ax.zaxis.set_minor_locator(AutoMinorLocator(2))
+                if not (not T and ticks == 1):
+                    ax.xaxis.set_major_locator(MultipleLocator(ticks))
+                    ax.yaxis.set_major_locator(MultipleLocator(ticks))
+                    ax.zaxis.set_major_locator(MultipleLocator(ticks))
             ax.grid(False)
-            #
-            # ax.set_box_aspect([1, 1, 1])
-            # plt.title(title)
+
+            ax.set_box_aspect([1, 1, 1])
             fig.subplots_adjust(left=0.1)
             if bar:
                 c = colour1[temp_i]
-                axins = ax.inset_axes([-0.05, 0.7, 0.1, 0.2])
+                axins = ax.inset_axes([-0.05, 0.7, 0.098, 0.2])
+                axins.bar(1, indicator1[temp_i], width=0.2, color=c)
+                axins.set_ylim(0, 1)
+                c = colour2[field_i]
+                axins2 = ax.inset_axes([-0.05, 0.2, 0.098, 0.2])
+                axins2.bar(1, indicator2[field_i], width=0.2, color=c)
+                axins2.set_ylim(0, 1)
+
+                if not bar_scale:
+                    axins.text(
+                        1,
+                        1,
+                        s=f"{round(temps[-1], 1)} K",
+                        verticalalignment="bottom",
+                        horizontalalignment="center",
+                    )
+                    axins.text(
+                        1,
+                        -0.03,
+                        s=f"{round(temps[0], 1)} K",
+                        verticalalignment="top",
+                        horizontalalignment="center",
+                    )
+                    axins.axison = False
+                    axins2.text(
+                        1,
+                        1,
+                        s=f"{round(fields[-1], 1)} T",
+                        verticalalignment="bottom",
+                        horizontalalignment="center",
+                    )
+                    axins2.text(
+                        1,
+                        -0.03,
+                        s=f"{round(fields[0], 1)} T",
+                        verticalalignment="top",
+                        horizontalalignment="center",
+                    )
+                    axins2.axison = False
+                if bar_scale:
+                    axins.get_xaxis().set_visible(False)
+                    axins.xaxis.set_tick_params(labelbottom=False)
+                    axins.yaxis.set_major_formatter(FuncFormatter(my_ticks))
+                    axins.yaxis.set_minor_locator(AutoMinorLocator(2))
+                    axins2.get_xaxis().set_visible(False)
+                    axins2.xaxis.set_tick_params(labelbottom=False)
+                    axins2.yaxis.set_major_formatter(FuncFormatter(my_ticks2))
+                    axins2.yaxis.set_minor_locator(AutoMinorLocator(2))
+
+            if bar:
+                c = colour1[temp_i]
+                axins = ax.inset_axes([-0.05, 0.7, 0.098, 0.2])
                 axins.bar(1, indicator1[temp_i], width=0.2, color=c)
                 axins.set_ylim(0, 1)
                 axins.text(
@@ -6264,36 +6550,163 @@ class Compound:
                     horizontalalignment="center",
                 )
 
-                # axins.get_xaxis().set_visible(False)
-                # axins.xaxis.set_tick_params(labelbottom=False)
+            ax_temp = fig.add_axes([0.05, 0.6, 0.1, 0.2])
+            ax_temp.axison = False
 
-                axins.axison = False
+            ax_field = fig.add_axes([0.05, 0.3, 0.1, 0.2])
+            ax_field.axison = False
 
-                c = colour2[field_i]
-                axins2 = ax.inset_axes([-0.05, 0.2, 0.1, 0.2])
-                axins2.bar(1, indicator2[field_i], width=0.2, color=c)
-                axins2.set_ylim(0, 1)
-                axins2.text(
-                    1,
-                    1,
-                    s=f"{round(fields[-1], 1)} T",
-                    verticalalignment="bottom",
-                    horizontalalignment="center",
+            slider_temp = Slider(
+                ax_temp,
+                f"T [index]",
+                valmin=0,
+                valmax=temps.size - 1,
+                orientation="vertical",
+                valstep=1,
+                initcolor=None,
+                color=T_slider_colour,
+            )
+            slider_field = Slider(
+                ax_field,
+                f"B [index]",
+                valmin=0,
+                valmax=fields.size - 1,
+                orientation="vertical",
+                initcolor=None,
+                valstep=1,
+                color=B_slider_colour,
+            )
+
+            def slider_update(val):
+                temp_i = slider_temp.val
+                field_i = slider_field.val
+
+                ax.cla()
+                x = x0[field_i, temp_i, :, :]
+                y = y0[field_i, temp_i, :, :]
+                z = z0[field_i, temp_i, :, :]
+
+                max_array = array([max(x), max(y), max(z)])
+                lim = max(max_array)
+                norm = Normalize(z.min(), z.max())
+                colors = Compound.colour_map(colour_map_name)(norm(z))
+                rcount, ccount, _ = colors.shape
+                r_density = rcount
+                c_density = ccount
+                surface = ax.plot_surface(
+                    x,
+                    y,
+                    z,
+                    rcount=r_density,
+                    ccount=c_density,
+                    facecolors=colors,
+                    shade=False,
                 )
-                axins2.text(
-                    1,
-                    -0.03,
-                    s=f"{round(fields[0], 1)} T",
-                    verticalalignment="top",
-                    horizontalalignment="center",
+                surface.set_facecolor((0, 0, 0, 0))
+                ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
+                ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
+                ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
+                ax.set_title(
+                    f"B={fields[field_i]:.4f} T, T={temps[temp_i]:.4f} K"
                 )
-                axins2.axison = False
+                ax.set_xlabel(ax_label, labelpad=labelpad)
+                ax.set_ylabel(ax_label, labelpad=labelpad)
+                ax.set_zlabel(ax_label, labelpad=labelpad)
 
-            fig.canvas.draw()
+                if ticks == 0:
+                    for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                        axis.set_ticklabels([])
+                        axis._axinfo["axisline"]["linewidth"] = 1
+                        axis._axinfo["axisline"]["color"] = (0, 0, 0)
+                        axis._axinfo["grid"]["linewidth"] = 0.5
+                        axis._axinfo["grid"]["linestyle"] = "-"
+                        axis._axinfo["grid"]["color"] = (0, 0, 0)
+                        axis._axinfo["tick"]["inward_factor"] = 0.0
+                        axis._axinfo["tick"]["outward_factor"] = 0.0
+                        axis.set_pane_color((0.95, 0.95, 0.95))
+                else:
+                    ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+                    ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+                    ax.zaxis.set_minor_locator(AutoMinorLocator(2))
+                    if not (not T and ticks == 1):
+                        ax.xaxis.set_major_locator(MultipleLocator(ticks))
+                        ax.yaxis.set_major_locator(MultipleLocator(ticks))
+                        ax.zaxis.set_major_locator(MultipleLocator(ticks))
+                ax.grid(False)
+                fig.subplots_adjust(left=0.1)
+                if bar:
+                    c = colour1[temp_i]
+                    axins = ax.inset_axes([-0.05, 0.7, 0.098, 0.2])
+                    axins.bar(1, indicator1[temp_i], width=0.2, color=c)
+                    axins.set_ylim(0, 1)
+                    c = colour2[field_i]
+                    axins2 = ax.inset_axes([-0.05, 0.2, 0.098, 0.2])
+                    axins2.bar(1, indicator2[field_i], width=0.2, color=c)
+                    axins2.set_ylim(0, 1)
 
-        slider_temp.on_changed(slider_update)
-        slider_field.on_changed(slider_update)
-        if axis_off:
-            plt.axis("off")
-        # plt.tight_layout()
-        plt.show()
+                    if not bar_scale:
+                        axins.text(
+                            1,
+                            1,
+                            s=f"{round(temps[-1], 1)} K",
+                            verticalalignment="bottom",
+                            horizontalalignment="center",
+                        )
+                        axins.text(
+                            1,
+                            -0.03,
+                            s=f"{round(temps[0], 1)} K",
+                            verticalalignment="top",
+                            horizontalalignment="center",
+                        )
+                        axins.axison = False
+                        axins2.text(
+                            1,
+                            1,
+                            s=f"{round(fields[-1], 1)} T",
+                            verticalalignment="bottom",
+                            horizontalalignment="center",
+                        )
+                        axins2.text(
+                            1,
+                            -0.03,
+                            s=f"{round(fields[0], 1)} T",
+                            verticalalignment="top",
+                            horizontalalignment="center",
+                        )
+                        axins2.axison = False
+                    if bar_scale:
+                        axins.get_xaxis().set_visible(False)
+                        axins.xaxis.set_tick_params(labelbottom=False)
+                        axins.yaxis.set_major_formatter(
+                            FuncFormatter(my_ticks)
+                        )
+                        axins.yaxis.set_minor_locator(AutoMinorLocator(2))
+                        axins2.get_xaxis().set_visible(False)
+                        axins2.xaxis.set_tick_params(labelbottom=False)
+                        axins2.yaxis.set_major_formatter(
+                            FuncFormatter(my_ticks2)
+                        )
+                        axins2.yaxis.set_minor_locator(AutoMinorLocator(2))
+
+                fig.canvas.draw()
+
+            slider_temp.on_changed(slider_update)
+            slider_field.on_changed(slider_update)
+            if axis_off:
+                axis("off")
+            show()
+        except Exception as exc:
+            raise SltPlotError(
+                self._hdf5,
+                exc,
+                f"Failed to plot 3d data"
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None

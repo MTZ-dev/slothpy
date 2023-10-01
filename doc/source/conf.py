@@ -55,7 +55,7 @@ html_theme_options = {
     "navigation_depth": 6,
     "logo": {
         "text": "SlothPy",
-        "image_dark": "_static/slothpy.png",
+        "image_dark": "_static/slothpy_2.jpg",
         "alt_text": "SlothPy",
     },
     "show_toc_level": 1,
@@ -108,5 +108,5 @@ html_sidebars = {
     ],
 }
 
-html_logo = "_static/slothpy.png"
-html_favicon = "_static/slothpy.png"
+html_logo = "_static/slothpy_2.jpg"
+html_favicon = "_static/slothpy_2.jpg"

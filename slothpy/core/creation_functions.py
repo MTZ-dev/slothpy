@@ -21,8 +21,8 @@ def compound_from_orca(
     Parameters
     ----------
     slt_filepath : str
-        Path of existing .slt file or to which the resulting .slt file will be
-        saved.
+        Path of the existing or new .slt file to which the results will
+        be saved.
     slt_filename : str
         Name of the .slt file to be created/accessed.
     name : str
@@ -87,8 +87,8 @@ def compound_from_molcas(
     Parameters
     ----------
     slt_filepath : str
-        Path of existing .slt file or to which the resulting .slt file will be
-        saved.
+        Path of the existing or new .slt file to which the results will
+        be saved.
     slt_filename : str
         Name of the .slt file to be created/accessed.
     name : str

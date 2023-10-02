@@ -6,7 +6,9 @@
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Search - SlothPy 0.0.1 documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>General Utilities &#8212; SlothPy 0.0.1 documentation</title>
   
   
   
@@ -54,14 +56,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-  <script src="_static/searchtools.js"></script>
-  <script src="_static/language_data.js"></script>
-  <script src="searchindex.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'general_utilities';</script>
     <link rel="icon" href="_static/slothpy_2.jpg"/>
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How to Cite" href="how_to_cite.html" />
+    <link rel="prev" title="Compound" href="compound.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -98,7 +99,7 @@
     <div class="search-button__overlay"></div>
     <div class="search-button__search-container">
 <form class="bd-search d-flex align-items-center"
-      action="#"
+      action="search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -196,7 +197,7 @@ document.write(`
                     </li>
                 
 
-                    <li class="nav-item">
+                    <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="slothpy.html">
                         Reference Manual
                       </a>
@@ -314,6 +315,10 @@ document.write(`
   
 
   
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
 </div>
 
     </nav>
@@ -375,7 +380,7 @@ document.write(`
                     </li>
                 
 
-                    <li class="nav-item">
+                    <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="slothpy.html">
                         Reference Manual
                       </a>
@@ -468,7 +473,7 @@ document.write(`
     <div class="sidebar-primary-items__start sidebar-primary__section">
         <div class="sidebar-primary-item">
 <form class="bd-search d-flex align-items-center"
-      action="#"
+      action="search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -483,14 +488,35 @@ document.write(`
          spellcheck="false"/>
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form></div>
+        <div class="sidebar-primary-item"><nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="creation_methods.html">Creation Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compound.html">Compound</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">General Utilities</a></li>
+</ul>
+</div>
+</nav></div>
         <div class="sidebar-primary-item">
 <h3><a href="index.html">Table of Contents</a></h3>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">See Also</span></p>
-<ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_start.html">How to Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="slothpy.html">Reference Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="slothpy.html">Reference Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="creation_methods.html">Creation Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compound.html">Compound</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">General Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.lebedev_laikov_grid"><code class="docutils literal notranslate"><span class="pre">lebedev_laikov_grid()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.set_default_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_default_error_reporting_mode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.set_plain_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_plain_error_reporting_mode()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_cite.html">How to Cite</a></li>
 </ul>
 </div>
@@ -511,46 +537,114 @@ document.write(`
           <div class="bd-content">
             <div class="bd-article-container">
               
-              <div class="bd-header-article"></div>
-              
-              
-  <div class="bd-search-container">
-    <h1>Search</h1>
-    <noscript>
-      <div class="admonition error">
-        <p class="admonition-title">Error</p>
-        <p>Please activate JavaScript to enable the search functionality.</p>
-      </div>
-    </noscript>
-    
-<form class="bd-search d-flex align-items-center"
-      action="#"
-      method="get">
-  <i class="fa-solid fa-magnifying-glass"></i>
-  <input type="search"
-         class="form-control"
-         name="q"
-         id="search-input"
-         placeholder="Search the docs ..."
-         aria-label="Search the docs ..."
-         autocomplete="off"
-         autocorrect="off"
-         autocapitalize="off"
-         spellcheck="false"/>
-  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form>
-    <div id="search-results"></div>
-  </div>
-  <script>
-    // Activate the search field on page load
-    let searchInput = document.querySelector("form.bd-search input");
-    if (searchInput) {
-        searchInput.focus();
-        searchInput.select();
-        console.log("[PST]: Set focus on search field.");
-    }
-  </script>
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="slothpy.html" class="nav-link">Reference Manual</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">General Utilities</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="module-slothpy">
+<span id="general-utilities"></span><h1>General Utilities<a class="headerlink" href="#module-slothpy" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.lebedev_laikov_grid">
+<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">lebedev_laikov_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/_general_utilities/_grids_over_hemisphere.html#lebedev_laikov_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.lebedev_laikov_grid" title="Link to this definition">#</a></dt>
+<dd><p>Returns Lebedev-Laikov-Grids [1] over a hemisphere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>grid</strong> (<em>int</em>) – <p>An integer from 0 to 11 controling the number of points in the grid
+over the hemisphere.</p>
+<p>0 - 17 points,
+1 - 29 points,
+2 - 93 points,
+3 - 161 points,
+4 - 185 points,
+5 - 229 points,
+6 - 309 points,
+7 - 401 points,
+8 - 505 points,
+9 - 889 points,
+10 - 1381 points,
+11 - 2949 points</p>
+</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Grid array in the form [[direction_x, direction_y, direction_z,
+weight], …].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If grid is not an integer from 0 to 11.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Grids 0-2 can be considered as insufficient in most cases (only should be
+used for experimental purposes), 3-5 minimal to standard, 6-8 very precise,
+but costly, 9-11 very dense - only for particular use-cases (extremely
+costly - especially 10-11).</p>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="r630c8c202b22-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<p>V.I. Lebedev, and D.N. Laikov
+“A quadrature formula for the sphere of the 131st
+algebraic order of accuracy”
+Doklady Mathematics, Vol. 59, No. 3, 1999, pp. 477-481.</p>
+</div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.set_default_error_reporting_mode">
+<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">set_default_error_reporting_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/_general_utilities/_system.html#set_default_error_reporting_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.set_default_error_reporting_mode" title="Link to this definition">#</a></dt>
+<dd><p>Run this after the module import to return to the default full error
+tracebacks.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.set_plain_error_reporting_mode">
+<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">set_plain_error_reporting_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/_general_utilities/_system.html#set_plain_error_reporting_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.set_plain_error_reporting_mode" title="Link to this definition">#</a></dt>
+<dd><p>Run this after set_default_error_reporting_mode to return to the custom
+SlothPy-style error printing without tracebacks.</p>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
               
               
               
@@ -558,12 +652,57 @@ document.write(`
                 <footer class="prev-next-footer">
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="compound.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Compound</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="how_to_cite.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">How to Cite</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/MTZ-dev/Sloth/edit/dev-doc/doc/general_utilities.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div class="tocsection sourcelink">
+    <a href="_sources/general_utilities.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
               
             
           </div>

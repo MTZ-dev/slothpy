@@ -6,12 +6,12 @@
 SlothPy 
 ===================================
 
-Welcome to the best program. 
+Welcome to the program. 
 
 
 .. toctree::
-   :maxdepth: 6
-   :caption: Explore SlothPy
+   :maxdepth: 8
+   :caption: See Also
 
    about
    installation

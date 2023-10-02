@@ -56,6 +56,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/slothpy/core/compound_object';</script>
+    <link rel="icon" href="../../../_static/slothpy_2.jpg"/>
     <link rel="author" title="About these documents" href="../../../about.html" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -128,6 +129,14 @@
   
   
   
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/slothpy_2.jpg" class="logo__image only-light" alt="SlothPy"/>
+    <script>document.write(`<img src="../../../_static/slothpy_2.jpg" class="logo__image only-dark" alt="SlothPy"/>`);</script>
   
   
     <p class="title logo__title">SlothPy</p>
@@ -542,7 +551,16 @@ document.write(`
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">h5py</span> <span class="kn">import</span> <span class="n">File</span><span class="p">,</span> <span class="n">Group</span><span class="p">,</span> <span class="n">Dataset</span>
-<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">float64</span><span class="p">,</span> <span class="n">int64</span><span class="p">,</span> <span class="n">complex128</span><span class="p">,</span> <span class="n">linspace</span><span class="p">,</span> <span class="nb">max</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">array</span><span class="p">,</span>
+    <span class="n">float64</span><span class="p">,</span>
+    <span class="n">int64</span><span class="p">,</span>
+    <span class="n">complex128</span><span class="p">,</span>
+    <span class="n">linspace</span><span class="p">,</span>
+    <span class="n">arange</span><span class="p">,</span>
+    <span class="nb">max</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LinearSegmentedColormap</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">rcParams</span><span class="p">,</span> <span class="n">use</span>
 <span class="kn">from</span> <span class="nn">matplotlib.style</span> <span class="kn">import</span> <span class="n">use</span> <span class="k">as</span> <span class="n">mplstyle_use</span>
@@ -590,8 +608,8 @@ document.write(`
 <span class="kn">from</span> <span class="nn">slothpy._magnetism._zeeman</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">_zeeman_splitting</span><span class="p">,</span>
     <span class="n">_get_zeeman_matrix</span><span class="p">,</span>
-    <span class="n">_hemholtz_energyth</span><span class="p">,</span>
-    <span class="n">_hemholtz_energy_3d</span><span class="p">,</span>
+    <span class="n">_helmholtz_energyth</span><span class="p">,</span>
+    <span class="n">_helmholtz_energy_3d</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">slothpy._general_utilities._grids_over_hemisphere</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">lebedev_laikov_grid</span><span class="p">,</span>
@@ -2480,9 +2498,9 @@ document.write(`
         <span class="k">return</span> <span class="n">chit_3d_array</span></div>
 
 
-<div class="viewcode-block" id="Compound.calculate_hemholtz_energyth">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_hemholtz_energyth">[docs]</a>
-    <span class="k">def</span> <span class="nf">calculate_hemholtz_energyth</span><span class="p">(</span>
+<div class="viewcode-block" id="Compound.calculate_helmholtz_energyth">
+<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_helmholtz_energyth">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_helmholtz_energyth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">fields</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span>
@@ -2497,7 +2515,7 @@ document.write(`
         <span class="n">_autotune_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Calculates powder-averaged or directional Hemholtz (or internal) energy</span>
+<span class="sd">        Calculates powder-averaged or directional Helmholtz (or internal) energy</span>
 <span class="sd">        for a given list of temperature and field values.</span>
 
 <span class="sd">        Parameters</span>
@@ -2537,7 +2555,7 @@ document.write(`
 <span class="sd">            Turns on the calculation of internal energy., by default False</span>
 <span class="sd">        slt : str, optional</span>
 <span class="sd">            If given the results will be saved in a group of this name to .slt</span>
-<span class="sd">            file with suffix: _hemholtz_energy or _internal_energy., by default</span>
+<span class="sd">            file with suffix: _helmholtz_energy or _internal_energy., by default</span>
 <span class="sd">            None</span>
 <span class="sd">        autotune : bool, optional</span>
 <span class="sd">            If True the program will automatically try to choose the best</span>
@@ -2586,8 +2604,8 @@ document.write(`
             <span class="n">group_suffix</span> <span class="o">=</span> <span class="s2">&quot;_internal_energy&quot;</span>
             <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;internal&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">group_suffix</span> <span class="o">=</span> <span class="s2">&quot;_hemholtz_energy&quot;</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Hemholtz&quot;</span>
+            <span class="n">group_suffix</span> <span class="o">=</span> <span class="s2">&quot;_helmholtz_energy&quot;</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Helmholtz&quot;</span>
 
         <span class="k">if</span> <span class="n">slt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">slt_group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}{</span><span class="n">group_suffix</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -2658,7 +2676,7 @@ document.write(`
                 <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">energyth_array</span> <span class="o">=</span> <span class="n">_hemholtz_energyth</span><span class="p">(</span>
+            <span class="n">energyth_array</span> <span class="o">=</span> <span class="n">_helmholtz_energyth</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">group</span><span class="p">,</span>
                 <span class="n">fields</span><span class="p">,</span>
@@ -2734,9 +2752,9 @@ document.write(`
         <span class="k">return</span> <span class="n">energyth_array</span></div>
 
 
-<div class="viewcode-block" id="Compound.calculate_hemholtz_energy_3d">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_hemholtz_energy_3d">[docs]</a>
-    <span class="k">def</span> <span class="nf">calculate_hemholtz_energy_3d</span><span class="p">(</span>
+<div class="viewcode-block" id="Compound.calculate_helmholtz_energy_3d">
+<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_helmholtz_energy_3d">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_helmholtz_energy_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">fields</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span>
@@ -2751,7 +2769,7 @@ document.write(`
         <span class="n">_autotune_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Calculates 3D Hemholtz (or internal) energy over a spherical grid for</span>
+<span class="sd">        Calculates 3D Helmholtz (or internal) energy over a spherical grid for</span>
 <span class="sd">        a given list of temperature and field values.</span>
 
 <span class="sd">        Parameters</span>
@@ -2785,7 +2803,7 @@ document.write(`
 <span class="sd">            Turns on the calculation of internal energy., by default False</span>
 <span class="sd">        slt : str, optional</span>
 <span class="sd">            If given the results will be saved in a group of this name to .slt</span>
-<span class="sd">            file with suffix: _3d_hemholtz_energy or _3d_internal_energy.,</span>
+<span class="sd">            file with suffix: _3d_helmholtz_energy or _3d_internal_energy.,</span>
 <span class="sd">            by default None</span>
 <span class="sd">        autotune : bool, optional</span>
 <span class="sd">            If True the program will automatically try to choose the best</span>
@@ -2838,8 +2856,8 @@ document.write(`
             <span class="n">group_suffix</span> <span class="o">=</span> <span class="s2">&quot;_3d_internal_energy&quot;</span>
             <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;internal&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">group_suffix</span> <span class="o">=</span> <span class="s2">&quot;_3d_hemholtz_energy&quot;</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Hemholtz&quot;</span>
+            <span class="n">group_suffix</span> <span class="o">=</span> <span class="s2">&quot;_3d_helmholtz_energy&quot;</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Helmholtz&quot;</span>
 
         <span class="k">if</span> <span class="n">slt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">slt_group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}{</span><span class="n">group_suffix</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -2909,7 +2927,7 @@ document.write(`
                 <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">energy_3d_array</span> <span class="o">=</span> <span class="n">_hemholtz_energy_3d</span><span class="p">(</span>
+            <span class="n">energy_3d_array</span> <span class="o">=</span> <span class="n">_helmholtz_energy_3d</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">group</span><span class="p">,</span>
                 <span class="n">fields</span><span class="p">,</span>
@@ -5529,9 +5547,9 @@ document.write(`
                 <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="Compound.plot_hemholtz_energyth">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.plot_hemholtz_energyth">[docs]</a>
-    <span class="k">def</span> <span class="nf">plot_hemholtz_energyth</span><span class="p">(</span>
+<div class="viewcode-block" id="Compound.plot_helmholtz_energyth">
+<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.plot_helmholtz_energyth">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_helmholtz_energyth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">internal_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -5584,7 +5602,7 @@ document.write(`
         <span class="k">if</span> <span class="n">internal_energy</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;internal&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hemholtz&quot;</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;helmholtz&quot;</span>
         <span class="k">try</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Getting data from hdf5 or sloth file&quot;&quot;&quot;</span>
             <span class="n">mth</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_eth&quot;</span><span class="p">]</span>
@@ -5597,7 +5615,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load hemholtz energy file&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to load Helmholtz energy file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5662,7 +5680,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot hemholtz energy data&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to plot Helmholtz energy data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5675,12 +5693,12 @@ document.write(`
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
 <span class="w">                </span><span class="sd">&quot;&quot;&quot;Saving plot figure&quot;&quot;&quot;</span>
-                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;hemholtz_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;helmholtz_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save hemholtz energy data plot&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to save Helmholtz energy data plot&quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5690,7 +5708,7 @@ document.write(`
                     <span class="o">+</span> <span class="n">RESET</span>
                     <span class="o">+</span> <span class="s1">&#39;&quot;, filename: &#39;</span>
                     <span class="o">+</span> <span class="n">PURPLE</span>
-                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;hemholtz_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;helmholtz_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
                 <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
 
 
@@ -6088,7 +6106,7 @@ document.write(`
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
 <span class="sd">            name of a group from HDF5 file for which plot will be created</span>
-<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;hemholtz_energy&quot;, &quot;magnetisation&quot;]</span>
+<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;magnetisation&quot;]</span>
 <span class="sd">            type of data that will be used to create plot</span>
 <span class="sd">        field_i: int</span>
 <span class="sd">            index of field from dataset that will be used for plot</span>
@@ -6154,20 +6172,20 @@ document.write(`
                     <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> T,&quot;</span>
                     <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span>
                 <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;hemholtz_energy&quot;</span><span class="p">:</span>
-                <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
                     <span class="mi">0</span><span class="p">,</span> <span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span>
                 <span class="p">]</span>
-                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
                     <span class="mi">1</span><span class="p">,</span> <span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span>
                 <span class="p">]</span>
-                <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+                <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
                     <span class="mi">2</span><span class="p">,</span> <span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span>
                 <span class="p">]</span>
                 <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="s2">&quot;Energy dependence on direction,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_hemholtz_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> T,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_hemholtz_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_helmholtz_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> T,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_helmholtz_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">][</span>
@@ -6256,7 +6274,7 @@ document.write(`
                         <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
                         <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                     <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;hemholtz_energy&quot;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
                     <span class="sa">r</span><span class="s2">&quot;$E\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
                     <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
@@ -6381,7 +6399,7 @@ document.write(`
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
 <span class="sd">            name of a group from HDF5 file for which plot will be created</span>
-<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;hemholtz_energy&quot;, &quot;magnetisation&quot;]</span>
+<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;magnetisation&quot;]</span>
 <span class="sd">            type of data that will be used to create plot</span>
 <span class="sd">        animation_variable: str</span>
 <span class="sd">            variable changing during animation, can take one of two values: temperature or field</span>
@@ -6449,19 +6467,21 @@ document.write(`
                 <span class="n">temps</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_susceptibility&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
                 <span class="p">]</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;hemholtz_energy&quot;</span><span class="p">:</span>
-                <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
-                    <span class="mi">0</span>
+            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span>
+                <span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span>
+                <span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span>
+                <span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span>
                 <span class="p">]</span>
-                <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
-                    <span class="mi">1</span>
-                <span class="p">]</span>
-                <span class="n">z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
-                    <span class="mi">2</span>
-                <span class="p">]</span>
-                <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
                 <span class="n">temps</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
                 <span class="p">]</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -6473,7 +6493,7 @@ document.write(`
                 <span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;Acceptable data types: chit, chi, hemholtz_energy and&quot;</span>
+                    <span class="s2">&quot;Acceptable data types: chit, chi, helmholtz_energy and&quot;</span>
                     <span class="s2">&quot; magnetisation&quot;</span>
                 <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -6572,7 +6592,7 @@ document.write(`
                                 <span class="p">),</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;hemholtz_energy&quot;</span><span class="p">:</span>
+                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
                                 <span class="sa">r</span><span class="s2">&quot;$E\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
@@ -6601,7 +6621,7 @@ document.write(`
                         <span class="k">else</span><span class="p">:</span>
                             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                                 <span class="s2">&quot;Acceptable data types: chit, chi,&quot;</span>
-                                <span class="s2">&quot; hemholtz_energy and magnetisation&quot;</span>
+                                <span class="s2">&quot; helmholtz_energy and magnetisation&quot;</span>
                             <span class="p">)</span>
                         <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
                         <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
@@ -6741,7 +6761,7 @@ document.write(`
                                 <span class="p">),</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;hemholtz_energy&quot;</span><span class="p">:</span>
+                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
                                 <span class="sa">r</span><span class="s2">&quot;$E\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
@@ -6770,7 +6790,7 @@ document.write(`
                         <span class="k">else</span><span class="p">:</span>
                             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                                 <span class="s2">&quot;Acceptable data types: chit, chi,&quot;</span>
-                                <span class="s2">&quot; hemholtz_energy and magnetisation&quot;</span>
+                                <span class="s2">&quot; helmholtz_energy and magnetisation&quot;</span>
                             <span class="p">)</span>
                         <span class="c1"># title = description</span>
                         <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
@@ -6911,7 +6931,7 @@ document.write(`
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
 <span class="sd">            name of a group from HDF5 file for which plot will be created</span>
-<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;hemholtz_energy&quot;, &quot;magnetisation&quot;, &quot;internal_energy&quot;]</span>
+<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;magnetisation&quot;, &quot;internal_energy&quot;]</span>
 <span class="sd">            type of data that will be used to create plot</span>
 <span class="sd">        colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
 <span class="sd">            input of Compound.colour_map function, determines colour of main figure</span>
@@ -6969,19 +6989,21 @@ document.write(`
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_susceptibility&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
                 <span class="p">]</span>
 
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;hemholtz_energy&quot;</span><span class="p">:</span>
-                <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
-                    <span class="mi">0</span>
+            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span>
+                <span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span>
+                <span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span>
+                <span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span>
                 <span class="p">]</span>
-                <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
-                    <span class="mi">1</span>
-                <span class="p">]</span>
-                <span class="n">z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
-                    <span class="mi">2</span>
-                <span class="p">]</span>
-                <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
                 <span class="n">temps</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_hemholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
                 <span class="p">]</span>
 
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span><span class="p">:</span>
@@ -7080,7 +7102,7 @@ document.write(`
                     <span class="n">ax_label</span> <span class="o">=</span> <span class="p">(</span>
                         <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
                     <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;hemholtz_energy&quot;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
                 <span class="n">ax_label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$E\ /\ \mathrm{cm^{-1}}$&quot;</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">ax_label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span>

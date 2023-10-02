@@ -51,8 +51,8 @@ autodoc_member_order = "bysource"
 html_theme = "pydata_sphinx_theme"
 toc_object_entries_show_parents = "hide"
 html_theme_options = {
-    "show_nav_level": 6,
-    "navigation_depth": 6,
+    "show_nav_level": 8,
+    "navigation_depth": 8,
     "logo": {
         "text": "SlothPy",
         "image_dark": "_static/slothpy_2.jpg",

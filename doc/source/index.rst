@@ -10,7 +10,7 @@ Welcome to the program.
 
 
 .. toctree::
-   :maxdepth: 6
+   :maxdepth: 8
    :caption: Explore SlothPy
 
    about

@@ -6,7 +6,9 @@
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Search - SlothPy 0.0.1 documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Creation Methods &#8212; SlothPy 0.0.1 documentation</title>
   
   
   
@@ -54,14 +56,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-  <script src="_static/searchtools.js"></script>
-  <script src="_static/language_data.js"></script>
-  <script src="searchindex.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'creation_methods';</script>
     <link rel="icon" href="_static/slothpy_2.jpg"/>
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Compound" href="compound.html" />
+    <link rel="prev" title="Reference Manual" href="slothpy.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -98,7 +99,7 @@
     <div class="search-button__overlay"></div>
     <div class="search-button__search-container">
 <form class="bd-search d-flex align-items-center"
-      action="#"
+      action="search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -196,7 +197,7 @@ document.write(`
                     </li>
                 
 
-                    <li class="nav-item">
+                    <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="slothpy.html">
                         Reference Manual
                       </a>
@@ -314,6 +315,10 @@ document.write(`
   
 
   
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
 </div>
 
     </nav>
@@ -375,7 +380,7 @@ document.write(`
                     </li>
                 
 
-                    <li class="nav-item">
+                    <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="slothpy.html">
                         Reference Manual
                       </a>
@@ -468,7 +473,7 @@ document.write(`
     <div class="sidebar-primary-items__start sidebar-primary__section">
         <div class="sidebar-primary-item">
 <form class="bd-search d-flex align-items-center"
-      action="#"
+      action="search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -483,14 +488,35 @@ document.write(`
          spellcheck="false"/>
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form></div>
+        <div class="sidebar-primary-item"><nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Creation Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compound.html">Compound</a></li>
+<li class="toctree-l1"><a class="reference internal" href="general_utilities.html">General Utilities</a></li>
+</ul>
+</div>
+</nav></div>
         <div class="sidebar-primary-item">
 <h3><a href="index.html">Table of Contents</a></h3>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">See Also</span></p>
-<ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_start.html">How to Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="slothpy.html">Reference Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="slothpy.html">Reference Manual</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Creation Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.compound_from_slt"><code class="docutils literal notranslate"><span class="pre">compound_from_slt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.compound_from_molcas"><code class="docutils literal notranslate"><span class="pre">compound_from_molcas()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.compound_from_orca"><code class="docutils literal notranslate"><span class="pre">compound_from_orca()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="compound.html">Compound</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_utilities.html">General Utilities</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_cite.html">How to Cite</a></li>
 </ul>
 </div>
@@ -511,46 +537,145 @@ document.write(`
           <div class="bd-content">
             <div class="bd-article-container">
               
-              <div class="bd-header-article"></div>
-              
-              
-  <div class="bd-search-container">
-    <h1>Search</h1>
-    <noscript>
-      <div class="admonition error">
-        <p class="admonition-title">Error</p>
-        <p>Please activate JavaScript to enable the search functionality.</p>
-      </div>
-    </noscript>
-    
-<form class="bd-search d-flex align-items-center"
-      action="#"
-      method="get">
-  <i class="fa-solid fa-magnifying-glass"></i>
-  <input type="search"
-         class="form-control"
-         name="q"
-         id="search-input"
-         placeholder="Search the docs ..."
-         aria-label="Search the docs ..."
-         autocomplete="off"
-         autocorrect="off"
-         autocapitalize="off"
-         spellcheck="false"/>
-  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form>
-    <div id="search-results"></div>
-  </div>
-  <script>
-    // Activate the search field on page load
-    let searchInput = document.querySelector("form.bd-search input");
-    if (searchInput) {
-        searchInput.focus();
-        searchInput.select();
-        console.log("[PST]: Set focus on search field.");
-    }
-  </script>
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="slothpy.html" class="nav-link">Reference Manual</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">Creation Methods</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="module-slothpy">
+<span id="creation-methods"></span><h1>Creation Methods<a class="headerlink" href="#module-slothpy" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.compound_from_slt">
+<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">compound_from_slt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt_filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/creation_functions.html#compound_from_slt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.compound_from_slt" title="Link to this definition">#</a></dt>
+<dd><p>Create a Compound from the existing .slt file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path to the existing .slt file to be loaded.</p></li>
+<li><p><strong>slt_filename</strong> (<em>str</em>) – Name of an existing .slt file to be loaded.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An instance of Compound class associated with the given .slt file, that
+serves as an user interface, holding all the available methods.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.Compound">Compound</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>SltFileError</strong> – If the program is unable to create a Compound from a given file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.compound_from_molcas">
+<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">compound_from_molcas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molcas_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molcas_filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/creation_functions.html#compound_from_molcas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.compound_from_molcas" title="Link to this definition">#</a></dt>
+<dd><p>Create a Compound from MOLCAS rassi.h5 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path of the existing or new .slt file to which the results will
+be saved.</p></li>
+<li><p><strong>slt_filename</strong> (<em>str</em>) – Name of the .slt file to be created/accessed.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of a group to which results of relativistic ab initio calculations
+will be saved.</p></li>
+<li><p><strong>molcas_filepath</strong> (<em>str</em>) – Path to the MOLCAS .rassi.h5 file.</p></li>
+<li><p><strong>molcas_filename</strong> (<em>str</em>) – Name of the MOLCAS .rassi.h5 file (without the suffix).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An instance of Compound class associated with the given .slt file, that
+serves as an user interface, holding all the available methods.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.Compound">Compound</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>SltFileError</strong> – If the program is unable to create a Compound from given files.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>MOLCAS calculations have to be done with the “MESO” keyword within the
+RASSI section and the installation has to support HDF5 files for .rassi.h5
+files to be readable by SlothPy.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.compound_from_orca">
+<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">compound_from_orca</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orca_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orca_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pt2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/creation_functions.html#compound_from_orca"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.compound_from_orca" title="Link to this definition">#</a></dt>
+<dd><p>Create a Compound from ORCA output file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slt_filepath</strong> (<em>str</em>) – Path of the existing or new .slt file to which the results will
+be saved.</p></li>
+<li><p><strong>slt_filename</strong> (<em>str</em>) – Name of the .slt file to be created/accessed.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of a group to which results of relativistic ab initio calculations
+will be saved.</p></li>
+<li><p><strong>orca_filepath</strong> (<em>str</em>) – Path to the ORCA output file.</p></li>
+<li><p><strong>orca_filename</strong> (<em>str</em>) – Name of the ORCA output file.</p></li>
+<li><p><strong>pt2</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True the results of CASPT2/NEVPT2 second-order perturbative
+corrections will be loaded to the file., by default False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An instance of Compound class associated with the given .slt file, that
+serves as an user interface, holding all the available methods.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.Compound">Compound</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>SltFileError</strong> – If the program is unable to create a Compound from given files.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>ORCA calculations have to be done with the “printlevel 3” keyword for
+outputs to be readable by SlothPy.</p>
+</div>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
               
               
               
@@ -558,12 +683,57 @@ document.write(`
                 <footer class="prev-next-footer">
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="slothpy.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Reference Manual</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="compound.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Compound</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/MTZ-dev/Sloth/edit/dev-doc/doc/creation_methods.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div class="tocsection sourcelink">
+    <a href="_sources/creation_methods.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
               
             
           </div>

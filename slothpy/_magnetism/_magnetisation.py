@@ -256,7 +256,7 @@ def _mth(
     )
 
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(num_cpu, num_threads)
+    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)
@@ -378,7 +378,9 @@ def _mag_3d(
     sus_3d_num: bool = False,
 ) -> ndarray:
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(num_cpu, num_threads)
+    num_process = _get_num_of_processes(
+        num_cpu, num_threads, fields.shape[0] * 2 * spherical_grid**2
+    )
 
     # Create a gird
     theta = linspace(0, 2 * pi, 2 * spherical_grid, dtype=float64)

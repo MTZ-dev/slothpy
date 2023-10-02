@@ -189,7 +189,7 @@ def _zeeman_splitting(
     )
 
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(num_cpu, num_threads)
+    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields)
@@ -293,7 +293,7 @@ def _get_zeeman_matrix(
     nogil=True,
     fastmath=True,
 )
-def _calculate_hemholtz_energy(
+def _calculate_helmholtz_energy(
     energies: ndarray, temperature: float64, internal_energy: False
 ) -> float64:
     energies = energies[1:] - energies[0]
@@ -324,7 +324,7 @@ def _calculate_hemholtz_energy(
     nogil=True,
     fastmath=True,
 )
-def _hemholtz_energyt_over_grid(
+def _helmholtz_energyt_over_grid(
     magnetic_momenta: ndarray,
     soc_energies: ndarray,
     field: float64,
@@ -350,10 +350,10 @@ def _hemholtz_energyt_over_grid(
         eigenvalues = eigvalsh(zeeman_matrix)
         eigenvalues = ascontiguousarray(eigenvalues)
 
-        # Compute Hemholtz energy for each T
+        # Compute Helmholtz energy for each T
         for t in range(temperatures.shape[0]):
             energyt_array[t] += (
-                _calculate_hemholtz_energy(
+                _calculate_helmholtz_energy(
                     eigenvalues, temperatures[t], internal_energy
                 )
                 * grid[j, 3]
@@ -362,7 +362,7 @@ def _hemholtz_energyt_over_grid(
     return energyt_array
 
 
-def _calculate_hemholtz_energyt(
+def _calculate_helmholtz_energyt(
     magnetic_momenta: str,
     soc_energies: str,
     field: float64,
@@ -396,7 +396,7 @@ def _calculate_hemholtz_energyt(
     soc_energies_s = SharedMemory(name=soc_energies)
     soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
 
-    return _hemholtz_energyt_over_grid(
+    return _helmholtz_energyt_over_grid(
         magnetic_momenta_a,
         soc_energies_a,
         field,
@@ -406,14 +406,14 @@ def _calculate_hemholtz_energyt(
     )
 
 
-def _calculate_hemholtz_energyt_wrapper(args):
+def _calculate_helmholtz_energyt_wrapper(args):
     # Unpack arguments and call the function
-    et = _calculate_hemholtz_energyt(*args)
+    et = _calculate_helmholtz_energyt(*args)
 
     return et
 
 
-def _arg_iter_hemholtz_energyth(
+def _arg_iter_helmholtz_energyth(
     magnetic_momenta,
     soc_energies,
     fields,
@@ -442,7 +442,7 @@ def _arg_iter_hemholtz_energyth(
         )
 
 
-def _hemholtz_energyth(
+def _helmholtz_energyth(
     filename: str,
     group: str,
     fields: ndarray[float64],
@@ -462,7 +462,7 @@ def _hemholtz_energyth(
     )
 
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(num_cpu, num_threads)
+    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields)
@@ -512,8 +512,8 @@ def _hemholtz_energyth(
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 with Pool(num_process) as p:
                     eht = p.map(
-                        _calculate_hemholtz_energyt_wrapper,
-                        _arg_iter_hemholtz_energyth(
+                        _calculate_helmholtz_energyt_wrapper,
+                        _arg_iter_helmholtz_energyth(
                             magnetic_momenta_shared.name,
                             soc_energies_shared.name,
                             fields_shared_arr,
@@ -533,7 +533,7 @@ def _hemholtz_energyth(
     return eth_array  # Returning values in cm-1
 
 
-def _arg_iter_hemholtz_energy_3d(
+def _arg_iter_helmholtz_energy_3d(
     magnetic_moment,
     soc_energies,
     fields,
@@ -572,7 +572,7 @@ def _arg_iter_hemholtz_energy_3d(
                 )
 
 
-def _hemholtz_energy_3d(
+def _helmholtz_energy_3d(
     filename: str,
     group: str,
     fields: ndarray,
@@ -584,7 +584,9 @@ def _hemholtz_energy_3d(
     internal_energy: bool = False,
 ) -> ndarray:
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(num_cpu, num_threads)
+    num_process = _get_num_of_processes(
+        num_cpu, num_threads, fields.shape[0] * 2 * spherical_grid**2
+    )
 
     # Create a gird
     theta = linspace(0, 2 * pi, 2 * spherical_grid, dtype=float64)
@@ -651,8 +653,8 @@ def _hemholtz_energy_3d(
                 # Parallel M(T,H) calculation over different grid points
                 with Pool(num_process) as p:
                     mht = p.map(
-                        _calculate_hemholtz_energyt_wrapper,
-                        _arg_iter_hemholtz_energy_3d(
+                        _calculate_helmholtz_energyt_wrapper,
+                        _arg_iter_helmholtz_energy_3d(
                             magnetic_momenta_shared.name,
                             soc_energies_shared.name,
                             fields_shared_arr,

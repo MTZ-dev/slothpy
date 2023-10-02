@@ -3,7 +3,7 @@ from os import cpu_count
 from IPython import get_ipython
 
 
-def _get_num_of_processes(num_cpu, num_threads):
+def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
     if (
         (not isinstance(num_cpu, int))
         or (not isinstance(num_threads, int))
@@ -37,7 +37,12 @@ def _get_num_of_processes(num_cpu, num_threads):
             f" {num_threads}, Actual available processors: {num_cpu}"
         )
 
-    num_process = num_cpu // num_threads
+    # Check if there is more CPUs than the things to parallelize over
+    if num_cpu >= num_to_parallelize:
+        num_process = num_to_parallelize
+        num_threads = num_cpu // num_process
+    else:
+        num_process = num_cpu // num_threads
 
     return num_process
 

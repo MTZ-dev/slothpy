@@ -59,8 +59,8 @@ from slothpy._magnetism._susceptibility import (
 from slothpy._magnetism._zeeman import (
     _zeeman_splitting,
     _get_zeeman_matrix,
-    _hemholtz_energyth,
-    _hemholtz_energy_3d,
+    _helmholtz_energyth,
+    _helmholtz_energy_3d,
 )
 from slothpy._general_utilities._grids_over_hemisphere import (
     lebedev_laikov_grid,
@@ -1926,7 +1926,7 @@ class Compound:
 
         return chit_3d_array
 
-    def calculate_hemholtz_energyth(
+    def calculate_helmholtz_energyth(
         self,
         group: str,
         fields: ndarray[float64],
@@ -1941,7 +1941,7 @@ class Compound:
         _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
-        Calculates powder-averaged or directional Hemholtz (or internal) energy
+        Calculates powder-averaged or directional Helmholtz (or internal) energy
         for a given list of temperature and field values.
 
         Parameters
@@ -1981,7 +1981,7 @@ class Compound:
             Turns on the calculation of internal energy., by default False
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with suffix: _hemholtz_energy or _internal_energy., by default
+            file with suffix: _helmholtz_energy or _internal_energy., by default
             None
         autotune : bool, optional
             If True the program will automatically try to choose the best
@@ -2030,8 +2030,8 @@ class Compound:
             group_suffix = "_internal_energy"
             name = "internal"
         else:
-            group_suffix = "_hemholtz_energy"
-            name = "Hemholtz"
+            group_suffix = "_helmholtz_energy"
+            name = "Helmholtz"
 
         if slt is not None:
             slt_group_name = f"{slt}{group_suffix}"
@@ -2102,7 +2102,7 @@ class Compound:
                 ) from None
 
         try:
-            energyth_array = _hemholtz_energyth(
+            energyth_array = _helmholtz_energyth(
                 self._hdf5,
                 group,
                 fields,
@@ -2177,7 +2177,7 @@ class Compound:
 
         return energyth_array
 
-    def calculate_hemholtz_energy_3d(
+    def calculate_helmholtz_energy_3d(
         self,
         group: str,
         fields: ndarray[float64],
@@ -2192,7 +2192,7 @@ class Compound:
         _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
-        Calculates 3D Hemholtz (or internal) energy over a spherical grid for
+        Calculates 3D Helmholtz (or internal) energy over a spherical grid for
         a given list of temperature and field values.
 
         Parameters
@@ -2226,7 +2226,7 @@ class Compound:
             Turns on the calculation of internal energy., by default False
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with suffix: _3d_hemholtz_energy or _3d_internal_energy.,
+            file with suffix: _3d_helmholtz_energy or _3d_internal_energy.,
             by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
@@ -2279,8 +2279,8 @@ class Compound:
             group_suffix = "_3d_internal_energy"
             name = "internal"
         else:
-            group_suffix = "_3d_hemholtz_energy"
-            name = "Hemholtz"
+            group_suffix = "_3d_helmholtz_energy"
+            name = "Helmholtz"
 
         if slt is not None:
             slt_group_name = f"{slt}{group_suffix}"
@@ -2350,7 +2350,7 @@ class Compound:
                 ) from None
 
         try:
-            energy_3d_array = _hemholtz_energy_3d(
+            energy_3d_array = _helmholtz_energy_3d(
                 self._hdf5,
                 group,
                 fields,
@@ -3590,7 +3590,7 @@ class Compound:
                     self._hdf5,
                     exc,
                     f"Failed to save {pseudo_kind} decomposition of"
-                    f" {matrix} matrix"
+                    f" {matrix} matrix "
                     + BLUE
                     + "Group "
                     + RESET
@@ -3770,7 +3770,7 @@ class Compound:
                 raise SltFileError(
                     self._hdf5,
                     exc,
-                    "Failed to save ITO decomposition of SOC matrix to"
+                    "Failed to save ITO decomposition of SOC matrix to "
                     + BLUE
                     + "Group "
                     + RESET
@@ -3957,7 +3957,7 @@ class Compound:
                 raise SltFileError(
                     self._hdf5,
                     exc,
-                    "Failed to save ITO decomposition of Zeeman matrix to"
+                    "Failed to save ITO decomposition of Zeeman matrix to "
                     + BLUE
                     + "Group "
                     + RESET
@@ -4091,7 +4091,7 @@ class Compound:
                 raise SltFileError(
                     self._hdf5,
                     exc,
-                    "Failed to save matrix from ITOs to"
+                    "Failed to save matrix from ITOs to "
                     + BLUE
                     + "Group "
                     + RESET
@@ -4267,7 +4267,7 @@ class Compound:
                     self._hdf5,
                     exc,
                     f'Failed to save {matrix} matrix in "z"'
-                    f" {basis_kind} basis to"
+                    f" {basis_kind} basis to "
                     + BLUE
                     + "Group "
                     + RESET
@@ -4743,7 +4743,7 @@ class Compound:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save magnetisation data plot"
+                    f"Failed to save magnetisation data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -4908,7 +4908,7 @@ class Compound:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save susceptibility data plot"
+                    f"Failed to save susceptibility data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -4921,7 +4921,7 @@ class Compound:
                     + f"chitht_{group}.tiff",
                 ) from None
 
-    def plot_hemholtz_energyth(
+    def plot_helmholtz_energyth(
         self,
         group: str,
         internal_energy=False,
@@ -4974,7 +4974,7 @@ class Compound:
         if internal_energy:
             name = "internal"
         else:
-            name = "hemholtz"
+            name = "helmholtz"
         try:
             """Getting data from hdf5 or sloth file"""
             mth = self[f"{group}_{name}_energy", f"{group}_eth"]
@@ -4987,7 +4987,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load hemholtz energy file"
+                f"Failed to load Helmholtz energy file"
                 + BLUE
                 + "Group "
                 + RESET
@@ -5052,7 +5052,7 @@ class Compound:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot hemholtz energy data"
+                f"Failed to plot Helmholtz energy data"
                 + BLUE
                 + "Group "
                 + RESET
@@ -5065,12 +5065,12 @@ class Compound:
         if save:
             try:
                 """Saving plot figure"""
-                fig.savefig(f"hemholtz_{group}.tiff", dpi=300)
+                fig.savefig(f"helmholtz_{group}.tiff", dpi=300)
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save hemholtz energy data plot"
+                    f"Failed to save Helmholtz energy data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -5080,7 +5080,7 @@ class Compound:
                     + RESET
                     + '", filename: '
                     + PURPLE
-                    + f"hemholtz_{group}.tiff",
+                    + f"helmholtz_{group}.tiff",
                 ) from None
 
     def plot_zeeman(
@@ -5438,7 +5438,7 @@ class Compound:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save zeeman splitting data plot"
+                    f"Failed to save zeeman splitting data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -5472,7 +5472,7 @@ class Compound:
         ----------
         group: str
             name of a group from HDF5 file for which plot will be created
-        data_type: Unity["chit", "chi", "hemholtz_energy", "magnetisation"]
+        data_type: Unity["chit", "chi", "helmholtz_energy", "magnetisation"]
             type of data that will be used to create plot
         field_i: int
             index of field from dataset that will be used for plot
@@ -5538,20 +5538,20 @@ class Compound:
                     f" B={self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i]} T,"
                     f" T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i]} K"
                 )
-            elif data_type == "hemholtz_energy":
-                x = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+            elif data_type == "helmholtz_energy":
+                x = self[f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"][
                     0, field_i, temp_i, :, :
                 ]
-                y = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                y = self[f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"][
                     1, field_i, temp_i, :, :
                 ]
-                z = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
+                z = self[f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"][
                     2, field_i, temp_i, :, :
                 ]
                 description = (
                     "Energy dependence on direction,"
-                    f" B={self[f'{group}_3d_hemholtz_energy', f'{group}_fields'][field_i]} T,"
-                    f" T={self[f'{group}_3d_hemholtz_energy', f'{group}_temperatures'][temp_i]} K"
+                    f" B={self[f'{group}_3d_helmholtz_energy', f'{group}_fields'][field_i]} T,"
+                    f" T={self[f'{group}_3d_helmholtz_energy', f'{group}_temperatures'][temp_i]} K"
                 )
             elif data_type == "magnetisation":
                 x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
@@ -5640,7 +5640,7 @@ class Compound:
                         r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
                         labelpad=20 * len(str(ticks)) / 4,
                     )
-            elif data_type == "hemholtz_energy":
+            elif data_type == "helmholtz_energy":
                 ax.set_xlabel(
                     r"$E\ /\ \mathrm{cm^{-1}}$",
                     labelpad=20 * len(str(ticks)) / 4,
@@ -5696,7 +5696,7 @@ class Compound:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot 3d data"
+                f"Failed to plot 3d data "
                 + BLUE
                 + "Group "
                 + RESET
@@ -5719,7 +5719,7 @@ class Compound:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save 3d data plot"
+                    f"Failed to save 3d data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -5762,7 +5762,7 @@ class Compound:
         ----------
         group: str
             name of a group from HDF5 file for which plot will be created
-        data_type: Unity["chit", "chi", "hemholtz_energy", "magnetisation"]
+        data_type: Unity["chit", "chi", "helmholtz_energy", "magnetisation"]
             type of data that will be used to create plot
         animation_variable: str
             variable changing during animation, can take one of two values: temperature or field
@@ -5830,19 +5830,21 @@ class Compound:
                 temps = self[
                     f"{group}_3d_susceptibility", f"{group}_temperatures"
                 ]
-            elif data_type == "hemholtz_energy":
-                x0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                    0
+            elif data_type == "helmholtz_energy":
+                x0 = self[
+                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
+                ][0]
+                y0 = self[
+                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
+                ][1]
+                z0 = self[
+                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
+                ][2]
+                fields = self[
+                    f"{group}_3d_helmholtz_energy", f"{group}_fields"
                 ]
-                y0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                    1
-                ]
-                z0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                    2
-                ]
-                fields = self[f"{group}_3d_hemholtz_energy", f"{group}_fields"]
                 temps = self[
-                    f"{group}_3d_hemholtz_energy", f"{group}_temperatures"
+                    f"{group}_3d_helmholtz_energy", f"{group}_temperatures"
                 ]
             elif data_type == "magnetisation":
                 x0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][0]
@@ -5854,7 +5856,7 @@ class Compound:
                 ]
             else:
                 raise ValueError(
-                    "Acceptable data types: chit, chi, hemholtz_energy and"
+                    "Acceptable data types: chit, chi, helmholtz_energy and"
                     " magnetisation"
                 )
         except Exception as exc:
@@ -5953,7 +5955,7 @@ class Compound:
                                 ),
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
-                        elif data_type == "hemholtz_energy":
+                        elif data_type == "helmholtz_energy":
                             ax.set_xlabel(
                                 r"$E\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
@@ -5982,7 +5984,7 @@ class Compound:
                         else:
                             raise ValueError(
                                 "Acceptable data types: chit, chi,"
-                                " hemholtz_energy and magnetisation"
+                                " helmholtz_energy and magnetisation"
                             )
                         max_array = array([max(x), max(y), max(z)])
                         lim = max(max_array)
@@ -6122,7 +6124,7 @@ class Compound:
                                 ),
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
-                        elif data_type == "hemholtz_energy":
+                        elif data_type == "helmholtz_energy":
                             ax.set_xlabel(
                                 r"$E\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
@@ -6151,7 +6153,7 @@ class Compound:
                         else:
                             raise ValueError(
                                 "Acceptable data types: chit, chi,"
-                                " hemholtz_energy and magnetisation"
+                                " helmholtz_energy and magnetisation"
                             )
                         # title = description
                         max_array = array([max(x), max(y), max(z)])
@@ -6289,7 +6291,7 @@ class Compound:
         ----------
         group: str
             name of a group from HDF5 file for which plot will be created
-        data_type: Unity["chit", "chi", "hemholtz_energy", "magnetisation", "internal_energy"]
+        data_type: Unity["chit", "chi", "helmholtz_energy", "magnetisation", "internal_energy"]
             type of data that will be used to create plot
         colour_map_name: str or list = 'dark_rainbow_r_l'
             input of Compound.colour_map function, determines colour of main figure
@@ -6347,19 +6349,21 @@ class Compound:
                     f"{group}_3d_susceptibility", f"{group}_temperatures"
                 ]
 
-            elif data_type == "hemholtz_energy":
-                x0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                    0
+            elif data_type == "helmholtz_energy":
+                x0 = self[
+                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
+                ][0]
+                y0 = self[
+                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
+                ][1]
+                z0 = self[
+                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
+                ][2]
+                fields = self[
+                    f"{group}_3d_helmholtz_energy", f"{group}_fields"
                 ]
-                y0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                    1
-                ]
-                z0 = self[f"{group}_3d_hemholtz_energy", f"{group}_energy_3d"][
-                    2
-                ]
-                fields = self[f"{group}_3d_hemholtz_energy", f"{group}_fields"]
                 temps = self[
-                    f"{group}_3d_hemholtz_energy", f"{group}_temperatures"
+                    f"{group}_3d_helmholtz_energy", f"{group}_temperatures"
                 ]
 
             elif data_type == "internal_energy":
@@ -6458,7 +6462,7 @@ class Compound:
                     ax_label = (
                         r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
                     )
-            elif data_type == "hemholtz_energy":
+            elif data_type == "helmholtz_energy":
                 ax_label = r"$E\ /\ \mathrm{cm^{-1}}$"
             elif data_type == "magnetisation":
                 ax_label = r"$M\ /\ \mathrm{\mu_{B}}$"

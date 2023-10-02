@@ -17,7 +17,7 @@ from numpy import (
 )
 from threadpoolctl import threadpool_limits
 from slothpy._magnetism._magnetisation import _mt_over_grid
-from slothpy._magnetism._zeeman import _hemholtz_energyt_over_grid
+from slothpy._magnetism._zeeman import _helmholtz_energyt_over_grid
 from slothpy._general_utilities._system import _get_num_of_processes
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -141,7 +141,7 @@ def _get_mt_exec_time(
     if energy:
         start_time = perf_counter()
 
-        mt = _hemholtz_energyt_over_grid(
+        mt = _helmholtz_energyt_over_grid(
             magnetic_momenta_a,
             soc_energies_a,
             field,

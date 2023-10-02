@@ -56,7 +56,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/slothpy/core/compound_object';</script>
-    <link rel="icon" href="../../../_static/slothpy_2.jpg"/>
+    <link rel="icon" href="../../../_static/slothpy_3.png"/>
     <link rel="author" title="About these documents" href="../../../about.html" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -135,8 +135,8 @@
       
     
     
-    <img src="../../../_static/slothpy_2.jpg" class="logo__image only-light" alt="SlothPy"/>
-    <script>document.write(`<img src="../../../_static/slothpy_2.jpg" class="logo__image only-dark" alt="SlothPy"/>`);</script>
+    <img src="../../../_static/slothpy_3.png" class="logo__image only-light" alt="SlothPy"/>
+    <script>document.write(`<img src="../../../_static/slothpy_3.png" class="logo__image only-dark" alt="SlothPy"/>`);</script>
   
   
     <p class="title logo__title">SlothPy</p>
@@ -636,6 +636,7 @@ document.write(`
     <span class="n">_normalize_orientations</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">slothpy._general_utilities._auto_tune</span> <span class="kn">import</span> <span class="n">_auto_tune</span>
+<span class="kn">from</span> <span class="nn">slothpy._general_utilities._ploting_utilities</span> <span class="kn">import</span> <span class="n">colour_map</span><span class="p">,</span> <span class="n">_custom_colour_cycler</span>
 
 <span class="n">mplstyle_use</span><span class="p">(</span><span class="s2">&quot;fast&quot;</span><span class="p">)</span>
 <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;path.simplify&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
@@ -659,7 +660,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound">[docs]</a>
 <span class="k">class</span> <span class="nc">Compound</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The core object constituting the API and access to all the methods.</span>
@@ -931,7 +932,7 @@ document.write(`
         <span class="k">return</span> <span class="n">value</span>
 
 <div class="viewcode-block" id="Compound.delete_group_dataset">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.delete_group_dataset">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.delete_group_dataset">[docs]</a>
     <span class="k">def</span> <span class="nf">delete_group_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">second</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Deletes a group/dataset provided its full name/path from the .slt file.</span>
@@ -971,7 +972,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_g_tensor_and_axes_doublet">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_g_tensor_and_axes_doublet">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_g_tensor_and_axes_doublet">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_g_tensor_and_axes_doublet</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">doublets</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">int64</span><span class="p">],</span> <span class="n">slt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]]:</span>
@@ -1109,7 +1110,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_mth">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_mth">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_mth">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_mth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1348,7 +1349,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_mag_3d">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_mag_3d">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_mag_3d">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_mag_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1587,7 +1588,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_chitht">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_chitht">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_chitht">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_chitht</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1892,7 +1893,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_chit_tensorht">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_chit_tensorht">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_chit_tensorht">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_chit_tensorht</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2185,7 +2186,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_chit_3d">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_chit_3d">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_chit_3d">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_chit_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2499,7 +2500,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_helmholtz_energyth">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_helmholtz_energyth">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_helmholtz_energyth">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_helmholtz_energyth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2753,7 +2754,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_helmholtz_energy_3d">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_helmholtz_energy_3d">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_helmholtz_energy_3d">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_helmholtz_energy_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3006,7 +3007,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.calculate_zeeman_splitting">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.calculate_zeeman_splitting">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.calculate_zeeman_splitting">[docs]</a>
     <span class="k">def</span> <span class="nf">calculate_zeeman_splitting</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3285,7 +3286,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.zeeman_matrix">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.zeeman_matrix">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.zeeman_matrix">[docs]</a>
     <span class="k">def</span> <span class="nf">zeeman_matrix</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3441,7 +3442,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.soc_energies_cm_1">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.soc_energies_cm_1">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.soc_energies_cm_1">[docs]</a>
     <span class="k">def</span> <span class="nf">soc_energies_cm_1</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number_of_states</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">slt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]:</span>
@@ -3546,7 +3547,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.states_magnetic_momenta">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.states_magnetic_momenta">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.states_magnetic_momenta">[docs]</a>
     <span class="k">def</span> <span class="nf">states_magnetic_momenta</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3678,7 +3679,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.states_total_angular_momenta">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.states_total_angular_momenta">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.states_total_angular_momenta">[docs]</a>
     <span class="k">def</span> <span class="nf">states_total_angular_momenta</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3813,7 +3814,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.magnetic_momenta_matrix">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.magnetic_momenta_matrix">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.magnetic_momenta_matrix">[docs]</a>
     <span class="k">def</span> <span class="nf">magnetic_momenta_matrix</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3928,7 +3929,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.total_angular_momenta_matrix">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.total_angular_momenta_matrix">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.total_angular_momenta_matrix">[docs]</a>
     <span class="k">def</span> <span class="nf">total_angular_momenta_matrix</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4047,7 +4048,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.matrix_decomposition_in_z_pseudo_spin_basis">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis">[docs]</a>
     <span class="k">def</span> <span class="nf">matrix_decomposition_in_z_pseudo_spin_basis</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4191,7 +4192,7 @@ document.write(`
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to save </span><span class="si">{</span><span class="n">pseudo_kind</span><span class="si">}</span><span class="s2"> decomposition of&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s2"> matrix&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s2"> matrix &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -4206,7 +4207,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.soc_crystal_field_parameters">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.soc_crystal_field_parameters">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.soc_crystal_field_parameters">[docs]</a>
     <span class="k">def</span> <span class="nf">soc_crystal_field_parameters</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4374,7 +4375,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="s2">&quot;Failed to save ITO decomposition of SOC matrix to&quot;</span>
+                    <span class="s2">&quot;Failed to save ITO decomposition of SOC matrix to &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -4389,7 +4390,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.zeeman_matrix_ito_decpomosition">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.zeeman_matrix_ito_decpomosition">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.zeeman_matrix_ito_decpomosition">[docs]</a>
     <span class="k">def</span> <span class="nf">zeeman_matrix_ito_decpomosition</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4564,7 +4565,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="s2">&quot;Failed to save ITO decomposition of Zeeman matrix to&quot;</span>
+                    <span class="s2">&quot;Failed to save ITO decomposition of Zeeman matrix to &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -4579,7 +4580,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.matrix_from_ito">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.matrix_from_ito">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.matrix_from_ito">[docs]</a>
     <span class="k">def</span> <span class="nf">matrix_from_ito</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">full_group_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4701,7 +4702,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="s2">&quot;Failed to save matrix from ITOs to&quot;</span>
+                    <span class="s2">&quot;Failed to save matrix from ITOs to &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -4716,7 +4717,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.soc_zeem_in_z_angular_magnetic_momentum_basis">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.soc_zeem_in_z_angular_magnetic_momentum_basis">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.soc_zeem_in_z_angular_magnetic_momentum_basis">[docs]</a>
     <span class="k">def</span> <span class="nf">soc_zeem_in_z_angular_magnetic_momentum_basis</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4880,7 +4881,7 @@ document.write(`
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s1">&#39;Failed to save </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s1"> matrix in &quot;z&quot;&#39;</span>
-                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">basis_kind</span><span class="si">}</span><span class="s2"> basis to&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">basis_kind</span><span class="si">}</span><span class="s2"> basis to &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -4894,335 +4895,8 @@ document.write(`
         <span class="k">return</span> <span class="n">matrix</span></div>
 
 
-<div class="viewcode-block" id="Compound.colour_map">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.colour_map">[docs]</a>
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">colour_map</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates matplotlib colour map object.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        name: Unity[&quot;BuPi&quot;, &quot;rainbow&quot;, &quot;dark_rainbow&quot;, &quot;light_rainbow&quot;,</span>
-<span class="sd">            &quot;light_rainbow_alt&quot;, &quot;BuOr&quot;, &quot;BuYl&quot;, &quot;BuRd&quot;, &quot;GnYl&quot;, &quot;PrOr&quot;, &quot;GnRd&quot;, &quot;funmat&quot;, &quot;NdCoN322bpdo&quot;,</span>
-<span class="sd">            &quot;NdCoNO222bpdo&quot;, &quot;NdCoI22bpdo&quot;, &quot;viridis&quot;, &quot;plasma&quot;, &quot;inferno&quot;, &quot;magma&quot;, &quot;cividis&quot;] or list[str]</span>
-<span class="sd">            One of defined names for colour maps: BuPi, rainbow, dark_rainbow, light_rainbow,light_rainbow_alt, BuOr,</span>
-<span class="sd">            BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo,</span>
-<span class="sd">            viridis, plasma, inferno, magma, cividis or list of HTML colour codes from which colour map will be created</span>
-<span class="sd">            by interpolation of colours between ones on a list. For predefined names modifiers can be applied: _l loops</span>
-<span class="sd">            the list in a way that it starts and ends with the same colour, _r reverses the list.</span>
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        matplotlib.colors.LinearSegmentedColormap</span>
-<span class="sd">            Matplotlib&#39;s colour map object used for plotting.</span>
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">        ValueError</span>
-<span class="sd">            If input is not acceptable for creating colour map from list of colour codes or name of predefined colour</span>
-<span class="sd">            map was incorrectly written.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">reverse</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">loop</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">==</span> <span class="s2">&quot;_l&quot;</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
-            <span class="n">loop</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="k">if</span> <span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">==</span> <span class="s2">&quot;_r&quot;</span><span class="p">:</span>
-            <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;BuPi&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#0091ad&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#1780a1&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#2e6f95&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#455e89&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#5c4d7d&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#723c70&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#a01a58&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#b7094c&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;rainbow&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#ff0000&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff8700&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ffd300&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#deff0a&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#a1ff0a&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#0aff99&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#0aefff&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#147df5&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#580aff&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#be0aff&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;dark_rainbow&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#F94144&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#F3722C&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#F8961E&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#F9844A&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#F9C74F&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#90BE6D&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#43AA8B&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#4D908E&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#577590&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#277DA1&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;light_rainbow&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#FFADAD&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#FFD6A5&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#FDFFB6&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#CAFFBF&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#9BF6FF&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#A0C4FF&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#BDB2FF&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#FFC6FF&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;light_rainbow_alt&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#FBF8CC&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#FDE4CF&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#FFCFD2&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#F1C0E8&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#CFBAF0&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#A3C4F3&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#90DBF4&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#8EECF5&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#98F5E1&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#B9FBC0&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;BuOr&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#03045e&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#023e8a&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#0077b6&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#0096c7&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#00b4d8&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff9e00&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff9100&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff8500&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff6d00&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff5400&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;BuRd&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#033270&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#1368aa&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#4091c9&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#9dcee2&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#fedfd4&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#f29479&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ef3c2d&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#cb1b16&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#65010c&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;BuYl&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#184e77&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#1e6091&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#1a759f&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#168aad&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#34a0a4&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#52b69a&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#76c893&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#99d98c&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#b5e48c&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#d9ed92&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;GnYl&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#007f5f&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#2b9348&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#55a630&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#80b918&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#aacc00&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#bfd200&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#d4d700&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#dddf00&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#eeef20&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ffff3f&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;PrOr&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#240046&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#3c096c&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#5a189a&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#7b2cbf&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#9d4edd&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff9e00&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff9100&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff8500&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff7900&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ff6d00&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;GnRd&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#005C00&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#2D661B&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#2A850E&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#27A300&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#A9FFA5&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#FFA5A5&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#FF0000&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#BA0C0C&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#751717&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#5C0000&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;funmat&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#1f6284&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#277ba5&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#2f94c6&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#49a6d4&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#6ab6dc&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ffe570&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ffe15c&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ffda33&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ffd20a&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#e0b700&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;NdCoN322bpdo&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#00268f&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#0046ff&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#009cf4&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#E5E4E2&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ede76d&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#ffb900&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#b88700&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;NdCoNO222bpdo&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#A90F97&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#E114C9&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#f9bbf2&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#77f285&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#11BB25&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#0C831A&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;NdCoI22bpdo&quot;</span><span class="p">:</span>
-            <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;#075F5F&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#0B9898&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#0fd1d1&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#FAB3B3&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#d10f0f&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;#720808&quot;</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">if</span> <span class="n">cmap_list</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
-                <span class="n">cmap_list</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">loop</span><span class="p">:</span>
-                <span class="n">new_cmap_list</span> <span class="o">=</span> <span class="n">cmap_list</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cmap_list</span><span class="p">)):</span>
-                    <span class="n">new_cmap_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cmap_list</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span>
-                <span class="n">cmap_list</span> <span class="o">=</span> <span class="n">new_cmap_list</span>
-            <span class="n">cmap</span> <span class="o">=</span> <span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">cmap_list</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;viridis&quot;</span><span class="p">:</span>
-            <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">viridis</span>
-            <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">viridis_r</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;plasma&quot;</span><span class="p">:</span>
-            <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">plasma</span>
-            <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">plasma_r</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;inferno&quot;</span><span class="p">:</span>
-            <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">inferno</span>
-            <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">inferno_r</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;magma&quot;</span><span class="p">:</span>
-            <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">magma</span>
-            <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">magma_r</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;cividis&quot;</span><span class="p">:</span>
-            <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">cividis</span>
-            <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">cividis_r</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;&quot;&quot;There is no such colour map as </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> use one of those: BuPi, rainbow, dark_rainbow, light_rainbow, </span>
-<span class="s2">                    light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo,</span>
-<span class="s2">                    NdCoI22bpdo, viridis, plasma, inferno, magma, cividis or enter list of HTML colour codes&quot;&quot;&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
-
-        <span class="k">return</span> <span class="n">cmap</span></div>
-
-
-<div class="viewcode-block" id="Compound.custom_colour_cycler">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.custom_colour_cycler">[docs]</a>
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">custom_colour_cycler</span><span class="p">(</span><span class="n">number_of_colours</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cmap1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cmap2</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates colour cycler from two colour maps in alternating pattern, suitable for use in matplotlib plots.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        number_of_colours: int</span>
-<span class="sd">            Number of colour in cycle.</span>
-<span class="sd">        cmap1: str or list[str]</span>
-<span class="sd">            Input of Compound.colour_map function.</span>
-<span class="sd">        cmap2: str or list[str]</span>
-<span class="sd">            Input of Compound.colour_map function.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        cycler.cycler</span>
-<span class="sd">            Cycler object created based on two input colour maps.</span>
-
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">        ValueError</span>
-<span class="sd">            If unable to use given inputs. It should not be possible to trigger this error.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">number_of_colours</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">increment</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="n">lst1</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">cmap1</span><span class="p">)(</span>
-                    <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">number_of_colours</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
-                <span class="p">)</span>
-                <span class="n">lst2</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">cmap2</span><span class="p">)(</span>
-                    <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">number_of_colours</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
-                <span class="p">)</span>
-                <span class="n">colour_cycler_list</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">while</span> <span class="n">increment</span> <span class="o">&lt;</span> <span class="n">number_of_colours</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">increment</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                        <span class="n">colour_cycler_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lst1</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">increment</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)])</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">colour_cycler_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                            <span class="n">lst2</span><span class="p">[</span><span class="nb">int</span><span class="p">((</span><span class="n">increment</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
-                        <span class="p">)</span>
-                    <span class="n">increment</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">increment</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="n">lst1</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">cmap1</span><span class="p">)(</span>
-                    <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">((</span><span class="n">number_of_colours</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
-                <span class="p">)</span>
-                <span class="n">lst2</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">cmap2</span><span class="p">)(</span>
-                    <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">number_of_colours</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
-                <span class="p">)</span>
-                <span class="n">colour_cycler_list</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">while</span> <span class="n">increment</span> <span class="o">&lt;</span> <span class="n">number_of_colours</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">increment</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                        <span class="n">colour_cycler_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lst1</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">increment</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)])</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">colour_cycler_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                            <span class="n">lst2</span><span class="p">[</span><span class="nb">int</span><span class="p">((</span><span class="n">increment</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
-                        <span class="p">)</span>
-                    <span class="n">increment</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">return</span> <span class="n">cycler</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">colour_cycler_list</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;If you see this message function you try to use has an error.&quot;</span>
-                <span class="s2">&quot; Contact us at email:&quot;</span>
-            <span class="p">)</span></div>
-
-        <span class="c1"># TODO: mail kontaktowy</span>
-
 <div class="viewcode-block" id="Compound.plot_mth">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.plot_mth">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.plot_mth">[docs]</a>
     <span class="k">def</span> <span class="nf">plot_mth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -5245,7 +4919,7 @@ document.write(`
 <span class="sd">        save: bool = False</span>
 <span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;chitht_{group}.tiff&#39;</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;funmat&#39;</span>
-<span class="sd">            input of Compound.colour_map function</span>
+<span class="sd">            input of colour_map function</span>
 <span class="sd">        xlim: tuple of 1-2 floats = ()</span>
 <span class="sd">            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</span>
 <span class="sd">        ylim: tuple of 1-2 floats = ()</span>
@@ -5300,7 +4974,7 @@ document.write(`
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
-                <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
+                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
                     <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">))</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -5365,7 +5039,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save magnetisation data plot&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to save magnetisation data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5380,7 +5054,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.plot_chitht">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.plot_chitht">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.plot_chitht">[docs]</a>
     <span class="k">def</span> <span class="nf">plot_chitht</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">,</span>
@@ -5403,7 +5077,7 @@ document.write(`
 <span class="sd">        save: bool = False</span>
 <span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;chitht_{group}.tiff&#39;</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;funmat&#39;</span>
-<span class="sd">            input of Compound.colour_map function</span>
+<span class="sd">            input of colour_map function</span>
 <span class="sd">        xlim: tuple of 1-2 floats = ()</span>
 <span class="sd">            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</span>
 <span class="sd">        ylim: tuple of 1-2 floats = ()</span>
@@ -5462,7 +5136,7 @@ document.write(`
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
-                <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
+                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
                     <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">))</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -5533,7 +5207,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save susceptibility data plot&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to save susceptibility data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5548,7 +5222,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.plot_helmholtz_energyth">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.plot_helmholtz_energyth">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.plot_helmholtz_energyth">[docs]</a>
     <span class="k">def</span> <span class="nf">plot_helmholtz_energyth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -5574,7 +5248,7 @@ document.write(`
 <span class="sd">        save: bool = False</span>
 <span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;chitht_{group}.tiff&#39;</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;PrOr&#39;</span>
-<span class="sd">            input of Compound.colour_map function</span>
+<span class="sd">            input of colour_map function</span>
 <span class="sd">        xlim: tuple of 1-2 floats = ()</span>
 <span class="sd">            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</span>
 <span class="sd">        ylim: tuple of 1-2 floats = ()</span>
@@ -5633,7 +5307,7 @@ document.write(`
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
-                <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
+                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
                     <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">))</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -5698,7 +5372,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save Helmholtz energy data plot&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to save Helmholtz energy data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5713,7 +5387,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.plot_zeeman">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.plot_zeeman">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.plot_zeeman">[docs]</a>
     <span class="k">def</span> <span class="nf">plot_zeeman</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -5739,9 +5413,9 @@ document.write(`
 <span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;zeeman_{group}.tiff&#39; or</span>
 <span class="sd">            f&#39;zeeman_{group}_Orientation {orientations[i]}.tiff&#39;</span>
 <span class="sd">        colour_map_name1: str or list[str] = &#39;BuPi&#39;</span>
-<span class="sd">            input of Compound.colour_map function, determines colour of lower set of split lines</span>
+<span class="sd">            input of colour_map function, determines colour of lower set of split lines</span>
 <span class="sd">        colour_map_name2: str or list[str] = &#39;BuPi_r&#39;</span>
-<span class="sd">            input of Compound.colour_map function, determines colour of higher set of split lines</span>
+<span class="sd">            input of colour_map function, determines colour of higher set of split lines</span>
 <span class="sd">        single: bool = False</span>
 <span class="sd">            determines if all orientations are plotted together</span>
 <span class="sd">        xlim: tuple of 1-2 floats = ()</span>
@@ -5821,7 +5495,7 @@ document.write(`
                     <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="n">divisor</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="n">rc</span><span class="p">(</span>
                             <span class="s2">&quot;axes&quot;</span><span class="p">,</span>
-                            <span class="n">prop_cycle</span><span class="o">=</span><span class="n">Compound</span><span class="o">.</span><span class="n">custom_colour_cycler</span><span class="p">(</span>
+                            <span class="n">prop_cycle</span><span class="o">=</span><span class="n">_custom_colour_cycler</span><span class="p">(</span>
                                 <span class="nb">len</span><span class="p">(</span><span class="n">zeeman</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
                                 <span class="n">colour_map_name1</span><span class="p">,</span>
                                 <span class="n">colour_map_name2</span><span class="p">,</span>
@@ -5875,7 +5549,7 @@ document.write(`
                         <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">//</span> <span class="n">divisor</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                             <span class="n">rc</span><span class="p">(</span>
                                 <span class="s2">&quot;axes&quot;</span><span class="p">,</span>
-                                <span class="n">prop_cycle</span><span class="o">=</span><span class="n">Compound</span><span class="o">.</span><span class="n">custom_colour_cycler</span><span class="p">(</span>
+                                <span class="n">prop_cycle</span><span class="o">=</span><span class="n">_custom_colour_cycler</span><span class="p">(</span>
                                     <span class="nb">len</span><span class="p">(</span><span class="n">zeeman</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
                                     <span class="n">colour_map_name1</span><span class="p">,</span>
                                     <span class="n">colour_map_name2</span><span class="p">,</span>
@@ -5923,7 +5597,7 @@ document.write(`
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">rc</span><span class="p">(</span>
                                 <span class="s2">&quot;axes&quot;</span><span class="p">,</span>
-                                <span class="n">prop_cycle</span><span class="o">=</span><span class="n">Compound</span><span class="o">.</span><span class="n">custom_colour_cycler</span><span class="p">(</span>
+                                <span class="n">prop_cycle</span><span class="o">=</span><span class="n">_custom_colour_cycler</span><span class="p">(</span>
                                     <span class="nb">len</span><span class="p">(</span><span class="n">zeeman</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
                                     <span class="n">colour_map_name1</span><span class="p">,</span>
                                     <span class="n">colour_map_name2</span><span class="p">,</span>
@@ -5979,7 +5653,7 @@ document.write(`
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">zee</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">zeeman</span><span class="p">):</span>
                     <span class="n">rc</span><span class="p">(</span>
                         <span class="s2">&quot;axes&quot;</span><span class="p">,</span>
-                        <span class="n">prop_cycle</span><span class="o">=</span><span class="n">Compound</span><span class="o">.</span><span class="n">custom_colour_cycler</span><span class="p">(</span>
+                        <span class="n">prop_cycle</span><span class="o">=</span><span class="n">_custom_colour_cycler</span><span class="p">(</span>
                             <span class="nb">len</span><span class="p">(</span><span class="n">zeeman</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
                             <span class="n">colour_map_name1</span><span class="p">,</span>
                             <span class="n">colour_map_name2</span><span class="p">,</span>
@@ -6069,7 +5743,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save zeeman splitting data plot&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to save zeeman splitting data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -6084,7 +5758,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.plot_3d">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.plot_3d">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.plot_3d">[docs]</a>
     <span class="k">def</span> <span class="nf">plot_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6115,7 +5789,7 @@ document.write(`
 <span class="sd">        save: bool = False</span>
 <span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;{group}_3d_{data_type}.tiff&#39;</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            input of Compound.colour_map function</span>
+<span class="sd">            input of colour_map function</span>
 <span class="sd">        lim_scalar: float = 1.</span>
 <span class="sd">            scalar used to set limits of axes, smaller values magnify plotted figure</span>
 <span class="sd">        ticks: float = 1.</span>
@@ -6227,7 +5901,7 @@ document.write(`
             <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
             <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
             <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-            <span class="n">colors</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
             <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">r_density</span><span class="p">:</span>
                 <span class="n">r_density</span> <span class="o">=</span> <span class="n">rcount</span>
@@ -6330,7 +6004,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot 3d data&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to plot 3d data &quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -6353,7 +6027,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save 3d data plot&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to save 3d data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -6368,7 +6042,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.animate_3d">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.animate_3d">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.animate_3d">[docs]</a>
     <span class="k">def</span> <span class="nf">animate_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6412,7 +6086,7 @@ document.write(`
 <span class="sd">        i_constant: int</span>
 <span class="sd">            index of constant temperature/field</span>
 <span class="sd">        colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            input of Compound.colour_map function, determines colour of main figure</span>
+<span class="sd">            input of colour_map function, determines colour of main figure</span>
 <span class="sd">        lim_scalar: float = 1.</span>
 <span class="sd">            scalar used to set limits of axes, smaller values magnify plotted figure</span>
 <span class="sd">        ticks: float = 1</span>
@@ -6432,7 +6106,7 @@ document.write(`
 <span class="sd">        bar_scale: bool = False</span>
 <span class="sd">            determines if scale should be shown for bar</span>
 <span class="sd">        bar_colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            input of Compound.colour_map function, determines colour of bar</span>
+<span class="sd">            input of colour_map function, determines colour of bar</span>
 <span class="sd">        temp_rounding: int = 0</span>
 <span class="sd">            determines how many decimal places are shown in bar/plot labels for temperature</span>
 <span class="sd">        field_rounding: int = 0</span>
@@ -6534,7 +6208,7 @@ document.write(`
             <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">bar</span><span class="p">:</span>
                 <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
-                    <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">bar_colour_map_name</span><span class="p">)(</span>
+                    <span class="n">colour_map</span><span class="p">(</span><span class="n">bar_colour_map_name</span><span class="p">)(</span>
                         <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i_end</span> <span class="o">-</span> <span class="n">i_start</span><span class="p">)</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
@@ -6626,7 +6300,7 @@ document.write(`
                         <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
                         <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
                         <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-                        <span class="n">colors</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
+                        <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
                         <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
                         <span class="k">if</span> <span class="ow">not</span> <span class="n">r_density</span><span class="p">:</span>
                             <span class="n">r_density</span> <span class="o">=</span> <span class="n">rcount</span>
@@ -6796,7 +6470,7 @@ document.write(`
                         <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
                         <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
                         <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-                        <span class="n">colors</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
+                        <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
                         <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
                         <span class="k">if</span> <span class="ow">not</span> <span class="n">r_density</span><span class="p">:</span>
                             <span class="n">r_density</span> <span class="o">=</span> <span class="n">rcount</span>
@@ -6906,7 +6580,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="Compound.interactive_plot_3d">
-<a class="viewcode-back" href="../../../slothpy.html#slothpy.Compound.interactive_plot_3d">[docs]</a>
+<a class="viewcode-back" href="../../../compound.html#slothpy.Compound.interactive_plot_3d">[docs]</a>
     <span class="k">def</span> <span class="nf">interactive_plot_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6934,15 +6608,15 @@ document.write(`
 <span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;magnetisation&quot;, &quot;internal_energy&quot;]</span>
 <span class="sd">            type of data that will be used to create plot</span>
 <span class="sd">        colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            input of Compound.colour_map function, determines colour of main figure</span>
+<span class="sd">            input of colour_map function, determines colour of main figure</span>
 <span class="sd">        T_slider_colour: str</span>
 <span class="sd">            determines colour of temperature slider</span>
 <span class="sd">        B_slider_colour: str</span>
 <span class="sd">            determines colour of field slider</span>
 <span class="sd">        temp_bar_colour_map_name: str or list[str] = &#39;BuRd&#39;</span>
-<span class="sd">            input of Compound.colour_map function, determines colour map of temperature bar</span>
+<span class="sd">            input of colour_map function, determines colour map of temperature bar</span>
 <span class="sd">        field_bar_colour_map_name: str or list[str] = &#39;BuPi&#39;</span>
-<span class="sd">            input of Compound.colour_map function, determines colour map of field bar</span>
+<span class="sd">            input of colour_map function, determines colour map of field bar</span>
 <span class="sd">        lim_scalar: float = 1.</span>
 <span class="sd">            scalar used to set limits of axes, smaller values magnify plotted figure</span>
 <span class="sd">        ticks: float = 1</span>
@@ -7050,10 +6724,10 @@ document.write(`
             <span class="k">global</span> <span class="n">ax</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">bar</span><span class="p">:</span>
-                <span class="n">colour1</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">temp_bar_colour_map_name</span><span class="p">)(</span>
+                <span class="n">colour1</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">temp_bar_colour_map_name</span><span class="p">)(</span>
                     <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">))</span>
                 <span class="p">)</span>
-                <span class="n">colour2</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">field_bar_colour_map_name</span><span class="p">)(</span>
+                <span class="n">colour2</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">field_bar_colour_map_name</span><span class="p">)(</span>
                     <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">))</span>
                 <span class="p">)</span>
 
@@ -7074,7 +6748,7 @@ document.write(`
             <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
             <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
             <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-            <span class="n">colors</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
             <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
             <span class="n">r_density</span> <span class="o">=</span> <span class="n">rcount</span>
             <span class="n">c_density</span> <span class="o">=</span> <span class="n">ccount</span>
@@ -7242,7 +6916,7 @@ document.write(`
                 <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
                 <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
                 <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-                <span class="n">colors</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
+                <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
                 <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
                 <span class="n">r_density</span> <span class="o">=</span> <span class="n">rcount</span>
                 <span class="n">c_density</span> <span class="o">=</span> <span class="n">ccount</span>

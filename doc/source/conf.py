@@ -55,7 +55,7 @@ html_theme_options = {
     "navigation_depth": 8,
     "logo": {
         "text": "SlothPy",
-        "image_dark": "_static/slothpy_2.jpg",
+        "image_dark": "_static/slothpy_3.png",
         "alt_text": "SlothPy",
     },
     "show_toc_level": 1,
@@ -65,6 +65,7 @@ html_theme_options = {
     ],  # Here add "page-toc" for table of contents on the right
     "navbar_align": "content",
     "navbar_center": ["version-switcher", "navbar-nav"],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
     "icon_links": [
         {
             "name": "Twitter",
@@ -108,5 +109,5 @@ html_sidebars = {
     ],
 }
 
-html_logo = "_static/slothpy_2.jpg"
-html_favicon = "_static/slothpy_2.jpg"
+html_logo = "_static/slothpy_3.png"
+html_favicon = "_static/slothpy_3.png"

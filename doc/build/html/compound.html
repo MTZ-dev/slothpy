@@ -57,7 +57,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'compound';</script>
-    <link rel="icon" href="_static/slothpy_2.jpg"/>
+    <link rel="icon" href="_static/slothpy_3.png"/>
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -138,8 +138,8 @@
       
     
     
-    <img src="_static/slothpy_2.jpg" class="logo__image only-light" alt="SlothPy"/>
-    <script>document.write(`<img src="_static/slothpy_2.jpg" class="logo__image only-dark" alt="SlothPy"/>`);</script>
+    <img src="_static/slothpy_3.png" class="logo__image only-light" alt="SlothPy"/>
+    <script>document.write(`<img src="_static/slothpy_3.png" class="logo__image only-dark" alt="SlothPy"/>`);</script>
   
   
     <p class="title logo__title">SlothPy</p>
@@ -531,8 +531,6 @@ document.write(`
 <li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.zeeman_matrix_ito_decpomosition"><code class="docutils literal notranslate"><span class="pre">zeeman_matrix_ito_decpomosition()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.matrix_from_ito"><code class="docutils literal notranslate"><span class="pre">matrix_from_ito()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.soc_zeem_in_z_angular_magnetic_momentum_basis"><code class="docutils literal notranslate"><span class="pre">soc_zeem_in_z_angular_magnetic_momentum_basis()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.colour_map"><code class="docutils literal notranslate"><span class="pre">colour_map()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.custom_colour_cycler"><code class="docutils literal notranslate"><span class="pre">custom_colour_cycler()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.plot_mth"><code class="docutils literal notranslate"><span class="pre">plot_mth()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.plot_chitht"><code class="docutils literal notranslate"><span class="pre">plot_chitht()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#slothpy.Compound.plot_helmholtz_energyth"><code class="docutils literal notranslate"><span class="pre">plot_helmholtz_energyth()</span></code></a></li>
@@ -643,12 +641,6 @@ document.write(`
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.calculate_zeeman_splitting" title="slothpy.Compound.calculate_zeeman_splitting"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_zeeman_splitting</span></code></a>(group, ...[, ...])</p></td>
 <td><p>Calculates directional or powder-averaged Zeeman splitting for a given number of states and list of field values.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.colour_map" title="slothpy.Compound.colour_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">colour_map</span></code></a>(name)</p></td>
-<td><p>Creates matplotlib colour map object.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#slothpy.Compound.custom_colour_cycler" title="slothpy.Compound.custom_colour_cycler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">custom_colour_cycler</span></code></a>(number_of_colours, ...)</p></td>
-<td><p>Creates colour cycler from two colour maps in alternating pattern, suitable for use in matplotlib plots.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#slothpy.Compound.delete_group_dataset" title="slothpy.Compound.delete_group_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">delete_group_dataset</span></code></a>(first[, second])</p></td>
 <td><p>Deletes a group/dataset provided its full name/path from the .slt file.</p></td>
@@ -1898,57 +1890,6 @@ matrix.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="slothpy.Compound.colour_map">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">colour_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.colour_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.colour_map" title="Link to this definition">#</a></dt>
-<dd><p>Creates matplotlib colour map object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>name</strong> (<em>Unity</em><em>[</em><em>&quot;BuPi&quot;</em><em>, </em><em>&quot;rainbow&quot;</em><em>, </em><em>&quot;dark_rainbow&quot;</em><em>, </em><em>&quot;light_rainbow&quot;</em><em>,</em>) – “light_rainbow_alt”, “BuOr”, “BuYl”, “BuRd”, “GnYl”, “PrOr”, “GnRd”, “funmat”, “NdCoN322bpdo”,
-“NdCoNO222bpdo”, “NdCoI22bpdo”, “viridis”, “plasma”, “inferno”, “magma”, “cividis”] or list[str]
-One of defined names for colour maps: BuPi, rainbow, dark_rainbow, light_rainbow,light_rainbow_alt, BuOr,
-BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo,
-viridis, plasma, inferno, magma, cividis or list of HTML colour codes from which colour map will be created
-by interpolation of colours between ones on a list. For predefined names modifiers can be applied: _l loops
-the list in a way that it starts and ends with the same colour, _r reverses the list.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Matplotlib’s colour map object used for plotting.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>matplotlib.colors.LinearSegmentedColormap</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If input is not acceptable for creating colour map from list of colour codes or name of predefined colour
-map was incorrectly written.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="slothpy.Compound.custom_colour_cycler">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">custom_colour_cycler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_colours</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.custom_colour_cycler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.custom_colour_cycler" title="Link to this definition">#</a></dt>
-<dd><p>Creates colour cycler from two colour maps in alternating pattern, suitable for use in matplotlib plots.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>number_of_colours</strong> (<em>int</em>) – Number of colour in cycle.</p></li>
-<li><p><strong>cmap1</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>]</em>) – Input of Compound.colour_map function.</p></li>
-<li><p><strong>cmap2</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>]</em>) – Input of Compound.colour_map function.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Cycler object created based on two input colour maps.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>cycler.cycler</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If unable to use given inputs. It should not be possible to trigger this error.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.plot_mth">
 <span class="sig-name descname"><span class="pre">plot_mth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colour_map_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rainbow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'B'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.plot_mth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.plot_mth" title="Link to this definition">#</a></dt>
 <dd><p>Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown,
@@ -1958,7 +1899,7 @@ saved, colour palettes can be changed.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
 <li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’chitht_{group}.tiff’</p></li>
-<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'funmat'</em>) – input of Compound.colour_map function</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'funmat'</em>) – input of colour_map function</p></li>
 <li><p><strong>xlim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</p></li>
 <li><p><strong>ylim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</p></li>
 <li><p><strong>xticks</strong> (<em>int = 100</em>) – determines frequency of x major ticks</p></li>
@@ -1989,7 +1930,7 @@ in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</p
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
 <li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’chitht_{group}.tiff’</p></li>
-<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'funmat'</em>) – input of Compound.colour_map function</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'funmat'</em>) – input of colour_map function</p></li>
 <li><p><strong>xlim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</p></li>
 <li><p><strong>ylim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</p></li>
 <li><p><strong>xticks</strong> (<em>int = 100</em>) – determines freqency of x major ticks</p></li>
@@ -2021,7 +1962,7 @@ in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</p
 <li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
 <li><p><strong>internal_energy</strong> (<em>bool = False</em>) – #TODO: ???</p></li>
 <li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’chitht_{group}.tiff’</p></li>
-<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'PrOr'</em>) – input of Compound.colour_map function</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'PrOr'</em>) – input of colour_map function</p></li>
 <li><p><strong>xlim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</p></li>
 <li><p><strong>ylim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</p></li>
 <li><p><strong>xticks</strong> (<em>int = 100</em>) – determines freqency of x major ticks</p></li>
@@ -2053,8 +1994,8 @@ saved, colour palettes can be changed.</p>
 <li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
 <li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’zeeman_{group}.tiff’ or
 f’zeeman_{group}_Orientation {orientations[i]}.tiff’</p></li>
-<li><p><strong>colour_map_name1</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi'</em>) – input of Compound.colour_map function, determines colour of lower set of split lines</p></li>
-<li><p><strong>colour_map_name2</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi_r'</em>) – input of Compound.colour_map function, determines colour of higher set of split lines</p></li>
+<li><p><strong>colour_map_name1</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi'</em>) – input of colour_map function, determines colour of lower set of split lines</p></li>
+<li><p><strong>colour_map_name2</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi_r'</em>) – input of colour_map function, determines colour of higher set of split lines</p></li>
 <li><p><strong>single</strong> (<em>bool = False</em>) – determines if all orientations are plotted together</p></li>
 <li><p><strong>xlim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</p></li>
 <li><p><strong>ylim</strong> (<em>tuple</em><em> of </em><em>1-2 floats =</em><em> (</em><em>)</em>) – determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</p></li>
@@ -2088,7 +2029,7 @@ f’zeeman_{group}_Orientation {orientations[i]}.tiff’</p></li>
 <li><p><strong>field_i</strong> (<em>int</em>) – index of field from dataset that will be used for plot</p></li>
 <li><p><strong>temp_i</strong> (<em>int</em>) – index of temperature from dataset that will be used for plot</p></li>
 <li><p><strong>save</strong> (<em>bool = False</em>) – determines if plot is saved, name of the file will be in following format: f’{group}_3d_{data_type}.tiff’</p></li>
-<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'dark_rainbow_r_l'</em>) – input of colour_map function</p></li>
 <li><p><strong>lim_scalar</strong> (<em>float = 1.</em>) – scalar used to set limits of axes, smaller values magnify plotted figure</p></li>
 <li><p><strong>ticks</strong> (<em>float = 1.</em>) – </p></li>
 <li><p><strong>r_density</strong> (<em>int = 0</em>) – determines rcount of 3D plot</p></li>
@@ -2123,7 +2064,7 @@ f’zeeman_{group}_Orientation {orientations[i]}.tiff’</p></li>
 <li><p><strong>i_start</strong> (<em>int</em>) – index of first frame’s field/temperature</p></li>
 <li><p><strong>i_end</strong> (<em>int</em>) – index of last frame’s field/temperature</p></li>
 <li><p><strong>i_constant</strong> (<em>int</em>) – index of constant temperature/field</p></li>
-<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function, determines colour of main figure</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of colour_map function, determines colour of main figure</p></li>
 <li><p><strong>lim_scalar</strong> (<em>float = 1.</em>) – scalar used to set limits of axes, smaller values magnify plotted figure</p></li>
 <li><p><strong>ticks</strong> (<em>float = 1</em>) – determines ticks spacing</p></li>
 <li><p><strong>r_density</strong> (<em>int = 0</em>) – determines rcount of 3D plot</p></li>
@@ -2133,7 +2074,7 @@ f’zeeman_{group}_Orientation {orientations[i]}.tiff’</p></li>
 <li><p><strong>dpi</strong> (<em>int</em>) – dots per inch resolution of frames</p></li>
 <li><p><strong>bar</strong> (<em>bool = True</em>) – determines if bar representing animation variable is shown</p></li>
 <li><p><strong>bar_scale</strong> (<em>bool = False</em>) – determines if scale should be shown for bar</p></li>
-<li><p><strong>bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function, determines colour of bar</p></li>
+<li><p><strong>bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of colour_map function, determines colour of bar</p></li>
 <li><p><strong>temp_rounding</strong> (<em>int = 0</em>) – determines how many decimal places are shown in bar/plot labels for temperature</p></li>
 <li><p><strong>field_rounding</strong> (<em>int = 0</em>) – determines how many decimal places are shown in bar/plot labels for field</p></li>
 </ul>
@@ -2159,11 +2100,11 @@ f’zeeman_{group}_Orientation {orientations[i]}.tiff’</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>group</strong> (<em>str</em>) – name of a group from HDF5 file for which plot will be created</p></li>
 <li><p><strong>data_type</strong> (<em>Unity</em><em>[</em><em>&quot;chit&quot;</em><em>, </em><em>&quot;chi&quot;</em><em>, </em><em>&quot;helmholtz_energy&quot;</em><em>, </em><em>&quot;magnetisation&quot;</em><em>, </em><em>&quot;internal_energy&quot;</em><em>]</em>) – type of data that will be used to create plot</p></li>
-<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of Compound.colour_map function, determines colour of main figure</p></li>
+<li><p><strong>colour_map_name</strong> (<em>str</em><em> or </em><em>list = 'dark_rainbow_r_l'</em>) – input of colour_map function, determines colour of main figure</p></li>
 <li><p><strong>T_slider_colour</strong> (<em>str</em>) – determines colour of temperature slider</p></li>
 <li><p><strong>B_slider_colour</strong> (<em>str</em>) – determines colour of field slider</p></li>
-<li><p><strong>temp_bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuRd'</em>) – input of Compound.colour_map function, determines colour map of temperature bar</p></li>
-<li><p><strong>field_bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi'</em>) – input of Compound.colour_map function, determines colour map of field bar</p></li>
+<li><p><strong>temp_bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuRd'</em>) – input of colour_map function, determines colour map of temperature bar</p></li>
+<li><p><strong>field_bar_colour_map_name</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>] </em><em>= 'BuPi'</em>) – input of colour_map function, determines colour map of field bar</p></li>
 <li><p><strong>lim_scalar</strong> (<em>float = 1.</em>) – scalar used to set limits of axes, smaller values magnify plotted figure</p></li>
 <li><p><strong>ticks</strong> (<em>float = 1</em>) – determines ticks spacing</p></li>
 <li><p><strong>bar</strong> (<em>bool = True</em>) – determines if bar is shown</p></li>

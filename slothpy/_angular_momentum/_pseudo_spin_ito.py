@@ -2,9 +2,7 @@ from math import factorial
 from numpy.linalg import eigh
 from numpy import (
     ndarray,
-    copy,
     zeros,
-    zeros_like,
     ascontiguousarray,
     diag,
     real,
@@ -17,35 +15,44 @@ from numpy import (
     float64,
     complex128,
 )
+from numba import jit
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
     _get_soc_total_angular_momenta_and_energies_from_hdf5,
 )
 from slothpy._general_utilities._math_expresions import (
-    _hermitian_x_in_basis_of_hermitian_y,
     _decomposition_of_hermitian_matrix,
     _Wigner_3j,
 )
 from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
 
 
+@jit(
+    "complex128[:,:](complex128[:,:,:], complex128[:,:])",
+    nopython=True,
+    cache=True,
+    nogil=True,
+    fastmath=True,
+)
 def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
-    momenta, matrix
+    momenta_matrix, matrix
 ):
     """Convention:
     Jx[i,i+1] = real, negative
-    Jy[i,i+1] = imag, positive
+    Jy[i,i+1] = imag, positive (often doesn't hold)
     J+/- = real (Condon_Shortley)
     Jz = real, diag"""
 
-    momenta_matrix = copy(momenta)
+    momenta_matrix = ascontiguousarray(momenta_matrix)
+    matrix = ascontiguousarray(matrix)
 
     # Transform momenta to "z" basis
     _, eigenvectors = eigh(momenta_matrix[2, :, :])
-    for i in range(3):
-        momenta_matrix[i, :, :] = (
-            eigenvectors.conj().T @ momenta[i, :, :] @ eigenvectors
-        )
+    momenta_matrix[0, :, :] = (
+        eigenvectors.conjugate().T
+        @ ascontiguousarray(momenta_matrix[0, :, :])
+        @ eigenvectors
+    )
 
     # Initialize phases of vectors with the first one = 1
     c = zeros(momenta_matrix.shape[1], dtype=complex128)
@@ -54,28 +61,32 @@ def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
     # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
     for i in range(momenta_matrix[0, :, :].shape[1] - 1):
         if (
-            real(momenta_matrix[0, i, i + 1]).any() > 1e-20
-            or abs(imag(momenta_matrix[1, i, i + 1])).any() > 1e-20
+            real(momenta_matrix[0, i, i + 1]) > 1e-16
+            or abs(imag(momenta_matrix[0, i, i + 1])) > 1e-16
         ):
-            c[i + 1] = 1j * (
-                momenta_matrix[0, i, i + 1].conj()
-                / abs(momenta_matrix[0, i, i + 1])
-                / c[i].conj()
+            c[i + 1] = (momenta_matrix[0, i, i + 1]).conjugate() / abs(
+                momenta_matrix[0, i, i + 1]
             )
         else:
             c[i + 1] = 1.0
 
-    for i in range(momenta_matrix[0].shape[1] - 1):
-        if momenta_matrix[0, i, i + 1] * c[i].conj() * c[i + 1] > 0:
+        momenta_matrix[:, i + 1, :] = (
+            momenta_matrix[:, i + 1, :] * c[i + 1].conjugate()
+        )
+        momenta_matrix[0, :, i + 1] = momenta_matrix[0, :, i + 1] * c[i + 1]
+
+    for i in range(momenta_matrix.shape[1] - 1):
+        if momenta_matrix[0, i, i + 1].real > 0:
             c[i + 1] = -c[i + 1]
+            momenta_matrix[0, i + 1, :] = -(momenta_matrix[0, i + 1, :])
+            momenta_matrix[0, :, i + 1] = -(momenta_matrix[0, :, i + 1])
 
-    matrix_out = zeros_like(matrix)
+    # Apply the phases for eigenvecotrs
+    eigenvectors = ascontiguousarray(eigenvectors * c)
 
-    for i in range(matrix_out.shape[0]):
-        for j in range(matrix_out.shape[0]):
-            matrix_out[i, j] = matrix[i, j] * c[i].conj() * c[j]
-
-    return ascontiguousarray(matrix_out)
+    return ascontiguousarray(
+        eigenvectors.conjugate().T @ matrix @ eigenvectors
+    )
 
 
 def _get_soc_matrix_in_z_pseudo_spin_basis(
@@ -104,9 +115,6 @@ def _get_soc_matrix_in_z_pseudo_spin_basis(
     momenta = momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
     soc_matrix = diag(soc_energies).astype(complex128)
-    soc_matrix = _hermitian_x_in_basis_of_hermitian_y(
-        soc_matrix, momenta[2, :, :]
-    )
     soc_matrix = _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
         momenta, soc_matrix
     )
@@ -190,9 +198,6 @@ def _get_zeeman_matrix_in_z_pseudo_spin_basis(
             ' "total_angular".'
         )
 
-    zeeman_matrix = _hermitian_x_in_basis_of_hermitian_y(
-        zeeman_matrix, magnetic_momenta[2, :, :]
-    )
     zeeman_matrix = (
         _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
             magnetic_momenta, zeeman_matrix

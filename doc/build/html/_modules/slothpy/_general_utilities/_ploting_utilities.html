@@ -289,7 +289,7 @@ document.write(`
           
           
           
-          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../" class="icon-link-image" alt="MultiLumiMater"/></a>
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../mlmg.tif" class="icon-link-image" alt="MultiLumiMater"/></a>
         </li>
 </ul></div>
       
@@ -455,7 +455,7 @@ document.write(`
           
           
           
-          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../" class="icon-link-image" alt="MultiLumiMater"/></a>
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../mlmg.tif" class="icon-link-image" alt="MultiLumiMater"/></a>
         </li>
 </ul></div>
         
@@ -547,9 +547,15 @@ document.write(`
                 <article class="bd-article" role="main">
                   
   <h1>Source code for slothpy._general_utilities._ploting_utilities</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">linspace</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LinearSegmentedColormap</span>
+<span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
+<span class="kn">import</span> <span class="nn">matplotlib.cm</span>
+
+
 <div class="viewcode-block" id="colour_map">
 <a class="viewcode-back" href="../../../general_utilities.html#slothpy.colour_map">[docs]</a>
-<span></span><span class="k">def</span> <span class="nf">colour_map</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">colour_map</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates matplotlib colour map object.</span>
 
@@ -813,9 +819,9 @@ document.write(`
 <span class="sd">    number_of_colours: int</span>
 <span class="sd">        Number of colour in cycle.</span>
 <span class="sd">    cmap1: str or list[str]</span>
-<span class="sd">        Input of Compound.colour_map function.</span>
+<span class="sd">        Input of colour_map function.</span>
 <span class="sd">    cmap2: str or list[str]</span>
-<span class="sd">        Input of Compound.colour_map function.</span>
+<span class="sd">        Input of colour_map function.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -830,10 +836,10 @@ document.write(`
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">number_of_colours</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">increment</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">lst1</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">cmap1</span><span class="p">)(</span>
+            <span class="n">lst1</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">cmap1</span><span class="p">)(</span>
                 <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">number_of_colours</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
             <span class="p">)</span>
-            <span class="n">lst2</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">cmap2</span><span class="p">)(</span>
+            <span class="n">lst2</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">cmap2</span><span class="p">)(</span>
                 <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">number_of_colours</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
             <span class="p">)</span>
             <span class="n">colour_cycler_list</span> <span class="o">=</span> <span class="p">[]</span>
@@ -845,10 +851,10 @@ document.write(`
                 <span class="n">increment</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">increment</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">lst1</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">cmap1</span><span class="p">)(</span>
+            <span class="n">lst1</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">cmap1</span><span class="p">)(</span>
                 <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">((</span><span class="n">number_of_colours</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
             <span class="p">)</span>
-            <span class="n">lst2</span> <span class="o">=</span> <span class="n">Compound</span><span class="o">.</span><span class="n">colour_map</span><span class="p">(</span><span class="n">cmap2</span><span class="p">)(</span>
+            <span class="n">lst2</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">cmap2</span><span class="p">)(</span>
                 <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">number_of_colours</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
             <span class="p">)</span>
             <span class="n">colour_cycler_list</span> <span class="o">=</span> <span class="p">[]</span>

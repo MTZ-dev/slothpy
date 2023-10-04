@@ -219,6 +219,34 @@ def _normalize_orientations(orientations):
     return orientations
 
 
+def _normalize_orientation(orientation):
+    try:
+        orientation = array(orientation, dtype=float64)
+    except Exception as exc:
+        raise SltInputError(exc) from None
+
+    if orientation.ndim != 1 or orientation.shape[0] != 3:
+        raise SltInputError(
+            ValueError(
+                "Orientation has to be a 1D array in the format:"
+                " [direction_x, direction_y, direction_z]."
+            )
+        )
+
+    length = sqrt(
+        orientation[0] ** 2 + orientation[1] ** 2 + orientation[2] ** 2
+    )
+    if length == 0:
+        raise SltInputError(
+            ValueError(
+                "Vector of length zero detected in the input orientation."
+            )
+        )
+    orientation = orientation / length
+
+    return orientation
+
+
 @jit(
     "complex128[:,:,:](complex128[:,:,:], int64, int64)",
     nopython=True,

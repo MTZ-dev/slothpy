@@ -66,6 +66,7 @@ html_theme_options = {
     "navbar_align": "content",
     "navbar_center": ["version-switcher", "navbar-nav"],
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "header_links_before_dropdown": 10,
     "icon_links": [
         {
             "name": "Twitter",
@@ -85,7 +86,7 @@ html_theme_options = {
         {
             "name": "MultiLumiMater",
             "url": "https://multilumimater.pl/",
-            "icon": "",
+            "icon": "_static/mlmg.png",
             "type": "local",
             "attributes": {"target": "_blank"},
         },
@@ -101,6 +102,7 @@ html_context = {
 }
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
+html_js_files = ["custom-icon.js"]
 html_sidebars = {
     "**": [
         "search-field.html",

@@ -131,7 +131,7 @@ def _get_decomposition_in_z_pseudo_spin_basis(
     stop_state,
     rotation=None,
     field=None,
-    orientation=None,
+    orientation: ndarray[float64] = None,
 ):
     if matrix == "soc":
         soc_matrix = _get_soc_matrix_in_z_pseudo_spin_basis(
@@ -140,7 +140,7 @@ def _get_decomposition_in_z_pseudo_spin_basis(
     elif (
         (matrix == "zeeman")
         and (field != None and field is not None)
-        and (orientation != None and orientation is not None)
+        and (orientation.all() != None and orientation is not None)
     ):
         soc_matrix = _get_zeeman_matrix_in_z_pseudo_spin_basis(
             filename,

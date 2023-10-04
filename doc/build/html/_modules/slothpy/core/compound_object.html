@@ -289,7 +289,7 @@ document.write(`
           
           
           
-          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../" class="icon-link-image" alt="MultiLumiMater"/></a>
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../mlmg.tif" class="icon-link-image" alt="MultiLumiMater"/></a>
         </li>
 </ul></div>
       
@@ -455,7 +455,7 @@ document.write(`
           
           
           
-          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../" class="icon-link-image" alt="MultiLumiMater"/></a>
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../mlmg.tif" class="icon-link-image" alt="MultiLumiMater"/></a>
         </li>
 </ul></div>
         
@@ -561,7 +561,6 @@ document.write(`
     <span class="n">arange</span><span class="p">,</span>
     <span class="nb">max</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LinearSegmentedColormap</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">rcParams</span><span class="p">,</span> <span class="n">use</span>
 <span class="kn">from</span> <span class="nn">matplotlib.style</span> <span class="kn">import</span> <span class="n">use</span> <span class="k">as</span> <span class="n">mplstyle_use</span>
 <span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="kn">import</span> <span class="n">AutoMinorLocator</span><span class="p">,</span> <span class="n">MultipleLocator</span>
@@ -580,8 +579,6 @@ document.write(`
     <span class="n">show</span><span class="p">,</span>
     <span class="n">cla</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
-<span class="kn">import</span> <span class="nn">matplotlib.cm</span>
 
 <span class="kn">from</span> <span class="nn">._slothpy_exceptions</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">SltFileError</span><span class="p">,</span>
@@ -634,9 +631,13 @@ document.write(`
 <span class="kn">from</span> <span class="nn">slothpy._general_utilities._math_expresions</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">_normalize_grid_vectors</span><span class="p">,</span>
     <span class="n">_normalize_orientations</span><span class="p">,</span>
+    <span class="n">_normalize_orientation</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">slothpy._general_utilities._auto_tune</span> <span class="kn">import</span> <span class="n">_auto_tune</span>
-<span class="kn">from</span> <span class="nn">slothpy._general_utilities._ploting_utilities</span> <span class="kn">import</span> <span class="n">colour_map</span><span class="p">,</span> <span class="n">_custom_colour_cycler</span>
+<span class="kn">from</span> <span class="nn">slothpy._general_utilities._ploting_utilities</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">colour_map</span><span class="p">,</span>
+    <span class="n">_custom_colour_cycler</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">mplstyle_use</span><span class="p">(</span><span class="s2">&quot;fast&quot;</span><span class="p">)</span>
 <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;path.simplify&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1072,24 +1073,18 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_g_tensors&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing number of doublet and respective&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; g-tensors from Group </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing g-tensors of doublets and&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; their magnetic axes calculated from Group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing number of doublet and respective&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; g-tensors from Group </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing g-tensors of doublets and&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; their magnetic axes calculated from Group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">g_tensor_list</span><span class="p">[:,</span> <span class="p">:]</span>
 
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_axes&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing rotation matrices from the initial&quot;</span>
-                        <span class="s2">&quot; coordinate system to the magnetic axes of respective&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; g-tensors from Group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing rotation matrices from the initial&quot;</span>
+                    <span class="s2">&quot; coordinate system to the magnetic axes of respective&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; g-tensors from Group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">magnetic_axes_list</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -1305,30 +1300,22 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_mth&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing M(T,H) magnetisation (T - rows, H&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; - columns) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing M(T,H) magnetisation&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing M(T,H) magnetisation (T - rows, H&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; - columns) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing M(T,H) magnetisation&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">mth_array</span><span class="p">[:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of M(T,H) from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of M(T,H) from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of M(T,H) from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of M(T,H) from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">temperatures</span><span class="p">[:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -1542,32 +1529,24 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing 3D magnetisation as meshgird&quot;</span>
-                        <span class="s2">&quot; (0-x,1-y,2-z) arrays over sphere (xyz, field,&quot;</span>
-                        <span class="s2">&quot; temperature, meshgrid, meshgrid) calculated from&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing 3D magnetisation calculated&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing 3D magnetisation as meshgird&quot;</span>
+                    <span class="s2">&quot; (0-x,1-y,2-z) arrays over sphere (xyz, field,&quot;</span>
+                    <span class="s2">&quot; temperature, meshgrid, meshgrid) calculated from&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing 3D magnetisation calculated&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">mag_3d_array</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of 3D magnetisation from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of 3D magnetisation from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of 3D magnetisation from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of 3D magnetisation from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">temperatures</span><span class="p">[:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -1847,32 +1826,24 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">chi_file</span><span class="si">}</span><span class="s2">ht&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Dataset containing </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> magnetic&quot;</span>
-                        <span class="s2">&quot; susceptibility (H - rows, T - columns) calculated&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> magnetic&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; susceptibility calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="sa">f</span><span class="s2">&quot;Dataset containing </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> magnetic&quot;</span>
+                    <span class="s2">&quot; susceptibility (H - rows, T - columns) calculated&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> magnetic&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; susceptibility calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">chitht_array</span><span class="p">[:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="s2">&quot; simulation of magnetic susceptibility from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="s2">&quot; simulation of magnetic susceptibility from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">temperatures</span><span class="p">[:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -2138,34 +2109,26 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">chi_file</span><span class="si">}</span><span class="s2">ht_tensor&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Dataset containing </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2">_tensor Van Vleck&quot;</span>
-                        <span class="s2">&quot; susceptibility tensor (H, T, 3, 3) calculated from&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2">_tensor Van Vleck&quot;</span>
-                        <span class="s2">&quot; susceptibility tensor calculated from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="sa">f</span><span class="s2">&quot;Dataset containing </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2">_tensor Van Vleck&quot;</span>
+                    <span class="s2">&quot; susceptibility tensor (H, T, 3, 3) calculated from&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2">_tensor Van Vleck&quot;</span>
+                    <span class="s2">&quot; susceptibility tensor calculated from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">chitht_tensor_array</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2">_tensor Van Vleck&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; susceptibility tensor from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2">_tensor Van Vleck&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; susceptibility tensor from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2">_tensor Van Vleck&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; susceptibility tensor from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2">_tensor Van Vleck&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; susceptibility tensor from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">temperatures</span><span class="p">[:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -2452,34 +2415,26 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">chi_file</span><span class="si">}</span><span class="s2">_3d&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing 3D magnetic susceptibility&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> as meshgird (0-x,1-y,2-z) arrays over&quot;</span>
-                        <span class="s2">&quot; sphere ((xyz, field, temperature, meshgrid,&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; meshgrid) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing 3D magnetic susceptibility&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing 3D magnetic susceptibility&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> as meshgird (0-x,1-y,2-z) arrays over&quot;</span>
+                    <span class="s2">&quot; sphere ((xyz, field, temperature, meshgrid,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; meshgrid) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing 3D magnetic susceptibility&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">chit_3d_array</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="s2">&quot; simulation of 3D magnetic susceptibility&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="s2">&quot; simulation of 3D magnetic susceptibility&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
-                        <span class="s2">&quot; simulation of 3D magnetic susceptibility&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
+                    <span class="s2">&quot; simulation of 3D magnetic susceptibility&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">chi_name</span><span class="si">}</span><span class="s2"> from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">temperatures</span><span class="p">[:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -2708,32 +2663,24 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_eth&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Dataset containing E(T,H) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy (T - rows,&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; H - columns) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing E(T,H) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="sa">f</span><span class="s2">&quot;Dataset containing E(T,H) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy (T - rows,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; H - columns) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing E(T,H) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">energyth_array</span><span class="p">[:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of E(T,H) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of E(T,H) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of E(T,H) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of E(T,H) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">temperatures</span><span class="p">[:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -2959,34 +2906,26 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing 3D </span><span class="si">{name}</span><span class="s2"> energy as meshgird&quot;</span>
-                        <span class="s2">&quot; (0-x,1-y,2-z) arrays over sphere (xyz, field,&quot;</span>
-                        <span class="s2">&quot; temperature, meshgrid, meshgrid) calculated from&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing 3D </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_energy&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing 3D </span><span class="si">{name}</span><span class="s2"> energy as meshgird&quot;</span>
+                    <span class="s2">&quot; (0-x,1-y,2-z) arrays over sphere (xyz, field,&quot;</span>
+                    <span class="s2">&quot; temperature, meshgrid, meshgrid) calculated from&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing 3D </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_energy&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">energy_3d_array</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of 3D </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of 3D </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of 3D </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing temperature T values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of 3D </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> energy from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">temperatures</span><span class="p">[:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -3227,44 +3166,34 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_zeeman&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Dataset containing </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting over grid&quot;</span>
-                        <span class="s2">&quot; of directions with shape: (orientations, field,&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; energy) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="sa">f</span><span class="s2">&quot;Dataset containing </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting over grid&quot;</span>
+                    <span class="s2">&quot; of directions with shape: (orientations, field,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; energy) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">zeeman_array</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; simulation of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; simulation of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="k">if</span> <span class="n">average</span><span class="p">:</span>
                     <span class="bp">self</span><span class="p">[</span>
                         <span class="n">slt_group_name</span><span class="p">,</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_orientations&quot;</span><span class="p">,</span>
-                        <span class="p">(</span>
-                            <span class="s2">&quot;Dataset containing magnetic field orientation&quot;</span>
-                            <span class="s2">&quot; grid with weights used in simulation of&quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                        <span class="p">),</span>
+                        <span class="s2">&quot;Dataset containing magnetic field orientation&quot;</span>
+                        <span class="s2">&quot; grid with weights used in simulation of&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                     <span class="p">]</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[:,</span> <span class="p">:]</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="bp">self</span><span class="p">[</span>
                         <span class="n">slt_group_name</span><span class="p">,</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_orientations&quot;</span><span class="p">,</span>
-                        <span class="p">(</span>
-                            <span class="s2">&quot;Dataset containing magnetic field orientations&quot;</span>
-                            <span class="s2">&quot; used in simulation of&quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                        <span class="p">),</span>
+                        <span class="s2">&quot;Dataset containing magnetic field orientations&quot;</span>
+                        <span class="s2">&quot; used in simulation of&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">Zeeman splitting from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                     <span class="p">]</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
 
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -3394,33 +3323,25 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_matrix&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing Zeeman matrices calculated from&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2"> in the form [fields, orientations,&quot;</span>
-                        <span class="s2">&quot; matrix, matrix].&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing Zeeman matrices calculated&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing Zeeman matrices calculated from&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2"> in the form [fields, orientations,&quot;</span>
+                    <span class="s2">&quot; matrix, matrix].&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing Zeeman matrices calculated&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">zeeman_matrix_array</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
-                        <span class="s2">&quot; simulation of Zeeman matrices from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field H values used in&quot;</span>
+                    <span class="s2">&quot; simulation of Zeeman matrices from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_orientations&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic field orientations&quot;</span>
-                        <span class="s2">&quot; used in simulation of&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; Zeeman matrices from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic field orientations&quot;</span>
+                    <span class="s2">&quot; used in simulation of&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; Zeeman matrices from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">orientations</span><span class="p">[:,</span> <span class="p">:]</span>
 
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -3519,14 +3440,10 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_energies&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing SOC (Spin-Orbit Coupling) energies&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing SOC (Spin-Orbit Coupling)&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; energies calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing SOC (Spin-Orbit Coupling) energies&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing SOC (Spin-Orbit Coupling)&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; energies calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">soc_energies_array</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -3641,23 +3558,17 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_magnetic_momenta&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing states magnetic momenta&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; (0-x,1-y,2-z) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing states magnetic momenta&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing states magnetic momenta&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; (0-x,1-y,2-z) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing states magnetic momenta&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">magnetic_momenta_array</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_states&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing indexes of states (or states&quot;</span>
-                        <span class="s2">&quot; cutoff) used in simulation of magnetic momenta from&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing indexes of states (or states&quot;</span>
+                    <span class="s2">&quot; cutoff) used in simulation of magnetic momenta from&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
 
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -3776,23 +3687,17 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_total_angular_momenta&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing states total angular momenta&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; (0-x,1-y,2-z) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing states total angular momenta&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing states total angular momenta&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; (0-x,1-y,2-z) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing states total angular momenta&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">total_angular_momenta_array</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_states&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing indexes of states (or states&quot;</span>
-                        <span class="s2">&quot; cutoff) used in simulation of total angular momenta&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing indexes of states (or states&quot;</span>
+                    <span class="s2">&quot; cutoff) used in simulation of total angular momenta&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
 
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -3901,14 +3806,10 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_magnetic_momenta_matrix&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing magnetic momenta matrix&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; (0-x, 1-y, 2-z) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2"> containing magnetic momenta&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; matrix calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing magnetic momenta matrix&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; (0-x, 1-y, 2-z) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2"> containing magnetic momenta&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; matrix calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">magnetic_momenta_matrix_array</span><span class="p">[:,</span> <span class="p">:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -4020,14 +3921,10 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_total_angular_momenta_matrix&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing total angular momenta matrix&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; (0-x, 1-y, 2-z) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2"> containing total angular momenta&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; matrix calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing total angular momenta matrix&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; (0-x, 1-y, 2-z) calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2"> containing total angular momenta&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; matrix calculated from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">total_angular_momenta_matrix_array</span><span class="p">[:,</span> <span class="p">:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -4087,7 +3984,7 @@ document.write(`
 <span class="sd">            reference frame instead., by default None</span>
 <span class="sd">        field : float64, optional</span>
 <span class="sd">            If matrix type = &quot;zeeman&quot; it controls a magnetic field value at</span>
-<span class="sd">            which Zeman matrix will be computed., by default None</span>
+<span class="sd">            which Zeeman matrix will be computed., by default None</span>
 <span class="sd">        orientation : ndarray[float64], optional</span>
 <span class="sd">            If matrix type = &quot;zeeman&quot; it controls the orientation of the</span>
 <span class="sd">            magnetic field and has to be in the form [direction_x, direction_y,</span>
@@ -4134,7 +4031,7 @@ document.write(`
 
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">orientation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">orientation</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">orientation</span><span class="p">)</span>
+                <span class="n">orientation</span> <span class="o">=</span> <span class="n">_normalize_orientation</span><span class="p">(</span><span class="n">orientation</span><span class="p">)</span>
             <span class="n">decomposition</span> <span class="o">=</span> <span class="n">_get_decomposition_in_z_pseudo_spin_basis</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">group</span><span class="p">,</span>
@@ -4167,25 +4064,19 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">pseudo_kind</span><span class="si">}</span><span class="s2">_decomposition&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing decomposition (rows - SO-states,&quot;</span>
-                        <span class="sa">f</span><span class="s1">&#39; columns - basis) in &quot;z&quot; </span><span class="si">{</span><span class="n">pseudo_kind</span><span class="si">}</span><span class="s1"> momentum&#39;</span>
-                        <span class="sa">f</span><span class="s2">&quot; basis of </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s2"> matrix from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s1">&#39;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s1">) containing decomposition in &quot;z&quot;&#39;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">pseudo_kind</span><span class="si">}</span><span class="s2"> basis of </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s2"> matrix calculated&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing decomposition (rows - SO-states,&quot;</span>
+                    <span class="sa">f</span><span class="s1">&#39; columns - basis) in &quot;z&quot; </span><span class="si">{</span><span class="n">pseudo_kind</span><span class="si">}</span><span class="s1"> momentum&#39;</span>
+                    <span class="sa">f</span><span class="s2">&quot; basis of </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s2"> matrix from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s1">&#39;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s1">) containing decomposition in &quot;z&quot;&#39;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">pseudo_kind</span><span class="si">}</span><span class="s2"> basis of </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s2"> matrix calculated&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">decomposition</span><span class="p">[:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_pseudo_spin_states&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing Sz pseudo-spin states&quot;</span>
-                        <span class="s2">&quot; corresponding to the decomposition of&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s2"> matrix from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing Sz pseudo-spin states&quot;</span>
+                    <span class="s2">&quot; corresponding to the decomposition of&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">matrix</span><span class="si">}</span><span class="s2"> matrix from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float64</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -4351,26 +4242,20 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_ito_parameters&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s1">&#39;Dataset containing ITO decomposition in &quot;z&quot;&#39;</span>
-                        <span class="s2">&quot; pseudo-spin basis of SOC matrix from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s1">&#39;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s1">) containing ITO decomposition in &quot;z&quot;&#39;</span>
-                        <span class="s2">&quot; pseudo-spin basis of SOC matrix calculated from&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">cfp</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:]</span>
+                    <span class="s1">&#39;Dataset containing ITO decomposition in &quot;z&quot;&#39;</span>
+                    <span class="s2">&quot; pseudo-spin basis of SOC matrix from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s1">&#39;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s1">) containing ITO decomposition in &quot;z&quot;&#39;</span>
+                    <span class="s2">&quot; pseudo-spin basis of SOC matrix calculated from&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">cfp</span><span class="p">[:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_pseudo_spin_states&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing S pseudo-spin number&quot;</span>
-                        <span class="s2">&quot; corresponding to the decomposition of SOC matrix&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">dim</span>
+                    <span class="s2">&quot;Dataset containing S pseudo-spin number&quot;</span>
+                    <span class="s2">&quot; corresponding to the decomposition of SOC matrix&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="n">dim</span><span class="p">])</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
@@ -4419,7 +4304,7 @@ document.write(`
 <span class="sd">            stop are set to zero all available states from the file will be</span>
 <span class="sd">            used.</span>
 <span class="sd">        field : float64</span>
-<span class="sd">            Magnetic field value at which Zeman matrix will be computed.</span>
+<span class="sd">            Magnetic field value at which Zeeman matrix will be computed.</span>
 <span class="sd">        orientation : ndarray[float64]</span>
 <span class="sd">            Orientation of the magnetic field in the form of an ArrayLike</span>
 <span class="sd">            structure (can be converted to numpy.NDArray) [direction_x,</span>
@@ -4475,6 +4360,8 @@ document.write(`
                     <span class="o">+</span> <span class="s1">&#39;&quot; &#39;</span>
                     <span class="o">+</span> <span class="s2">&quot;already exists. Delete it manually.&quot;</span><span class="p">,</span>
                 <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
+        <span class="n">orientation</span> <span class="o">=</span> <span class="n">_normalize_orientation</span><span class="p">(</span><span class="n">orientation</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">zeeman_matrix</span> <span class="o">=</span> <span class="n">_get_zeeman_matrix_in_z_pseudo_spin_basis</span><span class="p">(</span>
@@ -4541,26 +4428,20 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_ito_parameters&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s1">&#39;Dataset containing ITO decomposition in &quot;z&quot;&#39;</span>
-                        <span class="s2">&quot; pseudo-spin basis of Zeeman matrix from group:&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s1">&#39;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s1">) containing ITO decomposition in &quot;z&quot;&#39;</span>
-                        <span class="s2">&quot; pseudo-spin basis of Zeeman matrix calculated from&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">ito</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:]</span>
+                    <span class="s1">&#39;Dataset containing ITO decomposition in &quot;z&quot;&#39;</span>
+                    <span class="s2">&quot; pseudo-spin basis of Zeeman matrix from group:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s1">&#39;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s1">) containing ITO decomposition in &quot;z&quot;&#39;</span>
+                    <span class="s2">&quot; pseudo-spin basis of Zeeman matrix calculated from&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">ito</span><span class="p">[:,</span> <span class="p">:]</span>
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_pseudo_spin_states&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing S pseudo-spin number&quot;</span>
-                        <span class="s2">&quot; corresponding to the decomposition of Zeeman matrix&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">dim</span>
+                    <span class="s2">&quot;Dataset containing S pseudo-spin number&quot;</span>
+                    <span class="s2">&quot; corresponding to the decomposition of Zeeman matrix&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="n">dim</span><span class="p">])</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
@@ -4656,7 +4537,20 @@ document.write(`
                     <span class="n">matrix</span> <span class="o">=</span> <span class="n">_matrix_from_ito_real</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">coefficients</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">full_group_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">full_group_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_zeeman_ito_decomposition&quot;</span><span class="p">):</span>
+                    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">full_group_name</span><span class="p">[</span>
+                        <span class="p">:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="s2">&quot;_zeeman_ito_decomposition&quot;</span><span class="p">)</span>
+                    <span class="p">]</span>
+                <span class="k">elif</span> <span class="n">full_group_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_soc_ito_decomposition&quot;</span><span class="p">):</span>
+                    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">full_group_name</span><span class="p">[</span>
+                        <span class="p">:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="s2">&quot;_soc_ito_decomposition&quot;</span><span class="p">)</span>
+                    <span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Invalid group name: </span><span class="si">{</span><span class="n">full_group_name</span><span class="si">}</span><span class="s2">. It must end&quot;</span>
+                        <span class="s2">&quot; with _soc_ito_decomposition or&quot;</span>
+                        <span class="s2">&quot; _zeeman_ito_decomposition.&quot;</span>
+                    <span class="p">)</span>
                 <span class="n">J</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">full_group_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">_pseudo_spin_states&quot;</span><span class="p">,</span>
@@ -4689,14 +4583,10 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_matrix&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="s2">&quot;Dataset containing matrix from ITOs calculated from&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">full_group_name</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing matrix from ITO calculated&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">full_group_name</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="s2">&quot;Dataset containing matrix from ITOs calculated from&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">full_group_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing matrix from ITO calculated&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; from group: </span><span class="si">{</span><span class="n">full_group_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[:,</span> <span class="p">:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -4826,6 +4716,7 @@ document.write(`
 
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">matrix_type</span> <span class="o">==</span> <span class="s2">&quot;zeeman&quot;</span><span class="p">:</span>
+                <span class="n">orientation</span> <span class="o">=</span> <span class="n">_normalize_orientation</span><span class="p">(</span><span class="n">orientation</span><span class="p">)</span>
                 <span class="n">matrix</span> <span class="o">=</span> <span class="n">_get_zeeman_matrix_in_z_pseudo_spin_basis</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">group</span><span class="p">,</span>
@@ -4865,16 +4756,12 @@ document.write(`
                 <span class="bp">self</span><span class="p">[</span>
                     <span class="n">slt_group_name</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">_matrix&quot;</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Dataset containing </span><span class="si">{</span><span class="n">matrix_type</span><span class="si">}</span><span class="s2"> matrix in&quot;</span>
-                        <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">basis_kind</span><span class="si">}</span><span class="s1"> momentum &quot;z&quot; basis calculated from&#39;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing </span><span class="si">{</span><span class="n">matrix_type</span><span class="si">}</span><span class="s2"> matrix in&quot;</span>
-                        <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">basis_kind</span><span class="si">}</span><span class="s1"> momentum &quot;z&quot; basis calculated from&#39;</span>
-                        <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
+                    <span class="sa">f</span><span class="s2">&quot;Dataset containing </span><span class="si">{</span><span class="n">matrix_type</span><span class="si">}</span><span class="s2"> matrix in&quot;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">basis_kind</span><span class="si">}</span><span class="s1"> momentum &quot;z&quot; basis calculated from&#39;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Group(</span><span class="si">{</span><span class="n">slt</span><span class="si">}</span><span class="s2">) containing </span><span class="si">{</span><span class="n">matrix_type</span><span class="si">}</span><span class="s2"> matrix in&quot;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">basis_kind</span><span class="si">}</span><span class="s1"> momentum &quot;z&quot; basis calculated from&#39;</span>
+                    <span class="sa">f</span><span class="s2">&quot; group: </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[:,</span> <span class="p">:]</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
@@ -4974,9 +4861,7 @@ document.write(`
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
-                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
-                    <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">))</span>
-                <span class="p">)</span>
+                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)))</span>
             <span class="p">)</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Creating a plot&quot;&quot;&quot;</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mh</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mth</span><span class="p">):</span>
@@ -5136,9 +5021,7 @@ document.write(`
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
-                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
-                    <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">))</span>
-                <span class="p">)</span>
+                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)))</span>
             <span class="p">)</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Creating a plot&quot;&quot;&quot;</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chi</span><span class="p">):</span>
@@ -5307,9 +5190,7 @@ document.write(`
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
-                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span>
-                    <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">))</span>
-                <span class="p">)</span>
+                <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)))</span>
             <span class="p">)</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Creating a plot&quot;&quot;&quot;</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mh</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mth</span><span class="p">):</span>
@@ -5697,10 +5578,8 @@ document.write(`
                         <span class="k">try</span><span class="p">:</span>
 <span class="w">                            </span><span class="sd">&quot;&quot;&quot;Saving plot figure&quot;&quot;&quot;</span>
                             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_Orientation&quot;</span>
-                                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">.tiff&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_Orientation&quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
                                 <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
                             <span class="p">)</span>
                         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -6230,40 +6109,28 @@ document.write(`
                         <span class="n">z</span> <span class="o">=</span> <span class="n">z0</span><span class="p">[</span><span class="n">i_constant</span><span class="p">,</span> <span class="n">i_temp</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
                         <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                         <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chi&quot;</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                         <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
@@ -6399,40 +6266,28 @@ document.write(`
                         <span class="n">z</span> <span class="o">=</span> <span class="n">z0</span><span class="p">[</span><span class="n">i_field</span><span class="p">,</span> <span class="n">i_constant</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
                         <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                         <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chi&quot;</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
-                                <span class="p">),</span>
+                                <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
                         <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>

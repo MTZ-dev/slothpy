@@ -8,3 +8,4 @@ Reference Manual
    creation_methods
    compound
    general_utilities
+   exporting_module

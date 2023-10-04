@@ -82,6 +82,7 @@ from slothpy._angular_momentum._pseudo_spin_ito import (
 from slothpy._general_utilities._math_expresions import (
     _normalize_grid_vectors,
     _normalize_orientations,
+    _normalize_orientation,
 )
 from slothpy._general_utilities._auto_tune import _auto_tune
 from slothpy._general_utilities._ploting_utilities import (
@@ -516,24 +517,18 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_g_tensors",
-                    (
-                        "Dataset containing number of doublet and respective"
-                        f" g-tensors from Group {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing g-tensors of doublets and"
-                        f" their magnetic axes calculated from Group: {group}."
-                    ),
+                    "Dataset containing number of doublet and respective"
+                    f" g-tensors from Group {group}.",
+                    f"Group({slt}) containing g-tensors of doublets and"
+                    f" their magnetic axes calculated from Group: {group}.",
                 ] = g_tensor_list[:, :]
 
                 self[
                     slt_group_name,
                     f"{slt}_axes",
-                    (
-                        "Dataset containing rotation matrices from the initial"
-                        " coordinate system to the magnetic axes of respective"
-                        f" g-tensors from Group: {group}."
-                    ),
+                    "Dataset containing rotation matrices from the initial"
+                    " coordinate system to the magnetic axes of respective"
+                    f" g-tensors from Group: {group}.",
                 ] = magnetic_axes_list[:, :, :]
             except Exception as exc:
                 raise SltFileError(
@@ -746,30 +741,22 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_mth",
-                    (
-                        "Dataset containing M(T,H) magnetisation (T - rows, H"
-                        f" - columns) calculated from group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing M(T,H) magnetisation"
-                        f" calculated from group: {group}."
-                    ),
+                    "Dataset containing M(T,H) magnetisation (T - rows, H"
+                    f" - columns) calculated from group: {group}.",
+                    f"Group({slt}) containing M(T,H) magnetisation"
+                    f" calculated from group: {group}.",
                 ] = mth_array[:, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of M(T,H) from group: {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    f" simulation of M(T,H) from group: {group}.",
                 ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
-                    (
-                        "Dataset containing temperature T values used in"
-                        f" simulation of M(T,H) from group: {group}."
-                    ),
+                    "Dataset containing temperature T values used in"
+                    f" simulation of M(T,H) from group: {group}.",
                 ] = temperatures[:]
             except Exception as exc:
                 raise SltFileError(
@@ -980,32 +967,24 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_mag_3d",
-                    (
-                        "Dataset containing 3D magnetisation as meshgird"
-                        " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
-                        " temperature, meshgrid, meshgrid) calculated from"
-                        f" group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing 3D magnetisation calculated"
-                        f" from group: {group}."
-                    ),
+                    "Dataset containing 3D magnetisation as meshgird"
+                    " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
+                    " temperature, meshgrid, meshgrid) calculated from"
+                    f" group: {group}.",
+                    f"Group({slt}) containing 3D magnetisation calculated"
+                    f" from group: {group}.",
                 ] = mag_3d_array[:, :, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of 3D magnetisation from group: {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    f" simulation of 3D magnetisation from group: {group}.",
                 ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
-                    (
-                        "Dataset containing temperature T values used in"
-                        f" simulation of 3D magnetisation from group: {group}."
-                    ),
+                    "Dataset containing temperature T values used in"
+                    f" simulation of 3D magnetisation from group: {group}.",
                 ] = temperatures[:]
             except Exception as exc:
                 raise SltFileError(
@@ -1282,32 +1261,24 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_{chi_file}ht",
-                    (
-                        f"Dataset containing {chi_name} magnetic"
-                        " susceptibility (H - rows, T - columns) calculated"
-                        f" from group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing {chi_name} magnetic"
-                        f" susceptibility calculated from group: {group}."
-                    ),
+                    f"Dataset containing {chi_name} magnetic"
+                    " susceptibility (H - rows, T - columns) calculated"
+                    f" from group: {group}.",
+                    f"Group({slt}) containing {chi_name} magnetic"
+                    f" susceptibility calculated from group: {group}.",
                 ] = chitht_array[:, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        " simulation of magnetic susceptibility from group:"
-                        f" {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    " simulation of magnetic susceptibility from group:"
+                    f" {group}.",
                 ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
-                    (
-                        "Dataset containing temperature T values used in"
-                        f" simulation of {chi_name} from group: {group}."
-                    ),
+                    "Dataset containing temperature T values used in"
+                    f" simulation of {chi_name} from group: {group}.",
                 ] = temperatures[:]
             except Exception as exc:
                 raise SltFileError(
@@ -1570,34 +1541,26 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_{chi_file}ht_tensor",
-                    (
-                        f"Dataset containing {chi_name}_tensor Van Vleck"
-                        " susceptibility tensor (H, T, 3, 3) calculated from"
-                        f" group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing {chi_name}_tensor Van Vleck"
-                        " susceptibility tensor calculated from group:"
-                        f" {group}."
-                    ),
+                    f"Dataset containing {chi_name}_tensor Van Vleck"
+                    " susceptibility tensor (H, T, 3, 3) calculated from"
+                    f" group: {group}.",
+                    f"Group({slt}) containing {chi_name}_tensor Van Vleck"
+                    " susceptibility tensor calculated from group:"
+                    f" {group}.",
                 ] = chitht_tensor_array[:, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of {chi_name}_tensor Van Vleck"
-                        f" susceptibility tensor from group: {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    f" simulation of {chi_name}_tensor Van Vleck"
+                    f" susceptibility tensor from group: {group}.",
                 ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
-                    (
-                        "Dataset containing temperature T values used in"
-                        f" simulation of {chi_name}_tensor Van Vleck"
-                        f" susceptibility tensor from group: {group}."
-                    ),
+                    "Dataset containing temperature T values used in"
+                    f" simulation of {chi_name}_tensor Van Vleck"
+                    f" susceptibility tensor from group: {group}.",
                 ] = temperatures[:]
             except Exception as exc:
                 raise SltFileError(
@@ -1881,34 +1844,26 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_{chi_file}_3d",
-                    (
-                        "Dataset containing 3D magnetic susceptibility"
-                        f" {chi_name} as meshgird (0-x,1-y,2-z) arrays over"
-                        " sphere ((xyz, field, temperature, meshgrid,"
-                        f" meshgrid) calculated from group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing 3D magnetic susceptibility"
-                        f" {chi_name} calculated from group: {group}."
-                    ),
+                    "Dataset containing 3D magnetic susceptibility"
+                    f" {chi_name} as meshgird (0-x,1-y,2-z) arrays over"
+                    " sphere ((xyz, field, temperature, meshgrid,"
+                    f" meshgrid) calculated from group: {group}.",
+                    f"Group({slt}) containing 3D magnetic susceptibility"
+                    f" {chi_name} calculated from group: {group}.",
                 ] = chit_3d_array[:, :, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        " simulation of 3D magnetic susceptibility"
-                        f" {chi_name} from group: {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    " simulation of 3D magnetic susceptibility"
+                    f" {chi_name} from group: {group}.",
                 ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
-                    (
-                        "Dataset containing temperature T values used in"
-                        " simulation of 3D magnetic susceptibility"
-                        f" {chi_name} from group: {group}."
-                    ),
+                    "Dataset containing temperature T values used in"
+                    " simulation of 3D magnetic susceptibility"
+                    f" {chi_name} from group: {group}.",
                 ] = temperatures[:]
             except Exception as exc:
                 raise SltFileError(
@@ -2134,32 +2089,24 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_eth",
-                    (
-                        f"Dataset containing E(T,H) {name} energy (T - rows,"
-                        f" H - columns) calculated from group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing E(T,H) {name} energy"
-                        f" calculated from group: {group}."
-                    ),
+                    f"Dataset containing E(T,H) {name} energy (T - rows,"
+                    f" H - columns) calculated from group: {group}.",
+                    f"Group({slt}) containing E(T,H) {name} energy"
+                    f" calculated from group: {group}.",
                 ] = energyth_array[:, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of E(T,H) {name} energy from group:"
-                        f" {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    f" simulation of E(T,H) {name} energy from group:"
+                    f" {group}.",
                 ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
-                    (
-                        "Dataset containing temperature T values used in"
-                        f" simulation of E(T,H) {name} energy from group:"
-                        f" {group}."
-                    ),
+                    "Dataset containing temperature T values used in"
+                    f" simulation of E(T,H) {name} energy from group:"
+                    f" {group}.",
                 ] = temperatures[:]
             except Exception as exc:
                 raise SltFileError(
@@ -2382,34 +2329,26 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_energy_3d",
-                    (
-                        "Dataset containing 3D {name} energy as meshgird"
-                        " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
-                        " temperature, meshgrid, meshgrid) calculated from"
-                        f" group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing 3D {name}_energy"
-                        f" calculated from group: {group}."
-                    ),
+                    "Dataset containing 3D {name} energy as meshgird"
+                    " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
+                    " temperature, meshgrid, meshgrid) calculated from"
+                    f" group: {group}.",
+                    f"Group({slt}) containing 3D {name}_energy"
+                    f" calculated from group: {group}.",
                 ] = energy_3d_array[:, :, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of 3D {name} energy from group:"
-                        f" {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    f" simulation of 3D {name} energy from group:"
+                    f" {group}.",
                 ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_temperatures",
-                    (
-                        "Dataset containing temperature T values used in"
-                        f" simulation of 3D {name} energy from group:"
-                        f" {group}."
-                    ),
+                    "Dataset containing temperature T values used in"
+                    f" simulation of 3D {name} energy from group:"
+                    f" {group}.",
                 ] = temperatures[:]
             except Exception as exc:
                 raise SltFileError(
@@ -2647,44 +2586,34 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_zeeman",
-                    (
-                        f"Dataset containing {name}Zeeman splitting over grid"
-                        " of directions with shape: (orientations, field,"
-                        f" energy) calculated from group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing {name}Zeeman splitting"
-                        f" calculated from group: {group}."
-                    ),
+                    f"Dataset containing {name}Zeeman splitting over grid"
+                    " of directions with shape: (orientations, field,"
+                    f" energy) calculated from group: {group}.",
+                    f"Group({slt}) containing {name}Zeeman splitting"
+                    f" calculated from group: {group}.",
                 ] = zeeman_array[:, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        f" simulation of {name}Zeeman splitting from group:"
-                        f" {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    f" simulation of {name}Zeeman splitting from group:"
+                    f" {group}.",
                 ] = fields[:]
                 if average:
                     self[
                         slt_group_name,
                         f"{slt}_orientations",
-                        (
-                            "Dataset containing magnetic field orientation"
-                            " grid with weights used in simulation of"
-                            f" {name}Zeeman splitting from group: {group}."
-                        ),
+                        "Dataset containing magnetic field orientation"
+                        " grid with weights used in simulation of"
+                        f" {name}Zeeman splitting from group: {group}.",
                     ] = grid[:, :]
                 else:
                     self[
                         slt_group_name,
                         f"{slt}_orientations",
-                        (
-                            "Dataset containing magnetic field orientations"
-                            " used in simulation of"
-                            f" {name}Zeeman splitting from group: {group}."
-                        ),
+                        "Dataset containing magnetic field orientations"
+                        " used in simulation of"
+                        f" {name}Zeeman splitting from group: {group}.",
                     ] = grid[:, :3]
 
             except Exception as exc:
@@ -2811,33 +2740,25 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_matrix",
-                    (
-                        "Dataset containing Zeeman matrices calculated from"
-                        f" group: {group} in the form [fields, orientations,"
-                        " matrix, matrix]."
-                    ),
-                    (
-                        f"Group({slt}) containing Zeeman matrices calculated"
-                        f" from group: {group}."
-                    ),
+                    "Dataset containing Zeeman matrices calculated from"
+                    f" group: {group} in the form [fields, orientations,"
+                    " matrix, matrix].",
+                    f"Group({slt}) containing Zeeman matrices calculated"
+                    f" from group: {group}.",
                 ] = zeeman_matrix_array[:, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
-                    (
-                        "Dataset containing magnetic field H values used in"
-                        " simulation of Zeeman matrices from group:"
-                        f" {group}."
-                    ),
+                    "Dataset containing magnetic field H values used in"
+                    " simulation of Zeeman matrices from group:"
+                    f" {group}.",
                 ] = fields[:]
                 self[
                     slt_group_name,
                     f"{slt}_orientations",
-                    (
-                        "Dataset containing magnetic field orientations"
-                        " used in simulation of"
-                        f" Zeeman matrices from group: {group}."
-                    ),
+                    "Dataset containing magnetic field orientations"
+                    " used in simulation of"
+                    f" Zeeman matrices from group: {group}.",
                 ] = orientations[:, :]
 
             except Exception as exc:
@@ -2933,14 +2854,10 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_energies",
-                    (
-                        "Dataset containing SOC (Spin-Orbit Coupling) energies"
-                        f" calculated from group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing SOC (Spin-Orbit Coupling)"
-                        f" energies calculated from group: {group}."
-                    ),
+                    "Dataset containing SOC (Spin-Orbit Coupling) energies"
+                    f" calculated from group: {group}.",
+                    f"Group({slt}) containing SOC (Spin-Orbit Coupling)"
+                    f" energies calculated from group: {group}.",
                 ] = soc_energies_array
             except Exception as exc:
                 raise SltFileError(
@@ -3052,23 +2969,17 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_magnetic_momenta",
-                    (
-                        "Dataset containing states magnetic momenta"
-                        f" (0-x,1-y,2-z) calculated from group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing states magnetic momenta"
-                        f" calculated from group: {group}."
-                    ),
+                    "Dataset containing states magnetic momenta"
+                    f" (0-x,1-y,2-z) calculated from group: {group}.",
+                    f"Group({slt}) containing states magnetic momenta"
+                    f" calculated from group: {group}.",
                 ] = magnetic_momenta_array
                 self[
                     slt_group_name,
                     f"{slt}_states",
-                    (
-                        "Dataset containing indexes of states (or states"
-                        " cutoff) used in simulation of magnetic momenta from"
-                        f" group: {group}."
-                    ),
+                    "Dataset containing indexes of states (or states"
+                    " cutoff) used in simulation of magnetic momenta from"
+                    f" group: {group}.",
                 ] = array(states)
 
             except Exception as exc:
@@ -3184,23 +3095,17 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_total_angular_momenta",
-                    (
-                        "Dataset containing states total angular momenta"
-                        f" (0-x,1-y,2-z) calculated from group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing states total angular momenta"
-                        f" calculated from group: {group}."
-                    ),
+                    "Dataset containing states total angular momenta"
+                    f" (0-x,1-y,2-z) calculated from group: {group}.",
+                    f"Group({slt}) containing states total angular momenta"
+                    f" calculated from group: {group}.",
                 ] = total_angular_momenta_array
                 self[
                     slt_group_name,
                     f"{slt}_states",
-                    (
-                        "Dataset containing indexes of states (or states"
-                        " cutoff) used in simulation of total angular momenta"
-                        f" from group: {group}."
-                    ),
+                    "Dataset containing indexes of states (or states"
+                    " cutoff) used in simulation of total angular momenta"
+                    f" from group: {group}.",
                 ] = array(states)
 
             except Exception as exc:
@@ -3306,14 +3211,10 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_magnetic_momenta_matrix",
-                    (
-                        "Dataset containing magnetic momenta matrix"
-                        f" (0-x, 1-y, 2-z) calculated from group: {group}."
-                    ),
-                    (
-                        f"Group {group} containing magnetic momenta"
-                        f" matrix calculated from group: {group}."
-                    ),
+                    "Dataset containing magnetic momenta matrix"
+                    f" (0-x, 1-y, 2-z) calculated from group: {group}.",
+                    f"Group {group} containing magnetic momenta"
+                    f" matrix calculated from group: {group}.",
                 ] = magnetic_momenta_matrix_array[:, :]
             except Exception as exc:
                 raise SltFileError(
@@ -3422,14 +3323,10 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_total_angular_momenta_matrix",
-                    (
-                        "Dataset containing total angular momenta matrix"
-                        f" (0-x, 1-y, 2-z) calculated from group: {group}."
-                    ),
-                    (
-                        f"Group {group} containing total angular momenta"
-                        f" matrix calculated from group: {group}."
-                    ),
+                    "Dataset containing total angular momenta matrix"
+                    f" (0-x, 1-y, 2-z) calculated from group: {group}.",
+                    f"Group {group} containing total angular momenta"
+                    f" matrix calculated from group: {group}.",
                 ] = total_angular_momenta_matrix_array[:, :]
             except Exception as exc:
                 raise SltFileError(
@@ -3533,7 +3430,7 @@ class Compound:
 
         try:
             if orientation is not None:
-                orientation = array(orientation)
+                orientation = _normalize_orientation(orientation)
             decomposition = _get_decomposition_in_z_pseudo_spin_basis(
                 self._hdf5,
                 group,
@@ -3566,25 +3463,19 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_{pseudo_kind}_decomposition",
-                    (
-                        "Dataset containing decomposition (rows - SO-states,"
-                        f' columns - basis) in "z" {pseudo_kind} momentum'
-                        f" basis of {matrix} matrix from group: {group}."
-                    ),
-                    (
-                        f'Group({slt}) containing decomposition in "z"'
-                        f" {pseudo_kind} basis of {matrix} matrix calculated"
-                        f" from group: {group}."
-                    ),
+                    "Dataset containing decomposition (rows - SO-states,"
+                    f' columns - basis) in "z" {pseudo_kind} momentum'
+                    f" basis of {matrix} matrix from group: {group}.",
+                    f'Group({slt}) containing decomposition in "z"'
+                    f" {pseudo_kind} basis of {matrix} matrix calculated"
+                    f" from group: {group}.",
                 ] = decomposition[:, :]
                 self[
                     slt_group_name,
                     f"{slt}_pseudo_spin_states",
-                    (
-                        "Dataset containing Sz pseudo-spin states"
-                        " corresponding to the decomposition of"
-                        f" {matrix} matrix from group: {group}."
-                    ),
+                    "Dataset containing Sz pseudo-spin states"
+                    " corresponding to the decomposition of"
+                    f" {matrix} matrix from group: {group}.",
                 ] = arange(-dim, dim + 1, step=1, dtype=float64)
             except Exception as exc:
                 raise SltFileError(
@@ -3747,25 +3638,19 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_ito_parameters",
-                    (
-                        'Dataset containing ITO decomposition in "z"'
-                        " pseudo-spin basis of SOC matrix from group:"
-                        f" {group}."
-                    ),
-                    (
-                        f'Group({slt}) containing ITO decomposition in "z"'
-                        " pseudo-spin basis of SOC matrix calculated from"
-                        f" group: {group}."
-                    ),
+                    'Dataset containing ITO decomposition in "z"'
+                    " pseudo-spin basis of SOC matrix from group:"
+                    f" {group}.",
+                    f'Group({slt}) containing ITO decomposition in "z"'
+                    " pseudo-spin basis of SOC matrix calculated from"
+                    f" group: {group}.",
                 ] = cfp[:, :]
                 self[
                     slt_group_name,
                     f"{slt}_pseudo_spin_states",
-                    (
-                        "Dataset containing S pseudo-spin number"
-                        " corresponding to the decomposition of SOC matrix"
-                        f" from group: {group}."
-                    ),
+                    "Dataset containing S pseudo-spin number"
+                    " corresponding to the decomposition of SOC matrix"
+                    f" from group: {group}.",
                 ] = array([dim])
             except Exception as exc:
                 raise SltFileError(
@@ -3869,6 +3754,8 @@ class Compound:
                     + "already exists. Delete it manually.",
                 ) from None
 
+        orientation = _normalize_orientation(orientation)
+
         try:
             zeeman_matrix = _get_zeeman_matrix_in_z_pseudo_spin_basis(
                 self._hdf5,
@@ -3934,25 +3821,19 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_ito_parameters",
-                    (
-                        'Dataset containing ITO decomposition in "z"'
-                        " pseudo-spin basis of Zeeman matrix from group:"
-                        f" {group}."
-                    ),
-                    (
-                        f'Group({slt}) containing ITO decomposition in "z"'
-                        " pseudo-spin basis of Zeeman matrix calculated from"
-                        f" group: {group}."
-                    ),
+                    'Dataset containing ITO decomposition in "z"'
+                    " pseudo-spin basis of Zeeman matrix from group:"
+                    f" {group}.",
+                    f'Group({slt}) containing ITO decomposition in "z"'
+                    " pseudo-spin basis of Zeeman matrix calculated from"
+                    f" group: {group}.",
                 ] = ito[:, :]
                 self[
                     slt_group_name,
                     f"{slt}_pseudo_spin_states",
-                    (
-                        "Dataset containing S pseudo-spin number"
-                        " corresponding to the decomposition of Zeeman matrix"
-                        f" from group: {group}."
-                    ),
+                    "Dataset containing S pseudo-spin number"
+                    " corresponding to the decomposition of Zeeman matrix"
+                    f" from group: {group}.",
                 ] = array([dim])
             except Exception as exc:
                 raise SltFileError(
@@ -4092,14 +3973,10 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_matrix",
-                    (
-                        "Dataset containing matrix from ITOs calculated from"
-                        f" group: {full_group_name}."
-                    ),
-                    (
-                        f"Group({slt}) containing matrix from ITO calculated"
-                        f" from group: {full_group_name}."
-                    ),
+                    "Dataset containing matrix from ITOs calculated from"
+                    f" group: {full_group_name}.",
+                    f"Group({slt}) containing matrix from ITO calculated"
+                    f" from group: {full_group_name}.",
                 ] = matrix[:, :]
             except Exception as exc:
                 raise SltFileError(
@@ -4226,6 +4103,7 @@ class Compound:
 
         try:
             if matrix_type == "zeeman":
+                orientation = _normalize_orientation(orientation)
                 matrix = _get_zeeman_matrix_in_z_pseudo_spin_basis(
                     self._hdf5,
                     group,
@@ -4265,16 +4143,12 @@ class Compound:
                 self[
                     slt_group_name,
                     f"{slt}_matrix",
-                    (
-                        f"Dataset containing {matrix_type} matrix in"
-                        f' {basis_kind} momentum "z" basis calculated from'
-                        f" group: {group}."
-                    ),
-                    (
-                        f"Group({slt}) containing {matrix_type} matrix in"
-                        f' {basis_kind} momentum "z" basis calculated from'
-                        f" group: {group}."
-                    ),
+                    f"Dataset containing {matrix_type} matrix in"
+                    f' {basis_kind} momentum "z" basis calculated from'
+                    f" group: {group}.",
+                    f"Group({slt}) containing {matrix_type} matrix in"
+                    f' {basis_kind} momentum "z" basis calculated from'
+                    f" group: {group}.",
                 ] = matrix[:, :]
             except Exception as exc:
                 raise SltFileError(
@@ -5079,10 +4953,8 @@ class Compound:
                         try:
                             """Saving plot figure"""
                             fig.savefig(
-                                (
-                                    f"zeeman_{group}_Orientation"
-                                    f" {orientations[i]}.tiff"
-                                ),
+                                f"zeeman_{group}_Orientation"
+                                f" {orientations[i]}.tiff",
                                 dpi=300,
                             )
                         except Exception as exc:
@@ -5606,40 +5478,28 @@ class Compound:
                         z = z0[i_constant, i_temp, :, :]
                         if data_type == "chit":
                             ax.set_xlabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_ylabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_zlabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                         elif data_type == "chi":
                             ax.set_xlabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_ylabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_zlabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                         elif data_type == "helmholtz_energy":
@@ -5775,40 +5635,28 @@ class Compound:
                         z = z0[i_field, i_constant, :, :]
                         if data_type == "chit":
                             ax.set_xlabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_ylabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_zlabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                         elif data_type == "chi":
                             ax.set_xlabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_ylabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_zlabel(
-                                (
-                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
-                                ),
+                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                         elif data_type == "helmholtz_energy":

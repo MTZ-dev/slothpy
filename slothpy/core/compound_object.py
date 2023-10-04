@@ -3486,7 +3486,7 @@ class Compound:
             reference frame instead., by default None
         field : float64, optional
             If matrix type = "zeeman" it controls a magnetic field value at
-            which Zeman matrix will be computed., by default None
+            which Zeeman matrix will be computed., by default None
         orientation : ndarray[float64], optional
             If matrix type = "zeeman" it controls the orientation of the
             magnetic field and has to be in the form [direction_x, direction_y,
@@ -3757,7 +3757,7 @@ class Compound:
                         " pseudo-spin basis of SOC matrix calculated from"
                         f" group: {group}."
                     ),
-                ] = cfp[:, :, :]
+                ] = cfp[:, :]
                 self[
                     slt_group_name,
                     f"{slt}_pseudo_spin_states",
@@ -3766,7 +3766,7 @@ class Compound:
                         " corresponding to the decomposition of SOC matrix"
                         f" from group: {group}."
                     ),
-                ] = dim
+                ] = array([dim])
             except Exception as exc:
                 raise SltFileError(
                     self._hdf5,
@@ -3812,7 +3812,7 @@ class Compound:
             stop are set to zero all available states from the file will be
             used.
         field : float64
-            Magnetic field value at which Zeman matrix will be computed.
+            Magnetic field value at which Zeeman matrix will be computed.
         orientation : ndarray[float64]
             Orientation of the magnetic field in the form of an ArrayLike
             structure (can be converted to numpy.NDArray) [direction_x,
@@ -3944,7 +3944,7 @@ class Compound:
                         " pseudo-spin basis of Zeeman matrix calculated from"
                         f" group: {group}."
                     ),
-                ] = ito[:, :, :]
+                ] = ito[:, :]
                 self[
                     slt_group_name,
                     f"{slt}_pseudo_spin_states",
@@ -3953,7 +3953,7 @@ class Compound:
                         " corresponding to the decomposition of Zeeman matrix"
                         f" from group: {group}."
                     ),
-                ] = dim
+                ] = array([dim])
             except Exception as exc:
                 raise SltFileError(
                     self._hdf5,
@@ -4046,7 +4046,20 @@ class Compound:
                     matrix = _matrix_from_ito_real(J, coefficients)
 
             else:
-                dataset_name = full_group_name.split("_", 1)[0]
+                if full_group_name.endswith("_zeeman_ito_decomposition"):
+                    dataset_name = full_group_name[
+                        : -len("_zeeman_ito_decomposition")
+                    ]
+                elif full_group_name.endswith("_soc_ito_decomposition"):
+                    dataset_name = full_group_name[
+                        : -len("_soc_ito_decomposition")
+                    ]
+                else:
+                    raise NameError(
+                        f"Invalid group name: {full_group_name}. It must end"
+                        " with _soc_ito_decomposition or"
+                        " _zeeman_ito_decomposition."
+                    )
                 J = self[
                     f"{full_group_name}",
                     f"{dataset_name}_pseudo_spin_states",

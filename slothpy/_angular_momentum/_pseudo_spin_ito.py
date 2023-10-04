@@ -2,6 +2,7 @@ from math import factorial
 from numpy.linalg import eigh
 from numpy import (
     ndarray,
+    copy,
     zeros,
     zeros_like,
     ascontiguousarray,
@@ -29,7 +30,7 @@ from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
 
 
 def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
-    momenta_matrix, matrix
+    momenta, matrix
 ):
     """Convention:
     Jx[i,i+1] = real, negative
@@ -37,11 +38,13 @@ def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
     J+/- = real (Condon_Shortley)
     Jz = real, diag"""
 
+    momenta_matrix = copy(momenta)
+
     # Transform momenta to "z" basis
     _, eigenvectors = eigh(momenta_matrix[2, :, :])
     for i in range(3):
         momenta_matrix[i, :, :] = (
-            eigenvectors.conj().T @ momenta_matrix[i, :, :] @ eigenvectors
+            eigenvectors.conj().T @ momenta[i, :, :] @ eigenvectors
         )
 
     # Initialize phases of vectors with the first one = 1
@@ -49,12 +52,12 @@ def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
     c[0] = 1.0
 
     # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
-    for i in range(momenta_matrix[0, :, :].shape[0] - 1):
+    for i in range(momenta_matrix[0, :, :].shape[1] - 1):
         if (
-            real(momenta_matrix[0, i, i + 1]).any() > 1e-12
-            or abs(imag(momenta_matrix[1, i, i + 1])).any() > 1e-12
+            real(momenta_matrix[0, i, i + 1]).any() > 1e-20
+            or abs(imag(momenta_matrix[1, i, i + 1])).any() > 1e-20
         ):
-            c[i + 1] = (
+            c[i + 1] = 1j * (
                 momenta_matrix[0, i, i + 1].conj()
                 / abs(momenta_matrix[0, i, i + 1])
                 / c[i].conj()
@@ -62,7 +65,7 @@ def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
         else:
             c[i + 1] = 1.0
 
-    for i in range(momenta_matrix[0].shape[0] - 1):
+    for i in range(momenta_matrix[0].shape[1] - 1):
         if momenta_matrix[0, i, i + 1] * c[i].conj() * c[i + 1] > 0:
             c[i + 1] = -c[i + 1]
 

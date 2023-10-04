@@ -164,17 +164,14 @@ def _calculate_mt(
     field: float64,
     grid: str,
     temperatures: str,
-    m_s: int,
-    s_s: int,
-    t_s: int,
-    g_s: int = 0,
+    m_s: tuple,
+    s_s: tuple,
+    t_s: tuple,
+    g_s: tuple,
 ) -> ndarray:
-    # Option to enable calculations with only a single grid point.
-    if g_s != 0:
-        grid_s = SharedMemory(name=grid)
-        grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
-    else:
-        grid_a = grid
+    # Here grid can be equal to array([1]) which activates sus-tensor calc
+    grid_s = SharedMemory(name=grid)
+    grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
 
     temperatures_s = SharedMemory(name=temperatures)
     temperatures_a = ndarray(
@@ -192,7 +189,7 @@ def _calculate_mt(
     soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
 
     # Hidden option for susceptibility tensor calculation.
-    if array_equal(grid, array([1])):
+    if array_equal(grid_a, array([1])):
         return _mt_over_tensor(
             magnetic_momenta_a, soc_energies_a, field, temperatures_a
         )

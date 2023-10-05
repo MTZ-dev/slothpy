@@ -194,7 +194,7 @@ def _mth_load(
         filename, group, states_cutoff
     )
 
-    num_process = _get_num_of_processes(num_cpu, num_threads)
+    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)
@@ -282,7 +282,7 @@ def _mth_benchmark(
         filename, group, states_cutoff
     )
 
-    num_process = _get_num_of_processes(num_cpu, num_threads)
+    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)

@@ -386,15 +386,13 @@ def _auto_tune(
 
     for threads in range(1, num_cpu + 2):
         new_processes = num_cpu // threads
-        if new_processes != old_processes:
+        if (
+            new_processes != old_processes
+            and old_processes <= num_to_parallelize
+        ):
             num_processes = old_processes
             num_threads = threads - 1
-            if num_processes <= num_to_parallelize:
-                fields = linspace(1, 10, 2 * num_processes, dtype=float64)
-            else:
-                fields = linspace(
-                    1, 10, num_processes + num_to_parallelize, dtype=float64
-                )
+            fields = linspace(1, 10, 2 * num_processes, dtype=float64)
 
             exec_time = _mth_benchmark(
                 filename,

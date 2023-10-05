@@ -53,10 +53,8 @@ def _calculate_zeeman_matrix(
 
 
 @jit(
-    (
-        "float64[:,:](complex128[:,:,:], float64[:], float64, float64[:,:],"
-        " int64, boolean)"
-    ),
+    "float64[:,:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+    " int64, boolean)",
     nopython=True,
     cache=True,
     nogil=True,
@@ -189,7 +187,9 @@ def _zeeman_splitting(
     )
 
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
+    num_process, num_threads = _get_num_of_processes(
+        num_cpu, num_threads, fields.shape[0]
+    )
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields)
@@ -315,10 +315,8 @@ def _calculate_helmholtz_energy(
 
 
 @jit(
-    (
-        "float64[:](complex128[:,:,:], float64[:], float64, float64[:,:],"
-        " float64[:], boolean)"
-    ),
+    "float64[:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+    " float64[:], boolean)",
     nopython=True,
     cache=True,
     nogil=True,
@@ -462,7 +460,9 @@ def _helmholtz_energyth(
     )
 
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
+    num_process, num_threads = _get_num_of_processes(
+        num_cpu, num_threads, fields.shape[0]
+    )
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields)
@@ -584,7 +584,7 @@ def _helmholtz_energy_3d(
     internal_energy: bool = False,
 ) -> ndarray:
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(
+    num_process, num_threads = _get_num_of_processes(
         num_cpu, num_threads, fields.shape[0] * 2 * spherical_grid**2
     )
 

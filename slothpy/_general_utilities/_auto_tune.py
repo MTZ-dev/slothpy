@@ -1,5 +1,5 @@
 from os import cpu_count
-from time import perf_counter
+from time import perf_counter_ns
 from math import ceil
 from statistics import mean
 from typing import Tuple
@@ -12,12 +12,21 @@ from numpy import (
     ones,
     ascontiguousarray,
     linspace,
+    zeros,
+    diag,
     float64,
     complex128,
 )
+from numpy.linalg import eigh, eigvalsh
 from threadpoolctl import threadpool_limits
-from slothpy._magnetism._magnetisation import _mt_over_grid
-from slothpy._magnetism._zeeman import _helmholtz_energyt_over_grid
+from slothpy._magnetism._magnetisation import (
+    _mt_over_grid,
+    _calculate_magnetization,
+)
+from slothpy._magnetism._zeeman import (
+    _calculate_helmholtz_energy,
+    _calculate_zeeman_matrix,
+)
 from slothpy._general_utilities._system import _get_num_of_processes
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -109,6 +118,105 @@ def _dummy_function_wrapper(args):
     return mt
 
 
+def _helmholtz_energyt_over_grid(
+    magnetic_momenta: ndarray,
+    soc_energies: ndarray,
+    field: float64,
+    grid: ndarray,
+    temperatures: ndarray,
+    internal_energy: bool = False,
+) -> int:
+    # Initialize arrays
+    energyt_array = ascontiguousarray(
+        zeros((temperatures.shape[0]), dtype=float64)
+    )
+
+    times = []
+
+    # Perform calculations for each magnetic field orientation
+    for j in range(grid.shape[0]):
+        start = perf_counter_ns()
+        # Construct Zeeman matrix
+        orientation = grid[j, :3]
+
+        zeeman_matrix = _calculate_zeeman_matrix(
+            magnetic_momenta, soc_energies, field, orientation
+        )
+
+        # Diagonalize full Hamiltonian matrix
+        eigenvalues = eigvalsh(zeeman_matrix)
+        eigenvalues = ascontiguousarray(eigenvalues)
+
+        # Compute Helmholtz energy for each T
+        for t in range(temperatures.shape[0]):
+            energyt_array[t] += (
+                _calculate_helmholtz_energy(
+                    eigenvalues, temperatures[t], internal_energy
+                )
+                * grid[j, 3]
+            )
+        end = perf_counter_ns()
+
+        times.append(end - start)
+
+    return min(times) * grid.shape[0]
+
+
+def _mt_over_grid(
+    magnetic_momenta: ndarray,
+    soc_energies: ndarray,
+    field: float64,
+    grid: ndarray,
+    temperatures: ndarray,
+) -> int:
+    # Initialize arrays
+    mt_array = ascontiguousarray(zeros((temperatures.shape[0]), dtype=float64))
+
+    times = []
+
+    # Perform calculations for each magnetic field orientation
+    for j in range(grid.shape[0]):
+        start = perf_counter_ns()
+        # Construct Zeeman matrix
+        orientation = grid[j, :3]
+
+        zeeman_matrix = _calculate_zeeman_matrix(
+            magnetic_momenta, soc_energies, field, orientation
+        )
+
+        # Diagonalize full Hamiltonian matrix
+        eigenvalues, eigenvectors = eigh(zeeman_matrix)
+        magnetic_momenta = ascontiguousarray(magnetic_momenta)
+
+        # Transform momenta according to the new eigenvectors
+        states_momenta = (
+            eigenvectors.conj().T
+            @ (
+                grid[j, 0] * magnetic_momenta[0]
+                + grid[j, 1] * magnetic_momenta[1]
+                + grid[j, 2] * magnetic_momenta[2]
+            )
+            @ eigenvectors
+        )
+
+        # Get diagonal momenta of the new states
+        states_momenta = diag(states_momenta).real.astype(float64)
+
+        # Compute partition function and magnetization for each T
+        for t in range(temperatures.shape[0]):
+            mt_array[t] += (
+                _calculate_magnetization(
+                    eigenvalues, states_momenta, temperatures[t]
+                )
+                * grid[j, 3]
+            )
+        end = perf_counter_ns()
+
+        times.append(end - start)
+
+    return min(times) * grid.shape[0]
+
+
 def _get_mt_exec_time(
     magnetic_momenta: str,
     soc_energies: str,
@@ -120,7 +228,7 @@ def _get_mt_exec_time(
     t_s: int,
     g_s: int = 0,
     energy: bool = False,
-) -> float:
+) -> list[int]:
     grid_s = SharedMemory(name=grid)
     grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
     temperatures_s = SharedMemory(name=temperatures)
@@ -139,9 +247,9 @@ def _get_mt_exec_time(
     soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
 
     if energy:
-        start_time = perf_counter()
+        start_time = perf_counter_ns()
 
-        mt = _helmholtz_energyt_over_grid(
+        exec_time = _helmholtz_energyt_over_grid(
             magnetic_momenta_a,
             soc_energies_a,
             field,
@@ -150,22 +258,24 @@ def _get_mt_exec_time(
             False,
         )
 
-        mt = array(mt)
+        mt = array(exec_time)
 
-        end_time = perf_counter()
+        end_time = perf_counter_ns()
 
     else:
-        start_time = perf_counter()
+        start_time = perf_counter_ns()
 
-        mt = _mt_over_grid(
+        exec_time = _mt_over_grid(
             magnetic_momenta_a, soc_energies_a, field, grid_a, temperatures_a
         )
 
-        mt = array(mt)
+        mt = array(exec_time)
 
-        end_time = perf_counter()
+        end_time = perf_counter_ns()
 
-    return end_time - start_time
+    setup_time = end_time - start_time - exec_time
+
+    return [exec_time, setup_time]
 
 
 def _get_mt_exec_time_wrapper(args):
@@ -185,7 +295,7 @@ def _mth_load(
     num_cpu: int,
     num_threads: int,
 ) -> float64:
-    start_time_load = perf_counter()
+    start_time_load = perf_counter_ns()
     # Read data from HDF5 file
     (
         magnetic_momenta,
@@ -194,7 +304,9 @@ def _mth_load(
         filename, group, states_cutoff
     )
 
-    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
+    num_process, num_threads = _get_num_of_processes(
+        num_cpu, num_threads, fields.shape[0]
+    )
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)
@@ -258,7 +370,7 @@ def _mth_load(
                         ),
                     )
     dummy_return = array(dummy_return)
-    end_time_load = perf_counter()
+    end_time_load = perf_counter_ns()
 
     return end_time_load - start_time_load
 
@@ -282,7 +394,9 @@ def _mth_benchmark(
         filename, group, states_cutoff
     )
 
-    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
+    num_process, num_threads = _get_num_of_processes(
+        num_cpu, num_threads, fields.shape[0]
+    )
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)
@@ -331,7 +445,7 @@ def _mth_benchmark(
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 with Pool(num_process) as p:
-                    exec_time = p.map(
+                    times = p.map(
                         _get_mt_exec_time_wrapper,
                         _arg_iter_mth_benchmark(
                             magnetic_momenta_shared.name,
@@ -347,9 +461,12 @@ def _mth_benchmark(
                         ),
                     )
 
-    exec_time = sorted(exec_time)[: ceil(len(exec_time) / 2)]
-    return mean(
-        exec_time[: ceil(len(exec_time) / 2)]
+    times = array(times)
+    exec_time = sorted(times[:, 0])
+    setup_time = sorted(times[:, 1])
+    return (
+        mean(exec_time[: ceil(len(exec_time) / 4)]),
+        mean(setup_time[: ceil(len(exec_time) / 4)]),
     )  # Can return min, max, median, or mean for different approaches
     # depending on internal_loop_samples size in _auto_tune so be careful what
     # you are doing.
@@ -392,9 +509,12 @@ def _auto_tune(
         ):
             num_processes = old_processes
             num_threads = threads - 1
-            fields = linspace(1, 10, 2 * num_processes, dtype=float64)
+            if num_processes == num_to_parallelize:
+                fields = linspace(1, 10, num_processes)
+            else:
+                fields = linspace(1, 10, 2 * num_processes, dtype=float64)
 
-            exec_time = _mth_benchmark(
+            exec_setup_time = _mth_benchmark(
                 filename,
                 group,
                 fields,
@@ -418,7 +538,8 @@ def _auto_tune(
             )
 
             current_time = (
-                exec_time * internal_loop_size / internal_loop_samples
+                exec_setup_time[0] * internal_loop_size / internal_loop_samples
+                + exec_setup_time[1]
             ) * ceil(num_to_parallelize / num_processes) + load_time
 
             info = (
@@ -431,11 +552,13 @@ def _auto_tune(
                 best_time = current_time
                 final_num_of_processes = num_processes
                 final_num_of_threads = num_threads
-                info += GREEN + f"{current_time} s" + RESET + "."
+                info += GREEN + f"{current_time/1e9} s" + RESET + "."
             else:
-                info += RED + f"{current_time} s" + RESET + "."
+                info += RED + f"{current_time/1e9} s" + RESET + "."
 
-            info += " The best time: " + GREEN + f"{best_time} s" + RESET + "."
+            info += (
+                " The best time: " + GREEN + f"{best_time/1e9} s" + RESET + "."
+            )
 
             print(info)
 
@@ -465,7 +588,7 @@ def _auto_tune(
         + ".\n"
         + "The calculation time (starting from now) is estimated to be: "
         + GREEN
-        + f"{best_time} s"
+        + f"{best_time/1e9} s"
         + RESET
         + "."
     )

@@ -37,14 +37,13 @@ def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
             f" {num_threads}, Actual available processors: {num_cpu}"
         )
 
-    # Check if there is more CPUs than the things to parallelize over
-    if num_cpu >= num_to_parallelize:
+    # Check if there is more processes than the things to parallelize over
+    num_process = num_cpu // num_threads
+    if num_process >= num_to_parallelize:
         num_process = num_to_parallelize
         num_threads = num_cpu // num_process
-    else:
-        num_process = num_cpu // num_threads
 
-    return num_process
+    return num_process, num_threads
 
 
 # Determine if the module is executed in a Jupyter Notebook

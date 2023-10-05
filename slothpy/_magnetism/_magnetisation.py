@@ -1,3 +1,4 @@
+from typing import Union
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
 from multiprocessing import Pool
@@ -53,10 +54,8 @@ def _calculate_magnetization(
 
 
 @jit(
-    (
-        "float64[:](complex128[:,:,:], float64[:], float64, float64[:,:],"
-        " float64[:])"
-    ),
+    "float64[:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+    " float64[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -162,16 +161,21 @@ def _calculate_mt(
     magnetic_momenta: str,
     soc_energies: str,
     field: float64,
-    grid: str,
+    grid: Union[str, ndarray],
     temperatures: str,
     m_s: tuple,
     s_s: tuple,
     t_s: tuple,
-    g_s: tuple,
+    g_s: tuple = 0,
 ) -> ndarray:
-    # Here grid can be equal to array([1]) which activates sus-tensor calc
-    grid_s = SharedMemory(name=grid)
-    grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
+    # g_s == 0 only if functions don't provide it and then they must pass
+    # a single grid point directly from the wrapper as grid variable (not name)
+    if g_s != 0:
+        # Here grid can be equal to array([1]) which activates sus-tensor calc
+        grid_s = SharedMemory(name=grid)
+        grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
+    else:
+        grid_a = grid
 
     temperatures_s = SharedMemory(name=temperatures)
     temperatures_a = ndarray(
@@ -253,7 +257,9 @@ def _mth(
     )
 
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(num_cpu, num_threads, fields.shape[0])
+    num_process, num_threads = _get_num_of_processes(
+        num_cpu, num_threads, fields.shape[0]
+    )
 
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)
@@ -375,7 +381,7 @@ def _mag_3d(
     sus_3d_num: bool = False,
 ) -> ndarray:
     # Get number of parallel proceses to be used
-    num_process = _get_num_of_processes(
+    num_process, num_threads = _get_num_of_processes(
         num_cpu, num_threads, fields.shape[0] * 2 * spherical_grid**2
     )
 

@@ -4171,36 +4171,39 @@ class Compound:
     def plot_mth(
         self,
         group: str,
-        save=False,
-        colour_map_name="rainbow",
-        xlim=(),
-        ylim=(),
-        xticks=1,
-        yticks=0,
-        field="B",
+        save: bool = False,
+        colour_map_name: str or list[str] = "rainbow",
+        xlim: tuple[int or float] = (),
+        ylim: tuple[int or float] = (),
+        xticks: int or float = 1,
+        yticks: int or float = 0,
+        field: Union["B", "H"] = "B",
     ):
         """
-        Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown,
-        saved, colour palettes can be changed.
+        Creates graphs of M(H,T) given name of the group in HDF5 file, graphs
+        can be optionally shown, saved, colour palettes can be changed.
 
         Parameters
         ----------
         group: str
-            name of a group from HDF5 file for which plot will be created
+            Name of a group from HDF5 file for which a plot will be created.
         save: bool = False
-            determines if plot is saved, name of the file will be in following format: f'chitht_{group}.tiff'
-        colour_map_name: str or list[str] = 'funmat'
-            input of colour_map function
-        xlim: tuple of 1-2 floats = ()
-            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed
-        ylim: tuple of 1-2 floats = ()
-            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed
-        xticks: int = 100
-            determines frequency of x major ticks
-        yticks: int = 0
-            determines frequency of y major ticks
-        field: Unity['B','H'] = 'B'
-            determines field unit - B[T] or H[kOe]
+            Determines if the plot is saved, name of the file will be in the
+            following format: f"mgh_{group}.tiff".
+        colour_map_name: str or list[str] = "rainbow"
+            Input of the colour_map function.
+        xlim: tuple(optional: float, optional: float) = ()
+            Determines the lower and upper limit of the x-axis if two floats
+            are passed, or just the upper limit if one is passed.
+        ylim: tuple(optional: float, optional: float) = ()
+            Determines the lower and upper limit of the y-axis if two floats
+            are passed, or just the upper limit if one is passed.
+        xticks: int or float = 1
+            Determines the frequency of x major ticks.
+        yticks: int or float = 0
+            Determines the frequency of y major ticks.
+        field: Union['B','H'] = 'B'
+            Determines the field unit - B[T] or H[kOe].
 
         Returns
         -------
@@ -4209,14 +4212,15 @@ class Compound:
         Raises
         ------
         SltFileError
-            if unable to load data file, most likely encountered if group name is incorrect
+            If unable to load the data file. Most likely encountered if the
+            group name is incorrect.
         SltPlotError
-            if unable to create plot
+            If unable to create the plot.
         SltSaveError
-            if unable to save plot as image
+            If unable to save the plot as an image.
         """
         try:
-            """Getting data from hdf5 or sloth file"""
+            # Getting data from hdf5 or sloth file
             mth = self[f"{group}_magnetisation", f"{group}_mth"]
             fields = self[f"{group}_magnetisation", f"{group}_fields"]
             if field == "H":
@@ -4227,7 +4231,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load magnetisation file"
+                "Failed to load magnetisation file"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4241,13 +4245,13 @@ class Compound:
             ) from None
 
         try:
-            """Plotting in matplotlib"""
+            # Plotting in matplotlib
             fig, ax = subplots()
-            """Defining colour maps for graphs"""
+            # Defining colour maps for graphs
             colour = iter(
                 colour_map(colour_map_name)(linspace(0, 1, len(temps)))
             )
-            """Creating a plot"""
+            # Creating a plot
             for i, mh in enumerate(mth):
                 c = next(colour)
                 ax.plot(fields, mh, linewidth=2, c=c, label=f"{temps[i]} K")
@@ -4290,7 +4294,7 @@ class Compound:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot magnetisation data"
+                "Failed to plot magnetisation data"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4302,13 +4306,13 @@ class Compound:
             ) from None
         if save:
             try:
-                """Saving plot figure"""
+                # Saving plot figure
                 fig.savefig(f"mgh_{group}.tiff", dpi=300)
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save magnetisation data plot "
+                    "Failed to save magnetisation data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -4323,37 +4327,41 @@ class Compound:
 
     def plot_chitht(
         self,
-        group,
-        save=False,
-        colour_map_name="funmat",
-        xlim=(),
-        ylim=(),
-        xticks=100,
-        yticks=0,
-        field="B",
+        group: str,
+        save: bool = False,
+        colour_map_name: str or list[str] = "funmat",
+        xlim: tuple[int or float] = (),
+        ylim: tuple[int or float] = (),
+        xticks: int or float = 100,
+        yticks: int or float = 0,
+        field: Union["B", "H"] = "B",
     ):
         """
-        Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group
-        in HDF5 file, graphs can be optionally saved, colour palettes can be changed.
+        Creates graphs of chiT(H,T) or chi(H,T) depending on the content of
+        .slt file, given a name of the group in .slt file, graphs can be
+        optionally saved, colour palettes can be changed.
 
         Parameters
         ----------
         group: str
-            name of a group from HDF5 file for which plot will be created
+            Name of a group from .slt file for which a plot will be created.
         save: bool = False
-            determines if plot is saved, name of the file will be in following format: f'chitht_{group}.tiff'
+            Determines if the plot is saved, name of the file will be in the
+            following format: f'chitht_{group}.tiff'.
         colour_map_name: str or list[str] = 'funmat'
-            input of colour_map function
-        xlim: tuple of 1-2 floats = ()
-            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed
-        ylim: tuple of 1-2 floats = ()
-            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed
-        xticks: int = 100
-            determines freqency of x major ticks
-        yticks: int = 0
-            determines freqency of y major ticks
-        field: Unity['B','H'] = 'B'
-            determines field unit - B[T] or H[kOe]
+            Input of colour_map function.
+        xlim: tuple(optional: float, optional: float) = ()
+            Determines the lower and upper limit of the x-axis if two floats
+            are passed, or just the upper limit if one is passed.
+        ylim: tuple(optional: float, optional: float) = ()
+            Determines the lower and upper limit of the y-axis if two floats
+            are passed, or just the upper limit if one is passed.
+        xticks: int or float = 100
+            Determines the frequency of x major ticks.
+        yticks: int or float = 0
+            Determines the frequency of y major ticks.
+        field: Union['B','H'] = 'B'
+            Determines the field unit - B[T] or H[kOe].
 
         Returns
         -------
@@ -4362,18 +4370,19 @@ class Compound:
         Raises
         ------
         SltFileError
-            if unable to load data file, most likely encountered if group name is incorrect
+            If unable to load the data file. Most likely encountered if the
+            group name is incorrect.
         SltPlotError
-            if unable to create plot
+            If unable to create the plot.
         SltSaveError
-            if unable to save plot as image
+            If unable to save the plot as an image.
         """
         try:
-            """Getting data from hdf5 or sloth file"""
+            # Getting data from hdf5 or sloth file
             try:
                 chi = self[f"{group}_susceptibility", f"{group}_chiht"]
                 T = False
-            except:
+            except Exception as exc:
                 chi = self[f"{group}_susceptibility", f"{group}_chitht"]
                 T = True
             fields = self[f"{group}_susceptibility", f"{group}_fields"]
@@ -4384,7 +4393,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load susceptibility file"
+                "Failed to load susceptibility file"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4398,13 +4407,13 @@ class Compound:
             ) from None
 
         try:
-            """Plotting in matplotlib"""
+            # Plotting in matplotlib
             fig, ax = subplots()
-            """Defining colour maps for graphs"""
+            # Defining colour maps for graphs
             colour = iter(
                 colour_map(colour_map_name)(linspace(0, 1, len(fields)))
             )
-            """Creating a plot"""
+            # Creating a plot
             for i, ch in enumerate(chi):
                 c = next(colour)
                 ax.plot(
@@ -4453,7 +4462,7 @@ class Compound:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot susceptibility data"
+                "Failed to plot susceptibility data"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4465,13 +4474,13 @@ class Compound:
             ) from None
         if save:
             try:
-                """Saving plot figure"""
+                # Saving plot figure
                 fig.savefig(f"chitht_{group}.tiff", dpi=300)
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save susceptibility data plot "
+                    "Failed to save susceptibility data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -4487,39 +4496,43 @@ class Compound:
     def plot_helmholtz_energyth(
         self,
         group: str,
-        internal_energy=False,
-        save=False,
-        colour_map_name="PrOr",
-        xlim=(),
-        ylim=(),
-        xticks=1,
-        yticks=0,
-        field="B",
+        internal_energy: bool = False,
+        save: bool = False,
+        colour_map_name: str or list[str] = "PrOr",
+        xlim: tuple[int or float] = (),
+        ylim: tuple[int or float] = (),
+        xticks: int or float = 1,
+        yticks: int or float = 0,
+        field: Union["B", "H"] = "B",
     ):
         """
-        Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group
-        in HDF5 file, graphs can be optionally saved, colour palettes can be changed.
+        Creates graphs of Helmholtz energy(T,H) or internal energy(T,H) given a
+        name of the group in .slt file, graphs can be optionally saved, colour
+        palettes can be changed.
 
         Parameters
         ----------
         group: str
-            name of a group from HDF5 file for which plot will be created
+            Name of a group from .slt file for which a plot will be created.
         internal_energy: bool = False
-            #TODO: ???
+            Changes the plot from the Helmholtz to internal energy.
         save: bool = False
-            determines if plot is saved, name of the file will be in following format: f'chitht_{group}.tiff'
+            Determines if the plot is saved, name of the file will be in the
+            following format: f'energyth_{group}.tiff'.
         colour_map_name: str or list[str] = 'PrOr'
-            input of colour_map function
-        xlim: tuple of 1-2 floats = ()
-            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed
-        ylim: tuple of 1-2 floats = ()
-            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed
-        xticks: int = 100
-            determines freqency of x major ticks
+            Input of the colour_map function.
+        xlim: tuple(optional: float, optional: float) = ()
+            Determines the lower and upper limit of the x-axis if two floats
+            are passed, or just the upper limit if one is passed.
+        ylim: tuple(optional: float, optional: float) = ()
+            Determines the lower and upper limit of the y-axis if two floats
+            are passed, or just the upper limit if one is passed.
+        xticks: int or float = 100
+            Determines the frequency of x major ticks.
         yticks: int = 0
-            determines freqency of y major ticks
-        field: Unity['B','H'] = 'B'
-            determines field unit - B[T] or H[kOe]
+            Determines the freqency of y major ticks.
+        field: Union['B','H'] = 'B'
+            Determines the field unit - B[T] or H[kOe].
 
         Returns
         -------
@@ -4528,19 +4541,20 @@ class Compound:
         Raises
         ------
         SltFileError
-            if unable to load data file, most likely encountered if group name is incorrect
+            If unable to load the data file. Most likely encountered if the
+            group name is incorrect.
         SltPlotError
-            if unable to create plot
+            If unable to create plot.
         SltSaveError
-            if unable to save plot as image
+            If unable to save plot as image.
         """
         if internal_energy:
             name = "internal"
         else:
             name = "helmholtz"
         try:
-            """Getting data from hdf5 or sloth file"""
-            mth = self[f"{group}_{name}_energy", f"{group}_eth"]
+            # Getting data from hdf5 or sloth file
+            eth = self[f"{group}_{name}_energy", f"{group}_eth"]
             fields = self[f"{group}_{name}_energy", f"{group}_fields"]
             if field == "H":
                 fields *= 10
@@ -4550,7 +4564,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load Helmholtz energy file"
+                "Failed to load Helmholtz energy file"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4564,16 +4578,16 @@ class Compound:
             ) from None
 
         try:
-            """Plotting in matplotlib"""
+            # Plotting in matplotlib
             fig, ax = subplots()
-            """Defining colour maps for graphs"""
+            # Defining colour maps for graphs
             colour = iter(
                 colour_map(colour_map_name)(linspace(0, 1, len(temps)))
             )
-            """Creating a plot"""
-            for i, mh in enumerate(mth):
+            # Creating a plot
+            for i, eh in enumerate(eth):
                 c = next(colour)
-                ax.plot(fields, mh, linewidth=2, c=c, label=f"{temps[i]} K")
+                ax.plot(fields, eh, linewidth=2, c=c, label=f"{temps[i]} K")
 
             if yticks:
                 ax.yaxis.set_major_locator(MultipleLocator(yticks))
@@ -4586,7 +4600,7 @@ class Compound:
                 ax.set_xlabel(r"$B\ /\ \mathrm{T}$")
             elif field == "H":
                 ax.set_xlabel(r"$H\ /\ \mathrm{kOe}$")
-            ax.set_ylabel(r"$M\ /\ \mathrm{\mu_{B}}$")
+            ax.set_ylabel(r"$E\ /\ \mathrm{cm^{-1}}$")
             if xlim:
                 if len(xlim) == 2:
                     ax.set_ylim(xlim[0], xlim[1])
@@ -4594,7 +4608,7 @@ class Compound:
                     ax.set_ylim(xlim[0])
             else:
                 if len(temps) > 17:
-                    ax.set_xlim(0)
+                    ax.set_xlim(0, fields[-1])
                     ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
 
                 else:
@@ -4605,15 +4619,13 @@ class Compound:
                     ax.set_ylim(ylim[0], ylim[1])
                 else:
                     ax.set_ylim(ylim[0])
-            else:
-                ax.set_ylim(0)
             tight_layout()
             show()
         except Exception as exc:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot Helmholtz energy data"
+                "Failed to plot energy data"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4625,13 +4637,13 @@ class Compound:
             ) from None
         if save:
             try:
-                """Saving plot figure"""
-                fig.savefig(f"helmholtz_{group}.tiff", dpi=300)
+                # Saving plot figure
+                fig.savefig(f"energyth_{group}.tiff", dpi=300)
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save Helmholtz energy data plot "
+                    "Failed to save energy data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -4641,49 +4653,55 @@ class Compound:
                     + RESET
                     + '", filename: '
                     + PURPLE
-                    + f"helmholtz_{group}.tiff",
+                    + f"energyth_{group}.tiff",
                 ) from None
 
     def plot_zeeman(
         self,
         group: str,
-        save=False,
-        colour_map_name1="BuPi",
-        colour_map_name2="BuPi_r",
-        single=False,
-        xlim=(),
-        ylim=(),
-        xticks=1,
-        yticks=0,
-        field="B",
+        save: bool = False,
+        colour_map_name1: str or list[str] = "BuPi",
+        colour_map_name2: str or list[str] = "BuPi_r",
+        single: bool = False,
+        xlim: tuple[int or float] = (),
+        ylim: tuple[int or float] = (),
+        xticks: int or float = 1,
+        yticks: int or float = 0,
+        field: Union["H", "B"] = "B",
     ):
         """
-        Function that creates graphs of E(H,orientation) given name of the group in HDF5 file, graphs can be optionally
-        saved, colour palettes can be changed.
+        Function that creates graphs of E(H,orientation) given a name of the
+        group in .slt file, graphs can be optionally saved, colour palettes
+        can be changed.
 
         Parameters
         ----------
         group: str
-            name of a group from HDF5 file for which plot will be created
+            Name of a group from .slt file for which a plot will be created.
         save: bool = False
-            determines if plot is saved, name of the file will be in following format: f'zeeman_{group}.tiff' or
-            f'zeeman_{group}_Orientation {orientations[i]}.tiff'
+            Determines if the plot is saved, name of the file will be in the
+            following format: f'zeeman_{group}.tiff' or f'zeeman_{group}
+            _Orientation {orientations[i]}.tiff'.
         colour_map_name1: str or list[str] = 'BuPi'
-            input of colour_map function, determines colour of lower set of split lines
+            Input of the colour_map function, determines a colour of the lower
+            set of split lines.
         colour_map_name2: str or list[str] = 'BuPi_r'
-            input of colour_map function, determines colour of higher set of split lines
+            Input of the colour_map function, determines a colour of the higher
+            set of split lines.
         single: bool = False
-            determines if all orientations are plotted together
+            Determines if all the orientations are plotted together.
         xlim: tuple of 1-2 floats = ()
-            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed
+            Determines the lower and upper limit of the x-axis if two floats
+            are passed, or just the upper limit if one is passed.
         ylim: tuple of 1-2 floats = ()
-            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed
-        xticks: int = 1
-            determines frequency of x major ticks
-        yticks: int = 0
-            determines frequency of y major ticks
-        field: Unity['B','H'] = 'B'
-            determines field unit - B[T] or H[kOe]
+            Determines the lower and upper limit of the y-axis if two floats
+            are passed, or just the upper limit if one is passed.
+        xticks: int or float = 1
+            Determines the frequency of x major ticks.
+        yticks: int or float = 0
+            Determines the frequency of y major ticks.
+        field: Union['B','H'] = 'B'
+            Determines the field unit - B[T] or H[kOe].
 
         Returns
         -------
@@ -4692,14 +4710,15 @@ class Compound:
         Raises
         ------
         SltFileError
-            if unable to load data file, most likely encountered if group name is incorrect
+            If unable to load the data file. Most likely encountered if the
+            group name is incorrect.
         SltPlotError
-            if unable to create plot
+            If unable to create the plot.
         SltSaveError
-            if unable to save plot as image
+            If unable to save the plot as an image.
         """
         try:
-            """Getting data from hdf5 or sloth file"""
+            # Getting data from hdf5 or sloth file
             zeeman = self[f"{group}_zeeman_splitting", f"{group}_zeeman"]
             fields = self[f"{group}_zeeman_splitting", f"{group}_fields"]
             if field == "H":
@@ -4713,7 +4732,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load Zeeman splitting file"
+                "Failed to load Zeeman splitting file"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4727,7 +4746,7 @@ class Compound:
             ) from None
 
         try:
-            """Plotting in matplotlib"""
+            # Plotting in matplotlib
             if not single:
                 number_of_plots = len(orientations)
                 if number_of_plots % 5 == 0:
@@ -4746,7 +4765,7 @@ class Compound:
                     fig = figure(figsize=(6.4, 3.2 * number_of_plots))
                     gs = GridSpec(1, number_of_plots)
                     divisor = 1
-                """Creating a plot"""
+                # Creating a plot
                 for i, zee in enumerate(zeeman):
                     if i % divisor != 0:
                         rc(
@@ -4951,7 +4970,7 @@ class Compound:
                     show()
                     if save:
                         try:
-                            """Saving plot figure"""
+                            # Saving plot figure
                             fig.savefig(
                                 f"zeeman_{group}_Orientation"
                                 f" {orientations[i]}.tiff",
@@ -4961,7 +4980,7 @@ class Compound:
                             raise SltSaveError(
                                 self._hdf5,
                                 exc,
-                                f"Failed to save zeeman splitting data plot"
+                                "Failed to save Zeeman splitting data plot"
                                 + BLUE
                                 + "Group "
                                 + RESET
@@ -4979,7 +4998,7 @@ class Compound:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot zeeman splitting data"
+                "Failed to plot Zeeman splitting data"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4991,13 +5010,13 @@ class Compound:
             ) from None
         if save and not single:
             try:
-                """Saving plot figure"""
+                # Saving plot figure
                 fig.savefig(f"zeeman_{group}.tiff", dpi=300)
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save zeeman splitting data plot "
+                    "Failed to save Zeeman splitting data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -5013,43 +5032,62 @@ class Compound:
     def plot_3d(
         self,
         group: str,
-        data_type: str,
+        data_type: Union[
+            "chit",
+            "chi",
+            "helmholtz_energy",
+            "internal_energy",
+            "magnetisation",
+        ],
         field_i: int,
         temp_i: int,
-        save=False,
-        colour_map_name="dark_rainbow_r_l",
-        lim_scalar=1.0,
-        ticks=1.0,
-        r_density=0,
-        c_density=0,
-        axis_off=False,
+        save: bool = False,
+        colour_map_name: str or list[str] = "dark_rainbow_r_l",
+        round_temp: int = 3,
+        round_field: int = 3,
+        lim_scalar: float = 1.0,
+        ticks: float = 1.0,
+        r_density: int = 0,
+        c_density: int = 0,
+        axis_off: bool = False,
     ):
         """
-        Function that creates 3d plots of data dependent on field B[T] and temperature T[K].
+        Creates 3d plots of data dependent on field B[T] and temperature T[K].
 
         Parameters
         ----------
         group: str
-            name of a group from HDF5 file for which plot will be created
-        data_type: Unity["chit", "chi", "helmholtz_energy", "magnetisation"]
-            type of data that will be used to create plot
+            Name of a group from .slt file for which a plot will be created.
+        data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
+          "magnetisation"]
+            Type of the data that will be used to create plot.
         field_i: int
-            index of field from dataset that will be used for plot
+            Index of the field from dataset that will be used for the plot.
         temp_i: int
-            index of temperature from dataset that will be used for plot
+            Index of the temperature from the dataset that will be used for the
+            plot.
         save: bool = False
-            determines if plot is saved, name of the file will be in following format: f'{group}_3d_{data_type}.tiff'
+            Determines if the plot is saved, name of the file will be in the
+            following format: f'{group}_3d_{data_type}.tiff'.
         colour_map_name: str or list[str] = 'dark_rainbow_r_l'
-            input of colour_map function
+            Input of the colour_map function.
+        round_temp: int = 3
+            Determines how many digits will be rounded in the graph's title
+            for temperature.
+        round_field: int = 3
+            Determines how many digits will be rounded in the graph's title
+            for field.
         lim_scalar: float = 1.
-            scalar used to set limits of axes, smaller values magnify plotted figure
+            Scalar used to set limits of the axes, smaller values magnify the
+            plotted figure.
         ticks: float = 1.
+            Frequency of the ticks on all axes.
         r_density: int = 0
-            determines rcount of 3D plot
+            Determines the rcount of a 3D plot.
         c_density: int = 0
-            determines ccount of 3D plot
+            Determines the ccount of a 3D plot.
         axis_off: bool = False
-            determines if axes are turned off
+            Determines if the axes are turned off.
 
         Returns
         -------
@@ -5058,11 +5096,11 @@ class Compound:
         Raises
         ------
         SltFileError
-            if unable to load data file, most likely encountered if group name is incorrect
+            If unable to load data file. Most likely encountered if group name is incorrect.
         SltPlotError
-            if unable to create plot
+            If unable to create plot.
         SltSaveError
-            if unable to save plot as image
+            If unable to save plot as image.
         """
         try:
             T = False
@@ -5078,8 +5116,8 @@ class Compound:
                 ]
                 description = (
                     "ChiT dependance on direction,"
-                    f" B={self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i]} "
-                    f"T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i]}"
+                    f" B={round(self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i], round_field)} T,"
+                    f"T={round(self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i], round_temp)} K"
                 )
                 T = True
             elif data_type == "chi":
@@ -5094,8 +5132,8 @@ class Compound:
                 ]
                 description = (
                     "Chi dependance on direction,"
-                    f" B={self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i]} T,"
-                    f" T={self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i]} K"
+                    f" B={round(self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i], round_field)} T,"
+                    f"T={round(self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i], round_temp)} K"
                 )
             elif data_type == "helmholtz_energy":
                 x = self[f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"][
@@ -5108,9 +5146,24 @@ class Compound:
                     2, field_i, temp_i, :, :
                 ]
                 description = (
-                    "Energy dependence on direction,"
-                    f" B={self[f'{group}_3d_helmholtz_energy', f'{group}_fields'][field_i]} T,"
-                    f" T={self[f'{group}_3d_helmholtz_energy', f'{group}_temperatures'][temp_i]} K"
+                    "Hemholtz energy dependence on direction,"
+                    f" B={round(self[f'{group}_3d_helmholtz_energy', f'{group}_fields'][field_i], round_field)} T,"
+                    f"T={round(self[f'{group}_3d_helmholtz_energy', f'{group}_temperatures'][temp_i], round_temp)} K"
+                )
+            elif data_type == "internal_energy":
+                x = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    0
+                ]
+                y = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    1
+                ]
+                z = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    2
+                ]
+                description = (
+                    "Internal energy dependence on distance,"
+                    f" B={round(self[f'{group}_3d_internal_energy', f'{group}_fields'][field_i], round_field)} T,"
+                    f"T={round(self[f'{group}_3d_internal_energy', f'{group}_temperatures'][temp_i], round_temp)} K"
                 )
             elif data_type == "magnetisation":
                 x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
@@ -5124,17 +5177,16 @@ class Compound:
                 ]
                 description = (
                     "Magnetisation dependence on direction,"
-                    f" B={self[f'{group}_3d_magnetisation', f'{group}_fields'][field_i]} T,"
-                    f" T={self[f'{group}_3d_magnetisation', f'{group}_temperatures'][temp_i]} K"
+                    f" B={round(self[f'{group}_3d_magnetisation', f'{group}_fields'][field_i], round_field)} T,"
+                    f"T={round(self[f'{group}_3d_magnetisation', f'{group}_temperatures'][temp_i], round_temp)} K"
                 )
             else:
                 raise ValueError
-            # title = description
         except Exception as exc:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load 3d data file"
+                "Failed to load the 3D data file"
                 + BLUE
                 + "Group "
                 + RESET
@@ -5158,7 +5210,7 @@ class Compound:
                 r_density = rcount
             if not c_density:
                 c_density = ccount
-            (surface,) = ax.plot_surface(
+            surface = ax.plot_surface(
                 x,
                 y,
                 z,
@@ -5226,16 +5278,16 @@ class Compound:
                     labelpad=10 * len(str(ticks)) / 4,
                 )
             if ticks == 0:
-                for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                    axis.set_ticklabels([])
-                    axis._axinfo["axisline"]["linewidth"] = 1
-                    axis._axinfo["axisline"]["color"] = (0, 0, 0)
-                    axis._axinfo["grid"]["linewidth"] = 0.5
-                    axis._axinfo["grid"]["linestyle"] = "-"
-                    axis._axinfo["grid"]["color"] = (0, 0, 0)
-                    axis._axinfo["tick"]["inward_factor"] = 0.0
-                    axis._axinfo["tick"]["outward_factor"] = 0.0
-                    axis.set_pane_color((0.95, 0.95, 0.95))
+                for axis_i in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                    axis_i.set_ticklabels([])
+                    axis_i._axinfo["axisline"]["linewidth"] = 1
+                    axis_i._axinfo["axisline"]["color"] = (0, 0, 0)
+                    axis_i._axinfo["grid"]["linewidth"] = 0.5
+                    axis_i._axinfo["grid"]["linestyle"] = "-"
+                    axis_i._axinfo["grid"]["color"] = (0, 0, 0)
+                    axis_i._axinfo["tick"]["inward_factor"] = 0.0
+                    axis_i._axinfo["tick"]["outward_factor"] = 0.0
+                    axis_i.set_pane_color((0.95, 0.95, 0.95))
             else:
                 ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                 ax.yaxis.set_minor_locator(AutoMinorLocator(2))
@@ -5249,13 +5301,13 @@ class Compound:
             ax.set_box_aspect([1, 1, 1])
             title(description)
             if axis_off:
-                axis("off")
+                ax.set_axis_off()
             show()
         except Exception as exc:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot 3d data "
+                "Failed to plot 3D data "
                 + BLUE
                 + "Group "
                 + RESET
@@ -5278,7 +5330,7 @@ class Compound:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    f"Failed to save 3d data plot "
+                    "Failed to save the 3D data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -5294,71 +5346,83 @@ class Compound:
     def animate_3d(
         self,
         group: str,
-        data_type: str,
-        animation_variable: str,
+        data_type: Union[
+            "chit",
+            "chi",
+            "helmholtz_energy",
+            "internal_energy" "magnetisation",
+        ],
+        animation_variable: Union["temperature", "field"],
         filename: str,
-        i_start=0,
-        i_end=30,
-        i_constant=0,
-        colour_map_name="dark_rainbow_r_l",
-        lim_scalar=1,
-        ticks=1,
-        r_density=0,
-        c_density=0,
-        axis_off=False,
-        fps=15,
-        dpi=100,
-        bar=True,
-        bar_scale=False,
-        bar_colour_map_name="dark_rainbow_r",
-        temp_rounding=0,
-        field_rounding=0,
+        i_start: int = 0,
+        i_end: int = -1,
+        i_constant: int = 0,
+        colour_map_name: str or list[str] = "dark_rainbow_r_l",
+        lim_scalar: float = 1.0,
+        ticks: int or float = 1,
+        r_density: int = 0,
+        c_density: int = 0,
+        axis_off: bool = False,
+        fps: int = 15,
+        dpi: int = 100,
+        bar: bool = True,
+        bar_scale: bool = False,
+        bar_colour_map_name: str or list[str] = "dark_rainbow_r",
+        temp_rounding: int = 0,
+        field_rounding: int = 0,
     ):
         """
-        Creates animations of 3d plots of data dependent on field B[T] and temperature T[K]
+        Creates animations of 3d plots of data dependent on field B[T] and
+        temperature T[K].
 
         Parameters
         ----------
         group: str
-            name of a group from HDF5 file for which plot will be created
-        data_type: Unity["chit", "chi", "helmholtz_energy", "magnetisation"]
-            type of data that will be used to create plot
-        animation_variable: str
-            variable changing during animation, can take one of two values: temperature or field
+            Name of a group from .slt file for which a plot will be created.
+        data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
+          "magnetisation"]
+            Type of the data that will be used to create the plot.
+        animation_variable: Union["temperature", "field"]
+            Variable changing during the animation, can take one of two values:
+            temperature or field.
         filename: str
-            name of the output .gif file
-        i_start: int
-            index of first frame's field/temperature
-        i_end: int
-            index of last frame's field/temperature
+            Name of the output .gif file.
+        i_start: int = 0
+            Index of the first frame's field/temperature.
+        i_end: int = -1
+            Index of the last frame's field/temperature.
         i_constant: int
-            index of constant temperature/field
+            Index of the constant temperature/field value.
         colour_map_name: str or list = 'dark_rainbow_r_l'
-            input of colour_map function, determines colour of main figure
+            Input of tje colour_map function, determines a colour of the
+            main figure.
         lim_scalar: float = 1.
-            scalar used to set limits of axes, smaller values magnify plotted figure
+            Scalar used to set the limits of axes, smaller values magnify the
+            plotted figure.
         ticks: float = 1
-            determines ticks spacing
+            Determines the ticks spacing.
         r_density: int = 0
-            determines rcount of 3D plot
+            Determines the rcount of the 3D plot.
         c_density: int = 0
-            determines ccount of 3D plot
+            Determines the ccount of the 3D plot.
         axis_off: bool = False
-            determines if axes are turned off
+            Determines if the axes are turned off.
         fps: int
-            number of frames per second in animation
+            Number of frames per second in the animation.
         dpi: int
-            dots per inch resolution of frames
+            Dots per inch resolution of the frames.
         bar: bool = True
-            determines if bar representing animation variable is shown
+            Determines if the bar representing animation variable is shown.
         bar_scale: bool = False
-            determines if scale should be shown for bar
+            Determines if a scale should be shown for bar.
         bar_colour_map_name: str or list = 'dark_rainbow_r_l'
-            input of colour_map function, determines colour of bar
+            Input of the colour_map function, determines a colour of the bar.
         temp_rounding: int = 0
-            determines how many decimal places are shown in bar/plot labels for temperature
+            Determines how many decimal places are shown in the bar/plot labels
+            for temperatures.
         field_rounding: int = 0
-            determines how many decimal places are shown in bar/plot labels for field
+            Determines how many decimal places are shown in the bar/plot labels
+            for fields.
         Returns
         -------
         Nothing
@@ -5366,9 +5430,10 @@ class Compound:
         Raises
         ------
         SltFileError
-            if unable to load data file, most likely encountered if group name is incorrect
+            If unable to load the data file. Most likely encountered if the
+            group name is incorrect.
         SltPlotError
-            if unable to create and save animated plot
+            If unable to create the plot.
         """
         try:
             T = False
@@ -5405,6 +5470,20 @@ class Compound:
                 temps = self[
                     f"{group}_3d_helmholtz_energy", f"{group}_temperatures"
                 ]
+            elif data_type == "internal_energy":
+                x0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    0
+                ]
+                y0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    1
+                ]
+                z0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
+                    2
+                ]
+                fields = self[f"{group}_3d_internal_energy", f"{group}_fields"]
+                temps = self[
+                    f"{group}_3d_internal_energy", f"{group}_temperatures"
+                ]
             elif data_type == "magnetisation":
                 x0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][0]
                 y0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][1]
@@ -5422,9 +5501,9 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load 3d data file"
+                "Failed to load 3D data file"
                 + BLUE
-                + "Group "
+                + " Group "
                 + RESET
                 + '"'
                 + BLUE
@@ -5436,20 +5515,20 @@ class Compound:
             ) from None
         if animation_variable == "temperature":
             description = (
-                "Magnetisation dependence on direction,"
-                f" B={fields[i_constant]:.4f} T"
+                f"f{data_type[0].upper() + data_type[1:].split('_')} dependence"
+                f" on direction, B={fields[i_constant]:.4f} T"
             )
         elif animation_variable == "field":
             description = (
-                "Magnetisation dependence on direction,"
-                f" T={temps[i_constant]:.4f} K"
+                f"f{data_type[0].upper() + data_type[1:].split('_')} dependence"
+                f" on direction, T={temps[i_constant]:.4f} K"
             )
         else:
             raise ValueError(
                 "There exist only two animation variables: field and"
                 " temperature"
             )
-        # title = description
+        title = description
 
         try:
             fig = figure()
@@ -5502,7 +5581,10 @@ class Compound:
                                 r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
-                        elif data_type == "helmholtz_energy":
+                        elif (
+                            data_type == "helmholtz_energy"
+                            or "internal_energy"
+                        ):
                             ax.set_xlabel(
                                 r"$E\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
@@ -5558,16 +5640,16 @@ class Compound:
                         # Important order of operations!
 
                         if ticks == 0:
-                            for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                                axis.set_ticklabels([])
-                                axis._axinfo["axisline"]["linewidth"] = 1
-                                axis._axinfo["axisline"]["color"] = (0, 0, 0)
-                                axis._axinfo["grid"]["linewidth"] = 0.5
-                                axis._axinfo["grid"]["linestyle"] = "-"
-                                axis._axinfo["grid"]["color"] = (0, 0, 0)
-                                axis._axinfo["tick"]["inward_factor"] = 0.0
-                                axis._axinfo["tick"]["outward_factor"] = 0.0
-                                axis.set_pane_color((0.95, 0.95, 0.95))
+                            for axis_i in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                                axis_i.set_ticklabels([])
+                                axis_i._axinfo["axisline"]["linewidth"] = 1
+                                axis_i._axinfo["axisline"]["color"] = (0, 0, 0)
+                                axis_i._axinfo["grid"]["linewidth"] = 0.5
+                                axis_i._axinfo["grid"]["linestyle"] = "-"
+                                axis_i._axinfo["grid"]["color"] = (0, 0, 0)
+                                axis_i._axinfo["tick"]["inward_factor"] = 0.0
+                                axis_i._axinfo["tick"]["outward_factor"] = 0.0
+                                axis_i.set_pane_color((0.95, 0.95, 0.95))
                         else:
                             ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                             ax.yaxis.set_minor_locator(AutoMinorLocator(2))
@@ -5587,7 +5669,7 @@ class Compound:
                         ax.set_box_aspect([1, 1, 1])
                         ax.set_title(title)
                         if axis_off:
-                            matplotlib.pyplot.axis("off")
+                            ax.set_axis_off()
 
                         if bar:
                             c = next(colour)
@@ -5603,14 +5685,18 @@ class Compound:
                                 axins.text(
                                     1,
                                     1,
-                                    s=f"{round(temps[-1], temp_rounding)} K",
+                                    s=(
+                                        f"{round(temps[i_end], temp_rounding)} K"
+                                    ),
                                     verticalalignment="bottom",
                                     horizontalalignment="center",
                                 )
                                 axins.text(
                                     1,
                                     -0.03,
-                                    s=f"{round(temps[0], temp_rounding)} K",
+                                    s=(
+                                        f"{round(temps[i_start], temp_rounding)} K"
+                                    ),
                                     verticalalignment="top",
                                     horizontalalignment="center",
                                 )
@@ -5690,7 +5776,6 @@ class Compound:
                                 "Acceptable data types: chit, chi,"
                                 " helmholtz_energy and magnetisation"
                             )
-                        # title = description
                         max_array = array([max(x), max(y), max(z)])
                         lim = max(max_array)
                         norm = Normalize(z.min(), z.max())
@@ -5743,7 +5828,7 @@ class Compound:
                         ax.grid(False)
 
                         ax.set_box_aspect([1, 1, 1])
-                        title(description)
+
                         if axis_off:
                             axis("off")
 
@@ -5762,14 +5847,18 @@ class Compound:
                                 axins.text(
                                     1,
                                     1,
-                                    s=f"{round(fields[-1], field_rounding)} T",
+                                    s=(
+                                        f"{round(fields[i_end], field_rounding)} T"
+                                    ),
                                     verticalalignment="bottom",
                                     horizontalalignment="center",
                                 )
                                 axins.text(
                                     1,
                                     -0.03,
-                                    s=f"{round(fields[0], field_rounding)} T",
+                                    s=(
+                                        f"{round(fields[i_start], field_rounding)} T"
+                                    ),
                                     verticalalignment="top",
                                     horizontalalignment="center",
                                 )
@@ -5791,9 +5880,9 @@ class Compound:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot and save 3d data"
+                "Failed to plot and save 3D data"
                 + BLUE
-                + "Group "
+                + " Group "
                 + RESET
                 + '"'
                 + BLUE
@@ -5805,53 +5894,67 @@ class Compound:
     def interactive_plot_3d(
         self,
         group: str,
-        data_type: str,
-        colour_map_name="dark_rainbow_r",
-        T_slider_colour="#77f285",
-        B_slider_colour="#794285",
-        temp_bar_colour_map_name="BuRd",
-        field_bar_colour_map_name="BuPi",
-        lim_scalar=1,
-        ticks=1,
-        bar=True,
-        bar_scale=False,
-        temp_rounding=2,
-        field_rounding=2,
-        axis_off=False,
+        data_type: Union[
+            "chit",
+            "chi",
+            "helmholtz_energy",
+            "internal_energy",
+            "magnetisation",
+        ],
+        colour_map_name: str or list[str] = "dark_rainbow_r",
+        T_slider_colour: str = "#77f285",
+        B_slider_colour: str = "#794285",
+        temp_bar_colour_map_name: str or list[str] = "BuRd",
+        field_bar_colour_map_name: str or list[str] = "BuPi",
+        lim_scalar: float = 1.0,
+        ticks: int or float = 1,
+        bar: bool = True,
+        bar_scale: bool = False,
+        temp_rounding: int = 2,
+        field_rounding: int = 2,
+        axis_off: int = False,
     ):
         """
-        Creates interactive widget plot dependent on  field and temperature.
+        Creates interactive widget plot dependent on field and temperature
+        values.
 
         Parameters
         ----------
         group: str
-            name of a group from HDF5 file for which plot will be created
-        data_type: Unity["chit", "chi", "helmholtz_energy", "magnetisation", "internal_energy"]
-            type of data that will be used to create plot
+            Name of a group from HDF5 file for which plot will be created.
+        data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
+          "magnetisation"]
+            Type of the data that will be used to create the plot.
         colour_map_name: str or list = 'dark_rainbow_r_l'
-            input of colour_map function, determines colour of main figure
+            Input of the colour_map function, determines a colour of the main
+            figure.
         T_slider_colour: str
-            determines colour of temperature slider
+            Determines a colour of the temperature slider.
         B_slider_colour: str
-            determines colour of field slider
+            Determines a colour of the field slider.
         temp_bar_colour_map_name: str or list[str] = 'BuRd'
-            input of colour_map function, determines colour map of temperature bar
+            Input of the colour_map function, determines a colour map of the
+            temperature bar.
         field_bar_colour_map_name: str or list[str] = 'BuPi'
-            input of colour_map function, determines colour map of field bar
+            Input of the colour_map function, determines a colour map of the
+            field bar.
         lim_scalar: float = 1.
-            scalar used to set limits of axes, smaller values magnify plotted figure
+            Scalar used to set limits of the axes, smaller values magnify the
+            plotted figure.
         ticks: float = 1
-            determines ticks spacing
+            Determines the ticks spacing.
         bar: bool = True
-            determines if bar is shown
+            Determines if the bar is shown.
         bar_scale: bool = False
-            determines if bar scale is shown
+            Determines if the bar scale is shown.
         temp_rounding: int = 2
-            determines how many significant digits are shown relative to int(value) for temperature
+            Determines how many significant digits are shown relative to the
+            int(value) for temperature.
         temp_rounding: int = 2
-            determines how many significant digits are shown relative to int(value) for field
+            Determines how many significant digits are shown relative to the
+            int(value) for field.
         axis_off: bool = False
-            determines if axes are turned off
+            Determines if the axes are turned off.
         Returns
         -------
         Nothing
@@ -5859,9 +5962,10 @@ class Compound:
         Raises
         ------
         SltFileError
-            if unable to load data file, most likely encountered if group name is incorrect
+            If unable to load the data file. Most likely encountered if the
+            group name is incorrect.
         SltPlotError
-            if unable to create animated plot
+            If unable to create the plot.
         """
         field_i, temp_i = 0, 0
         try:
@@ -5928,9 +6032,9 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load 3d data file"
+                "Failed to load 3d data file"
                 + BLUE
-                + "Group "
+                + " Group "
                 + RESET
                 + '"'
                 + BLUE
@@ -5997,7 +6101,7 @@ class Compound:
                     ax_label = (
                         r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$"
                     )
-            elif data_type == "helmholtz_energy":
+            elif data_type == "helmholtz_energy" or "internal_energy":
                 ax_label = r"$E\ /\ \mathrm{cm^{-1}}$"
             elif data_type == "magnetisation":
                 ax_label = r"$M\ /\ \mathrm{\mu_{B}}$"
@@ -6005,16 +6109,16 @@ class Compound:
             ax.set_ylabel(ax_label, labelpad=labelpad)
             ax.set_zlabel(ax_label, labelpad=labelpad)
             if ticks == 0:
-                for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                    axis.set_ticklabels([])
-                    axis._axinfo["axisline"]["linewidth"] = 1
-                    axis._axinfo["axisline"]["color"] = (0, 0, 0)
-                    axis._axinfo["grid"]["linewidth"] = 0.5
-                    axis._axinfo["grid"]["linestyle"] = "-"
-                    axis._axinfo["grid"]["color"] = (0, 0, 0)
-                    axis._axinfo["tick"]["inward_factor"] = 0.0
-                    axis._axinfo["tick"]["outward_factor"] = 0.0
-                    axis.set_pane_color((0.95, 0.95, 0.95))
+                for axis_i in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                    axis_i.set_ticklabels([])
+                    axis_i._axinfo["axisline"]["linewidth"] = 1
+                    axis_i._axinfo["axisline"]["color"] = (0, 0, 0)
+                    axis_i._axinfo["grid"]["linewidth"] = 0.5
+                    axis_i._axinfo["grid"]["linestyle"] = "-"
+                    axis_i._axinfo["grid"]["color"] = (0, 0, 0)
+                    axis_i._axinfo["tick"]["inward_factor"] = 0.0
+                    axis_i._axinfo["tick"]["outward_factor"] = 0.0
+                    axis_i.set_pane_color((0.95, 0.95, 0.95))
             else:
                 ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                 ax.yaxis.set_minor_locator(AutoMinorLocator(2))
@@ -6106,7 +6210,7 @@ class Compound:
 
             slider_temp = Slider(
                 ax_temp,
-                f"T [index]",
+                "T [index]",
                 valmin=0,
                 valmax=temps.size - 1,
                 orientation="vertical",
@@ -6116,7 +6220,7 @@ class Compound:
             )
             slider_field = Slider(
                 ax_field,
-                f"B [index]",
+                "B [index]",
                 valmin=0,
                 valmax=fields.size - 1,
                 orientation="vertical",
@@ -6162,16 +6266,16 @@ class Compound:
                 ax.set_zlabel(ax_label, labelpad=labelpad)
 
                 if ticks == 0:
-                    for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-                        axis.set_ticklabels([])
-                        axis._axinfo["axisline"]["linewidth"] = 1
-                        axis._axinfo["axisline"]["color"] = (0, 0, 0)
-                        axis._axinfo["grid"]["linewidth"] = 0.5
-                        axis._axinfo["grid"]["linestyle"] = "-"
-                        axis._axinfo["grid"]["color"] = (0, 0, 0)
-                        axis._axinfo["tick"]["inward_factor"] = 0.0
-                        axis._axinfo["tick"]["outward_factor"] = 0.0
-                        axis.set_pane_color((0.95, 0.95, 0.95))
+                    for axis_i in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                        axis_i.set_ticklabels([])
+                        axis_i._axinfo["axisline"]["linewidth"] = 1
+                        axis_i._axinfo["axisline"]["color"] = (0, 0, 0)
+                        axis_i._axinfo["grid"]["linewidth"] = 0.5
+                        axis_i._axinfo["grid"]["linestyle"] = "-"
+                        axis_i._axinfo["grid"]["color"] = (0, 0, 0)
+                        axis_i._axinfo["tick"]["inward_factor"] = 0.0
+                        axis_i._axinfo["tick"]["outward_factor"] = 0.0
+                        axis_i.set_pane_color((0.95, 0.95, 0.95))
                 else:
                     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                     ax.yaxis.set_minor_locator(AutoMinorLocator(2))
@@ -6242,15 +6346,15 @@ class Compound:
             slider_temp.on_changed(slider_update)
             slider_field.on_changed(slider_update)
             if axis_off:
-                axis("off")
+                ax.set_axis_off()
             show()
         except Exception as exc:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                f"Failed to plot 3d data"
+                "Failed to plot 3D data"
                 + BLUE
-                + "Group "
+                + " Group "
                 + RESET
                 + '"'
                 + BLUE

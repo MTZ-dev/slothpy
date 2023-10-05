@@ -1,32 +1,39 @@
+from typing import Union
 from numpy import linspace
 from matplotlib.colors import LinearSegmentedColormap
 from cycler import cycler
 import matplotlib.cm
 
 
-def colour_map(name):
+def colour_map(name: Union[str, list[str]]):
     """
     Creates matplotlib colour map object.
 
     Parameters
     ----------
-    name: Unity["BuPi", "rainbow", "dark_rainbow", "light_rainbow",
-        "light_rainbow_alt", "BuOr", "BuYl", "BuRd", "GnYl", "PrOr", "GnRd", "funmat", "NdCoN322bpdo",
-        "NdCoNO222bpdo", "NdCoI22bpdo", "viridis", "plasma", "inferno", "magma", "cividis"] or list[str]
-        One of defined names for colour maps: BuPi, rainbow, dark_rainbow, light_rainbow,light_rainbow_alt, BuOr,
-        BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo,
-        viridis, plasma, inferno, magma, cividis or list of HTML colour codes from which colour map will be created
-        by interpolation of colours between ones on a list. For predefined names modifiers can be applied: _l loops
-        the list in a way that it starts and ends with the same colour, _r reverses the list.
+    name: Union["BuPi", "rainbow", "dark_rainbow", "light_rainbow",
+        "light_rainbow_alt", "BuOr", "BuYl", "BuRd", "GnYl", "PrOr", "GnRd",
+        "funmat", "NdCoN322bpdo", "NdCoNO222bpdo", "NdCoI22bpdo", "viridis",
+        "plasma", "inferno", "magma", "cividis"] or list[str]
+
+        One of the defined names for colour maps: BuPi, rainbow, dark_rainbow,
+        light_rainbow,light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd,
+        funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo, viridis, plasma,
+        inferno, magma, cividis or list of HTML colour codes from which the
+        colour map will be created by interpolation of colours between ones on
+        the list. The predefined names modifiers can be applied: _l loops
+        the list in a way that it starts and ends with the same colour, _r
+        reverses the list.
     Returns
     -------
     matplotlib.colors.LinearSegmentedColormap
-        Matplotlib's colour map object used for plotting.
+        The Matplotlib's colour map object used for plotting.
     Raises
     ------
     ValueError
-        If input is not acceptable for creating colour map from list of colour codes or name of predefined colour
-        map was incorrectly written.
+        If the input is not acceptable for creating a colour map from the list
+        of colour codes or the name of predefined colour map was incorrectly
+        written.
     """
     cmap_list = []
     reverse = False
@@ -260,16 +267,17 @@ def colour_map(name):
 
 def _custom_colour_cycler(number_of_colours: int, cmap1: str, cmap2: str):
     """
-    Creates colour cycler from two colour maps in alternating pattern, suitable for use in matplotlib plots.
+    Creates a custom colour cycler from two colour maps in alternating pattern,
+    suitable for use for matplotlib plots.
 
     Parameters
     ----------
     number_of_colours: int
-        Number of colour in cycle.
+        Number of colours in cycle.
     cmap1: str or list[str]
-        Input of colour_map function.
+        Input of the colour_map function.
     cmap2: str or list[str]
-        Input of colour_map function.
+        Input of the colour_map function.
 
     Returns
     -------
@@ -279,7 +287,8 @@ def _custom_colour_cycler(number_of_colours: int, cmap1: str, cmap2: str):
     Raises
     ------
     ValueError
-        If unable to use given inputs. It should not be possible to trigger this error.
+        If unable to use the given inputs. It should not be possible
+        to trigger this error :).
     """
     try:
         if number_of_colours % 2 == 0:
@@ -314,8 +323,42 @@ def _custom_colour_cycler(number_of_colours: int, cmap1: str, cmap2: str):
                 increment += 1
         return cycler(color=colour_cycler_list)
     except Exception as exc:
-        raise ValueError(
-            "If you see this message function you try to use has an error."
-            " Contact us at email:"
+        raise SystemError(
+            "Sloths are a Neotropical group of xenarthran mammals constituting"
+            " the suborder Folivora, including the extant arboreal tree sloths"
+            " and extinct terrestrial ground sloths. Noted for their slowness"
+            " of movement, tree sloths spend most of their lives hanging"
+            " upside down in the trees of the tropical rainforests of South"
+            " America and Central America. Sloths are considered to be most"
+            " closely related to anteaters, together making up the xenarthran"
+            " order Pilosa. There are six extant sloth species in two genera –"
+            " Bradypus (three–toed sloths) and Choloepus (two–toed sloths)."
+            " Despite this traditional naming, all sloths have three toes on"
+            " each rear limb, although two-toed sloths have only two digits on"
+            " each forelimb. The two groups of sloths are from different,"
+            " distantly related families, and are thought to have evolved"
+            " their morphology via parallel evolution from terrestrial"
+            " ancestors. Besides the extant species, many species of ground"
+            " sloths ranging up to the size of elephants (like Megatherium)"
+            " inhabited both North and South America during the Pleistocene"
+            " Epoch. However, they became extinct during the Quaternary"
+            " extinction event around 12,000 years ago, along with most"
+            " large-bodied animals in the New World. The extinction correlates"
+            " in time with the arrival of humans, but climate change has also"
+            " been suggested to have contributed. Members of an endemic"
+            " radiation of Caribbean sloths also formerly lived in the Greater"
+            " Antilles but became extinct after humans settled the archipelago"
+            " in the mid-Holocene, around 6,000 years ago. Sloths are so named"
+            " because of their very low metabolism and deliberate movements."
+            " Sloth, related to slow, literally means laziness, and their"
+            " common names in several other languages (e.g. French: paresseux,"
+            " Spanish: perezoso) also mean lazy or similar. Their slowness"
+            " permits their low-energy diet of leaves and avoids detection by"
+            " predatory hawks and cats that hunt by sight. Sloths are almost"
+            " helpless on the ground but are able to swim. The shaggy coat has"
+            " grooved hair that is host to symbiotic green algae which"
+            " camouflage the animal in the trees and provide it nutrients. The"
+            " algae also nourish sloth moths, some species of which exist"
+            " solely on sloths."
+            + "Source: https://en.wikipedia.org/wiki/Sloth"
         )
-    # TODO: mail kontaktowy

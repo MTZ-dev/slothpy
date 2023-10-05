@@ -545,7 +545,7 @@ def _auto_tune(
             info = (
                 "Processes:"
                 f" {num_processes}, threads: {num_threads}."
-                " Estimated execution time: "
+                " Estimated minimal execution time: "
             )
 
             if current_time < best_time:
@@ -586,7 +586,8 @@ def _auto_tune(
         + f" {final_num_of_threads} threads"
         + RESET
         + ".\n"
-        + "The calculation time (starting from now) is estimated to be: "
+        + "The calculation time (starting from now) is estimated to be at"
+        " least: "
         + GREEN
         + f"{best_time/1e9} s"
         + RESET

@@ -56,6 +56,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/slothpy/core/compound_object';</script>
+    <script src="../../../_static/custom-icon.js?v=e5a97373"></script>
     <link rel="icon" href="../../../_static/slothpy_3.png"/>
     <link rel="author" title="About these documents" href="../../../about.html" />
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -289,7 +290,7 @@ document.write(`
           
           
           
-          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../mlmg.tif" class="icon-link-image" alt="MultiLumiMater"/></a>
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../_static/mlmg.png" class="icon-link-image" alt="MultiLumiMater"/></a>
         </li>
 </ul></div>
       
@@ -455,7 +456,7 @@ document.write(`
           
           
           
-          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../mlmg.tif" class="icon-link-image" alt="MultiLumiMater"/></a>
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../_static/mlmg.png" class="icon-link-image" alt="MultiLumiMater"/></a>
         </li>
 </ul></div>
         
@@ -4787,36 +4788,39 @@ document.write(`
     <span class="k">def</span> <span class="nf">plot_mth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">colour_map_name</span><span class="o">=</span><span class="s2">&quot;rainbow&quot;</span><span class="p">,</span>
-        <span class="n">xlim</span><span class="o">=</span><span class="p">(),</span>
-        <span class="n">ylim</span><span class="o">=</span><span class="p">(),</span>
-        <span class="n">xticks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">yticks</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">field</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span>
+        <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;rainbow&quot;</span><span class="p">,</span>
+        <span class="n">xlim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">ylim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">xticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">yticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">field</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Function that creates graphs of M(H,T) given name of the group in HDF5 file, graphs can be optionally shown,</span>
-<span class="sd">        saved, colour palettes can be changed.</span>
+<span class="sd">        Creates graphs of M(H,T) given name of the group in HDF5 file, graphs</span>
+<span class="sd">        can be optionally shown, saved, colour palettes can be changed.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            name of a group from HDF5 file for which plot will be created</span>
+<span class="sd">            Name of a group from HDF5 file for which a plot will be created.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;chitht_{group}.tiff&#39;</span>
-<span class="sd">        colour_map_name: str or list[str] = &#39;funmat&#39;</span>
-<span class="sd">            input of colour_map function</span>
-<span class="sd">        xlim: tuple of 1-2 floats = ()</span>
-<span class="sd">            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</span>
-<span class="sd">        ylim: tuple of 1-2 floats = ()</span>
-<span class="sd">            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</span>
-<span class="sd">        xticks: int = 100</span>
-<span class="sd">            determines frequency of x major ticks</span>
-<span class="sd">        yticks: int = 0</span>
-<span class="sd">            determines frequency of y major ticks</span>
-<span class="sd">        field: Unity[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
-<span class="sd">            determines field unit - B[T] or H[kOe]</span>
+<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
+<span class="sd">            following format: f&quot;mgh_{group}.tiff&quot;.</span>
+<span class="sd">        colour_map_name: str or list[str] = &quot;rainbow&quot;</span>
+<span class="sd">            Input of the colour_map function.</span>
+<span class="sd">        xlim: tuple(optional: float, optional: float) = ()</span>
+<span class="sd">            Determines the lower and upper limit of the x-axis if two floats</span>
+<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">        ylim: tuple(optional: float, optional: float) = ()</span>
+<span class="sd">            Determines the lower and upper limit of the y-axis if two floats</span>
+<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">        xticks: int or float = 1</span>
+<span class="sd">            Determines the frequency of x major ticks.</span>
+<span class="sd">        yticks: int or float = 0</span>
+<span class="sd">            Determines the frequency of y major ticks.</span>
+<span class="sd">        field: Union[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
+<span class="sd">            Determines the field unit - B[T] or H[kOe].</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -4825,14 +4829,15 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            if unable to load data file, most likely encountered if group name is incorrect</span>
+<span class="sd">            If unable to load the data file. Most likely encountered if the</span>
+<span class="sd">            group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
-<span class="sd">            if unable to create plot</span>
+<span class="sd">            If unable to create the plot.</span>
 <span class="sd">        SltSaveError</span>
-<span class="sd">            if unable to save plot as image</span>
+<span class="sd">            If unable to save the plot as an image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Getting data from hdf5 or sloth file&quot;&quot;&quot;</span>
+            <span class="c1"># Getting data from hdf5 or sloth file</span>
             <span class="n">mth</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mth&quot;</span><span class="p">]</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
@@ -4843,7 +4848,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load magnetisation file&quot;</span>
+                <span class="s2">&quot;Failed to load magnetisation file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -4857,13 +4862,13 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Plotting in matplotlib&quot;&quot;&quot;</span>
+            <span class="c1"># Plotting in matplotlib</span>
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
+            <span class="c1"># Defining colour maps for graphs</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
                 <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)))</span>
             <span class="p">)</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Creating a plot&quot;&quot;&quot;</span>
+            <span class="c1"># Creating a plot</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mh</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mth</span><span class="p">):</span>
                 <span class="n">c</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">colour</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span><span class="p">)</span>
@@ -4906,7 +4911,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot magnetisation data&quot;</span>
+                <span class="s2">&quot;Failed to plot magnetisation data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -4918,13 +4923,13 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Saving plot figure&quot;&quot;&quot;</span>
+                <span class="c1"># Saving plot figure</span>
                 <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;mgh_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save magnetisation data plot &quot;</span>
+                    <span class="s2">&quot;Failed to save magnetisation data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -4942,37 +4947,41 @@ document.write(`
 <a class="viewcode-back" href="../../../compound.html#slothpy.Compound.plot_chitht">[docs]</a>
     <span class="k">def</span> <span class="nf">plot_chitht</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">group</span><span class="p">,</span>
-        <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">colour_map_name</span><span class="o">=</span><span class="s2">&quot;funmat&quot;</span><span class="p">,</span>
-        <span class="n">xlim</span><span class="o">=</span><span class="p">(),</span>
-        <span class="n">ylim</span><span class="o">=</span><span class="p">(),</span>
-        <span class="n">xticks</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-        <span class="n">yticks</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">field</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span>
+        <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;funmat&quot;</span><span class="p">,</span>
+        <span class="n">xlim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">ylim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">xticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">yticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">field</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group</span>
-<span class="sd">        in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</span>
+<span class="sd">        Creates graphs of chiT(H,T) or chi(H,T) depending on the content of</span>
+<span class="sd">        .slt file, given a name of the group in .slt file, graphs can be</span>
+<span class="sd">        optionally saved, colour palettes can be changed.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            name of a group from HDF5 file for which plot will be created</span>
+<span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;chitht_{group}.tiff&#39;</span>
+<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
+<span class="sd">            following format: f&#39;chitht_{group}.tiff&#39;.</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;funmat&#39;</span>
-<span class="sd">            input of colour_map function</span>
-<span class="sd">        xlim: tuple of 1-2 floats = ()</span>
-<span class="sd">            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</span>
-<span class="sd">        ylim: tuple of 1-2 floats = ()</span>
-<span class="sd">            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</span>
-<span class="sd">        xticks: int = 100</span>
-<span class="sd">            determines freqency of x major ticks</span>
-<span class="sd">        yticks: int = 0</span>
-<span class="sd">            determines freqency of y major ticks</span>
-<span class="sd">        field: Unity[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
-<span class="sd">            determines field unit - B[T] or H[kOe]</span>
+<span class="sd">            Input of colour_map function.</span>
+<span class="sd">        xlim: tuple(optional: float, optional: float) = ()</span>
+<span class="sd">            Determines the lower and upper limit of the x-axis if two floats</span>
+<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">        ylim: tuple(optional: float, optional: float) = ()</span>
+<span class="sd">            Determines the lower and upper limit of the y-axis if two floats</span>
+<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">        xticks: int or float = 100</span>
+<span class="sd">            Determines the frequency of x major ticks.</span>
+<span class="sd">        yticks: int or float = 0</span>
+<span class="sd">            Determines the frequency of y major ticks.</span>
+<span class="sd">        field: Union[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
+<span class="sd">            Determines the field unit - B[T] or H[kOe].</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -4981,18 +4990,19 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            if unable to load data file, most likely encountered if group name is incorrect</span>
+<span class="sd">            If unable to load the data file. Most likely encountered if the</span>
+<span class="sd">            group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
-<span class="sd">            if unable to create plot</span>
+<span class="sd">            If unable to create the plot.</span>
 <span class="sd">        SltSaveError</span>
-<span class="sd">            if unable to save plot as image</span>
+<span class="sd">            If unable to save the plot as an image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Getting data from hdf5 or sloth file&quot;&quot;&quot;</span>
+            <span class="c1"># Getting data from hdf5 or sloth file</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">chi</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_susceptibility&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_chiht&quot;</span><span class="p">]</span>
                 <span class="n">T</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">except</span><span class="p">:</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="n">chi</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_susceptibility&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_chitht&quot;</span><span class="p">]</span>
                 <span class="n">T</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_susceptibility&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
@@ -5003,7 +5013,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load susceptibility file&quot;</span>
+                <span class="s2">&quot;Failed to load susceptibility file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5017,13 +5027,13 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Plotting in matplotlib&quot;&quot;&quot;</span>
+            <span class="c1"># Plotting in matplotlib</span>
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
+            <span class="c1"># Defining colour maps for graphs</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
                 <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)))</span>
             <span class="p">)</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Creating a plot&quot;&quot;&quot;</span>
+            <span class="c1"># Creating a plot</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chi</span><span class="p">):</span>
                 <span class="n">c</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">colour</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
@@ -5072,7 +5082,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot susceptibility data&quot;</span>
+                <span class="s2">&quot;Failed to plot susceptibility data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5084,13 +5094,13 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Saving plot figure&quot;&quot;&quot;</span>
+                <span class="c1"># Saving plot figure</span>
                 <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;chitht_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save susceptibility data plot &quot;</span>
+                    <span class="s2">&quot;Failed to save susceptibility data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5109,39 +5119,43 @@ document.write(`
     <span class="k">def</span> <span class="nf">plot_helmholtz_energyth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">internal_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">colour_map_name</span><span class="o">=</span><span class="s2">&quot;PrOr&quot;</span><span class="p">,</span>
-        <span class="n">xlim</span><span class="o">=</span><span class="p">(),</span>
-        <span class="n">ylim</span><span class="o">=</span><span class="p">(),</span>
-        <span class="n">xticks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">yticks</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">field</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span>
+        <span class="n">internal_energy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;PrOr&quot;</span><span class="p">,</span>
+        <span class="n">xlim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">ylim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">xticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">yticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">field</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates graphs of chiT(H,T) or chi(H,T) depending on content of HDF5 file, given name of the group</span>
-<span class="sd">        in HDF5 file, graphs can be optionally saved, colour palettes can be changed.</span>
+<span class="sd">        Creates graphs of Helmholtz energy(T,H) or internal energy(T,H) given a</span>
+<span class="sd">        name of the group in .slt file, graphs can be optionally saved, colour</span>
+<span class="sd">        palettes can be changed.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            name of a group from HDF5 file for which plot will be created</span>
+<span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
 <span class="sd">        internal_energy: bool = False</span>
-<span class="sd">            #TODO: ???</span>
+<span class="sd">            Changes the plot from the Helmholtz to internal energy.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;chitht_{group}.tiff&#39;</span>
+<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
+<span class="sd">            following format: f&#39;energyth_{group}.tiff&#39;.</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;PrOr&#39;</span>
-<span class="sd">            input of colour_map function</span>
-<span class="sd">        xlim: tuple of 1-2 floats = ()</span>
-<span class="sd">            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</span>
-<span class="sd">        ylim: tuple of 1-2 floats = ()</span>
-<span class="sd">            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</span>
-<span class="sd">        xticks: int = 100</span>
-<span class="sd">            determines freqency of x major ticks</span>
+<span class="sd">            Input of the colour_map function.</span>
+<span class="sd">        xlim: tuple(optional: float, optional: float) = ()</span>
+<span class="sd">            Determines the lower and upper limit of the x-axis if two floats</span>
+<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">        ylim: tuple(optional: float, optional: float) = ()</span>
+<span class="sd">            Determines the lower and upper limit of the y-axis if two floats</span>
+<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">        xticks: int or float = 100</span>
+<span class="sd">            Determines the frequency of x major ticks.</span>
 <span class="sd">        yticks: int = 0</span>
-<span class="sd">            determines freqency of y major ticks</span>
-<span class="sd">        field: Unity[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
-<span class="sd">            determines field unit - B[T] or H[kOe]</span>
+<span class="sd">            Determines the freqency of y major ticks.</span>
+<span class="sd">        field: Union[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
+<span class="sd">            Determines the field unit - B[T] or H[kOe].</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -5150,19 +5164,20 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            if unable to load data file, most likely encountered if group name is incorrect</span>
+<span class="sd">            If unable to load the data file. Most likely encountered if the</span>
+<span class="sd">            group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
-<span class="sd">            if unable to create plot</span>
+<span class="sd">            If unable to create plot.</span>
 <span class="sd">        SltSaveError</span>
-<span class="sd">            if unable to save plot as image</span>
+<span class="sd">            If unable to save plot as image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">internal_energy</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;internal&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;helmholtz&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Getting data from hdf5 or sloth file&quot;&quot;&quot;</span>
-            <span class="n">mth</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_eth&quot;</span><span class="p">]</span>
+            <span class="c1"># Getting data from hdf5 or sloth file</span>
+            <span class="n">eth</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_eth&quot;</span><span class="p">]</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
                 <span class="n">fields</span> <span class="o">*=</span> <span class="mi">10</span>
@@ -5172,7 +5187,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load Helmholtz energy file&quot;</span>
+                <span class="s2">&quot;Failed to load Helmholtz energy file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5186,16 +5201,16 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Plotting in matplotlib&quot;&quot;&quot;</span>
+            <span class="c1"># Plotting in matplotlib</span>
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span><span class="p">()</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Defining colour maps for graphs&quot;&quot;&quot;</span>
+            <span class="c1"># Defining colour maps for graphs</span>
             <span class="n">colour</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span>
                 <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)))</span>
             <span class="p">)</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Creating a plot&quot;&quot;&quot;</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mh</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mth</span><span class="p">):</span>
+            <span class="c1"># Creating a plot</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">eh</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eth</span><span class="p">):</span>
                 <span class="n">c</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">colour</span><span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">eh</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">yticks</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">yticks</span><span class="p">))</span>
@@ -5208,7 +5223,7 @@ document.write(`
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$B\ /\ \mathrm</span><span class="si">{T}</span><span class="s2">$&quot;</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$H\ /\ \mathrm</span><span class="si">{kOe}</span><span class="s2">$&quot;</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$E\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">xlim</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
@@ -5216,7 +5231,7 @@ document.write(`
                     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">17</span><span class="p">:</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;center left&quot;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
 
                 <span class="k">else</span><span class="p">:</span>
@@ -5227,15 +5242,13 @@ document.write(`
                     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ylim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">tight_layout</span><span class="p">()</span>
             <span class="n">show</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot Helmholtz energy data&quot;</span>
+                <span class="s2">&quot;Failed to plot energy data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5247,13 +5260,13 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Saving plot figure&quot;&quot;&quot;</span>
-                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;helmholtz_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                <span class="c1"># Saving plot figure</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;energyth_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save Helmholtz energy data plot &quot;</span>
+                    <span class="s2">&quot;Failed to save energy data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5263,7 +5276,7 @@ document.write(`
                     <span class="o">+</span> <span class="n">RESET</span>
                     <span class="o">+</span> <span class="s1">&#39;&quot;, filename: &#39;</span>
                     <span class="o">+</span> <span class="n">PURPLE</span>
-                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;helmholtz_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;energyth_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
                 <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
 
 
@@ -5272,43 +5285,49 @@ document.write(`
     <span class="k">def</span> <span class="nf">plot_zeeman</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">colour_map_name1</span><span class="o">=</span><span class="s2">&quot;BuPi&quot;</span><span class="p">,</span>
-        <span class="n">colour_map_name2</span><span class="o">=</span><span class="s2">&quot;BuPi_r&quot;</span><span class="p">,</span>
-        <span class="n">single</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">xlim</span><span class="o">=</span><span class="p">(),</span>
-        <span class="n">ylim</span><span class="o">=</span><span class="p">(),</span>
-        <span class="n">xticks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">yticks</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">field</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span>
+        <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">colour_map_name1</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BuPi&quot;</span><span class="p">,</span>
+        <span class="n">colour_map_name2</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BuPi_r&quot;</span><span class="p">,</span>
+        <span class="n">single</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">xlim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">ylim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">xticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">yticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">field</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Function that creates graphs of E(H,orientation) given name of the group in HDF5 file, graphs can be optionally</span>
-<span class="sd">        saved, colour palettes can be changed.</span>
+<span class="sd">        Function that creates graphs of E(H,orientation) given a name of the</span>
+<span class="sd">        group in .slt file, graphs can be optionally saved, colour palettes</span>
+<span class="sd">        can be changed.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            name of a group from HDF5 file for which plot will be created</span>
+<span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;zeeman_{group}.tiff&#39; or</span>
-<span class="sd">            f&#39;zeeman_{group}_Orientation {orientations[i]}.tiff&#39;</span>
+<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
+<span class="sd">            following format: f&#39;zeeman_{group}.tiff&#39; or f&#39;zeeman_{group}</span>
+<span class="sd">            _Orientation {orientations[i]}.tiff&#39;.</span>
 <span class="sd">        colour_map_name1: str or list[str] = &#39;BuPi&#39;</span>
-<span class="sd">            input of colour_map function, determines colour of lower set of split lines</span>
+<span class="sd">            Input of the colour_map function, determines a colour of the lower</span>
+<span class="sd">            set of split lines.</span>
 <span class="sd">        colour_map_name2: str or list[str] = &#39;BuPi_r&#39;</span>
-<span class="sd">            input of colour_map function, determines colour of higher set of split lines</span>
+<span class="sd">            Input of the colour_map function, determines a colour of the higher</span>
+<span class="sd">            set of split lines.</span>
 <span class="sd">        single: bool = False</span>
-<span class="sd">            determines if all orientations are plotted together</span>
+<span class="sd">            Determines if all the orientations are plotted together.</span>
 <span class="sd">        xlim: tuple of 1-2 floats = ()</span>
-<span class="sd">            determines lower and upper limit of x-axis if two floats are passed, or just upper limit if one is passed</span>
+<span class="sd">            Determines the lower and upper limit of the x-axis if two floats</span>
+<span class="sd">            are passed, or just the upper limit if one is passed.</span>
 <span class="sd">        ylim: tuple of 1-2 floats = ()</span>
-<span class="sd">            determines lower and upper limit of y-axis if two floats are passed, or just upper limit if one is passed</span>
-<span class="sd">        xticks: int = 1</span>
-<span class="sd">            determines frequency of x major ticks</span>
-<span class="sd">        yticks: int = 0</span>
-<span class="sd">            determines frequency of y major ticks</span>
-<span class="sd">        field: Unity[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
-<span class="sd">            determines field unit - B[T] or H[kOe]</span>
+<span class="sd">            Determines the lower and upper limit of the y-axis if two floats</span>
+<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">        xticks: int or float = 1</span>
+<span class="sd">            Determines the frequency of x major ticks.</span>
+<span class="sd">        yticks: int or float = 0</span>
+<span class="sd">            Determines the frequency of y major ticks.</span>
+<span class="sd">        field: Union[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
+<span class="sd">            Determines the field unit - B[T] or H[kOe].</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -5317,14 +5336,15 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            if unable to load data file, most likely encountered if group name is incorrect</span>
+<span class="sd">            If unable to load the data file. Most likely encountered if the</span>
+<span class="sd">            group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
-<span class="sd">            if unable to create plot</span>
+<span class="sd">            If unable to create the plot.</span>
 <span class="sd">        SltSaveError</span>
-<span class="sd">            if unable to save plot as image</span>
+<span class="sd">            If unable to save the plot as an image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Getting data from hdf5 or sloth file&quot;&quot;&quot;</span>
+            <span class="c1"># Getting data from hdf5 or sloth file</span>
             <span class="n">zeeman</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_zeeman_splitting&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_zeeman&quot;</span><span class="p">]</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_zeeman_splitting&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
@@ -5338,7 +5358,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load Zeeman splitting file&quot;</span>
+                <span class="s2">&quot;Failed to load Zeeman splitting file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5352,7 +5372,7 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Plotting in matplotlib&quot;&quot;&quot;</span>
+            <span class="c1"># Plotting in matplotlib</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">single</span><span class="p">:</span>
                 <span class="n">number_of_plots</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">orientations</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">number_of_plots</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -5371,7 +5391,7 @@ document.write(`
                     <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.4</span><span class="p">,</span> <span class="mf">3.2</span> <span class="o">*</span> <span class="n">number_of_plots</span><span class="p">))</span>
                     <span class="n">gs</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">number_of_plots</span><span class="p">)</span>
                     <span class="n">divisor</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Creating a plot&quot;&quot;&quot;</span>
+                <span class="c1"># Creating a plot</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">zee</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">zeeman</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="n">divisor</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="n">rc</span><span class="p">(</span>
@@ -5576,7 +5596,7 @@ document.write(`
                     <span class="n">show</span><span class="p">()</span>
                     <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
                         <span class="k">try</span><span class="p">:</span>
-<span class="w">                            </span><span class="sd">&quot;&quot;&quot;Saving plot figure&quot;&quot;&quot;</span>
+                            <span class="c1"># Saving plot figure</span>
                             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
                                 <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_Orientation&quot;</span>
                                 <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
@@ -5586,7 +5606,7 @@ document.write(`
                             <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                                 <span class="n">exc</span><span class="p">,</span>
-                                <span class="sa">f</span><span class="s2">&quot;Failed to save zeeman splitting data plot&quot;</span>
+                                <span class="s2">&quot;Failed to save Zeeman splitting data plot&quot;</span>
                                 <span class="o">+</span> <span class="n">BLUE</span>
                                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5604,7 +5624,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot zeeman splitting data&quot;</span>
+                <span class="s2">&quot;Failed to plot Zeeman splitting data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5616,13 +5636,13 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">save</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">single</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Saving plot figure&quot;&quot;&quot;</span>
+                <span class="c1"># Saving plot figure</span>
                 <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save zeeman splitting data plot &quot;</span>
+                    <span class="s2">&quot;Failed to save Zeeman splitting data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5641,43 +5661,62 @@ document.write(`
     <span class="k">def</span> <span class="nf">plot_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">data_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data_type</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="s2">&quot;chit&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;chi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;internal_energy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;magnetisation&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
         <span class="n">field_i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">temp_i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">colour_map_name</span><span class="o">=</span><span class="s2">&quot;dark_rainbow_r_l&quot;</span><span class="p">,</span>
-        <span class="n">lim_scalar</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-        <span class="n">ticks</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-        <span class="n">r_density</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">c_density</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">axis_off</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dark_rainbow_r_l&quot;</span><span class="p">,</span>
+        <span class="n">round_temp</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">round_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">lim_scalar</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">ticks</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">r_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">c_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">axis_off</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Function that creates 3d plots of data dependent on field B[T] and temperature T[K].</span>
+<span class="sd">        Creates 3d plots of data dependent on field B[T] and temperature T[K].</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            name of a group from HDF5 file for which plot will be created</span>
-<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;magnetisation&quot;]</span>
-<span class="sd">            type of data that will be used to create plot</span>
+<span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
+<span class="sd">        data_type: Union[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,</span>
+<span class="sd">          &quot;magnetisation&quot;]</span>
+<span class="sd">            Type of the data that will be used to create plot.</span>
 <span class="sd">        field_i: int</span>
-<span class="sd">            index of field from dataset that will be used for plot</span>
+<span class="sd">            Index of the field from dataset that will be used for the plot.</span>
 <span class="sd">        temp_i: int</span>
-<span class="sd">            index of temperature from dataset that will be used for plot</span>
+<span class="sd">            Index of the temperature from the dataset that will be used for the</span>
+<span class="sd">            plot.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            determines if plot is saved, name of the file will be in following format: f&#39;{group}_3d_{data_type}.tiff&#39;</span>
+<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
+<span class="sd">            following format: f&#39;{group}_3d_{data_type}.tiff&#39;.</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            input of colour_map function</span>
+<span class="sd">            Input of the colour_map function.</span>
+<span class="sd">        round_temp: int = 3</span>
+<span class="sd">            Determines how many digits will be rounded in the graph&#39;s title</span>
+<span class="sd">            for temperature.</span>
+<span class="sd">        round_field: int = 3</span>
+<span class="sd">            Determines how many digits will be rounded in the graph&#39;s title</span>
+<span class="sd">            for field.</span>
 <span class="sd">        lim_scalar: float = 1.</span>
-<span class="sd">            scalar used to set limits of axes, smaller values magnify plotted figure</span>
+<span class="sd">            Scalar used to set limits of the axes, smaller values magnify the</span>
+<span class="sd">            plotted figure.</span>
 <span class="sd">        ticks: float = 1.</span>
+<span class="sd">            Frequency of the ticks on all axes.</span>
 <span class="sd">        r_density: int = 0</span>
-<span class="sd">            determines rcount of 3D plot</span>
+<span class="sd">            Determines the rcount of a 3D plot.</span>
 <span class="sd">        c_density: int = 0</span>
-<span class="sd">            determines ccount of 3D plot</span>
+<span class="sd">            Determines the ccount of a 3D plot.</span>
 <span class="sd">        axis_off: bool = False</span>
-<span class="sd">            determines if axes are turned off</span>
+<span class="sd">            Determines if the axes are turned off.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -5686,11 +5725,11 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            if unable to load data file, most likely encountered if group name is incorrect</span>
+<span class="sd">            If unable to load data file. Most likely encountered if group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
-<span class="sd">            if unable to create plot</span>
+<span class="sd">            If unable to create plot.</span>
 <span class="sd">        SltSaveError</span>
-<span class="sd">            if unable to save plot as image</span>
+<span class="sd">            If unable to save plot as image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">T</span> <span class="o">=</span> <span class="kc">False</span>
@@ -5706,8 +5745,8 @@ document.write(`
                 <span class="p">]</span>
                 <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="s2">&quot;ChiT dependance on direction,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> T,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
                 <span class="p">)</span>
                 <span class="n">T</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chi&quot;</span><span class="p">:</span>
@@ -5722,8 +5761,8 @@ document.write(`
                 <span class="p">]</span>
                 <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="s2">&quot;Chi dependance on direction,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> T,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> T,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_susceptibility&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
                 <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
@@ -5736,9 +5775,24 @@ document.write(`
                     <span class="mi">2</span><span class="p">,</span> <span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span>
                 <span class="p">]</span>
                 <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;Energy dependence on direction,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_helmholtz_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> T,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_helmholtz_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                    <span class="s2">&quot;Hemholtz energy dependence on direction,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_helmholtz_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> T,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_helmholtz_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_internal_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+                    <span class="mi">0</span>
+                <span class="p">]</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_internal_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+                    <span class="mi">1</span>
+                <span class="p">]</span>
+                <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_internal_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+                    <span class="mi">2</span>
+                <span class="p">]</span>
+                <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Internal energy dependence on distance,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_internal_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> T,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_internal_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">][</span>
@@ -5752,17 +5806,16 @@ document.write(`
                 <span class="p">]</span>
                 <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="s2">&quot;Magnetisation dependence on direction,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_magnetisation&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> T,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_magnetisation&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_magnetisation&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> T,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_3d_magnetisation&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span>
-            <span class="c1"># title = description</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load 3d data file&quot;</span>
+                <span class="s2">&quot;Failed to load the 3D data file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5786,7 +5839,7 @@ document.write(`
                 <span class="n">r_density</span> <span class="o">=</span> <span class="n">rcount</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">c_density</span><span class="p">:</span>
                 <span class="n">c_density</span> <span class="o">=</span> <span class="n">ccount</span>
-            <span class="p">(</span><span class="n">surface</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span>
+            <span class="n">surface</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span>
                 <span class="n">x</span><span class="p">,</span>
                 <span class="n">y</span><span class="p">,</span>
                 <span class="n">z</span><span class="p">,</span>
@@ -5854,16 +5907,16 @@ document.write(`
                     <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="n">ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linestyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;inward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;outward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">set_pane_color</span><span class="p">((</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">axis_i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linestyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;inward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;outward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">set_pane_color</span><span class="p">((</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
@@ -5877,13 +5930,13 @@ document.write(`
             <span class="n">ax</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
             <span class="n">title</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
-                <span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
             <span class="n">show</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot 3d data &quot;</span>
+                <span class="s2">&quot;Failed to plot 3D data &quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5906,7 +5959,7 @@ document.write(`
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to save 3d data plot &quot;</span>
+                    <span class="s2">&quot;Failed to save the 3D data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5925,71 +5978,83 @@ document.write(`
     <span class="k">def</span> <span class="nf">animate_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">data_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">animation_variable</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data_type</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="s2">&quot;chit&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;chi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;internal_energy&quot;</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="n">animation_variable</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;field&quot;</span><span class="p">],</span>
         <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">i_start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">i_end</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-        <span class="n">i_constant</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">colour_map_name</span><span class="o">=</span><span class="s2">&quot;dark_rainbow_r_l&quot;</span><span class="p">,</span>
-        <span class="n">lim_scalar</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">ticks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">r_density</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">c_density</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">axis_off</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">fps</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
-        <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-        <span class="n">bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">bar_scale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">bar_colour_map_name</span><span class="o">=</span><span class="s2">&quot;dark_rainbow_r&quot;</span><span class="p">,</span>
-        <span class="n">temp_rounding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">field_rounding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">i_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">i_end</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">i_constant</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dark_rainbow_r_l&quot;</span><span class="p">,</span>
+        <span class="n">lim_scalar</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">ticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">r_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">c_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">axis_off</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
+        <span class="n">dpi</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">bar_scale</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">bar_colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dark_rainbow_r&quot;</span><span class="p">,</span>
+        <span class="n">temp_rounding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">field_rounding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates animations of 3d plots of data dependent on field B[T] and temperature T[K]</span>
+<span class="sd">        Creates animations of 3d plots of data dependent on field B[T] and</span>
+<span class="sd">        temperature T[K].</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            name of a group from HDF5 file for which plot will be created</span>
-<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;magnetisation&quot;]</span>
-<span class="sd">            type of data that will be used to create plot</span>
-<span class="sd">        animation_variable: str</span>
-<span class="sd">            variable changing during animation, can take one of two values: temperature or field</span>
+<span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
+<span class="sd">        data_type: Union[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,</span>
+<span class="sd">          &quot;magnetisation&quot;]</span>
+<span class="sd">            Type of the data that will be used to create the plot.</span>
+<span class="sd">        animation_variable: Union[&quot;temperature&quot;, &quot;field&quot;]</span>
+<span class="sd">            Variable changing during the animation, can take one of two values:</span>
+<span class="sd">            temperature or field.</span>
 <span class="sd">        filename: str</span>
-<span class="sd">            name of the output .gif file</span>
-<span class="sd">        i_start: int</span>
-<span class="sd">            index of first frame&#39;s field/temperature</span>
-<span class="sd">        i_end: int</span>
-<span class="sd">            index of last frame&#39;s field/temperature</span>
+<span class="sd">            Name of the output .gif file.</span>
+<span class="sd">        i_start: int = 0</span>
+<span class="sd">            Index of the first frame&#39;s field/temperature.</span>
+<span class="sd">        i_end: int = -1</span>
+<span class="sd">            Index of the last frame&#39;s field/temperature.</span>
 <span class="sd">        i_constant: int</span>
-<span class="sd">            index of constant temperature/field</span>
+<span class="sd">            Index of the constant temperature/field value.</span>
 <span class="sd">        colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            input of colour_map function, determines colour of main figure</span>
+<span class="sd">            Input of tje colour_map function, determines a colour of the</span>
+<span class="sd">            main figure.</span>
 <span class="sd">        lim_scalar: float = 1.</span>
-<span class="sd">            scalar used to set limits of axes, smaller values magnify plotted figure</span>
+<span class="sd">            Scalar used to set the limits of axes, smaller values magnify the</span>
+<span class="sd">            plotted figure.</span>
 <span class="sd">        ticks: float = 1</span>
-<span class="sd">            determines ticks spacing</span>
+<span class="sd">            Determines the ticks spacing.</span>
 <span class="sd">        r_density: int = 0</span>
-<span class="sd">            determines rcount of 3D plot</span>
+<span class="sd">            Determines the rcount of the 3D plot.</span>
 <span class="sd">        c_density: int = 0</span>
-<span class="sd">            determines ccount of 3D plot</span>
+<span class="sd">            Determines the ccount of the 3D plot.</span>
 <span class="sd">        axis_off: bool = False</span>
-<span class="sd">            determines if axes are turned off</span>
+<span class="sd">            Determines if the axes are turned off.</span>
 <span class="sd">        fps: int</span>
-<span class="sd">            number of frames per second in animation</span>
+<span class="sd">            Number of frames per second in the animation.</span>
 <span class="sd">        dpi: int</span>
-<span class="sd">            dots per inch resolution of frames</span>
+<span class="sd">            Dots per inch resolution of the frames.</span>
 <span class="sd">        bar: bool = True</span>
-<span class="sd">            determines if bar representing animation variable is shown</span>
+<span class="sd">            Determines if the bar representing animation variable is shown.</span>
 <span class="sd">        bar_scale: bool = False</span>
-<span class="sd">            determines if scale should be shown for bar</span>
+<span class="sd">            Determines if a scale should be shown for bar.</span>
 <span class="sd">        bar_colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            input of colour_map function, determines colour of bar</span>
+<span class="sd">            Input of the colour_map function, determines a colour of the bar.</span>
 <span class="sd">        temp_rounding: int = 0</span>
-<span class="sd">            determines how many decimal places are shown in bar/plot labels for temperature</span>
+<span class="sd">            Determines how many decimal places are shown in the bar/plot labels</span>
+<span class="sd">            for temperatures.</span>
 <span class="sd">        field_rounding: int = 0</span>
-<span class="sd">            determines how many decimal places are shown in bar/plot labels for field</span>
+<span class="sd">            Determines how many decimal places are shown in the bar/plot labels</span>
+<span class="sd">            for fields.</span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Nothing</span>
@@ -5997,9 +6062,10 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            if unable to load data file, most likely encountered if group name is incorrect</span>
+<span class="sd">            If unable to load the data file. Most likely encountered if the</span>
+<span class="sd">            group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
-<span class="sd">            if unable to create and save animated plot</span>
+<span class="sd">            If unable to create the plot.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">T</span> <span class="o">=</span> <span class="kc">False</span>
@@ -6036,6 +6102,20 @@ document.write(`
                 <span class="n">temps</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_helmholtz_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
                 <span class="p">]</span>
+            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span><span class="p">:</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_internal_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+                    <span class="mi">0</span>
+                <span class="p">]</span>
+                <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_internal_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+                    <span class="mi">1</span>
+                <span class="p">]</span>
+                <span class="n">z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_internal_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">][</span>
+                    <span class="mi">2</span>
+                <span class="p">]</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_internal_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
+                <span class="n">temps</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_internal_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
+                <span class="p">]</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
                 <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
@@ -6053,9 +6133,9 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load 3d data file&quot;</span>
+                <span class="s2">&quot;Failed to load 3D data file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
-                <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot; Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
@@ -6067,20 +6147,20 @@ document.write(`
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">animation_variable</span> <span class="o">==</span> <span class="s2">&quot;temperature&quot;</span><span class="p">:</span>
             <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="s2">&quot;Magnetisation dependence on direction,&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> T&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;f</span><span class="si">{</span><span class="n">data_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_type</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> dependence&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; on direction, B=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> T&quot;</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">animation_variable</span> <span class="o">==</span> <span class="s2">&quot;field&quot;</span><span class="p">:</span>
             <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="s2">&quot;Magnetisation dependence on direction,&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;f</span><span class="si">{</span><span class="n">data_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_type</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> dependence&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; on direction, T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;There exist only two animation variables: field and&quot;</span>
                 <span class="s2">&quot; temperature&quot;</span>
             <span class="p">)</span>
-        <span class="c1"># title = description</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">description</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span><span class="p">()</span>
@@ -6133,7 +6213,10 @@ document.write(`
                                 <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
                             <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
+                        <span class="k">elif</span> <span class="p">(</span>
+                            <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span>
+                            <span class="ow">or</span> <span class="s2">&quot;internal_energy&quot;</span>
+                        <span class="p">):</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
                                 <span class="sa">r</span><span class="s2">&quot;$E\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
                                 <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
@@ -6189,16 +6272,16 @@ document.write(`
                         <span class="c1"># Important order of operations!</span>
 
                         <span class="k">if</span> <span class="n">ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                            <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linestyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;inward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;outward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-                                <span class="n">axis</span><span class="o">.</span><span class="n">set_pane_color</span><span class="p">((</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
+                            <span class="k">for</span> <span class="n">axis_i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linestyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;inward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;outward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                                <span class="n">axis_i</span><span class="o">.</span><span class="n">set_pane_color</span><span class="p">((</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
@@ -6218,7 +6301,7 @@ document.write(`
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
                         <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
-                            <span class="n">matplotlib</span><span class="o">.</span><span class="n">pyplot</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+                            <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
 
                         <span class="k">if</span> <span class="n">bar</span><span class="p">:</span>
                             <span class="n">c</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">colour</span><span class="p">)</span>
@@ -6234,14 +6317,18 @@ document.write(`
                                 <span class="n">axins</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                                     <span class="mi">1</span><span class="p">,</span>
                                     <span class="mi">1</span><span class="p">,</span>
-                                    <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">temps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">temp_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span><span class="p">,</span>
+                                    <span class="n">s</span><span class="o">=</span><span class="p">(</span>
+                                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">temps</span><span class="p">[</span><span class="n">i_end</span><span class="p">],</span><span class="w"> </span><span class="n">temp_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                                    <span class="p">),</span>
                                     <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
                                     <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                                 <span class="p">)</span>
                                 <span class="n">axins</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                                     <span class="mi">1</span><span class="p">,</span>
                                     <span class="o">-</span><span class="mf">0.03</span><span class="p">,</span>
-                                    <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">temps</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">temp_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span><span class="p">,</span>
+                                    <span class="n">s</span><span class="o">=</span><span class="p">(</span>
+                                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">temps</span><span class="p">[</span><span class="n">i_start</span><span class="p">],</span><span class="w"> </span><span class="n">temp_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                                    <span class="p">),</span>
                                     <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
                                     <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                                 <span class="p">)</span>
@@ -6321,7 +6408,6 @@ document.write(`
                                 <span class="s2">&quot;Acceptable data types: chit, chi,&quot;</span>
                                 <span class="s2">&quot; helmholtz_energy and magnetisation&quot;</span>
                             <span class="p">)</span>
-                        <span class="c1"># title = description</span>
                         <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
                         <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
                         <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
@@ -6374,7 +6460,7 @@ document.write(`
                         <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
-                        <span class="n">title</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+
                         <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
                             <span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
 
@@ -6393,14 +6479,18 @@ document.write(`
                                 <span class="n">axins</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                                     <span class="mi">1</span><span class="p">,</span>
                                     <span class="mi">1</span><span class="p">,</span>
-                                    <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span><span class="p">,</span>
+                                    <span class="n">s</span><span class="o">=</span><span class="p">(</span>
+                                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="n">i_end</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span>
+                                    <span class="p">),</span>
                                     <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
                                     <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                                 <span class="p">)</span>
                                 <span class="n">axins</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                                     <span class="mi">1</span><span class="p">,</span>
                                     <span class="o">-</span><span class="mf">0.03</span><span class="p">,</span>
-                                    <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span><span class="p">,</span>
+                                    <span class="n">s</span><span class="o">=</span><span class="p">(</span>
+                                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="n">i_start</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span>
+                                    <span class="p">),</span>
                                     <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
                                     <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                                 <span class="p">)</span>
@@ -6422,9 +6512,9 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot and save 3d data&quot;</span>
+                <span class="s2">&quot;Failed to plot and save 3D data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
-                <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot; Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
@@ -6439,53 +6529,67 @@ document.write(`
     <span class="k">def</span> <span class="nf">interactive_plot_3d</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">data_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">colour_map_name</span><span class="o">=</span><span class="s2">&quot;dark_rainbow_r&quot;</span><span class="p">,</span>
-        <span class="n">T_slider_colour</span><span class="o">=</span><span class="s2">&quot;#77f285&quot;</span><span class="p">,</span>
-        <span class="n">B_slider_colour</span><span class="o">=</span><span class="s2">&quot;#794285&quot;</span><span class="p">,</span>
-        <span class="n">temp_bar_colour_map_name</span><span class="o">=</span><span class="s2">&quot;BuRd&quot;</span><span class="p">,</span>
-        <span class="n">field_bar_colour_map_name</span><span class="o">=</span><span class="s2">&quot;BuPi&quot;</span><span class="p">,</span>
-        <span class="n">lim_scalar</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">ticks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">bar_scale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">temp_rounding</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-        <span class="n">field_rounding</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-        <span class="n">axis_off</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">data_type</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="s2">&quot;chit&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;chi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;internal_energy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;magnetisation&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dark_rainbow_r&quot;</span><span class="p">,</span>
+        <span class="n">T_slider_colour</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#77f285&quot;</span><span class="p">,</span>
+        <span class="n">B_slider_colour</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#794285&quot;</span><span class="p">,</span>
+        <span class="n">temp_bar_colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BuRd&quot;</span><span class="p">,</span>
+        <span class="n">field_bar_colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BuPi&quot;</span><span class="p">,</span>
+        <span class="n">lim_scalar</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">ticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">bar_scale</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">temp_rounding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">field_rounding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">axis_off</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates interactive widget plot dependent on  field and temperature.</span>
+<span class="sd">        Creates interactive widget plot dependent on field and temperature</span>
+<span class="sd">        values.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            name of a group from HDF5 file for which plot will be created</span>
-<span class="sd">        data_type: Unity[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;magnetisation&quot;, &quot;internal_energy&quot;]</span>
-<span class="sd">            type of data that will be used to create plot</span>
+<span class="sd">            Name of a group from HDF5 file for which plot will be created.</span>
+<span class="sd">        data_type: Union[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,</span>
+<span class="sd">          &quot;magnetisation&quot;]</span>
+<span class="sd">            Type of the data that will be used to create the plot.</span>
 <span class="sd">        colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            input of colour_map function, determines colour of main figure</span>
+<span class="sd">            Input of the colour_map function, determines a colour of the main</span>
+<span class="sd">            figure.</span>
 <span class="sd">        T_slider_colour: str</span>
-<span class="sd">            determines colour of temperature slider</span>
+<span class="sd">            Determines a colour of the temperature slider.</span>
 <span class="sd">        B_slider_colour: str</span>
-<span class="sd">            determines colour of field slider</span>
+<span class="sd">            Determines a colour of the field slider.</span>
 <span class="sd">        temp_bar_colour_map_name: str or list[str] = &#39;BuRd&#39;</span>
-<span class="sd">            input of colour_map function, determines colour map of temperature bar</span>
+<span class="sd">            Input of the colour_map function, determines a colour map of the</span>
+<span class="sd">            temperature bar.</span>
 <span class="sd">        field_bar_colour_map_name: str or list[str] = &#39;BuPi&#39;</span>
-<span class="sd">            input of colour_map function, determines colour map of field bar</span>
+<span class="sd">            Input of the colour_map function, determines a colour map of the</span>
+<span class="sd">            field bar.</span>
 <span class="sd">        lim_scalar: float = 1.</span>
-<span class="sd">            scalar used to set limits of axes, smaller values magnify plotted figure</span>
+<span class="sd">            Scalar used to set limits of the axes, smaller values magnify the</span>
+<span class="sd">            plotted figure.</span>
 <span class="sd">        ticks: float = 1</span>
-<span class="sd">            determines ticks spacing</span>
+<span class="sd">            Determines the ticks spacing.</span>
 <span class="sd">        bar: bool = True</span>
-<span class="sd">            determines if bar is shown</span>
+<span class="sd">            Determines if the bar is shown.</span>
 <span class="sd">        bar_scale: bool = False</span>
-<span class="sd">            determines if bar scale is shown</span>
+<span class="sd">            Determines if the bar scale is shown.</span>
 <span class="sd">        temp_rounding: int = 2</span>
-<span class="sd">            determines how many significant digits are shown relative to int(value) for temperature</span>
+<span class="sd">            Determines how many significant digits are shown relative to the</span>
+<span class="sd">            int(value) for temperature.</span>
 <span class="sd">        temp_rounding: int = 2</span>
-<span class="sd">            determines how many significant digits are shown relative to int(value) for field</span>
+<span class="sd">            Determines how many significant digits are shown relative to the</span>
+<span class="sd">            int(value) for field.</span>
 <span class="sd">        axis_off: bool = False</span>
-<span class="sd">            determines if axes are turned off</span>
+<span class="sd">            Determines if the axes are turned off.</span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Nothing</span>
@@ -6493,9 +6597,10 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            if unable to load data file, most likely encountered if group name is incorrect</span>
+<span class="sd">            If unable to load the data file. Most likely encountered if the</span>
+<span class="sd">            group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
-<span class="sd">            if unable to create animated plot</span>
+<span class="sd">            If unable to create the plot.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
         <span class="k">try</span><span class="p">:</span>
@@ -6562,9 +6667,9 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load 3d data file&quot;</span>
+                <span class="s2">&quot;Failed to load 3d data file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
-                <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot; Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
@@ -6631,7 +6736,7 @@ document.write(`
                     <span class="n">ax_label</span> <span class="o">=</span> <span class="p">(</span>
                         <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
                     <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span> <span class="ow">or</span> <span class="s2">&quot;internal_energy&quot;</span><span class="p">:</span>
                 <span class="n">ax_label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$E\ /\ \mathrm{cm^{-1}}$&quot;</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">ax_label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span>
@@ -6639,16 +6744,16 @@ document.write(`
             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linestyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;inward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;outward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-                    <span class="n">axis</span><span class="o">.</span><span class="n">set_pane_color</span><span class="p">((</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">axis_i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linestyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;inward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;outward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                    <span class="n">axis_i</span><span class="o">.</span><span class="n">set_pane_color</span><span class="p">((</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
@@ -6740,7 +6845,7 @@ document.write(`
 
             <span class="n">slider_temp</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
                 <span class="n">ax_temp</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;T [index]&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;T [index]&quot;</span><span class="p">,</span>
                 <span class="n">valmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                 <span class="n">valmax</span><span class="o">=</span><span class="n">temps</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
                 <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;vertical&quot;</span><span class="p">,</span>
@@ -6750,7 +6855,7 @@ document.write(`
             <span class="p">)</span>
             <span class="n">slider_field</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
                 <span class="n">ax_field</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;B [index]&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;B [index]&quot;</span><span class="p">,</span>
                 <span class="n">valmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                 <span class="n">valmax</span><span class="o">=</span><span class="n">fields</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
                 <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;vertical&quot;</span><span class="p">,</span>
@@ -6796,16 +6901,16 @@ document.write(`
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linestyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;inward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;outward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-                        <span class="n">axis</span><span class="o">.</span><span class="n">set_pane_color</span><span class="p">((</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
+                    <span class="k">for</span> <span class="n">axis_i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;axisline&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linewidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;linestyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;grid&quot;</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;inward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">_axinfo</span><span class="p">[</span><span class="s2">&quot;tick&quot;</span><span class="p">][</span><span class="s2">&quot;outward_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                        <span class="n">axis_i</span><span class="o">.</span><span class="n">set_pane_color</span><span class="p">((</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
@@ -6876,15 +6981,15 @@ document.write(`
             <span class="n">slider_temp</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">slider_update</span><span class="p">)</span>
             <span class="n">slider_field</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">slider_update</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
-                <span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
             <span class="n">show</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to plot 3d data&quot;</span>
+                <span class="s2">&quot;Failed to plot 3D data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
-                <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot; Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>

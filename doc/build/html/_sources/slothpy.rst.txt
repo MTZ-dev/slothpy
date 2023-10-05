@@ -2,7 +2,7 @@ Reference Manual
 ================
 
 .. toctree::
-   :maxdepth: 8
+   :maxdepth: 10
    :caption: Explore SlothPy
 
    creation_methods

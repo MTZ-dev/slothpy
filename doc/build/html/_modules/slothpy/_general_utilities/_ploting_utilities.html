@@ -56,6 +56,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/slothpy/_general_utilities/_ploting_utilities';</script>
+    <script src="../../../_static/custom-icon.js?v=e5a97373"></script>
     <link rel="icon" href="../../../_static/slothpy_3.png"/>
     <link rel="author" title="About these documents" href="../../../about.html" />
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -289,7 +290,7 @@ document.write(`
           
           
           
-          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../mlmg.tif" class="icon-link-image" alt="MultiLumiMater"/></a>
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../_static/mlmg.png" class="icon-link-image" alt="MultiLumiMater"/></a>
         </li>
 </ul></div>
       
@@ -455,7 +456,7 @@ document.write(`
           
           
           
-          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../mlmg.tif" class="icon-link-image" alt="MultiLumiMater"/></a>
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../../_static/mlmg.png" class="icon-link-image" alt="MultiLumiMater"/></a>
         </li>
 </ul></div>
         
@@ -547,7 +548,8 @@ document.write(`
                 <article class="bd-article" role="main">
                   
   <h1>Source code for slothpy._general_utilities._ploting_utilities</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">linspace</span>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">linspace</span>
 <span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LinearSegmentedColormap</span>
 <span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
 <span class="kn">import</span> <span class="nn">matplotlib.cm</span>
@@ -555,29 +557,35 @@ document.write(`
 
 <div class="viewcode-block" id="colour_map">
 <a class="viewcode-back" href="../../../general_utilities.html#slothpy.colour_map">[docs]</a>
-<span class="k">def</span> <span class="nf">colour_map</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">colour_map</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates matplotlib colour map object.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    name: Unity[&quot;BuPi&quot;, &quot;rainbow&quot;, &quot;dark_rainbow&quot;, &quot;light_rainbow&quot;,</span>
-<span class="sd">        &quot;light_rainbow_alt&quot;, &quot;BuOr&quot;, &quot;BuYl&quot;, &quot;BuRd&quot;, &quot;GnYl&quot;, &quot;PrOr&quot;, &quot;GnRd&quot;, &quot;funmat&quot;, &quot;NdCoN322bpdo&quot;,</span>
-<span class="sd">        &quot;NdCoNO222bpdo&quot;, &quot;NdCoI22bpdo&quot;, &quot;viridis&quot;, &quot;plasma&quot;, &quot;inferno&quot;, &quot;magma&quot;, &quot;cividis&quot;] or list[str]</span>
-<span class="sd">        One of defined names for colour maps: BuPi, rainbow, dark_rainbow, light_rainbow,light_rainbow_alt, BuOr,</span>
-<span class="sd">        BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo,</span>
-<span class="sd">        viridis, plasma, inferno, magma, cividis or list of HTML colour codes from which colour map will be created</span>
-<span class="sd">        by interpolation of colours between ones on a list. For predefined names modifiers can be applied: _l loops</span>
-<span class="sd">        the list in a way that it starts and ends with the same colour, _r reverses the list.</span>
+<span class="sd">    name: Union[&quot;BuPi&quot;, &quot;rainbow&quot;, &quot;dark_rainbow&quot;, &quot;light_rainbow&quot;,</span>
+<span class="sd">        &quot;light_rainbow_alt&quot;, &quot;BuOr&quot;, &quot;BuYl&quot;, &quot;BuRd&quot;, &quot;GnYl&quot;, &quot;PrOr&quot;, &quot;GnRd&quot;,</span>
+<span class="sd">        &quot;funmat&quot;, &quot;NdCoN322bpdo&quot;, &quot;NdCoNO222bpdo&quot;, &quot;NdCoI22bpdo&quot;, &quot;viridis&quot;,</span>
+<span class="sd">        &quot;plasma&quot;, &quot;inferno&quot;, &quot;magma&quot;, &quot;cividis&quot;] or list[str]</span>
+
+<span class="sd">        One of the defined names for colour maps: BuPi, rainbow, dark_rainbow,</span>
+<span class="sd">        light_rainbow,light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd,</span>
+<span class="sd">        funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo, viridis, plasma,</span>
+<span class="sd">        inferno, magma, cividis or list of HTML colour codes from which the</span>
+<span class="sd">        colour map will be created by interpolation of colours between ones on</span>
+<span class="sd">        the list. The predefined names modifiers can be applied: _l loops</span>
+<span class="sd">        the list in a way that it starts and ends with the same colour, _r</span>
+<span class="sd">        reverses the list.</span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    matplotlib.colors.LinearSegmentedColormap</span>
-<span class="sd">        Matplotlib&#39;s colour map object used for plotting.</span>
+<span class="sd">        The Matplotlib&#39;s colour map object used for plotting.</span>
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If input is not acceptable for creating colour map from list of colour codes or name of predefined colour</span>
-<span class="sd">        map was incorrectly written.</span>
+<span class="sd">        If the input is not acceptable for creating a colour map from the list</span>
+<span class="sd">        of colour codes or the name of predefined colour map was incorrectly</span>
+<span class="sd">        written.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">cmap_list</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">reverse</span> <span class="o">=</span> <span class="kc">False</span>
@@ -812,16 +820,17 @@ document.write(`
 
 <span class="k">def</span> <span class="nf">_custom_colour_cycler</span><span class="p">(</span><span class="n">number_of_colours</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cmap1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cmap2</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Creates colour cycler from two colour maps in alternating pattern, suitable for use in matplotlib plots.</span>
+<span class="sd">    Creates a custom colour cycler from two colour maps in alternating pattern,</span>
+<span class="sd">    suitable for use for matplotlib plots.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    number_of_colours: int</span>
-<span class="sd">        Number of colour in cycle.</span>
+<span class="sd">        Number of colours in cycle.</span>
 <span class="sd">    cmap1: str or list[str]</span>
-<span class="sd">        Input of colour_map function.</span>
+<span class="sd">        Input of the colour_map function.</span>
 <span class="sd">    cmap2: str or list[str]</span>
-<span class="sd">        Input of colour_map function.</span>
+<span class="sd">        Input of the colour_map function.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -831,7 +840,8 @@ document.write(`
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If unable to use given inputs. It should not be possible to trigger this error.</span>
+<span class="sd">        If unable to use the given inputs. It should not be possible</span>
+<span class="sd">        to trigger this error :).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">number_of_colours</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -866,11 +876,45 @@ document.write(`
                 <span class="n">increment</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">cycler</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">colour_cycler_list</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;If you see this message function you try to use has an error.&quot;</span>
-            <span class="s2">&quot; Contact us at email:&quot;</span>
+        <span class="k">raise</span> <span class="ne">SystemError</span><span class="p">(</span>
+            <span class="s2">&quot;Sloths are a Neotropical group of xenarthran mammals constituting&quot;</span>
+            <span class="s2">&quot; the suborder Folivora, including the extant arboreal tree sloths&quot;</span>
+            <span class="s2">&quot; and extinct terrestrial ground sloths. Noted for their slowness&quot;</span>
+            <span class="s2">&quot; of movement, tree sloths spend most of their lives hanging&quot;</span>
+            <span class="s2">&quot; upside down in the trees of the tropical rainforests of South&quot;</span>
+            <span class="s2">&quot; America and Central America. Sloths are considered to be most&quot;</span>
+            <span class="s2">&quot; closely related to anteaters, together making up the xenarthran&quot;</span>
+            <span class="s2">&quot; order Pilosa. There are six extant sloth species in two genera –&quot;</span>
+            <span class="s2">&quot; Bradypus (three–toed sloths) and Choloepus (two–toed sloths).&quot;</span>
+            <span class="s2">&quot; Despite this traditional naming, all sloths have three toes on&quot;</span>
+            <span class="s2">&quot; each rear limb, although two-toed sloths have only two digits on&quot;</span>
+            <span class="s2">&quot; each forelimb. The two groups of sloths are from different,&quot;</span>
+            <span class="s2">&quot; distantly related families, and are thought to have evolved&quot;</span>
+            <span class="s2">&quot; their morphology via parallel evolution from terrestrial&quot;</span>
+            <span class="s2">&quot; ancestors. Besides the extant species, many species of ground&quot;</span>
+            <span class="s2">&quot; sloths ranging up to the size of elephants (like Megatherium)&quot;</span>
+            <span class="s2">&quot; inhabited both North and South America during the Pleistocene&quot;</span>
+            <span class="s2">&quot; Epoch. However, they became extinct during the Quaternary&quot;</span>
+            <span class="s2">&quot; extinction event around 12,000 years ago, along with most&quot;</span>
+            <span class="s2">&quot; large-bodied animals in the New World. The extinction correlates&quot;</span>
+            <span class="s2">&quot; in time with the arrival of humans, but climate change has also&quot;</span>
+            <span class="s2">&quot; been suggested to have contributed. Members of an endemic&quot;</span>
+            <span class="s2">&quot; radiation of Caribbean sloths also formerly lived in the Greater&quot;</span>
+            <span class="s2">&quot; Antilles but became extinct after humans settled the archipelago&quot;</span>
+            <span class="s2">&quot; in the mid-Holocene, around 6,000 years ago. Sloths are so named&quot;</span>
+            <span class="s2">&quot; because of their very low metabolism and deliberate movements.&quot;</span>
+            <span class="s2">&quot; Sloth, related to slow, literally means laziness, and their&quot;</span>
+            <span class="s2">&quot; common names in several other languages (e.g. French: paresseux,&quot;</span>
+            <span class="s2">&quot; Spanish: perezoso) also mean lazy or similar. Their slowness&quot;</span>
+            <span class="s2">&quot; permits their low-energy diet of leaves and avoids detection by&quot;</span>
+            <span class="s2">&quot; predatory hawks and cats that hunt by sight. Sloths are almost&quot;</span>
+            <span class="s2">&quot; helpless on the ground but are able to swim. The shaggy coat has&quot;</span>
+            <span class="s2">&quot; grooved hair that is host to symbiotic green algae which&quot;</span>
+            <span class="s2">&quot; camouflage the animal in the trees and provide it nutrients. The&quot;</span>
+            <span class="s2">&quot; algae also nourish sloth moths, some species of which exist&quot;</span>
+            <span class="s2">&quot; solely on sloths.&quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;Source: https://en.wikipedia.org/wiki/Sloth&quot;</span>
         <span class="p">)</span>
-    <span class="c1"># TODO: mail kontaktowy</span>
 </pre></div>
 
                 </article>

@@ -179,12 +179,18 @@ def _orca_spin_orbit_to_slt(
     ]
 
     for matrix_name, description in zip(matrices, descriptions):
-        out_file = f"{matrix_name}.tmp"
+        out_file_name = f"{matrix_name}.tmp"
+        out_file = join(path_out, out_file_name)
         pattern = f"{matrix_name} MATRIX IN CI BASIS\n"
 
         # Extract lines matching the pattern to a temporary file
         _grep_to_file(
-            path_orca, inp_orca, pattern, path_out, out_file, block_size + 4
+            path_orca,
+            inp_orca,
+            pattern,
+            path_out,
+            out_file_name,
+            block_size + 4,
         )  # The first 4 lines are titles
 
         with open(out_file, "r") as file:
@@ -233,17 +239,19 @@ def _orca_spin_orbit_to_slt(
         2 * block_size + 4 + 2,
     )  # The first 4 lines are titles, two lines in the middle for Im part
 
-    with open("SOC.tmp", "r") as file:
+    soc_file = join(path_out, "SOC.tmp")
+
+    with open(soc_file, "r") as file:
         content = file.read()
 
     # Replace "-" with " -"
     modified_content = content.replace("-", " -")
 
     # Write the modified content to the same file
-    with open("SOC.tmp", "w") as file:
+    with open(soc_file, "w") as file:
         file.write(modified_content)
 
-    with open("SOC.tmp", "r") as file:
+    with open(soc_file, "r") as file:
         if pt2:
             for _ in range(2 * block_size + 4 + 2):
                 file.readline()  # Skip non-pt2 block
@@ -297,7 +305,7 @@ def _orca_spin_orbit_to_slt(
     ] = "Dataset containing complex SOC matrix in CI basis (spin-free)"
 
     # Remove the temporary file
-    remove("SOC.tmp")
+    remove(soc_file)
 
     # Close the HDF5 file
     output.close()

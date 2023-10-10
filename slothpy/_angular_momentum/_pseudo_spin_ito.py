@@ -92,6 +92,9 @@ def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
 def _get_soc_matrix_in_z_pseudo_spin_basis(
     filename, group, start_state, stop_state, pseudo_kind, rotation=None
 ):
+    if stop_state == 0:
+        stop_state = -1
+
     if pseudo_kind == "magnetic":
         (
             momenta,
@@ -173,6 +176,9 @@ def _get_zeeman_matrix_in_z_pseudo_spin_basis(
     pseudo_kind,
     rotation=None,
 ):
+    if stop_state == 0:
+        stop_state = -1
+
     (
         magnetic_momenta,
         soc_energies,

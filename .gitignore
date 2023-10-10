@@ -6,7 +6,10 @@
 *.dat
 *.inp
 *.in
+*.csv
 __pycache__
 .vscode
 .ipynb_checkpoints
 test.py
+DG_final.ipynb
+DG_final

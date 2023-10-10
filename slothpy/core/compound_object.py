@@ -31,7 +31,7 @@ from matplotlib.pyplot import (
     cla,
 )
 
-from ._slothpy_exceptions import (
+from slothpy.core._slothpy_exceptions import (
     SltFileError,
     SltCompError,
     SltSaveError,

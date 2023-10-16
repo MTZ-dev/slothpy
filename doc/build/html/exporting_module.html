@@ -62,6 +62,8 @@
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How to Cite" href="how_to_cite.html" />
+    <link rel="prev" title="General Utilities" href="general_utilities.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -196,7 +198,7 @@ document.write(`
                     </li>
                 
 
-                    <li class="nav-item">
+                    <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="slothpy.html">
                         Reference Manual
                       </a>
@@ -379,7 +381,7 @@ document.write(`
                     </li>
                 
 
-                    <li class="nav-item">
+                    <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="slothpy.html">
                         Reference Manual
                       </a>
@@ -487,14 +489,36 @@ document.write(`
          spellcheck="false"/>
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form></div>
+        <div class="sidebar-primary-item"><nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="creation_methods.html">Creation Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compound.html">Compound</a></li>
+<li class="toctree-l1"><a class="reference internal" href="general_utilities.html">General Utilities</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Exporting Module</a></li>
+</ul>
+</div>
+</nav></div>
         <div class="sidebar-primary-item">
 <h3><a href="index.html">Table of Contents</a></h3>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_start.html">How to Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="slothpy.html">Reference Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="slothpy.html">Reference Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="creation_methods.html">Creation Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compound.html">Compound</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_utilities.html">General Utilities</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Exporting Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.exporting.table_energy_and_g"><code class="docutils literal notranslate"><span class="pre">table_energy_and_g()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.exporting.axes_in_mol2"><code class="docutils literal notranslate"><span class="pre">axes_in_mol2()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_cite.html">How to Cite</a></li>
 </ul>
 </div>
@@ -532,6 +556,9 @@ document.write(`
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
+    
+    <li class="breadcrumb-item"><a href="slothpy.html" class="nav-link">Reference Manual</a></li>
+    
     <li class="breadcrumb-item active" aria-current="page">Exporting Module</li>
   </ul>
 </nav>
@@ -552,6 +579,53 @@ document.write(`
   <section id="exporting-module">
 <h1>Exporting Module<a class="headerlink" href="#exporting-module" title="Link to this heading">#</a></h1>
 <p>This is an experimental module! It is used within our group to export data from SlothPy to popular editors.</p>
+<p id="module-slothpy.exporting">Module for experimental exports of SlothPy data.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.exporting.table_energy_and_g">
+<span class="sig-prename descclassname"><span class="pre">slothpy.exporting.</span></span><span class="sig-name descname"><span class="pre">table_energy_and_g</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_last_doublet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">krames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_first_doublet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'total_angular'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_first_composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_last_composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/exporting.html#table_energy_and_g"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.exporting.table_energy_and_g" title="Link to this definition">#</a></dt>
+<dd><p>Creates .docx file containing table with g tensor and energy information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slt_file</strong> (<a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.Compound"><em>Compound</em></a>) – Slt file storing data needed for table.</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Name of a group from .slt file for which table will be created. ####### Tutaj opis ze to musza być wyniki 3 funkcji</p></li>
+<li><p><strong>i_last_doublet</strong> (<em>int</em>) – Index of last doublet used in table.</p></li>
+<li><p><strong>krames</strong> (<em>bool</em>) – Determines if table should use table’s template for Krames lanthanide (even atomic number) or
+for non-Krames lanthanide (odd atomic number).</p></li>
+<li><p><strong>i_first_doublet</strong> (<em>int = 0</em>) – Index of last doublet used in table.</p></li>
+<li><p><strong>decomp</strong> (<em>str = 'angular'</em>) – Can be ‘angular’ or ‘magnetic’. Determines type of decomposition used.</p></li>
+<li><p><strong>i_first_composition</strong> (<em>int = 0</em>) – Determines first decomposed doublet, if 0 i_first_composition = i_first_doublet.</p></li>
+<li><p><strong>i_last_composition</strong> (<em>int = 0</em>) – Determines last decomposed level, if 0 i_last_composition = i_last_doublet.</p></li>
+<li><p><strong>threshold</strong> (<em>float = 0.1</em>) – Determines how high contribution of energy state has to be in order to be shown in table [%].</p></li>
+<li><p><strong>output_name</strong> (<em>str = ''</em>) – Name of output .docx file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.exporting.axes_in_mol2">
+<span class="sig-prename descclassname"><span class="pre">slothpy.exporting.</span></span><span class="sig-name descname"><span class="pre">axes_in_mol2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mol2_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/exporting.html#axes_in_mol2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.exporting.axes_in_mol2" title="Link to this definition">#</a></dt>
+<dd><p>Function that uses g tensors to input magnetization axes into chosen mol2 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group</strong> (<em>str</em>) – Name of a group from .slt file for which axes will be created.</p></li>
+<li><p><strong>mol2_file</strong> (<em>str</em>) – Name of mol2 file in the same directory as exporting module.</p></li>
+<li><p><strong>atom_name</strong> (<em>str</em>) – Name of magnetic atom (from .mol2 file).</p></li>
+<li><p><strong>scale_factor</strong> (<em>float = 1</em>) – Number which scales axes lengths.</p></li>
+<li><p><strong>slt_file</strong> (<a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.core.compound_object.Compound"><em>Compound</em></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nothing</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -564,6 +638,24 @@ document.write(`
                 <footer class="prev-next-footer">
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="general_utilities.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">General Utilities</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="how_to_cite.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">How to Cite</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               

@@ -12,8 +12,6 @@ from numpy import (
     arange,
     max,
 )
-from matplotlib import rcParams, use
-from matplotlib.style import use as mplstyle_use
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.gridspec import GridSpec
 from matplotlib.animation import PillowWriter
@@ -88,26 +86,6 @@ from slothpy._general_utilities._auto_tune import _auto_tune
 from slothpy._general_utilities._ploting_utilities import (
     colour_map,
     _custom_colour_cycler,
-)
-
-mplstyle_use("fast")
-rcParams["path.simplify"] = True
-rcParams["path.simplify_threshold"] = 1.0
-use("Qt5Agg")
-
-print(
-    """                      ____  _       _   _     ____        
-                     / ___|| | ___ | |_| |__ |  _ \ _   _ 
-                     \___ \| |/ _ \| __| '_ \| |_) | | | |
-                      ___) | | (_) | |_| | | |  __/| |_| |
-                     |____/|_|\___/ \__|_| |_|_|    \__, |
-                                                    |___/  by MTZ
-                                                    """
-)
-print(
-    "The default is chosen to omit the tracebacks completely. To change it"
-    " use slt.set_default_error_reporting_mode method for the printing of"
-    " tracebacks."
 )
 
 
@@ -3236,7 +3214,7 @@ class Compound:
     def total_angular_momenta_matrix(
         self,
         group: str,
-        states_cutoff: int = None,
+        states_cutoff: int = 0,
         rotation: ndarray[float64] = None,
         slt: str = None,
     ) -> ndarray[complex128]:
@@ -4241,7 +4219,7 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if group exist.",
+                + "Check if the group exists.",
             ) from None
 
         try:
@@ -4403,7 +4381,7 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if group exist.",
+                + "Check if the group exists.",
             ) from None
 
         try:
@@ -4574,7 +4552,7 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if group exist.",
+                + "Check if the group exists.",
             ) from None
 
         try:
@@ -4742,7 +4720,7 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if group exist.",
+                + "Check if the group exists.",
             ) from None
 
         try:
@@ -5196,7 +5174,7 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if group exist.",
+                + "Check if the group exists.",
             ) from None
         try:
             fig = figure()
@@ -5511,7 +5489,7 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if group exist.",
+                + "Check if the group exists.",
             ) from None
         if animation_variable == "temperature":
             description = (
@@ -6042,7 +6020,7 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if group exist.",
+                + "Check if the group exists.",
             ) from None
         try:
             fig = figure()

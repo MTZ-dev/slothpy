@@ -7,6 +7,8 @@
 *.inp
 *.in
 *.csv
+*.xyz
+*.mol2
 __pycache__
 .vscode
 .ipynb_checkpoints

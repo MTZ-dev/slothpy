@@ -441,6 +441,11 @@ class Compound:
         diagonalise the Abragam-Bleaney tensor (G = gg.T). Coordinates of the
         main axes XYZ in the initial xzy frame are columns of such matrices
         (0-X, 1-Y, 2-Z).
+
+        See Also
+        --------
+        slothpy.exporting.table_energy_and_g,
+        slothpy.exporting.axes_in_mol2, slothpy.exporting.axes_in_xyz
         """
 
         if slt is not None:
@@ -611,15 +616,16 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
 
-        See Also
-        --------
-        slothpy.lebedev_laikov_grid : For the description of the prescribed
-                                      Lebedev-Laikov grids.
-
         Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.
+
+        See Also
+        --------
+        slothpy.Compound.plot_mth,
+        slothpy.lebedev_laikov_grid : For the description of the prescribed
+                                      Lebedev-Laikov grids.
         """
 
         if slt is not None:
@@ -846,6 +852,11 @@ class Compound:
         much memory (e.g. for a calculation with 100 field values 1-10 T, 300
         temperatures 1-300 K, and spherical_grid = 60, the resulting array will
         take 3*100*300*2*60*60*8 bytes = 5.184 GB).
+
+        See Also
+        --------
+        slothpy.Compound.plot_3d, slothpy.Compound.interactive_plot_3d,
+        slothpy.Compound.animate_3d
         """
 
         if slt is not None:
@@ -1104,6 +1115,10 @@ class Compound:
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over fields.size*(2*number_of_points+1) tasks.
+
+        See Also
+        --------
+        slothpy.Compound.plot_chitht
         """
         if slt is not None:
             slt_group_name = f"{slt}_susceptibility"
@@ -1683,6 +1698,11 @@ class Compound:
         100 field values 1-10 T, 300 temperatures 1-300 K, number_of_points=3,
         and spherical_grid = 60, the intermediate array (before numerical
         differentiation) will take 7*100*300*2*60*60*8 bytes = 12.096 GB).
+
+        See Also
+        --------
+        slothpy.Compound.plot_3d, slothpy.Compound.interactive_plot_3d,
+        slothpy.Compound.animate_3d
         """
         temperatures = array(temperatures, dtype=float64)
         fields = array(fields, dtype=float64)
@@ -1950,15 +1970,16 @@ class Compound:
         SltFileError
             If the program is unable to correctly save results to .slt file.
 
-        See Also
-        --------
-        slothpy.lebedev_laikov_grid : For the description of the prescribed
-                                      Lebedev-Laikov grids.
-
         Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.
+
+        See Also
+        --------
+        slothpy.Compound.plot_helmholtz_energyth
+        slothpy.lebedev_laikov_grid : For the description of the prescribed
+                                      Lebedev-Laikov grids.
         """
         if internal_energy:
             group_suffix = "_internal_energy"
@@ -2200,6 +2221,11 @@ class Compound:
         much memory (e.g. for a calculation with 100 field values 1-10 T, 300
         temperatures 1-300 K, and spherical_grid = 60, the resulting array will
         take 3*100*300*2*60*60*8 bytes = 5.184 GB).
+
+        See Also
+        --------
+        slothpy.Compound.plot_3d, slothpy.Compound.interactive_plot_3d,
+        slothpy.Compound.animate_3d
         """
         if internal_energy:
             group_suffix = "_3d_internal_energy"
@@ -2442,6 +2468,7 @@ class Compound:
 
         See Also
         --------
+        slothpy.Compound.plot_zeeman,
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
 
@@ -2789,6 +2816,10 @@ class Compound:
             If the program is unable to get SOC energies from the .slt file.
         SltFileError
             If the program is unable to correctly save results to .slt file.
+
+        See Also
+        --------
+        slothpy.exporting.table_energy_and_g
         """
         if slt is not None:
             slt_group_name = f"{slt}_soc_energies"
@@ -3534,6 +3565,24 @@ class Compound:
             If the ITO decomposition of the matrix is unsuccessful.
         SltFileError
             If the program is unable to correctly save results to .slt file.
+
+        Note
+        ----
+        The decomposition is obtained using a projection method described in
+        [1] (eq. 41) employing ITOs defined in [2] (eq. 29) with
+        a normalization factor from eq. 17.
+
+        References
+        ----------
+        .. [1] L. F. Chibotaru and L. Ungur
+            "Ab initio calculation of anisotropic magnetic properties of
+            complexes. I. Unique definition of pseudospin Hamiltonians and
+            their derivation"
+            J. Chem. Phys. 137, 064112 (2012).
+        .. [2] I. D. Ryabov
+            "On the Generation of Operator Equivalents and the Calculation
+            of Their Matrix Elements"
+            J. Magn. Reson. 140, 141–145 (1999).
         """
         if slt is not None:
             slt_group_name = f"{slt}_soc_ito_decomposition"
@@ -3713,6 +3762,24 @@ class Compound:
             If the ITO decomposition of the matrix is unsuccessful
         SltFileError
             If the program is unable to correctly save results to .slt file.
+
+        Note
+        ----
+        The decomposition is obtained using a projection method described in
+        [1] (eq. 41) employing ITOs defined in [2] (eq. 29) with
+        a normalization factor from eq. 17.
+
+        References
+        ----------
+        .. [1] L. F. Chibotaru and L. Ungur
+            "Ab initio calculation of anisotropic magnetic properties of
+            complexes. I. Unique definition of pseudospin Hamiltonians and
+            their derivation"
+            J. Chem. Phys. 137, 064112 (2012).
+        .. [2] I. D. Ryabov
+            "On the Generation of Operator Equivalents and the Calculation
+            of Their Matrix Elements"
+            J. Magn. Reson. 140, 141–145 (1999).
         """
         if slt is not None:
             slt_group_name = f"{slt}_zeeman_ito_decomposition"
@@ -3871,6 +3938,18 @@ class Compound:
             If the calculation of the matrix from ITOs is unsuccessful.
         SltFileError
             If the program is unable to correctly save results to .slt file.
+
+        Note
+        ----
+        ITOs defined in [2] (eq. 29) with a normalization factor from eq. 17
+        are used.
+
+        References
+        ----------
+        .. [1] I. D. Ryabov
+            "On the Generation of Operator Equivalents and the Calculation
+            of Their Matrix Elements"
+            J. Magn. Reson. 140, 141–145 (1999).
         """
         if slt is not None:
             slt_group_name = f"{slt}_matrix_from_ito"
@@ -4196,6 +4275,10 @@ class Compound:
             If unable to create the plot.
         SltSaveError
             If unable to save the plot as an image.
+
+        See Also
+        --------
+        slothpy.Compound.calculate_mth
         """
         try:
             # Getting data from hdf5 or sloth file
@@ -4354,6 +4437,10 @@ class Compound:
             If unable to create the plot.
         SltSaveError
             If unable to save the plot as an image.
+
+        See Also
+        --------
+        slothpy.Compound.calculate_chitht
         """
         try:
             # Getting data from hdf5 or sloth file
@@ -4525,6 +4612,10 @@ class Compound:
             If unable to create plot.
         SltSaveError
             If unable to save plot as image.
+
+        See Also
+        --------
+        slothpy.Compound.calculate_helmholtz_energyth
         """
         if internal_energy:
             name = "internal"
@@ -4694,6 +4785,10 @@ class Compound:
             If unable to create the plot.
         SltSaveError
             If unable to save the plot as an image.
+
+        See Also
+        --------
+        slothpy.Compound.calculate_zeeman_splitting
         """
         try:
             # Getting data from hdf5 or sloth file
@@ -5079,6 +5174,11 @@ class Compound:
             If unable to create plot.
         SltSaveError
             If unable to save plot as image.
+
+        See Also
+        --------
+        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
+        slothpy.Compound.calculate_helmholtz_energy_3d
         """
         try:
             T = False
@@ -5401,6 +5501,7 @@ class Compound:
         field_rounding: int = 0
             Determines how many decimal places are shown in the bar/plot labels
             for fields.
+
         Returns
         -------
         Nothing
@@ -5412,6 +5513,11 @@ class Compound:
             group name is incorrect.
         SltPlotError
             If unable to create the plot.
+
+        See Also
+        --------
+        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
+        slothpy.Compound.calculate_helmholtz_energy_3d
         """
         try:
             T = False
@@ -5933,6 +6039,7 @@ class Compound:
             int(value) for field.
         axis_off: bool = False
             Determines if the axes are turned off.
+
         Returns
         -------
         Nothing
@@ -5944,6 +6051,11 @@ class Compound:
             group name is incorrect.
         SltPlotError
             If unable to create the plot.
+
+        See Also
+        --------
+        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
+        slothpy.Compound.calculate_helmholtz_energy_3d
         """
         field_i, temp_i = 0, 0
         try:

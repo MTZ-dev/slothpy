@@ -765,6 +765,10 @@ diagonalise the Abragam-Bleaney tensor (G = gg.T). Coordinates of the
 main axes XYZ in the initial xzy frame are columns of such matrices
 (0-X, 1-Y, 2-Z).</p>
 </div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="exporting_module.html#slothpy.exporting.table_energy_and_g" title="slothpy.exporting.table_energy_and_g"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.exporting.table_energy_and_g</span></code></a>, <a class="reference internal" href="exporting_module.html#slothpy.exporting.axes_in_mol2" title="slothpy.exporting.axes_in_mol2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.exporting.axes_in_mol2</span></code></a>, <a class="reference internal" href="exporting_module.html#slothpy.exporting.axes_in_xyz" title="slothpy.exporting.axes_in_xyz"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.exporting.axes_in_xyz</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -831,17 +835,18 @@ over temperature values, and the second over fields.</p>
 </ul>
 </dd>
 </dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><a class="reference internal" href="general_utilities.html#slothpy.lebedev_laikov_grid" title="slothpy.lebedev_laikov_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.lebedev_laikov_grid</span></code></a></dt><dd><p>For the description of the prescribed Lebedev-Laikov grids.</p>
-</dd>
-</dl>
-</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over the provided field values.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.plot_mth" title="slothpy.Compound.plot_mth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.plot_mth</span></code></a></p>
+<dl class="simple">
+<dt><a class="reference internal" href="general_utilities.html#slothpy.lebedev_laikov_grid" title="slothpy.lebedev_laikov_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.lebedev_laikov_grid</span></code></a></dt><dd><p>For the description of the prescribed Lebedev-Laikov grids.</p>
+</dd>
+</dl>
 </div>
 </dd></dl>
 
@@ -915,6 +920,10 @@ aware that the resulting arrays and computations can quickly consume
 much memory (e.g. for a calculation with 100 field values 1-10 T, 300
 temperatures 1-300 K, and spherical_grid = 60, the resulting array will
 take 3*100*300*2*60*60*8 bytes = 5.184 GB).</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.plot_3d" title="slothpy.Compound.plot_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.plot_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.interactive_plot_3d" title="slothpy.Compound.interactive_plot_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.interactive_plot_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.animate_3d" title="slothpy.Compound.animate_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.animate_3d</span></code></a></p>
 </div>
 </dd></dl>
 
@@ -1009,6 +1018,10 @@ a possitive real number.</p></li>
 <p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over fields.size*(2*number_of_points+1) tasks.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.plot_chitht" title="slothpy.Compound.plot_chitht"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.plot_chitht</span></code></a></p>
 </div>
 </dd></dl>
 
@@ -1195,6 +1208,10 @@ computations can quickly consume much memory (e.g. for calculation with
 and spherical_grid = 60, the intermediate array (before numerical
 differentiation) will take 7*100*300*2*60*60*8 bytes = 12.096 GB).</p>
 </div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.plot_3d" title="slothpy.Compound.plot_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.plot_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.interactive_plot_3d" title="slothpy.Compound.interactive_plot_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.interactive_plot_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.animate_3d" title="slothpy.Compound.animate_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.animate_3d</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1263,17 +1280,18 @@ values, and the second over fields.</p>
 </ul>
 </dd>
 </dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><a class="reference internal" href="general_utilities.html#slothpy.lebedev_laikov_grid" title="slothpy.lebedev_laikov_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.lebedev_laikov_grid</span></code></a></dt><dd><p>For the description of the prescribed Lebedev-Laikov grids.</p>
-</dd>
-</dl>
-</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Here, (number_cpu // number_threads) parallel processes are used to
 distribute the workload over the provided field values.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.plot_helmholtz_energyth" title="slothpy.Compound.plot_helmholtz_energyth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.plot_helmholtz_energyth</span></code></a></p>
+<dl class="simple">
+<dt><a class="reference internal" href="general_utilities.html#slothpy.lebedev_laikov_grid" title="slothpy.lebedev_laikov_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.lebedev_laikov_grid</span></code></a></dt><dd><p>For the description of the prescribed Lebedev-Laikov grids.</p>
+</dd>
+</dl>
 </div>
 </dd></dl>
 
@@ -1350,6 +1368,10 @@ much memory (e.g. for a calculation with 100 field values 1-10 T, 300
 temperatures 1-300 K, and spherical_grid = 60, the resulting array will
 take 3*100*300*2*60*60*8 bytes = 5.184 GB).</p>
 </div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.plot_3d" title="slothpy.Compound.plot_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.plot_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.interactive_plot_3d" title="slothpy.Compound.interactive_plot_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.interactive_plot_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.animate_3d" title="slothpy.Compound.animate_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.animate_3d</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1425,6 +1447,7 @@ states cutoff.</p></li>
 </dl>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.plot_zeeman" title="slothpy.Compound.plot_zeeman"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.plot_zeeman</span></code></a></p>
 <dl class="simple">
 <dt><a class="reference internal" href="general_utilities.html#slothpy.lebedev_laikov_grid" title="slothpy.lebedev_laikov_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.lebedev_laikov_grid</span></code></a></dt><dd><p>For the description of the prescribed Lebedev-Laikov grids.</p>
 </dd>
@@ -1511,6 +1534,10 @@ first number_of_states states in cm-1.</p>
 </ul>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="exporting_module.html#slothpy.exporting.table_energy_and_g" title="slothpy.exporting.table_energy_and_g"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.exporting.table_energy_and_g</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1632,7 +1659,7 @@ in atomic units and is in the form [coordinates, matrix, matrix]
 
 <dl class="py method">
 <dt class="sig sig-object py" id="slothpy.Compound.total_angular_momenta_matrix">
-<span class="sig-name descname"><span class="pre">total_angular_momenta_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.total_angular_momenta_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.total_angular_momenta_matrix" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">total_angular_momenta_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/core/compound_object.html#Compound.total_angular_momenta_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.Compound.total_angular_momenta_matrix" title="Link to this definition">#</a></dt>
 <dd><p>Calculates total angular momenta matrix for a given number of SOC
 states.</p>
 <dl class="field-list simple">
@@ -1761,6 +1788,30 @@ file with suffix: _soc_ito_decomposition., by default None</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The decomposition is obtained using a projection method described in
+[1] (eq. 41) employing ITOs defined in [2] (eq. 29) with
+a normalization factor from eq. 17.</p>
+</div>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="r199fffc0825a-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<p>L. F. Chibotaru and L. Ungur
+“Ab initio calculation of anisotropic magnetic properties of
+complexes. I. Unique definition of pseudospin Hamiltonians and
+their derivation”
+J. Chem. Phys. 137, 064112 (2012).</p>
+</div>
+<div class="citation" id="r199fffc0825a-2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<p>I. D. Ryabov
+“On the Generation of Operator Equivalents and the Calculation
+of Their Matrix Elements”
+J. Magn. Reson. 140, 141–145 (1999).</p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1808,6 +1859,30 @@ file with suffix: _zeeman_ito_decomposition., by default None</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The decomposition is obtained using a projection method described in
+[1] (eq. 41) employing ITOs defined in [2] (eq. 29) with
+a normalization factor from eq. 17.</p>
+</div>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="rf8e7f5494e51-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<p>L. F. Chibotaru and L. Ungur
+“Ab initio calculation of anisotropic magnetic properties of
+complexes. I. Unique definition of pseudospin Hamiltonians and
+their derivation”
+J. Chem. Phys. 137, 064112 (2012).</p>
+</div>
+<div class="citation" id="rf8e7f5494e51-2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<p>I. D. Ryabov
+“On the Generation of Operator Equivalents and the Calculation
+of Their Matrix Elements”
+J. Magn. Reson. 140, 141–145 (1999).</p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1842,6 +1917,21 @@ file with suffix: _matrix_from_ito., by default None</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>ITOs defined in [2] (eq. 29) with a normalization factor from eq. 17
+are used.</p>
+</div>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="rfa04889ca006-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<p>I. D. Ryabov
+“On the Generation of Operator Equivalents and the Calculation
+of Their Matrix Elements”
+J. Magn. Reson. 140, 141–145 (1999).</p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1925,6 +2015,10 @@ group name is incorrect.</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.calculate_mth" title="slothpy.Compound.calculate_mth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_mth</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1961,6 +2055,10 @@ group name is incorrect.</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.calculate_chitht" title="slothpy.Compound.calculate_chitht"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_chitht</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1998,6 +2096,10 @@ group name is incorrect.</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.calculate_helmholtz_energyth" title="slothpy.Compound.calculate_helmholtz_energyth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_helmholtz_energyth</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -2039,6 +2141,10 @@ group name is incorrect.</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.calculate_zeeman_splitting" title="slothpy.Compound.calculate_zeeman_splitting"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_zeeman_splitting</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -2083,6 +2189,10 @@ plotted figure.</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d" title="slothpy.Compound.calculate_mag_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_mag_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.calculate_chit_3d" title="slothpy.Compound.calculate_chit_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_chit_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.calculate_helmholtz_energy_3d" title="slothpy.Compound.calculate_helmholtz_energy_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_helmholtz_energy_3d</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -2135,6 +2245,10 @@ group name is incorrect.</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d" title="slothpy.Compound.calculate_mag_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_mag_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.calculate_chit_3d" title="slothpy.Compound.calculate_chit_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_chit_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.calculate_helmholtz_energy_3d" title="slothpy.Compound.calculate_helmholtz_energy_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_helmholtz_energy_3d</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -2183,6 +2297,10 @@ group name is incorrect.</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#slothpy.Compound.calculate_mag_3d" title="slothpy.Compound.calculate_mag_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_mag_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.calculate_chit_3d" title="slothpy.Compound.calculate_chit_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_chit_3d</span></code></a>, <a class="reference internal" href="#slothpy.Compound.calculate_helmholtz_energy_3d" title="slothpy.Compound.calculate_helmholtz_energy_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_helmholtz_energy_3d</span></code></a></p>
+</div>
 </dd></dl>
 
 </dd></dl>

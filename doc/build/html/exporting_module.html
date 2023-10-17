@@ -514,6 +514,7 @@ document.write(`
 <li class="toctree-l2"><a class="reference internal" href="general_utilities.html">General Utilities</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Exporting Module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#slothpy.exporting.table_energy_and_g"><code class="docutils literal notranslate"><span class="pre">table_energy_and_g()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slothpy.exporting.axes_in_xyz"><code class="docutils literal notranslate"><span class="pre">axes_in_xyz()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#slothpy.exporting.axes_in_mol2"><code class="docutils literal notranslate"><span class="pre">axes_in_mol2()</span></code></a></li>
 </ul>
 </li>
@@ -582,48 +583,134 @@ document.write(`
 <p id="module-slothpy.exporting">Module for experimental exports of SlothPy data.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="slothpy.exporting.table_energy_and_g">
-<span class="sig-prename descclassname"><span class="pre">slothpy.exporting.</span></span><span class="sig-name descname"><span class="pre">table_energy_and_g</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_last_doublet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">krames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_first_doublet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'total_angular'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_first_composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_last_composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/exporting.html#table_energy_and_g"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.exporting.table_energy_and_g" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">slothpy.exporting.</span></span><span class="sig-name descname"><span class="pre">table_energy_and_g</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_last_doublet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">krames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_first_doublet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'total_angular'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_first_composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_last_composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/exporting.html#table_energy_and_g"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.exporting.table_energy_and_g" title="Link to this definition">#</a></dt>
 <dd><p>Creates .docx file containing table with g tensor and energy information.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>slt_file</strong> (<a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.Compound"><em>Compound</em></a>) – Slt file storing data needed for table.</p></li>
-<li><p><strong>group</strong> (<em>str</em>) – Name of a group from .slt file for which table will be created. ####### Tutaj opis ze to musza być wyniki 3 funkcji</p></li>
-<li><p><strong>i_last_doublet</strong> (<em>int</em>) – Index of last doublet used in table.</p></li>
-<li><p><strong>krames</strong> (<em>bool</em>) – Determines if table should use table’s template for Krames lanthanide (even atomic number) or
-for non-Krames lanthanide (odd atomic number).</p></li>
-<li><p><strong>i_first_doublet</strong> (<em>int = 0</em>) – Index of last doublet used in table.</p></li>
-<li><p><strong>decomp</strong> (<em>str = 'angular'</em>) – Can be ‘angular’ or ‘magnetic’. Determines type of decomposition used.</p></li>
-<li><p><strong>i_first_composition</strong> (<em>int = 0</em>) – Determines first decomposed doublet, if 0 i_first_composition = i_first_doublet.</p></li>
-<li><p><strong>i_last_composition</strong> (<em>int = 0</em>) – Determines last decomposed level, if 0 i_last_composition = i_last_doublet.</p></li>
-<li><p><strong>threshold</strong> (<em>float = 0.1</em>) – Determines how high contribution of energy state has to be in order to be shown in table [%].</p></li>
-<li><p><strong>output_name</strong> (<em>str = ''</em>) – Name of output .docx file.</p></li>
+<li><p><strong>slt_file</strong> (<a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.Compound"><em>Compound</em></a>) – Slt file storing data needed for the table.</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Name of a group from .slt file for which table will be created.
+Requires f”{group}_soc_energies”, f”{group}_g_tensors_axes” and
+f”{group}_magnetic_decomposition” or f”{group}_total_angular
+_decomposition” (outputs of Compound functions: soc_energies_cm_1,
+calculate_g_tensor_and_axes_doublet, matrix_decomposition_in_z_pseudo
+_spin_basis(with ‘soc’ and ‘total_angular’ or ‘magnetic’ setting,
+additionally rotation should be set as one for the ground state)).</p></li>
+<li><p><strong>i_last_doublet</strong> (<em>int</em>) – Index of the last doublet used in the table. For example, if you are
+working with the lanthanides ions 3+ this index should be matching the
+splitting of the ground term of the considered lanthanide.
+(J2+1 states, since we take index of doublet /2 and -1 since we count
+from 0): Ce: 2, Pr: 3, Nd: 4, Pm: 3, Sm: 2, Eu: 0, Gd: 3, Yb: 3, Tm: 5,
+Er: 7, Ho: 7, Dy: 7, Tb: 5</p></li>
+<li><p><strong>krames</strong> (<em>bool</em>) – Determines if the table should use the table’s template for Krames
+ions (even electron number) or non-Krames ions (odd electron number).</p></li>
+<li><p><strong>i_first_doublet</strong> (<em>int = 0</em>) – Index of the last doublet used in the table.</p></li>
+<li><p><strong>decomp</strong> (<em>Union</em><em>[</em><em>&quot;total_angular&quot;</em><em>, </em><em>&quot;magnetic&quot;</em><em>] </em><em>= &quot;total_angular&quot;</em>) – Determines the type of decomposition used.</p></li>
+<li><p><strong>i_first_composition</strong> (<em>int = 0</em>) – Determines first decomposed doublet, if 0 i_first_composition = <a href="#id1"><span class="problematic" id="id2">i_</span></a>
+first_doublet.</p></li>
+<li><p><strong>i_last_composition</strong> (<em>int = 0</em>) – Determines last decomposed level, if 0
+i_last_composition = i_last_doublet.</p></li>
+<li><p><strong>threshold</strong> (<em>float = 0.1</em>) – Determines how high the contribution of energy state has to be to be
+shown in the table [%].</p></li>
+<li><p><strong>output_path</strong> (<em>str = &quot;./&quot;</em>) – Path to which the output will be saved.</p></li>
+<li><p><strong>output_name</strong> (<em>str = &quot;&quot;</em>) – Name of the output .docx file.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>Nothing</p>
 </dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SltFileError</strong> – If a Compound object is not passed as an input or it doesn’t include
+all the necessary data.</p></li>
+<li><p><strong>SltSaveError</strong> – If the program is unable to correctly save the .docx file.</p></li>
+</ul>
+</dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="compound.html#slothpy.Compound.calculate_g_tensor_and_axes_doublet" title="slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_g_tensor_and_axes_doublet</span></code></a>, <a class="reference internal" href="compound.html#slothpy.Compound.soc_energies_cm_1" title="slothpy.Compound.soc_energies_cm_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.soc_energies_cm_1</span></code></a>, <a class="reference internal" href="compound.html#slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis" title="slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothpy.exporting.axes_in_xyz">
+<span class="sig-prename descclassname"><span class="pre">slothpy.exporting.</span></span><span class="sig-name descname"><span class="pre">axes_in_xyz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_atom</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xyz_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xyz_file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doublet_number</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/exporting.html#axes_in_xyz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.exporting.axes_in_xyz" title="Link to this definition">#</a></dt>
+<dd><p>Adds main XYZ magnetic axes corresponding to the chosen doublet
+to a .xyz file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slt_file</strong> (<a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.Compound"><em>Compound</em></a>) – Name of a Compound object corresponding to the .slt file that will
+be used.</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Name of the group with axes and g_tensors (result of the
+calculate_g_tensor_and_axes_doublet method).</p></li>
+<li><p><strong>xyz_path</strong> (<em>str</em>) – Path to the .xyz file to which axes will be added.</p></li>
+<li><p><strong>xyz_file_name</strong> (<em>str</em>) – Name of the .xyz file to which axes will be added.</p></li>
+<li><p><strong>central_atom</strong> (<em>str</em>) – Symbol of a unique central atom from which axes will begin.</p></li>
+<li><p><strong>doublet_number</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of the doublet whose magnetic axes will be added., by default 0</p></li>
+<li><p><strong>scale_factor</strong> (<em>float64</em><em>, </em><em>optional</em>) – Factor by which the lengths of the axes will be scaled., by default 1</p></li>
+<li><p><strong>output_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to which .xyz output file with the suffix _axes will be saved.,
+by default “./”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>SltFileError</strong> – If a Compound object is not passed as an input.</p></li>
+<li><p><strong>SltInputError</strong> – If the name of an input xyz file does not end with .xyz.</p></li>
+<li><p><strong>SltSaveError</strong> – If the program is unable to correctly save the new .xyz file.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Magnetic axes are scaled by the corresponding pseudo-g-tensor values along
+them. Atoms representing the axes are as follows: Lv - X, Ts - Y, Og - Z.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="compound.html#slothpy.Compound.calculate_g_tensor_and_axes_doublet" title="slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_g_tensor_and_axes_doublet</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="slothpy.exporting.axes_in_mol2">
-<span class="sig-prename descclassname"><span class="pre">slothpy.exporting.</span></span><span class="sig-name descname"><span class="pre">axes_in_mol2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mol2_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/exporting.html#axes_in_mol2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.exporting.axes_in_mol2" title="Link to this definition">#</a></dt>
-<dd><p>Function that uses g tensors to input magnetization axes into chosen mol2 file.</p>
+<span class="sig-prename descclassname"><span class="pre">slothpy.exporting.</span></span><span class="sig-name descname"><span class="pre">axes_in_mol2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slt_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mol2_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mol2_file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doublet_number</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/exporting.html#axes_in_mol2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.exporting.axes_in_mol2" title="Link to this definition">#</a></dt>
+<dd><p>Adds main XYZ magnetic axes corresponding to the chosen doublet
+to a .mol2 file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>group</strong> (<em>str</em>) – Name of a group from .slt file for which axes will be created.</p></li>
-<li><p><strong>mol2_file</strong> (<em>str</em>) – Name of mol2 file in the same directory as exporting module.</p></li>
-<li><p><strong>atom_name</strong> (<em>str</em>) – Name of magnetic atom (from .mol2 file).</p></li>
-<li><p><strong>scale_factor</strong> (<em>float = 1</em>) – Number which scales axes lengths.</p></li>
-<li><p><strong>slt_file</strong> (<a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.core.compound_object.Compound"><em>Compound</em></a>) – </p></li>
+<li><p><strong>slt_file</strong> (<a class="reference internal" href="compound.html#slothpy.Compound" title="slothpy.Compound"><em>Compound</em></a>) – Name of a Compound object corresponding to the .slt file that will
+be used.</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Name of the group with axes and g_tensors (result of the
+calculate_g_tensor_and_axes_doublet method).</p></li>
+<li><p><strong>mol2_file_path</strong> (<em>str</em>) – Path to the .mol2 file to which axes will be added.</p></li>
+<li><p><strong>mol2_file_name</strong> (<em>str</em>) – Name of the .mol2 file to which axes will be added.</p></li>
+<li><p><strong>atom_name</strong> (<em>str</em>) – Name of a central atom from which axes will begin.</p></li>
+<li><p><strong>doublet_number</strong> (<em>int = 0</em>) – Number of the doublet whose magnetic axes will be added., by default 0</p></li>
+<li><p><strong>scale_factor</strong> (<em>float64 = 1</em>) – Factor by which the lengths of the axes will be scaled., by default 1</p></li>
+<li><p><strong>output_path</strong> (<em>str = &quot;./&quot;</em>) – Path to which .mol2 output file with the suffix _axes will be saved.,
+by default “./”</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Nothing</p>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>SltFileError</strong> – If a Compound object is not passed as an input.</p></li>
+<li><p><strong>SltInputError</strong> – If the name of an input xyz file does not end with .xyz.</p></li>
+<li><p><strong>SltSaveError</strong> – If the program is unable to correctly save the new .xyz file.</p></li>
+</ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Magnetic axes are scaled by the corresponding pseudo-g-tensor values along
+them. Atoms representing the axes are as follows: Lv - X, Ts - Y, Og - Z.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="compound.html#slothpy.Compound.calculate_g_tensor_and_axes_doublet" title="slothpy.Compound.calculate_g_tensor_and_axes_doublet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slothpy.Compound.calculate_g_tensor_and_axes_doublet</span></code></a></p>
+</div>
 </dd></dl>
 
 </section>

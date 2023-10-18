@@ -1,0 +1,10 @@
+slothpy.magnetism package
+=========================
+
+Module contents
+---------------
+
+.. automodule:: slothpy.magnetism
+   :members:
+   :undoc-members:
+   :show-inheritance:

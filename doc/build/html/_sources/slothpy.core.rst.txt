@@ -1,0 +1,29 @@
+slothpy.core package
+====================
+
+Submodules
+----------
+
+slothpy.core.compound\_object module
+------------------------------------
+
+.. automodule:: slothpy.core.compound_object
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+slothpy.core.creation\_functions module
+---------------------------------------
+
+.. automodule:: slothpy.core.creation_functions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: slothpy.core
+   :members:
+   :undoc-members:
+   :show-inheritance:

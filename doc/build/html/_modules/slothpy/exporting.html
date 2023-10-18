@@ -1,0 +1,1430 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>slothpy.exporting &#8212; SlothPy 0.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=362ab14a" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css?v=7f9a90b1" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../../_static/jupyter-sphinx.css?v=572af1d6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=dd5636d6" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=ac02cc09edc035673794" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
+  <script src="../../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
+
+    <script src="../../_static/documentation_options.js?v=f539c95a"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/thebelab-helper.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/slothpy/exporting';</script>
+    <script src="../../_static/custom-icon.js?v=e5a97373"></script>
+    <link rel="icon" href="../../_static/slothpy_3.png"/>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/slothpy_3.png" class="logo__image only-light" alt="SlothPy"/>
+    <script>document.write(`<img src="../../_static/slothpy_3.png" class="logo__image only-dark" alt="SlothPy"/>`);</script>
+  
+  
+    <p class="title logo__title">SlothPy</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="versionswitcherbutton" type="button" role="button" class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="listbox" aria-controls="versionswitcherlist" aria-label="Version switcher list">
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="versionswitcherlist" class="version-switcher__menu dropdown-menu list-group-flush py-0" role="listbox" aria-labelledby="versionswitcherbutton">
+    <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../about.html">
+                        About
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../installation.html">
+                        Installation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../how_to_start.html">
+                        How to Start
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../slothpy.html">
+                        Reference Manual
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../how_to_cite.html">
+                        How to Cite
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/PyData" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/MTZ-dev/Sloth" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/pydata-sphinx-theme" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+        <li class="nav-item">
+            
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../_static/mlmg.png" class="icon-link-image" alt="MultiLumiMater"/></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="versionswitcherbutton" type="button" role="button" class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="listbox" aria-controls="versionswitcherlist" aria-label="Version switcher list">
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="versionswitcherlist" class="version-switcher__menu dropdown-menu list-group-flush py-0" role="listbox" aria-labelledby="versionswitcherbutton">
+    <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../about.html">
+                        About
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../installation.html">
+                        Installation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../how_to_start.html">
+                        How to Start
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../slothpy.html">
+                        Reference Manual
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../how_to_cite.html">
+                        How to Cite
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/PyData" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/MTZ-dev/Sloth" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/pydata-sphinx-theme" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+        <li class="nav-item">
+            
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../_static/mlmg.png" class="icon-link-image" alt="MultiLumiMater"/></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+        <div class="sidebar-primary-item">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../how_to_start.html">How to Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../slothpy.html">Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../how_to_cite.html">How to Cite</a></li>
+</ul>
+</div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">slothpy.exporting</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <h1>Source code for slothpy.exporting</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module for experimental exports of SlothPy data.&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">join</span>
+
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">read_csv</span><span class="p">,</span> <span class="n">concat</span>
+
+<span class="kn">from</span> <span class="nn">docx</span> <span class="kn">import</span> <span class="n">Document</span> <span class="k">as</span> <span class="n">Doc</span>
+<span class="kn">from</span> <span class="nn">docx.enum.table</span> <span class="kn">import</span> <span class="n">WD_TABLE_ALIGNMENT</span>
+<span class="kn">from</span> <span class="nn">docx.enum.text</span> <span class="kn">import</span> <span class="n">WD_ALIGN_PARAGRAPH</span>
+<span class="kn">from</span> <span class="nn">docx.enum.table</span> <span class="kn">import</span> <span class="n">WD_ALIGN_VERTICAL</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">array</span><span class="p">,</span> <span class="n">float64</span>
+
+<span class="kn">from</span> <span class="nn">slothpy.core.compound_object</span> <span class="kn">import</span> <span class="n">Compound</span>
+<span class="kn">from</span> <span class="nn">slothpy.core._slothpy_exceptions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SltFileError</span><span class="p">,</span>
+    <span class="n">SltSaveError</span><span class="p">,</span>
+    <span class="n">SltInputError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">slothpy._general_utilities._constants</span> <span class="kn">import</span> <span class="n">BLUE</span><span class="p">,</span> <span class="n">YELLOW</span><span class="p">,</span> <span class="n">RESET</span>
+
+
+<div class="viewcode-block" id="table_energy_and_g">
+<a class="viewcode-back" href="../../exporting_module.html#slothpy.exporting.table_energy_and_g">[docs]</a>
+<span class="k">def</span> <span class="nf">table_energy_and_g</span><span class="p">(</span>
+    <span class="n">slt_file</span><span class="p">:</span> <span class="n">Compound</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">i_last_doublet</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">krames</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">i_first_doublet</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">decomp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;total_angular&quot;</span><span class="p">,</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;total_angular&quot;</span><span class="p">,</span>
+    <span class="n">i_first_composition</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">i_last_composition</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;./&quot;</span><span class="p">,</span>
+    <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates .docx file containing table with g tensor and energy information.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    slt_file : Compound</span>
+<span class="sd">        Slt file storing data needed for the table.</span>
+<span class="sd">    group: str</span>
+<span class="sd">        Name of a group from .slt file for which table will be created.</span>
+<span class="sd">        Requires f&quot;{group}_soc_energies&quot;, f&quot;{group}_g_tensors_axes&quot; and</span>
+<span class="sd">        f&quot;{group}_magnetic_decomposition&quot; or f&quot;{group}_total_angular</span>
+<span class="sd">        _decomposition&quot; (outputs of Compound functions: soc_energies_cm_1,</span>
+<span class="sd">        calculate_g_tensor_and_axes_doublet, matrix_decomposition_in_z_pseudo</span>
+<span class="sd">        _spin_basis(with &#39;soc&#39; and &#39;total_angular&#39; or &#39;magnetic&#39; setting,</span>
+<span class="sd">        additionally rotation should be set as one for the ground state)).</span>
+<span class="sd">    i_last_doublet: int</span>
+<span class="sd">        Index of the last doublet used in the table. For example, if you are</span>
+<span class="sd">        working with the lanthanides ions 3+ this index should be matching the</span>
+<span class="sd">        splitting of the ground term of the considered lanthanide.</span>
+<span class="sd">        (J2+1 states, since we take index of doublet /2 and -1 since we count</span>
+<span class="sd">        from 0): Ce: 2, Pr: 3, Nd: 4, Pm: 3, Sm: 2, Eu: 0, Gd: 3, Yb: 3, Tm: 5,</span>
+<span class="sd">        Er: 7, Ho: 7, Dy: 7, Tb: 5</span>
+<span class="sd">    krames: bool</span>
+<span class="sd">        Determines if the table should use the table&#39;s template for Krames</span>
+<span class="sd">        ions (even electron number) or non-Krames ions (odd electron number).</span>
+<span class="sd">    i_first_doublet: int = 0</span>
+<span class="sd">        Index of the last doublet used in the table.</span>
+<span class="sd">    decomp: Union[&quot;total_angular&quot;, &quot;magnetic&quot;] = &quot;total_angular&quot;</span>
+<span class="sd">        Determines the type of decomposition used.</span>
+<span class="sd">    i_first_composition: int = 0</span>
+<span class="sd">        Determines first decomposed doublet, if 0 i_first_composition = i_</span>
+<span class="sd">        first_doublet.</span>
+<span class="sd">    i_last_composition: int = 0</span>
+<span class="sd">        Determines last decomposed level, if 0</span>
+<span class="sd">        i_last_composition = i_last_doublet.</span>
+<span class="sd">    threshold: float = 0.1</span>
+<span class="sd">        Determines how high the contribution of energy state has to be to be</span>
+<span class="sd">        shown in the table [%].</span>
+<span class="sd">    output_path: str = &quot;./&quot;</span>
+<span class="sd">        Path to which the output will be saved.</span>
+<span class="sd">    output_name: str = &quot;&quot;</span>
+<span class="sd">        Name of the output .docx file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Nothing</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    SltFileError</span>
+<span class="sd">        If a Compound object is not passed as an input or it doesn&#39;t include</span>
+<span class="sd">        all the necessary data.</span>
+<span class="sd">    SltSaveError</span>
+<span class="sd">        If the program is unable to correctly save the .docx file.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    slothpy.Compound.calculate_g_tensor_and_axes_doublet</span>
+<span class="sd">    slothpy.Compound.soc_energies_cm_1</span>
+<span class="sd">    slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slt_file</span><span class="p">,</span> <span class="n">Compound</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
+            <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="n">messege</span><span class="o">=</span><span class="s2">&quot;A Compound object must be passed!&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">i_first_composition</span><span class="p">:</span>
+        <span class="n">i_first_composition</span> <span class="o">=</span> <span class="n">i_first_doublet</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">i_last_composition</span><span class="p">:</span>
+        <span class="n">i_last_composition</span> <span class="o">=</span> <span class="n">i_last_doublet</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">output_name</span><span class="p">:</span>
+        <span class="n">output_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_table_energy_and_g&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">i_last_doublet</span><span class="p">,</span>
+            <span class="n">i_first_doublet</span><span class="p">,</span>
+            <span class="n">i_first_composition</span><span class="p">,</span>
+            <span class="n">i_last_composition</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All passed indexes have to be integers.&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">energies</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_soc_energies&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energies&quot;</span><span class="p">]</span>
+        <span class="n">g_tensors</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_g_tensors&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">decomp</span> <span class="o">==</span> <span class="s2">&quot;total_angular&quot;</span><span class="p">:</span>
+            <span class="n">composition_frac_matrix</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_total_angular_decomposition&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_total_angular_decomposition&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="n">composition_states</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_total_angular_decomposition&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_pseudo_spin_states&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="k">elif</span> <span class="n">decomp</span> <span class="o">==</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">:</span>
+            <span class="n">composition_frac_matrix</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetic_decomposition&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetic_decomposition&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="n">composition_states</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetic_decomposition&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_pseudo_spin_states&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
+            <span class="n">slt_file</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
+            <span class="n">exc</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to load data required by table&quot;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
+            <span class="o">+</span> <span class="n">RED</span>
+            <span class="o">+</span> <span class="s2">&quot;Check if group exist.&quot;</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">number_of_doublets</span> <span class="o">=</span> <span class="n">i_last_doublet</span> <span class="o">-</span> <span class="n">i_first_doublet</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">number_to_decompose</span> <span class="o">=</span> <span class="n">i_last_composition</span> <span class="o">-</span> <span class="n">i_first_composition</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">docx</span> <span class="o">=</span> <span class="n">Doc</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">krames</span><span class="p">:</span>
+            <span class="n">table</span> <span class="o">=</span> <span class="n">docx</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">4</span> <span class="o">+</span> <span class="n">number_of_doublets</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">bold</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Energy and pseudo-&quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;-tensor components (&quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">subscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+            <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">subscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+            <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">subscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">)</span>
+            <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                <span class="s2">&quot;) of&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">number_of_doublets</span><span class="si">}{</span><span class="s1">&#39; ground&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2"> Kramers&quot;</span>
+                <span class="s2">&quot; doublets&quot;</span>
+            <span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Doublet no.&quot;</span><span class="p">)</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Energy / cm&quot;</span><span class="p">)</span>
+            <span class="n">superscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;-1&quot;</span><span class="p">)</span>
+            <span class="n">superscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">superscript</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pseudo-&quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;-tensor components&quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">subscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+            <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">subscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+            <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">subscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">)</span>
+            <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_of_doublets</span><span class="p">):</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">g_tensors</span><span class="p">[</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">energies</span><span class="p">[(</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g_tensors</span><span class="p">[</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g_tensors</span><span class="p">[</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g_tensors</span><span class="p">[</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">alignment</span> <span class="o">=</span> <span class="n">WD_TABLE_ALIGNMENT</span><span class="o">.</span><span class="n">CENTER</span>
+            <span class="k">for</span> <span class="n">row1</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">rows</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row1</span><span class="o">.</span><span class="n">cells</span><span class="p">:</span>
+                    <span class="n">cell</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">alignment</span> <span class="o">=</span> <span class="n">WD_ALIGN_PARAGRAPH</span><span class="o">.</span><span class="n">CENTER</span>
+                    <span class="n">cell</span><span class="o">.</span><span class="n">vertical_alignment</span> <span class="o">=</span> <span class="n">WD_ALIGN_VERTICAL</span><span class="o">.</span><span class="n">CENTER</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">krames</span><span class="p">:</span>
+            <span class="n">table</span> <span class="o">=</span> <span class="n">docx</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">3</span> <span class="o">+</span> <span class="n">number_of_doublets</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">bold</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Energy and pseudo-&quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;-tensor&quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">subscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">)</span>
+            <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; component&quot;</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot; of </span><span class="si">{</span><span class="n">number_of_doublets</span><span class="si">}{</span><span class="s1">&#39; ground&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2"> Ising&quot;</span>
+                <span class="s2">&quot; doublets&quot;</span>
+            <span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Doublet no.&quot;</span><span class="p">)</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Energies / cm&quot;</span><span class="p">)</span>
+            <span class="n">superscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;-1&quot;</span><span class="p">)</span>
+            <span class="n">superscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">superscript</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tunneling splitting / cm&quot;</span>
+            <span class="p">)</span>
+            <span class="n">superscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;-1&quot;</span><span class="p">)</span>
+            <span class="n">superscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">superscript</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;g&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">subscript</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">)</span>
+            <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; component&quot;</span><span class="p">)</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_of_doublets</span><span class="p">):</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">g_tensors</span><span class="p">[</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">energies</span><span class="p">[(</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">; &quot;</span>
+                <span class="p">)</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">energies</span><span class="p">[(</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">abs</span><span class="p">(</span><span class="n">energies</span><span class="p">[(</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">energies</span><span class="p">[(</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)])</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">table</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g_tensors</span><span class="p">[</span><span class="n">i_first_doublet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">table</span><span class="o">.</span><span class="n">alignment</span> <span class="o">=</span> <span class="n">WD_TABLE_ALIGNMENT</span><span class="o">.</span><span class="n">CENTER</span>
+            <span class="k">for</span> <span class="n">row1</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">rows</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row1</span><span class="o">.</span><span class="n">cells</span><span class="p">:</span>
+                    <span class="n">cell</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">alignment</span> <span class="o">=</span> <span class="n">WD_ALIGN_PARAGRAPH</span><span class="o">.</span><span class="n">CENTER</span>
+                    <span class="n">cell</span><span class="o">.</span><span class="n">vertical_alignment</span> <span class="o">=</span> <span class="n">WD_ALIGN_VERTICAL</span><span class="o">.</span><span class="n">CENTER</span>
+
+        <span class="n">table2</span> <span class="o">=</span> <span class="n">docx</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="n">number_to_decompose</span><span class="p">)</span>
+        <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+            <span class="s2">&quot;Composition of the two ground&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="s1">&#39;Kramers&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">krames</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;Ising&#39;</span><span class="si">}</span><span class="s2"> doublets in the |&quot;</span>
+        <span class="p">)</span>
+        <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;m&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">subscript</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;J&quot;</span><span class="p">)</span>
+        <span class="n">subscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">subscript</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+            <span class="s2">&quot;⟩ basis on the quantization axes within&quot;</span>
+        <span class="p">)</span>
+        <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot; J &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">krames</span><span class="p">:</span>
+            <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;= </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">composition_states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)))</span><span class="si">}</span><span class="s2">/2 manifold&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;= </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">composition_states</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span><span class="si">}</span><span class="s2"> manifold&quot;</span>
+            <span class="p">)</span>
+        <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot; (contribution over </span><span class="si">{</span><span class="n">threshold</span><span class="si">}</span><span class="s2">% shown)&quot;</span>
+        <span class="p">)</span>
+        <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">number_to_decompose</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_to_decompose</span><span class="p">):</span>
+            <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">index</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">superscript</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;st&quot;</span><span class="p">)</span>
+                <span class="n">superscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">superscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">superscript</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;nd&quot;</span><span class="p">)</span>
+                <span class="n">superscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">superscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">superscript</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;rd&quot;</span><span class="p">)</span>
+                <span class="n">superscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">superscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">superscript</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;th&quot;</span><span class="p">)</span>
+                <span class="n">superscript</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">superscript</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot; doublet&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">inner_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">composition_states</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">composition_frac_matrix</span><span class="p">[</span><span class="n">i_first_composition</span> <span class="o">+</span> <span class="n">index</span> <span class="o">*</span> <span class="mi">2</span><span class="p">][</span>
+                        <span class="n">inner_index</span>
+                    <span class="p">]</span>
+                    <span class="o">&lt;=</span> <span class="n">threshold</span>
+                <span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">composition_frac_matrix</span><span class="p">[(</span><span class="n">i_first_composition</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)][</span><span class="n">inner_index</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">table2</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s1">&#39; |</span><span class="si">{</span><span class="s2">&quot;+&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">composition_states</span><span class="p">[</span><span class="n">inner_index</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)))</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">composition_states</span><span class="p">[</span><span class="n">inner_index</span><span class="p">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;–&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">composition_states</span><span class="p">[</span><span class="n">inner_index</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)))</span><span class="si">}</span><span class="s1">/2⟩</span><span class="se">\n</span><span class="s1">&#39;</span>
+                    <span class="p">)</span>
+        <span class="n">table</span><span class="o">.</span><span class="n">alignment</span> <span class="o">=</span> <span class="n">WD_TABLE_ALIGNMENT</span><span class="o">.</span><span class="n">CENTER</span>
+        <span class="k">for</span> <span class="n">row2</span> <span class="ow">in</span> <span class="n">table2</span><span class="o">.</span><span class="n">rows</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row2</span><span class="o">.</span><span class="n">cells</span><span class="p">:</span>
+                <span class="n">cell</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">alignment</span> <span class="o">=</span> <span class="n">WD_ALIGN_PARAGRAPH</span><span class="o">.</span><span class="n">CENTER</span>
+                <span class="n">cell</span><span class="o">.</span><span class="n">vertical_alignment</span> <span class="o">=</span> <span class="n">WD_ALIGN_VERTICAL</span><span class="o">.</span><span class="n">CENTER</span>
+
+        <span class="n">docx</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2">.docx&quot;</span><span class="p">))</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">YELLOW</span>
+            <span class="o">+</span> <span class="s2">&quot;SlothPy message: &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Table was saved as </span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2"> as docx&quot;</span>
+            <span class="s2">&quot; file.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
+            <span class="n">slt_file</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
+            <span class="n">exc</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to save table </span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2"> from &quot;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;&quot;in </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="axes_in_xyz">
+<a class="viewcode-back" href="../../exporting_module.html#slothpy.exporting.axes_in_xyz">[docs]</a>
+<span class="k">def</span> <span class="nf">axes_in_xyz</span><span class="p">(</span>
+    <span class="n">slt_file</span><span class="p">:</span> <span class="n">Compound</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">central_atom</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">xyz_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">xyz_file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">doublet_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">scale_factor</span><span class="p">:</span> <span class="n">float64</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;./&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds main XYZ magnetic axes corresponding to the chosen doublet</span>
+<span class="sd">    to a .xyz file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    slt_file : Compound</span>
+<span class="sd">        Name of a Compound object corresponding to the .slt file that will</span>
+<span class="sd">        be used.</span>
+<span class="sd">    group : str</span>
+<span class="sd">        Name of the group with axes and g_tensors (result of the</span>
+<span class="sd">        calculate_g_tensor_and_axes_doublet method).</span>
+<span class="sd">    xyz_path : str</span>
+<span class="sd">        Path to the .xyz file to which axes will be added.</span>
+<span class="sd">    xyz_file_name : str</span>
+<span class="sd">        Name of the .xyz file to which axes will be added.</span>
+<span class="sd">    central_atom : str</span>
+<span class="sd">        Symbol of a unique central atom from which axes will begin.</span>
+<span class="sd">    doublet_number : int, optional</span>
+<span class="sd">        Number of the doublet whose magnetic axes will be added., by default 0</span>
+<span class="sd">    scale_factor : float64, optional</span>
+<span class="sd">        Factor by which the lengths of the axes will be scaled., by default 1</span>
+<span class="sd">    output_path : str, optional</span>
+<span class="sd">        Path to which .xyz output file with the suffix _axes will be saved.,</span>
+<span class="sd">        by default &quot;./&quot;</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    SltFileError</span>
+<span class="sd">        If a Compound object is not passed as an input.</span>
+<span class="sd">    SltInputError</span>
+<span class="sd">        If the name of an input xyz file does not end with .xyz.</span>
+<span class="sd">    SltSaveError</span>
+<span class="sd">        If the program is unable to correctly save the new .xyz file.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    Magnetic axes are scaled by the corresponding pseudo-g-tensor values along</span>
+<span class="sd">    them. Atoms representing the axes are as follows: Lv - X, Ts - Y, Og - Z.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    slothpy.Compound.calculate_g_tensor_and_axes_doublet</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slt_file</span><span class="p">,</span> <span class="n">Compound</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
+            <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="n">messege</span><span class="o">=</span><span class="s2">&quot;A Compound object must be passed!&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">xyz_file_name</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span> <span class="o">!=</span> <span class="s2">&quot;.xyz&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span><span class="ne">NameError</span><span class="p">(</span><span class="s2">&quot;Input file name has to end with .xyz.&quot;</span><span class="p">))</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">axes_matrix</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_axes&quot;</span><span class="p">][</span>
+            <span class="n">doublet_number</span>
+        <span class="p">]</span>
+        <span class="n">g_tensor</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_g_tensors&quot;</span><span class="p">][</span>
+            <span class="n">doublet_number</span>
+        <span class="p">]</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
+            <span class="n">slt_file</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
+            <span class="n">exc</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to load data required to add axes&quot;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
+            <span class="o">+</span> <span class="n">RED</span>
+            <span class="o">+</span> <span class="s2">&quot;Check if group exist.&quot;</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">axes_matrix</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_factor</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">axes_matrix</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_factor</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">axes_matrix</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_factor</span>
+
+        <span class="n">atom_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Lv&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;Ts&quot;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s2">&quot;Og&quot;</span><span class="p">:</span> <span class="n">z</span><span class="p">}</span>
+
+        <span class="c1"># Read the XYZ file into a DataFrame</span>
+        <span class="n">xyz_file</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">xyz_path</span><span class="p">,</span> <span class="n">xyz_file_name</span><span class="p">)</span>
+        <span class="n">atoms_df</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span>
+            <span class="n">xyz_file</span><span class="p">,</span>
+            <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">skiprows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Element&quot;</span><span class="p">,</span> <span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">central_atom_coord</span> <span class="o">=</span> <span class="n">atoms_df</span><span class="p">[</span><span class="n">atoms_df</span><span class="p">[</span><span class="s2">&quot;Element&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">central_atom</span><span class="p">][</span>
+            <span class="p">[</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">new_atom_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Lv&quot;</span><span class="p">,</span> <span class="s2">&quot;Ts&quot;</span><span class="p">,</span> <span class="s2">&quot;Og&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Create a DataFrame with the new atoms with Element names</span>
+        <span class="k">for</span> <span class="n">new_atom</span> <span class="ow">in</span> <span class="n">new_atom_names</span><span class="p">:</span>
+            <span class="n">new_atom_plus</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;Element&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">new_atom</span><span class="p">]})</span>
+            <span class="n">new_atom_plus</span><span class="p">[[</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">central_atom_coord</span> <span class="o">+</span> <span class="n">atom_dict</span><span class="p">[</span><span class="n">new_atom</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">atoms_df</span> <span class="o">=</span> <span class="n">concat</span><span class="p">([</span><span class="n">atoms_df</span><span class="p">,</span> <span class="n">new_atom_plus</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">new_atom_minus</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;Element&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">new_atom</span><span class="p">]})</span>
+            <span class="n">new_atom_minus</span><span class="p">[[</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">central_atom_coord</span> <span class="o">-</span> <span class="n">atom_dict</span><span class="p">[</span><span class="n">new_atom</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">atoms_df</span> <span class="o">=</span> <span class="n">concat</span><span class="p">([</span><span class="n">atoms_df</span><span class="p">,</span> <span class="n">new_atom_minus</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">output_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">xyz_file_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span><span class="si">}</span><span class="s2">_axes.xyz&quot;</span>
+        <span class="c1"># Save the updated XYZ file</span>
+        <span class="n">output_xyz_file</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">output_name</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_xyz_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms_df</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="s2">&quot;Generated by SlothPy - magnetic axes (Lv - X, Ts - Y, Og - Z)&quot;</span>
+                <span class="s2">&quot; scaled by the corresponding pseudo-g-tensors.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="n">atoms_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+                <span class="n">f</span><span class="p">,</span>
+                <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">float_format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%.7f</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">YELLOW</span>
+            <span class="o">+</span> <span class="s2">&quot;SlothPy message: &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Updated .xyz file was saved as </span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
+            <span class="n">slt_file</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
+            <span class="n">exc</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to save new .xyz file </span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2"> with magnetic axes&quot;</span>
+            <span class="s2">&quot; from &quot;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;&quot;in </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="axes_in_mol2">
+<a class="viewcode-back" href="../../exporting_module.html#slothpy.exporting.axes_in_mol2">[docs]</a>
+<span class="k">def</span> <span class="nf">axes_in_mol2</span><span class="p">(</span>
+    <span class="n">slt_file</span><span class="p">:</span> <span class="n">Compound</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">mol2_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">mol2_file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">atom_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">doublet_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">scale_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds main XYZ magnetic axes corresponding to the chosen doublet</span>
+<span class="sd">    to a .mol2 file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    slt_file : Compound</span>
+<span class="sd">        Name of a Compound object corresponding to the .slt file that will</span>
+<span class="sd">        be used.</span>
+<span class="sd">    group : str</span>
+<span class="sd">        Name of the group with axes and g_tensors (result of the</span>
+<span class="sd">        calculate_g_tensor_and_axes_doublet method).</span>
+<span class="sd">    mol2_file_path : str</span>
+<span class="sd">        Path to the .mol2 file to which axes will be added.</span>
+<span class="sd">    mol2_file_name : str</span>
+<span class="sd">        Name of the .mol2 file to which axes will be added.</span>
+<span class="sd">    atom_name : str</span>
+<span class="sd">        Name of a central atom from which axes will begin.</span>
+<span class="sd">    doublet_number : int = 0</span>
+<span class="sd">        Number of the doublet whose magnetic axes will be added., by default 0</span>
+<span class="sd">    scale_factor : float64 = 1</span>
+<span class="sd">        Factor by which the lengths of the axes will be scaled., by default 1</span>
+<span class="sd">    output_path : str = &quot;./&quot;</span>
+<span class="sd">        Path to which .mol2 output file with the suffix _axes will be saved.,</span>
+<span class="sd">        by default &quot;./&quot;</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    SltFileError</span>
+<span class="sd">        If a Compound object is not passed as an input.</span>
+<span class="sd">    SltInputError</span>
+<span class="sd">        If the name of an input xyz file does not end with .xyz.</span>
+<span class="sd">    SltSaveError</span>
+<span class="sd">        If the program is unable to correctly save the new .xyz file.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    Magnetic axes are scaled by the corresponding pseudo-g-tensor values along</span>
+<span class="sd">    them. Atoms representing the axes are as follows: Lv - X, Ts - Y, Og - Z.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    slothpy.Compound.calculate_g_tensor_and_axes_doublet</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slt_file</span><span class="p">,</span> <span class="n">Compound</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
+            <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="n">messege</span><span class="o">=</span><span class="s2">&quot;A Compound object must be passed!&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">mol2_file_name</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span> <span class="o">!=</span> <span class="s2">&quot;.mol2&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+            <span class="ne">NameError</span><span class="p">(</span><span class="s2">&quot;Input file name has to end with .mol2.&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">output_path</span><span class="p">:</span>
+        <span class="n">output_path</span> <span class="o">=</span> <span class="n">mol2_file_path</span>
+    <span class="n">output_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mol2_file_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">_axes.mol2&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">axes_matrix</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_axes&quot;</span><span class="p">][</span>
+            <span class="n">doublet_number</span>
+        <span class="p">]</span>
+        <span class="n">g_tensor</span> <span class="o">=</span> <span class="n">slt_file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_g_tensors&quot;</span><span class="p">][</span>
+            <span class="n">doublet_number</span>
+        <span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
+            <span class="n">slt_file</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
+            <span class="n">exc</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to load data required to add axes&quot;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
+            <span class="o">+</span> <span class="n">RED</span>
+            <span class="o">+</span> <span class="s2">&quot;Check if group exist.&quot;</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">axes_matrix</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">axes_matrix</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">axes_matrix</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
+            <span class="n">join</span><span class="p">(</span><span class="n">mol2_file_path</span><span class="p">,</span> <span class="n">mol2_file_name</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;UTF-8&quot;</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">mol2</span><span class="p">:</span>
+            <span class="n">file_contents</span> <span class="o">=</span> <span class="n">mol2</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">reused_information</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;atoms_start&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;atoms_end&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">file_contents</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;@&lt;TRIPOS&gt;MOLECULE&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">bonds_atoms_count</span> <span class="o">=</span> <span class="n">file_contents</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_bonds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+                    <span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="p">)</span>
+                <span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">6</span>
+                <span class="p">)</span>  <span class="c1"># number of atoms added</span>
+                <span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">3</span>
+                <span class="p">)</span>  <span class="c1"># number of bonds added</span>
+                <span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">bonds_atoms_count</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="mi">3</span>
+                <span class="p">)</span>  <span class="c1"># number of molecules added</span>
+                <span class="n">new_contents</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="k">for</span> <span class="n">inner_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bonds_atoms_count</span><span class="p">)):</span>
+                    <span class="n">new_contents</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="s2">&quot;    &quot;</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bonds_atoms_count</span><span class="p">[</span><span class="n">inner_index</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">file_contents</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_contents</span>
+            <span class="k">if</span> <span class="s2">&quot;@&lt;TRIPOS&gt;ATOM&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atoms_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="s2">&quot;@&lt;TRIPOS&gt;BOND&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atoms_end&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atoms_start&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atoms_end&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">atom_information</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">atom_information</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">atom_name</span><span class="p">:</span>
+                        <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atom_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                            <span class="n">atom_information</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atom_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                            <span class="n">atom_information</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atom_z&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                            <span class="n">atom_information</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span>
+                            <span class="p">[</span>
+                                <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atom_x&quot;</span><span class="p">],</span>
+                                <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atom_y&quot;</span><span class="p">],</span>
+                                <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;atom_z&quot;</span><span class="p">],</span>
+                            <span class="p">]</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="nb">int</span><span class="p">(</span><span class="n">atom_information</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="o">==</span> <span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span>
+                    <span class="p">):</span>
+                        <span class="n">Lv1</span> <span class="o">=</span> <span class="n">coordinates</span> <span class="o">+</span> <span class="n">x</span> <span class="o">*</span> <span class="n">scale_factor</span>
+                        <span class="n">Lv2</span> <span class="o">=</span> <span class="n">coordinates</span> <span class="o">-</span> <span class="n">x</span> <span class="o">*</span> <span class="n">scale_factor</span>
+                        <span class="n">Ts1</span> <span class="o">=</span> <span class="n">coordinates</span> <span class="o">+</span> <span class="n">y</span> <span class="o">*</span> <span class="n">scale_factor</span>
+                        <span class="n">Ts2</span> <span class="o">=</span> <span class="n">coordinates</span> <span class="o">-</span> <span class="n">y</span> <span class="o">*</span> <span class="n">scale_factor</span>
+                        <span class="n">Og1</span> <span class="o">=</span> <span class="n">coordinates</span> <span class="o">+</span> <span class="n">z</span> <span class="o">*</span> <span class="n">scale_factor</span>
+                        <span class="n">Og2</span> <span class="o">=</span> <span class="n">coordinates</span> <span class="o">-</span> <span class="n">z</span> <span class="o">*</span> <span class="n">scale_factor</span>
+                        <span class="n">file_contents</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                            <span class="sa">f</span><span class="s1">&#39;    </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> Lv1&#39;</span>
+                            <span class="sa">f</span><span class="s2">&quot;     </span><span class="si">{</span><span class="n">Lv1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Lv1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Lv1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">   Lv       &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> &#39;</span>
+                            <span class="s2">&quot;  0.0000</span><span class="se">\n</span><span class="s2">   &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1"> Lv2   &#39;</span>
+                            <span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">Lv2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Lv2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Lv2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">   Lv       &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> &#39;</span>
+                            <span class="s2">&quot;  0.0000</span><span class="se">\n</span><span class="s2">   &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s1"> Ts1   &#39;</span>
+                            <span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">Ts1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Ts1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Ts1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">   Ts       &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1"> &#39;</span>
+                            <span class="s2">&quot;  0.0000</span><span class="se">\n</span><span class="s2">   &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="si">}</span><span class="s1"> Ts2   &#39;</span>
+                            <span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">Ts2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Ts2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Ts2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">   Ts       &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1"> &#39;</span>
+                            <span class="s2">&quot;  0.0000</span><span class="se">\n</span><span class="s2">   &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="si">}</span><span class="s1"> Og1   &#39;</span>
+                            <span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">Og1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Og1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Og1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">   Og       &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s1"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s1"> &#39;</span>
+                            <span class="s2">&quot;  0.0000</span><span class="se">\n</span><span class="s2">   &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">6</span><span class="si">}</span><span class="s1"> Og2   &#39;</span>
+                            <span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">Og2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Og2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">Og2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">   Og       &quot;</span>
+                            <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s1"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_molecules&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s1"> &#39;</span>
+                            <span class="s2">&quot;  0.0000</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">&quot;@&lt;TRIPOS&gt;SUBSTRUCTURE&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">file_contents</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;    </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_bonds&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">   &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">   &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1">   1</span><span class="se">\n</span><span class="s1">   &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_bonds&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1">   &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s1">   &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="si">}</span><span class="s1">   1</span><span class="se">\n</span><span class="s1">   &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_bonds&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s1">   &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="si">}</span><span class="s1">   &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">6</span><span class="si">}</span><span class="s1">  &#39;</span>
+                    <span class="s2">&quot; 1</span><span class="se">\n</span><span class="s2">@&lt;TRIPOS&gt;SUBSTRUCTURE</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;@&lt;TRIPOS&gt;CRYSIN&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">file_contents</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;    &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_molecules&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_molecules&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;      </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_atoms&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> GROUP    &quot;</span>
+                    <span class="s2">&quot;         0 ****  ****    0 </span><span class="se">\n</span><span class="s2">    &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_molecules&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_molecules&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;      </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_atoms&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s2"> GROUP    &quot;</span>
+                    <span class="s2">&quot;         0 ****  ****    0 </span><span class="se">\n</span><span class="s2">    &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_molecules&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s2"> RES</span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_molecules&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;      </span><span class="si">{</span><span class="n">reused_information</span><span class="p">[</span><span class="s1">&#39;number_atoms&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="si">}</span><span class="s2"> GROUP    &quot;</span>
+                    <span class="s2">&quot;         0 ****  ****    0 </span><span class="se">\n</span><span class="s2">@&lt;TRIPOS&gt;CRYSIN</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">file_contents</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span>
+                <span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">output_name</span><span class="p">),</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;UTF-8&quot;</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">mol2</span><span class="p">:</span>
+                <span class="n">mol2</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">YELLOW</span>
+            <span class="o">+</span> <span class="s2">&quot;SlothPy message: &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Updated .mol2 file was saved as </span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2"> in&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
+            <span class="n">slt_file</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
+            <span class="n">exc</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to save new .mol2 file </span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2"> with magnetic axes&quot;</span>
+            <span class="s2">&quot; from &quot;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+            <span class="o">+</span> <span class="n">BLUE</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="n">RESET</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;&quot;in </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  <!-- Previous / next buttons -->
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=ac02cc09edc035673794"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Mikołaj Żychowicz.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.14.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

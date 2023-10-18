@@ -1,0 +1,41 @@
+/* html {
+  --pst-font-size-base: 16px;
+  --pst-sidebar-font-size: 12px;
+} */
+
+.bd-sidebar-primary {
+  width: auto;
+}
+
+.bd-main .bd-content .bd-article-container {
+  max-width: 90%;  /* default is 60em */
+}
+
+.bd-page-width {
+  max-width: 90%;  /* default is 88rem */
+}
+
+
+p.caption {
+  font-size: 1.5em;
+  margin-bottom: 0em;
+}
+
+.toctree-wrapper > ul {
+  padding-left: 0;
+}
+
+li.toctree-l1 {
+  list-style: none;
+  margin-bottom: 0.5em;
+}
+
+li.toctree-l1 > a {
+  list-style: none;
+  font-size: 1.3em;
+}
+
+li.toctree-l1 > ul {
+  padding-inline-start: 1.5em;
+  list-style: none;
+}

@@ -1,0 +1,36 @@
+[build-system]
+requires = [
+    "hatchling",
+    "cycler>=0.11.0",
+    "h5py>=3.8.0",
+    "ipython>=8.13.2",
+    "matplotlib>=3.7.1",
+    "numba>=0.57.0",
+    "numpy>=1.24.3",
+    "threadpoolctl>=3.2.0",
+    "scipy>=1.11.2",
+    "PyQt5>=5.15.9",
+    "docx>=0.2.4",
+    "pandas>=2.0.1",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "slothpy"
+version = "0.1.0"
+authors = [
+  { name="Mikolaj Tadeusz Zychowicz", email="mikolaj.zychowicz@uj.edu.pl" },
+]
+description = "A small molecular magnetism related package."
+license = {file = "LICENSE.txt"}
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/MTZ-dev/SlothPy"
+"Bug Tracker" = "https://github.com/MTZ-dev/SlothPy/issues"

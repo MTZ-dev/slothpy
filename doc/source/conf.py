@@ -11,9 +11,9 @@ import sys
 sys.path.insert(0, os.path.abspath("../.."))
 
 project = "SlothPy"
-copyright = "2023, Mikołaj Żychowicz"
-author = "Mikołaj Żychowicz"
-release = "0.0.1"
+copyright = "2023, Mikołaj Tadeusz Żychowicz"
+author = "Mikołaj Tadeusz Żychowicz"
+release = "0.1.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -70,17 +70,17 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "Twitter",
-            "url": "https://twitter.com/PyData",
+            "url": "https://twitter.com/multilumimater",
             "icon": "fa-brands fa-twitter",
         },
         {
             "name": "GitHub",
-            "url": "https://github.com/MTZ-dev/Sloth",
+            "url": "https://github.com/MTZ-dev/slothpy",
             "icon": "fa-brands fa-github",
         },
         {
             "name": "PyPI",
-            "url": "https://pypi.org/project/pydata-sphinx-theme",
+            "url": "https://pypi.org/project/slothpy/",
             "icon": "fa-custom fa-pypi",
         },
         {

@@ -31,6 +31,7 @@ from numpy import (
     zeros,
     diag,
     float64,
+    float128,
     complex128,
 )
 from numpy.linalg import eigh, eigvalsh
@@ -310,7 +311,7 @@ def _mth_load(
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
-) -> float64:
+) -> int:
     start_time_load = perf_counter_ns()
     # Read data from HDF5 file
     (
@@ -401,7 +402,7 @@ def _mth_benchmark(
     num_cpu: int,
     num_threads: int,
     energy: bool = False,
-) -> float64:
+) -> float128:
     # Read data from HDF5 file
     (
         magnetic_momenta,
@@ -477,7 +478,7 @@ def _mth_benchmark(
                         ),
                     )
 
-    times = array(times)
+    times = array(times, dtype=float128)
     exec_time = sorted(times[:, 0])
     setup_time = sorted(times[:, 1])
     return (

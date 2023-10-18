@@ -4755,18 +4755,18 @@ class Compound:
         field: Union["H", "B"] = "B",
     ):
         """
-        Function that creates graphs of E(H,orientation) given a name of the
-        group in .slt file, graphs can be optionally saved, colour palettes
+        Function that creates graphs of E(H,orientation) given name of
+        the group in .slt file, graphs can be optionally saved, colour palettes
         can be changed.
 
         Parameters
         ----------
         group: str
-            Name of a group from .slt file for which a plot will be created.
+            Name of a group from .slt file for which plot will be created.
         save: bool = False
-            Determines if the plot is saved, name of the file will be in the
-            following format: f'zeeman_{group}.tiff' or f'zeeman_{group}
-            _Orientation {orientations[i]}.tiff'.
+            Determines if plot is saved, name of the file will be in the
+            following format: f'zeeman_{group}.tiff' or
+            f'zeeman_{group}_Orientation {orientations[i]}.tiff'.
         colour_map_name1: str or list[str] = 'BuPi'
             Input of the colour_map function, determines a colour of the lower
             set of split lines.
@@ -4774,13 +4774,14 @@ class Compound:
             Input of the colour_map function, determines a colour of the higher
             set of split lines.
         single: bool = False
-            Determines if all the orientations are plotted together.
+            Determines if all orientations are plotted together if plot is not
+            a result of averaging.
         xlim: tuple of 1-2 floats = ()
-            Determines the lower and upper limit of the x-axis if two floats
-            are passed, or just the upper limit if one is passed.
+            Determines the lower and upper limit of x-axis if two floats are
+            passed, or just the upper limit if one is passed.
         ylim: tuple of 1-2 floats = ()
-            Determines the lower and upper limit of the y-axis if two floats
-            are passed, or just the upper limit if one is passed.
+            Determines the lower and upper limit of y-axis if two floats are
+            passed, or just the upper limit if one is passed.
         xticks: int or float = 1
             Determines the frequency of x major ticks.
         yticks: int or float = 0
@@ -4795,7 +4796,7 @@ class Compound:
         Raises
         ------
         SltFileError
-            If unable to load the data file. Most likely encountered if the
+            If unable to load data file. Most likely encountered if the
             group name is incorrect.
         SltPlotError
             If unable to create the plot.
@@ -4807,7 +4808,7 @@ class Compound:
         slothpy.Compound.calculate_zeeman_splitting
         """
         try:
-            # Getting data from hdf5 or sloth file
+            """Getting data from hdf5 or sloth file"""
             zeeman = self[f"{group}_zeeman_splitting", f"{group}_zeeman"]
             fields = self[f"{group}_zeeman_splitting", f"{group}_fields"]
             if field == "H":
@@ -4821,7 +4822,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                "Failed to load Zeeman splitting file"
+                f"Failed to load Zeeman splitting file"
                 + BLUE
                 + "Group "
                 + RESET
@@ -4831,13 +4832,15 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if the group exists.",
+                + "Check if group exist.",
             ) from None
 
         try:
-            # Plotting in matplotlib
+            if orientations.shape[1] != 3:
+                single = True
+            """Plotting in matplotlib"""
             if not single:
-                number_of_plots = len(orientations)
+                number_of_plots = orientations.shape[0]
                 if number_of_plots % 5 == 0:
                     fig = figure(figsize=(16, 3.2 * (number_of_plots / 5)))
                     gs = GridSpec(int(number_of_plots / 5), 5)
@@ -4854,7 +4857,7 @@ class Compound:
                     fig = figure(figsize=(6.4, 3.2 * number_of_plots))
                     gs = GridSpec(1, number_of_plots)
                     divisor = 1
-                # Creating a plot
+                """Creating a plot"""
                 for i, zee in enumerate(zeeman):
                     if i % divisor != 0:
                         rc(
@@ -4895,7 +4898,7 @@ class Compound:
                             title("Averaged Splitting")
                         else:
                             title(
-                                f"Orientation [{round(orientations[i][0], 3)}"
+                                f"Orientation [{round(orientations[i][0], 3)} "
                                 + f"{round(orientations[i][1], 3)} {round(orientations[i][2], 3)}]"
                             )
                         if xlim:
@@ -5059,7 +5062,7 @@ class Compound:
                     show()
                     if save:
                         try:
-                            # Saving plot figure
+                            """Saving plot figure"""
                             fig.savefig(
                                 f"zeeman_{group}_Orientation"
                                 f" {orientations[i]}.tiff",
@@ -5069,7 +5072,7 @@ class Compound:
                             raise SltSaveError(
                                 self._hdf5,
                                 exc,
-                                "Failed to save Zeeman splitting data plot"
+                                f"Failed to save zeeman splitting data plot"
                                 + BLUE
                                 + "Group "
                                 + RESET
@@ -5087,7 +5090,7 @@ class Compound:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                "Failed to plot Zeeman splitting data"
+                f"Failed to plot zeeman splitting data"
                 + BLUE
                 + "Group "
                 + RESET
@@ -5099,13 +5102,13 @@ class Compound:
             ) from None
         if save and not single:
             try:
-                # Saving plot figure
+                """Saving plot figure"""
                 fig.savefig(f"zeeman_{group}.tiff", dpi=300)
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    "Failed to save Zeeman splitting data plot "
+                    f"Failed to save zeeman splitting data plot "
                     + BLUE
                     + "Group "
                     + RESET
@@ -5185,11 +5188,12 @@ class Compound:
         Raises
         ------
         SltFileError
-            If unable to load data file. Most likely encountered if group name is incorrect.
+            If unable to load data file. Most likely encountered if the group
+            name is incorrect.
         SltPlotError
-            If unable to create plot.
+            If unable to create the plot.
         SltSaveError
-            If unable to save plot as image.
+            If unable to save the plot as an image.
 
         See Also
         --------
@@ -5444,7 +5448,8 @@ class Compound:
             "chit",
             "chi",
             "helmholtz_energy",
-            "internal_energy" "magnetisation",
+            "internal_energy",
+            "magnetisation",
         ],
         animation_variable: Union["temperature", "field"],
         filename: str,
@@ -5466,58 +5471,56 @@ class Compound:
         field_rounding: int = 0,
     ):
         """
-        Creates animations of 3d plots of data dependent on field B[T] and
-        temperature T[K].
+        Creates animations of 3d plots dependent on field B[T]
+        and temperature T[K].
 
         Parameters
         ----------
         group: str
-            Name of a group from .slt file for which a plot will be created.
+            Name of a group from HDF5 file for which plot will be created.
         data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
           "magnetisation"]
-            Type of the data that will be used to create the plot.
+            Type of data that will be used to create plot.
         animation_variable: Union["temperature", "field"]
-            Variable changing during the animation, can take one of two values:
+            Variable changing during animation, can take one of two values:
             temperature or field.
         filename: str
             Name of the output .gif file.
         i_start: int = 0
-            Index of the first frame's field/temperature.
+            Index of first frame's field/temperature.
         i_end: int = -1
-            Index of the last frame's field/temperature.
+            Index of last frame's field/temperature.
         i_constant: int
-            Index of the constant temperature/field value.
+            Index of constant temperature/field.
         colour_map_name: str or list = 'dark_rainbow_r_l'
-            Input of tje colour_map function, determines a colour of the
-            main figure.
+            Input of colour_map function, determines colour of main figure.
         lim_scalar: float = 1.
-            Scalar used to set the limits of axes, smaller values magnify the
-            plotted figure.
+            Scalar used to set limits of axes, smaller values magnify plotted
+            figure.
         ticks: float = 1
             Determines the ticks spacing.
         r_density: int = 0
-            Determines the rcount of the 3D plot.
+            Determines rcount of 3D plot.
         c_density: int = 0
-            Determines the ccount of the 3D plot.
+            Determines ccount of 3D plot.
         axis_off: bool = False
-            Determines if the axes are turned off.
+            Determines if axes are turned off.
         fps: int
-            Number of frames per second in the animation.
+            Number of frames per second in animation.
         dpi: int
-            Dots per inch resolution of the frames.
+            Dots per inch resolution of frames.
         bar: bool = True
-            Determines if the bar representing animation variable is shown.
+            Determines if bar representing animation variable is shown.
         bar_scale: bool = False
             Determines if a scale should be shown for bar.
         bar_colour_map_name: str or list = 'dark_rainbow_r_l'
-            Input of the colour_map function, determines a colour of the bar.
+            Input of the colour_map function, determines the colour of the bar.
         temp_rounding: int = 0
-            Determines how many decimal places are shown in the bar/plot labels
+            Determines how many decimal places are shown in bar/plot labels
             for temperatures.
         field_rounding: int = 0
-            Determines how many decimal places are shown in the bar/plot labels
+            Determines how many decimal places are shown in bar/plot labels
             for fields.
-
         Returns
         -------
         Nothing
@@ -5525,7 +5528,7 @@ class Compound:
         Raises
         ------
         SltFileError
-            If unable to load the data file. Most likely encountered if the
+            If unable to load data file. Most likely encountered if the
             group name is incorrect.
         SltPlotError
             If unable to create the plot.
@@ -5601,7 +5604,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                "Failed to load 3D data file"
+                f"Failed to load 3d data file"
                 + BLUE
                 + " Group "
                 + RESET
@@ -5611,16 +5614,16 @@ class Compound:
                 + RESET
                 + '".'
                 + RED
-                + "Check if the group exists.",
+                + "Check if group exist.",
             ) from None
         if animation_variable == "temperature":
             description = (
-                f"f{data_type[0].upper() + data_type[1:].split('_')} dependence"
+                f"{data_type[0].upper() + data_type[1:].replace('_',' ')} dependence"
                 f" on direction, B={fields[i_constant]:.4f} T"
             )
         elif animation_variable == "field":
             description = (
-                f"f{data_type[0].upper() + data_type[1:].split('_')} dependence"
+                f"{data_type[0].upper() + data_type[1:].replace('_',' ')} dependence"
                 f" on direction, T={temps[i_constant]:.4f} K"
             )
         else:
@@ -5876,6 +5879,7 @@ class Compound:
                                 "Acceptable data types: chit, chi,"
                                 " helmholtz_energy and magnetisation"
                             )
+                        # title = description
                         max_array = array([max(x), max(y), max(z)])
                         lim = max(max_array)
                         norm = Normalize(z.min(), z.max())
@@ -5980,7 +5984,7 @@ class Compound:
             raise SltPlotError(
                 self._hdf5,
                 exc,
-                "Failed to plot and save 3D data"
+                f"Failed to plot and save 3d data"
                 + BLUE
                 + " Group "
                 + RESET

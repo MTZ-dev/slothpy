@@ -324,7 +324,7 @@ def table_energy_and_g(
 
         table2 = docx.add_table(rows=3, cols=number_to_decompose)
         table2.cell(0, 0).paragraphs[0].add_run(
-            "Composition of the two ground"
+            "Composition of the ground"
             f" {'Kramers' if krames else 'Ising'} doublets in the |"
         )
         table2.cell(0, 0).paragraphs[0].add_run("m").italic = True

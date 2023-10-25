@@ -50,7 +50,8 @@ def _grep_to_file(
     lines: int = 1,
 ) -> None:
     """
-    Extracts lines from an input file that match a specified pattern and saves them to an output file.
+    Extracts lines from an input file that match a specified pattern and saves
+    them to an output file.
 
     Args:
         path_inp (str): Path to the input file.
@@ -58,7 +59,8 @@ def _grep_to_file(
         pattern (str): Pattern to search for in the input file.
         path_out (str): Path to the output file.
         out_file (str): Name of the output file.
-        lines (int, optional): Number of lines to save after a matching pattern is found. Defaults to 1 (save only the line with pattern occurrence).
+        lines (int, optional): Number of lines to save after a matching pattern
+        is found. Defaults to 1 (save only the line with pattern occurrence).
 
     Raises:
         ValueError: If the pattern is not found in the input file.
@@ -107,15 +109,16 @@ def _get_orca_so_blocks_size(
     path: str, orca_file: str
 ) -> tuple[int, int, int, int]:
     """
-    Retrieves the dimensions and block sizes for spin-orbit calculations from an ORCA file.
+    Retrieves the dimensions and block sizes for spin-orbit calculations from
+    an ORCA file.
 
     Args:
         path (str): Path to the ORCA file.
         orca_file (str): Name of the ORCA file.
 
     Returns:
-        tuple[int, int, int, int]: A tuple containing the spin-orbit dimension, block size, number of whole blocks,
-            and remaining columns.
+        tuple[int, int, int, int]: A tuple containing the spin-orbit dimension,
+        block size, number of whole blocks, and remaining columns.
 
     Raises:
         ValueError: If the spin-orbit dimension is not found in the ORCA file.
@@ -152,14 +155,16 @@ def _orca_spin_orbit_to_slt(
     pt2: bool = False,
 ) -> None:
     """
-    Converts spin-orbit calculations from an ORCA .out file to a HDF5 file format.
+    Converts spin-orbit calculations from an ORCA .out file to
+    a HDF5 file format.
 
     Args:
         path_orca (str): Path to the ORCA file.
         inp_orca (str): Name of the ORCA file.
         path_out (str): Path for the output files.
         hdf5_output (str): Name of the HDF5 output file.
-        pt2 (bool): Get results from the second-order perturbation-corrected states.
+        pt2 (bool): Get results from the second-order perturbation-corrected
+                    states.
 
     Raises:
         ValueError: If the spin-orbit dimension is not found in the ORCA file.

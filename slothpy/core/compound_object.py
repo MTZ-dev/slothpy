@@ -27,6 +27,7 @@ from numpy import (
     linspace,
     arange,
     max,
+    newaxis,
 )
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.gridspec import GridSpec
@@ -4244,7 +4245,10 @@ class Compound:
     def plot_mth(
         self,
         group: str,
+        show_fig: bool = True,
         save: bool = False,
+        save_path: str = ".",
+        save_name: str = "",
         colour_map_name: str or list[str] = "rainbow",
         xlim: tuple[int or float] = (),
         ylim: tuple[int or float] = (),
@@ -4253,16 +4257,23 @@ class Compound:
         field: Union["B", "H"] = "B",
     ):
         """
-        Creates graphs of M(H,T) given name of the group in HDF5 file, graphs
+        Creates graphs of M(H,T) given name of the group in .slt file, graphs
         can be optionally shown, saved, colour palettes can be changed.
 
         Parameters
         ----------
         group: str
-            Name of a group from HDF5 file for which a plot will be created.
+            Name of a group from .slt file for which a plot will be created.
+        show_fig: bool = True
+            Determines if plot is shown.
+            Possible use: saving many plots automatically without preview.
         save: bool = False
-            Determines if the plot is saved, name of the file will be in the
-            following format: f"mgh_{group}.tiff".
+            Determines if the plot is saved.
+        save_path: str = "."
+            Determines a path where the file will be saved if save = True.
+        save_name: str = ""
+            Determines name of the file that would be created if save = True,
+            if left empty it will use following format: f"mgh_{group}.tiff".
         colour_map_name: str or list[str] = "rainbow"
             Input of the colour_map function.
         xlim: tuple(optional: float, optional: float) = ()
@@ -4297,7 +4308,7 @@ class Compound:
         slothpy.Compound.calculate_mth
         """
         try:
-            # Getting data from hdf5 or sloth file
+            # Getting data from .slt or sloth file
             mth = self[f"{group}_magnetisation", f"{group}_mth"]
             fields = self[f"{group}_magnetisation", f"{group}_fields"]
             if field == "H":
@@ -4366,7 +4377,8 @@ class Compound:
             else:
                 ax.set_ylim(0)
             tight_layout()
-            show()
+            if show_fig:
+                show()
         except Exception as exc:
             raise SltPlotError(
                 self._hdf5,
@@ -4384,7 +4396,13 @@ class Compound:
         if save:
             try:
                 # Saving plot figure
-                fig.savefig(f"mgh_{group}.tiff", dpi=300)
+                if not save_name:
+                    fig.savefig(
+                        path.join(save_path, f"mgh_{group}.tiff"), dpi=300
+                    )
+                else:
+                    fig.savefig(path.join(save_path, save_name), dpi=300)
+
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
@@ -4405,7 +4423,10 @@ class Compound:
     def plot_chitht(
         self,
         group: str,
+        show_fig: bool = True,
         save: bool = False,
+        save_path: str = ".",
+        save_name: str = "",
         colour_map_name: str or list[str] = "funmat",
         xlim: tuple[int or float] = (),
         ylim: tuple[int or float] = (),
@@ -4422,9 +4443,16 @@ class Compound:
         ----------
         group: str
             Name of a group from .slt file for which a plot will be created.
+        show_fig: bool = True
+            Determines if plot is shown.
+            Possible use: saving many plots automatically without preview.
         save: bool = False
-            Determines if the plot is saved, name of the file will be in the
-            following format: f'chitht_{group}.tiff'.
+            Determines if the plot is saved.
+        save_path: str = "."
+            Determines a path where the file will be saved if save = True.
+        save_name: str = ""
+            Determines name of the file that would be created if save = True,
+            if left empty it will use following format: f"chitht_{group}.tiff".
         colour_map_name: str or list[str] = 'funmat'
             Input of colour_map function.
         xlim: tuple(optional: float, optional: float) = ()
@@ -4459,7 +4487,7 @@ class Compound:
         slothpy.Compound.calculate_chitht
         """
         try:
-            # Getting data from hdf5 or sloth file
+            # Getting data from .slt or sloth file
             try:
                 chi = self[f"{group}_susceptibility", f"{group}_chiht"]
                 T = False
@@ -4538,7 +4566,8 @@ class Compound:
                 ax.set_ylim(0)
             ax.legend()
             tight_layout()
-            show()
+            if show_fig:
+                show()
         except Exception as exc:
             raise SltPlotError(
                 self._hdf5,
@@ -4556,7 +4585,12 @@ class Compound:
         if save:
             try:
                 # Saving plot figure
-                fig.savefig(f"chitht_{group}.tiff", dpi=300)
+                if not save_name:
+                    fig.savefig(
+                        path.join(save_path, f"chitht_{group}.tiff"), dpi=300
+                    )
+                else:
+                    fig.savefig(path.join(save_path, save_name), dpi=300)
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
@@ -4578,7 +4612,10 @@ class Compound:
         self,
         group: str,
         internal_energy: bool = False,
+        show_fig: bool = True,
         save: bool = False,
+        save_path: str = ".",
+        save_name: str = "",
         colour_map_name: str or list[str] = "PrOr",
         xlim: tuple[int or float] = (),
         ylim: tuple[int or float] = (),
@@ -4597,9 +4634,16 @@ class Compound:
             Name of a group from .slt file for which a plot will be created.
         internal_energy: bool = False
             Changes the plot from the Helmholtz to internal energy.
+        show_fig: bool = True
+            Determines if plot is shown.
+            Possible use: saving many plots automatically without preview.
         save: bool = False
-            Determines if the plot is saved, name of the file will be in the
-            following format: f'energyth_{group}.tiff'.
+            Determines if the plot is saved.
+        save_path: str = "."
+            Determines a path where the file will be saved if save = True.
+        save_name: str = ""
+            Determines name of the file that would be created if save = True,
+            if left empty it will use following format: f"energyth_{group}.tiff".
         colour_map_name: str or list[str] = 'PrOr'
             Input of the colour_map function.
         xlim: tuple(optional: float, optional: float) = ()
@@ -4638,7 +4682,7 @@ class Compound:
         else:
             name = "helmholtz"
         try:
-            # Getting data from hdf5 or sloth file
+            # Getting data from .slt or sloth file
             eth = self[f"{group}_{name}_energy", f"{group}_eth"]
             fields = self[f"{group}_{name}_energy", f"{group}_fields"]
             if field == "H":
@@ -4705,7 +4749,8 @@ class Compound:
                 else:
                     ax.set_ylim(ylim[0])
             tight_layout()
-            show()
+            if show_fig:
+                show()
         except Exception as exc:
             raise SltPlotError(
                 self._hdf5,
@@ -4723,7 +4768,12 @@ class Compound:
         if save:
             try:
                 # Saving plot figure
-                fig.savefig(f"energyth_{group}.tiff", dpi=300)
+                if not save_name:
+                    fig.savefig(
+                        path.join(save_path, f"energyth_{group}.tiff"), dpi=300
+                    )
+                else:
+                    fig.savefig(path.join(save_path, save_name), dpi=300)
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
@@ -4744,7 +4794,10 @@ class Compound:
     def plot_zeeman(
         self,
         group: str,
+        show_fig: bool = True,
         save: bool = False,
+        save_path: str = ".",
+        save_name: str = "",
         colour_map_name1: str or list[str] = "BuPi",
         colour_map_name2: str or list[str] = "BuPi_r",
         single: bool = False,
@@ -4763,10 +4816,17 @@ class Compound:
         ----------
         group: str
             Name of a group from .slt file for which plot will be created.
+        show_fig: bool = True
+            Determines if plot is shown.
+            Possible use: saving many plots automatically without preview.
         save: bool = False
-            Determines if plot is saved, name of the file will be in the
-            following format: f'zeeman_{group}.tiff' or
-            f'zeeman_{group}_Orientation {orientations[i]}.tiff'.
+            Determines if the plot is saved.
+        save_path: str = "."
+            Determines a path where the file will be saved if save = True.
+        save_name: str = ""
+            Determines name of the file that would be created if save = True,
+            if left empty it will use following format: f"zeeman_{group}.tiff"
+            or f"zeeman_{group}_{orientation[i]}.tiff".
         colour_map_name1: str or list[str] = 'BuPi'
             Input of the colour_map function, determines a colour of the lower
             set of split lines.
@@ -4808,7 +4868,7 @@ class Compound:
         slothpy.Compound.calculate_zeeman_splitting
         """
         try:
-            """Getting data from hdf5 or sloth file"""
+            """Getting data from .slt"""
             zeeman = self[f"{group}_zeeman_splitting", f"{group}_zeeman"]
             fields = self[f"{group}_zeeman_splitting", f"{group}_fields"]
             if field == "H":
@@ -5015,7 +5075,8 @@ class Compound:
                     fig.supxlabel(r"$H\ /\ \mathrm{kOe}$")
                 fig.supylabel(r"$\mathrm{Energy\ /\ cm^{-1}}$")
                 tight_layout()
-                show()
+                if show_fig:
+                    show()
             elif single:
                 for i, zee in enumerate(zeeman):
                     rc(
@@ -5059,15 +5120,25 @@ class Compound:
                         else:
                             ax.set_ylim(ylim[0])
                     tight_layout()
-                    show()
+                    if show_fig:
+                        show()
                     if save:
                         try:
                             """Saving plot figure"""
-                            fig.savefig(
-                                f"zeeman_{group}_Orientation"
-                                f" {orientations[i]}.tiff",
-                                dpi=300,
-                            )
+                            if not save_name:
+                                fig.savefig(
+                                    path.join(
+                                        save_path,
+                                        f"zeeman_{group}_Orientation"
+                                        f" {orientations[i]}.tiff",
+                                    ),
+                                    dpi=300,
+                                )
+                            else:
+                                fig.savefig(
+                                    path.join(save_path, save_name),
+                                    dpi=300,
+                                )
                         except Exception as exc:
                             raise SltSaveError(
                                 self._hdf5,
@@ -5103,7 +5174,16 @@ class Compound:
         if save and not single:
             try:
                 """Saving plot figure"""
-                fig.savefig(f"zeeman_{group}.tiff", dpi=300)
+                if not save_name:
+                    fig.savefig(
+                        path.join(save_path, f"zeeman_{group}.tiff"),
+                        dpi=300,
+                    )
+                else:
+                    fig.savefig(
+                        path.join(save_path, save_name),
+                        dpi=300,
+                    )
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
@@ -5133,7 +5213,10 @@ class Compound:
         ],
         field_i: int,
         temp_i: int,
+        show_fig: bool = True,
         save: bool = False,
+        save_path: str = ".",
+        save_name: str = "",
         colour_map_name: str or list[str] = "dark_rainbow_r_l",
         round_temp: int = 3,
         round_field: int = 3,
@@ -5141,7 +5224,14 @@ class Compound:
         ticks: float = 1.0,
         r_density: int = 0,
         c_density: int = 0,
+        elev: int = 30,
+        azim: int = -60,
+        roll: int = 0,
         axis_off: bool = False,
+        add_g_tensor_axes: bool = False,
+        axes_group: str = "",
+        doublet_number: int = None,
+        axes_scale_factor: float64 = 1.0,
     ):
         """
         Creates 3d plots of data dependent on field B[T] and temperature T[K].
@@ -5158,9 +5248,17 @@ class Compound:
         temp_i: int
             Index of the temperature from the dataset that will be used for the
             plot.
+        show_fig: bool = True
+            Determines if plot is shown.
+            Possible use: saving many plots automatically without preview.
         save: bool = False
-            Determines if the plot is saved, name of the file will be in the
-            following format: f'{group}_3d_{data_type}.tiff'.
+            Determines if the plot is saved.
+        save_path: str = "."
+            Determines path where file will be saved if save = True.
+        save_name: str = ""
+            Determines name of a file that would be created if save = True,
+            if left empty it will use following format:
+            f"{group}_3d_{data_type}.tiff".
         colour_map_name: str or list[str] = 'dark_rainbow_r_l'
             Input of the colour_map function.
         round_temp: int = 3
@@ -5178,8 +5276,27 @@ class Compound:
             Determines the rcount of a 3D plot.
         c_density: int = 0
             Determines the ccount of a 3D plot.
+        elev: int = 30
+            Determines an angle between a viewing position and the xy plane.
+        azim: int = -60
+            Determines a rotation of a viewing position in ralation to z axis.
+        roll: int = 0
+            Determines a rotation of camera around the viewing (position) axis.
         axis_off: bool = False
             Determines if the axes are turned off.
+        add_g_tensor_axes: bool = False
+            Determines if add to the plot main magnetic axes scaled by the
+            correcponding pseudo-g-tensor values.
+        axes_group: str = ""
+            Name of a group from calculate_g_tensor_axes method from .slt file.
+        doublet_number: int = None
+            Number of a doublet for which axes will be added to the plot.
+        axes_scale_factor: float64 = 1.0
+            Scale factor determining the length of the longest (main) magnetic
+            axis concerning the maximal value of the loaded data and setting
+            a maximal limit of the plot's xyz axes. It should be set > 1
+            otherwise, some data will end up missing from the plot! The limit is
+            max(loaded_data) * axes_scale_factor.
 
         Returns
         -------
@@ -5198,8 +5315,12 @@ class Compound:
         See Also
         --------
         slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
-        slothpy.Compound.calculate_helmholtz_energy_3d
+        slothpy.Compound.calculate_helmholtz_energy_3d,
+        slothpy.Compound.calculate_g_tensor_axes
         """
+        if (not isinstance(axes_scale_factor, float)) or (axes_scale_factor < 1):
+            raise SltInputError(ValueError("Axes scale factor has to be a float greater than 1."))
+
         try:
             T = False
             if data_type == "chit":
@@ -5300,7 +5421,7 @@ class Compound:
             fig = figure()
             ax = fig.add_subplot(projection="3d")
             max_array = array([max(x), max(y), max(z)])
-            lim = max(max_array)
+            lim = max(max_array) * axes_scale_factor
             norm = Normalize(z.min(), z.max())
             colors = colour_map(colour_map_name)(norm(z))
             rcount, ccount, _ = colors.shape
@@ -5397,10 +5518,32 @@ class Compound:
             ax.grid(False)
 
             ax.set_box_aspect([1, 1, 1])
+            ax.azim = azim
+            ax.elev = elev
+            ax.roll = roll
             title(description)
+            if add_g_tensor_axes:
+                axes_matrix = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
+                ][doublet_number]
+                g_tensor = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_g_tensors"
+                ][doublet_number]
+                color_dict = {0: "r", 1: "g", 2: "b"}
+                vec = axes_matrix * g_tensor[newaxis, 1:]
+                max_vec = max(vec)
+                vec = vec * lim / max_vec
+                for i in range(3):
+                    ax.plot(
+                        [vec[0, i], -vec[0, i]],
+                        [vec[1, i], -vec[1, i]],
+                        [vec[2, i], -vec[2, i]],
+                        color_dict[i],
+                    )
             if axis_off:
                 ax.set_axis_off()
-            show()
+            if show_fig:
+                show()
         except Exception as exc:
             raise SltPlotError(
                 self._hdf5,
@@ -5418,12 +5561,33 @@ class Compound:
         if save:
             try:
                 if axis_off:
-                    fig.savefig(
-                        f"{group}_3d_{data_type}.tiff",
-                        transparent=True,
-                        dpi=600,
-                    )
-                fig.savefig(f"{group}_3d_{data_type}.tiff", dpi=600)
+                    if not save_name:
+                        fig.savefig(
+                            path.join(
+                                save_path, f"{group}_3d_{data_type}.tiff"
+                            ),
+                            transparent=True,
+                            dpi=600,
+                        )
+                    else:
+                        fig.savefig(
+                            path.join(save_path, save_name),
+                            transparent=True,
+                            dpi=600,
+                        )
+                else:
+                    if not save_name:
+                        fig.savefig(
+                            path.join(
+                                save_path, f"{group}_3d_{data_type}.tiff"
+                            ),
+                            dpi=600,
+                        )
+                    else:
+                        fig.savefig(
+                            path.join(save_path, save_name),
+                            dpi=600,
+                        )
             except Exception as exc:
                 raise SltSaveError(
                     self._hdf5,
@@ -5469,6 +5633,13 @@ class Compound:
         bar_colour_map_name: str or list[str] = "dark_rainbow_r",
         temp_rounding: int = 0,
         field_rounding: int = 0,
+        elev: int = 30,
+        azim: int = -60,
+        roll: int = 0,
+        add_g_tensor_axes: bool = False,
+        axes_group: str = "",
+        doublet_number: int = None,
+        axes_scale_factor: float64 = 1.0,
     ):
         """
         Creates animations of 3d plots dependent on field B[T]
@@ -5477,7 +5648,7 @@ class Compound:
         Parameters
         ----------
         group: str
-            Name of a group from HDF5 file for which plot will be created.
+            Name of a group from .slt file for which plot will be created.
         data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
           "magnetisation"]
             Type of data that will be used to create plot.
@@ -5521,6 +5692,26 @@ class Compound:
         field_rounding: int = 0
             Determines how many decimal places are shown in bar/plot labels
             for fields.
+        elev: int = 30
+            Determines an angle between a viewing position and the xy plane.
+        azim: int = -60
+            Determines a rotation of a viewing position in ralation to z axis.
+        roll: int = 0
+            Determines a rotation of camera around the viewing (position) axis.
+        add_g_tensor_axes: bool = False
+            Determines if add to the plot main magnetic axes scaled by the
+            correcponding pseudo-g-tensor values.
+        axes_group: str = ""
+            Name of a group from calculate_g_tensor_axes method from .slt file.
+        doublet_number: int = None
+            Number of a doublet for which axes will be added to the plot.
+        axes_scale_factor: float64 = 1.0
+            Scale factor determining the length of the longest (main) magnetic
+            axis concerning the maximal value of the loaded data and setting
+            a maximal limit of the plot's xyz axes. It should be set > 1
+            otherwise, some data will end up missing from the plot! The limit is
+            max(loaded_data) * axes_scale_factor.
+
         Returns
         -------
         Nothing
@@ -5536,8 +5727,12 @@ class Compound:
         See Also
         --------
         slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
-        slothpy.Compound.calculate_helmholtz_energy_3d
+        slothpy.Compound.calculate_helmholtz_energy_3d,
+        slothpy.Compound.calculate_g_tensor_axes
         """
+        if (not isinstance(axes_scale_factor, float)) or (axes_scale_factor < 1):
+            raise SltInputError(ValueError("Axes scale factor has to be a float greater than 1."))
+        
         try:
             T = False
             if data_type == "chit":
@@ -5600,6 +5795,14 @@ class Compound:
                     "Acceptable data types: chit, chi, helmholtz_energy and"
                     " magnetisation"
                 )
+            if add_g_tensor_axes:
+                axes_matrix = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
+                ][doublet_number]
+                g_tensor = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_g_tensors"
+                ][doublet_number]
+                color_dict = {0: "r", 1: "g", 2: "b"}
         except Exception as exc:
             raise SltFileError(
                 self._hdf5,
@@ -5618,12 +5821,12 @@ class Compound:
             ) from None
         if animation_variable == "temperature":
             description = (
-                f"{data_type[0].upper() + data_type[1:].replace('_',' ')} dependence"
+                f"{data_type[0].upper() + data_type[1:].replace('_', ' ')} dependence"
                 f" on direction, B={fields[i_constant]:.4f} T"
             )
         elif animation_variable == "field":
             description = (
-                f"{data_type[0].upper() + data_type[1:].replace('_',' ')} dependence"
+                f"{data_type[0].upper() + data_type[1:].replace('_', ' ')} dependence"
                 f" on direction, T={temps[i_constant]:.4f} K"
             )
         else:
@@ -5719,7 +5922,7 @@ class Compound:
                                 " helmholtz_energy and magnetisation"
                             )
                         max_array = array([max(x), max(y), max(z)])
-                        lim = max(max_array)
+                        lim = max(max_array) * axes_scale_factor
                         norm = Normalize(z.min(), z.max())
                         colors = colour_map(colour_map_name)(norm(z))
                         rcount, ccount, _ = colors.shape
@@ -5736,6 +5939,17 @@ class Compound:
                             facecolors=colors,
                             shade=False,
                         )
+                        if add_g_tensor_axes:
+                            vec = axes_matrix * g_tensor[newaxis, 1:]
+                            max_vec = max(vec)
+                            vec = vec * lim / max_vec
+                            for i in range(3):
+                                ax.plot(
+                                    [vec[0, i], -vec[0, i]],
+                                    [vec[1, i], -vec[1, i]],
+                                    [vec[2, i], -vec[2, i]],
+                                    color_dict[i],
+                                )
                         surface.set_facecolor((0, 0, 0, 0))
                         ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
                         ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
@@ -5770,6 +5984,9 @@ class Compound:
                         ax.grid(False)
 
                         ax.set_box_aspect([1, 1, 1])
+                        ax.azim = azim
+                        ax.elev = elev
+                        ax.roll = roll
                         ax.set_title(title)
                         if axis_off:
                             ax.set_axis_off()
@@ -5881,7 +6098,7 @@ class Compound:
                             )
                         # title = description
                         max_array = array([max(x), max(y), max(z)])
-                        lim = max(max_array)
+                        lim = max(max_array) * axes_scale_factor
                         norm = Normalize(z.min(), z.max())
                         colors = colour_map(colour_map_name)(norm(z))
                         rcount, ccount, _ = colors.shape
@@ -5898,6 +6115,17 @@ class Compound:
                             facecolors=colors,
                             shade=False,
                         )
+                        if add_g_tensor_axes:
+                            vec = axes_matrix * g_tensor[newaxis, 1:]
+                            max_vec = max(vec)
+                            vec = vec * lim / max_vec
+                            for i in range(3):
+                                ax.plot(
+                                    [vec[0, i], -vec[0, i]],
+                                    [vec[1, i], -vec[1, i]],
+                                    [vec[2, i], -vec[2, i]],
+                                    color_dict[i],
+                                )
                         surface.set_facecolor((0, 0, 0, 0))
                         ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
                         ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
@@ -5932,6 +6160,9 @@ class Compound:
                         ax.grid(False)
 
                         ax.set_box_aspect([1, 1, 1])
+                        ax.azim = azim
+                        ax.elev = elev
+                        ax.roll = roll
 
                         if axis_off:
                             axis("off")
@@ -6017,6 +6248,10 @@ class Compound:
         temp_rounding: int = 2,
         field_rounding: int = 2,
         axis_off: int = False,
+        add_g_tensor_axes: bool = False,
+        axes_group: str = "",
+        doublet_number: int = None,
+        axes_scale_factor: float64 = 1.0,
     ):
         """
         Creates interactive widget plot dependent on field and temperature
@@ -6025,7 +6260,7 @@ class Compound:
         Parameters
         ----------
         group: str
-            Name of a group from HDF5 file for which plot will be created.
+            Name of a group from .slt file for which plot will be created.
         data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
           "magnetisation"]
             Type of the data that will be used to create the plot.
@@ -6059,6 +6294,29 @@ class Compound:
             int(value) for field.
         axis_off: bool = False
             Determines if the axes are turned off.
+        add_g_tensor_axes: bool = False
+            Determines if add to the plot main magnetic axes scaled by the
+            correcponding pseudo-g-tensor values.
+        axes_group: str = ""
+            Name of a group from calculate_g_tensor_axes method from .slt file.
+        doublet_number: int = None
+            Number of a doublet for which axes will be added to the plot.
+        axes_scale_factor: float64 = 1.0
+            Scale factor determining lenght of the longest (main) magnetic axis
+            with respect to the maximal value of the loaded data and setting
+            maximal limit of the plot's xyz axes. It should be set > 1
+            otherwise some data will end up missing on the plot! The limit is
+            max(loaded_data) * axes_scale_factor.
+        axes_group: str = ""
+            Name of a group from calculate_g_tensor_axes method from .slt file.
+        doublet_number: int = None
+            Number of a doublet for which axes will be added to the plot.
+        axes_scale_factor: float64 = 1.0
+            Scale factor determining the length of the longest (main) magnetic
+            axis concerning the maximal value of the loaded data and setting
+            a maximal limit of the plot's xyz axes. It should be set > 1
+            otherwise, some data will end up missing from the plot! The limit is
+            max(loaded_data) * axes_scale_factor.
 
         Returns
         -------
@@ -6075,8 +6333,12 @@ class Compound:
         See Also
         --------
         slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
-        slothpy.Compound.calculate_helmholtz_energy_3d
+        slothpy.Compound.calculate_helmholtz_energy_3d,
+        slothpy.Compound.calculate_g_tensor_axes
         """
+        if (not isinstance(axes_scale_factor, float)) or (axes_scale_factor < 1):
+            raise SltInputError(ValueError("Axes scale factor has to be a float greater than 1."))
+        
         field_i, temp_i = 0, 0
         try:
             T = False
@@ -6138,6 +6400,14 @@ class Compound:
                 temps = self[
                     f"{group}_3d_magnetisation", f"{group}_temperatures"
                 ]
+            if add_g_tensor_axes:
+                axes_matrix = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
+                ][doublet_number]
+                g_tensor = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_g_tensors"
+                ][doublet_number]
+                color_dict = {0: "r", 1: "g", 2: "b"}
         except Exception as exc:
             raise SltFileError(
                 self._hdf5,
@@ -6181,7 +6451,7 @@ class Compound:
             z = z0[field_i, temp_i, :, :]
 
             max_array = array([max(x), max(y), max(z)])
-            lim = max(max_array)
+            lim = max(max_array) * axes_scale_factor
             norm = Normalize(z.min(), z.max())
             colors = colour_map(colour_map_name)(norm(z))
             rcount, ccount, _ = colors.shape
@@ -6196,6 +6466,17 @@ class Compound:
                 facecolors=colors,
                 shade=False,
             )
+            if add_g_tensor_axes:
+                vec = axes_matrix * g_tensor[newaxis, 1:]
+                max_vec = max(vec)
+                vec = vec * lim / max_vec
+                for i in range(3):
+                    ax.plot(
+                        [vec[0, i], -vec[0, i]],
+                        [vec[1, i], -vec[1, i]],
+                        [vec[2, i], -vec[2, i]],
+                        color_dict[i],
+                    )
             surface.set_facecolor((0, 0, 0, 0))
             ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
@@ -6349,7 +6630,7 @@ class Compound:
                 z = z0[field_i, temp_i, :, :]
 
                 max_array = array([max(x), max(y), max(z)])
-                lim = max(max_array)
+                lim = max(max_array) * axes_scale_factor
                 norm = Normalize(z.min(), z.max())
                 colors = colour_map(colour_map_name)(norm(z))
                 rcount, ccount, _ = colors.shape
@@ -6363,7 +6644,17 @@ class Compound:
                     ccount=c_density,
                     facecolors=colors,
                     shade=False,
-                )
+                )if add_g_tensor_axes:
+                    vec = axes_matrix * g_tensor[newaxis, 1:]
+                    max_vec = max(vec)
+                    vec = vec * lim / max_vec
+                    for i in range(3):
+                        ax.plot(
+                            [vec[0, i], -vec[0, i]],
+                            [vec[1, i], -vec[1, i]],
+                            [vec[2, i], -vec[2, i]],
+                            color_dict[i],
+                        )
                 surface.set_facecolor((0, 0, 0, 0))
                 ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
                 ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)

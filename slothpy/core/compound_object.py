@@ -1912,8 +1912,8 @@ class Compound:
         _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
-        Calculates powder-averaged or directional Helmholtz (or internal) energy
-        for a given list of temperature and field values.
+        Calculates powder-averaged or directional Helmholtz (or internal)
+        energy for a given list of temperature and field values.
 
         Parameters
         ----------
@@ -1952,8 +1952,8 @@ class Compound:
             Turns on the calculation of internal energy., by default False
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with suffix: _helmholtz_energy or _internal_energy., by default
-            None
+            file with suffix: _helmholtz_energy or _internal_energy.,
+            by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -5295,8 +5295,8 @@ class Compound:
             Scale factor determining the length of the longest (main) magnetic
             axis concerning the maximal value of the loaded data and setting
             a maximal limit of the plot's xyz axes. It should be set > 1
-            otherwise, some data will end up missing from the plot! The limit is
-            max(loaded_data) * axes_scale_factor.
+            otherwise, some data will end up missing from the plot! The limit
+            is max(loaded_data) * axes_scale_factor.
 
         Returns
         -------
@@ -5318,8 +5318,14 @@ class Compound:
         slothpy.Compound.calculate_helmholtz_energy_3d,
         slothpy.Compound.calculate_g_tensor_axes
         """
-        if (not isinstance(axes_scale_factor, float)) or (axes_scale_factor < 1):
-            raise SltInputError(ValueError("Axes scale factor has to be a float greater than 1."))
+        if (not isinstance(axes_scale_factor, float)) or (
+            axes_scale_factor < 1
+        ):
+            raise SltInputError(
+                ValueError(
+                    "Axes scale factor has to be a float greater than 1."
+                )
+            )
 
         try:
             T = False
@@ -5709,8 +5715,8 @@ class Compound:
             Scale factor determining the length of the longest (main) magnetic
             axis concerning the maximal value of the loaded data and setting
             a maximal limit of the plot's xyz axes. It should be set > 1
-            otherwise, some data will end up missing from the plot! The limit is
-            max(loaded_data) * axes_scale_factor.
+            otherwise, some data will end up missing from the plot! The limit
+            is max(loaded_data) * axes_scale_factor.
 
         Returns
         -------
@@ -5730,9 +5736,15 @@ class Compound:
         slothpy.Compound.calculate_helmholtz_energy_3d,
         slothpy.Compound.calculate_g_tensor_axes
         """
-        if (not isinstance(axes_scale_factor, float)) or (axes_scale_factor < 1):
-            raise SltInputError(ValueError("Axes scale factor has to be a float greater than 1."))
-        
+        if (not isinstance(axes_scale_factor, float)) or (
+            axes_scale_factor < 1
+        ):
+            raise SltInputError(
+                ValueError(
+                    "Axes scale factor has to be a float greater than 1."
+                )
+            )
+
         try:
             T = False
             if data_type == "chit":
@@ -6336,9 +6348,15 @@ class Compound:
         slothpy.Compound.calculate_helmholtz_energy_3d,
         slothpy.Compound.calculate_g_tensor_axes
         """
-        if (not isinstance(axes_scale_factor, float)) or (axes_scale_factor < 1):
-            raise SltInputError(ValueError("Axes scale factor has to be a float greater than 1."))
-        
+        if (not isinstance(axes_scale_factor, float)) or (
+            axes_scale_factor < 1
+        ):
+            raise SltInputError(
+                ValueError(
+                    "Axes scale factor has to be a float greater than 1."
+                )
+            )
+
         field_i, temp_i = 0, 0
         try:
             T = False
@@ -6644,7 +6662,8 @@ class Compound:
                     ccount=c_density,
                     facecolors=colors,
                     shade=False,
-                )if add_g_tensor_axes:
+                )
+                if add_g_tensor_axes:
                     vec = axes_matrix * g_tensor[newaxis, 1:]
                     max_vec = max(vec)
                     vec = vec * lim / max_vec

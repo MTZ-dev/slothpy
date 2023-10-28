@@ -44,6 +44,7 @@ from matplotlib.pyplot import (
     title,
     show,
     cla,
+    close,
 )
 
 from slothpy.core._slothpy_exceptions import (
@@ -785,6 +786,7 @@ class Compound:
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
+        rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 2,
@@ -820,6 +822,11 @@ class Compound:
             algebra libraries used during the calculation. Higher values
             benefit from the increasing size of matrices (states_cutoff) over
             the parallelization over CPUs., by default 1
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead. It is useful here to orient your 3D plots
+            more conveniently., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
             file with suffix: _3d_magnetisation., by default None
@@ -952,6 +959,7 @@ class Compound:
                 states_cutoff,
                 number_cpu,
                 number_threads,
+                rotation,
             )
         except Exception as exc:
             raise SltCompError(
@@ -1602,6 +1610,7 @@ class Compound:
         number_threads: int = 1,
         exp: bool = False,
         T: bool = True,
+        rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 2,
@@ -1658,6 +1667,11 @@ class Compound:
         T : bool, optional
             Results are returned as a product with temperature chiT(H,T).,
             by default True
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead. It is useful here to orient your 3D plots
+            more conveniently., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
             file with suffix: _3d_magnetisation., by default None
@@ -1837,6 +1851,7 @@ class Compound:
                 number_threads,
                 exp,
                 T,
+                rotation,
             )
         except Exception as exc:
             raise SltCompError(
@@ -2151,6 +2166,7 @@ class Compound:
         number_cpu: int = 0,
         number_threads: int = 1,
         internal_energy: bool = False,
+        rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 2,
@@ -2188,6 +2204,11 @@ class Compound:
             the parallelization over CPUs., by default 1
         internal_energy : bool, optional
             Turns on the calculation of internal energy., by default False
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead. It is useful here to orient your 3D plots
+            more conveniently., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
             file with suffix: _3d_helmholtz_energy or _3d_internal_energy.,
@@ -2329,6 +2350,7 @@ class Compound:
                 number_cpu,
                 number_threads,
                 internal_energy,
+                rotation,
             )
         except Exception as exc:
             raise SltCompError(
@@ -5545,6 +5567,7 @@ class Compound:
                         [vec[1, i], -vec[1, i]],
                         [vec[2, i], -vec[2, i]],
                         color_dict[i],
+                        linewidth=3,
                     )
             if axis_off:
                 ax.set_axis_off()
@@ -5610,6 +5633,7 @@ class Compound:
                     + PURPLE
                     + f"{group}_3d_{data_type}.tiff",
                 ) from None
+        close()
 
     def animate_3d(
         self,
@@ -6237,6 +6261,7 @@ class Compound:
                 + RESET
                 + '".',
             ) from None
+        close()
 
     def interactive_plot_3d(
         self,

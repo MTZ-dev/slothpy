@@ -598,6 +598,7 @@ def _helmholtz_energy_3d(
     num_cpu: int,
     num_threads: int,
     internal_energy: bool = False,
+    rotation: ndarray = None,
 ) -> ndarray:
     # Get number of parallel proceses to be used
     num_process, num_threads = _get_num_of_processes(
@@ -614,7 +615,7 @@ def _helmholtz_energy_3d(
         magnetic_momenta,
         soc_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff
+        filename, group, states_cutoff, rotation
     )
 
     fields = ascontiguousarray(fields, dtype=float64)

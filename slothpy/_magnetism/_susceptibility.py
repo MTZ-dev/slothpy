@@ -207,6 +207,7 @@ def _chit_3d(
     num_threads: int,
     exp: bool = False,
     T: bool = True,
+    rotation: ndarray = None,
 ) -> ndarray[float64]:
     # Experimentalist model
     if exp or (num_of_points == 0):
@@ -248,7 +249,8 @@ def _chit_3d(
             states_cutoff,
             num_cpu,
             num_threads,
-            sus_3d_num=True,
+            True,
+            rotation,
         )
 
         stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)

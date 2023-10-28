@@ -555,7 +555,8 @@ def _auto_tune(
             )
 
             current_time = (
-                exec_setup_time[0] / internal_loop_samples * internal_loop_size
+                exec_setup_time[0]
+                * (float(internal_loop_size / internal_loop_samples))
                 + exec_setup_time[1]
             ) * ceil(num_to_parallelize / num_processes) + load_time
 

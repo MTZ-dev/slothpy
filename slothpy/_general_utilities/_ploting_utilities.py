@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from sys import argv
 from typing import Union
+from pkg_resources import resource_filename
 from numpy import linspace
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.cm
@@ -68,7 +69,10 @@ class SlothGui(QApplication):
     ):
         super(SlothGui, self).__init__(sys_argv)
         self.main_view = MainView(fig, onclose=onClose)
-        app_icon = QIcon("slothpy/static/slothpy_3.png")
+        image_path = resource_filename(
+            "slothpy", "slothpy/static/slothpy_3.png"
+        )
+        app_icon = QIcon(image_path)
         SlothGui.setWindowIcon(app_icon)
 
     def show(self, fig):

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.files]
-include = ["static/slothpy_3.png"]
+include = ["slothpy/static/slothpy_3.png"]
 
 [project]
 name = "slothpy"

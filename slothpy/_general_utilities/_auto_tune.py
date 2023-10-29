@@ -31,7 +31,6 @@ from numpy import (
     zeros,
     diag,
     float64,
-    uint64,
     complex128,
 )
 from numpy.linalg import eigh, eigvalsh
@@ -402,7 +401,7 @@ def _mth_benchmark(
     num_cpu: int,
     num_threads: int,
     energy: bool = False,
-) -> uint64:
+) -> float64:
     # Read data from HDF5 file
     (
         magnetic_momenta,
@@ -478,7 +477,7 @@ def _mth_benchmark(
                         ),
                     )
 
-    times = array(times, dtype=uint64)
+    times = array(times, dtype=float64)
     exec_time = sorted(times[:, 0])
     setup_time = sorted(times[:, 1])
     return (
@@ -556,7 +555,7 @@ def _auto_tune(
 
             current_time = (
                 exec_setup_time[0]
-                * (float(internal_loop_size / internal_loop_samples))
+                * (internal_loop_size / internal_loop_samples)
                 + exec_setup_time[1]
             ) * ceil(num_to_parallelize / num_processes) + load_time
 

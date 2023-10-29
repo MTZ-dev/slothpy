@@ -13,12 +13,82 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from typing import Union
 from numpy import linspace
 from matplotlib.colors import LinearSegmentedColormap
-from cycler import cycler
 import matplotlib.cm
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg,
+    NavigationToolbar2QT as NavigationToolbar,
+)
+from matplotlib.figure import Figure
+from matplotlib.pyplot import close
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QMainWindow,
+    QVBoxLayout,
+    QVBoxLayout,
+)
+from PyQt5.QtGui import QIcon, QCloseEvent
+from cycler import cycler
+
+from slothpy._general_utilities._system import _is_notebook
+from sys import argv, exit as sys_exit
+
+
+class MainView(QMainWindow):
+    def __init__(self, fig, onclose=None):
+        super().__init__()
+        self.setWindowTitle("SlothPy")
+        self.setObjectName("MainWindow")
+        self.onClose = onclose
+        self.fig = fig
+
+    def closeEvent(self, a0: QCloseEvent | None) -> None:
+        if self.onClose is not None:
+            self.onClose()
+        close(self.fig)
+        return super().closeEvent(a0)
+
+    def set_fig(self, fig):
+        mpl_canvas = FigureCanvasQTAgg(fig)
+        toolbar = NavigationToolbar(mpl_canvas, self)
+        layout = QVBoxLayout()
+        layout.addWidget(toolbar)
+        layout.addWidget(mpl_canvas)
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+
+class SlothGui(QApplication):
+    def __init__(
+        self, sys_argv: list[str], fig=None, onClose: callable = None
+    ):
+        super(SlothGui, self).__init__(sys_argv)
+        self.main_view = MainView(fig, onclose=onClose)
+        app_icon = QIcon("./static/slothpy_3.png")
+        SlothGui.setWindowIcon(app_icon)
+
+    def show(self, fig):
+        self.main_view.set_fig(fig)
+        self.main_view.show()
+
+
+if _is_notebook():
+    app = SlothGui(sys_argv=argv)
+
+
+def _display_plot(fig: Figure = None, onClose: callable = None):
+    global app
+    if _is_notebook():
+        app.show(fig)
+    else:
+        tmp_app = SlothGui(sys_argv=argv)
+        tmp_app.main_view.set_fig(fig)
+        tmp_app.main_view.show()
+        tmp_app.exec_()
 
 
 def colour_map(name: Union[str, list[str]]):

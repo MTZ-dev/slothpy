@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from os import path
+from functools import partial
 from typing import Tuple, Union
-
 from h5py import File, Group, Dataset
 from numpy import (
     ndarray,
@@ -105,6 +105,7 @@ from slothpy._general_utilities._ploting_utilities import (
     colour_map,
     _custom_colour_cycler,
 )
+from slothpy._general_utilities._ploting_utilities import _display_plot
 
 
 class Compound:
@@ -4400,8 +4401,9 @@ class Compound:
                 ax.set_ylim(0)
             tight_layout()
             if show_fig:
-                show()
+                _display_plot(fig, partial(close, "all"))
         except Exception as exc:
+            close("all")
             raise SltPlotError(
                 self._hdf5,
                 exc,
@@ -4426,6 +4428,7 @@ class Compound:
                     fig.savefig(path.join(save_path, save_name), dpi=300)
 
             except Exception as exc:
+                close("all")
                 raise SltSaveError(
                     self._hdf5,
                     exc,
@@ -4441,6 +4444,7 @@ class Compound:
                     + PURPLE
                     + f"mgh_{group}.tiff",
                 ) from None
+        close("all")
 
     def plot_chitht(
         self,
@@ -4589,8 +4593,9 @@ class Compound:
             ax.legend()
             tight_layout()
             if show_fig:
-                show()
+                _display_plot(fig, partial(close, "all"))
         except Exception as exc:
+            close("all")
             raise SltPlotError(
                 self._hdf5,
                 exc,
@@ -4614,6 +4619,7 @@ class Compound:
                 else:
                     fig.savefig(path.join(save_path, save_name), dpi=300)
             except Exception as exc:
+                close("all")
                 raise SltSaveError(
                     self._hdf5,
                     exc,
@@ -4629,6 +4635,7 @@ class Compound:
                     + PURPLE
                     + f"chitht_{group}.tiff",
                 ) from None
+        close("all")
 
     def plot_helmholtz_energyth(
         self,
@@ -4772,8 +4779,9 @@ class Compound:
                     ax.set_ylim(ylim[0])
             tight_layout()
             if show_fig:
-                show()
+                _display_plot(fig, partial(close, "all"))
         except Exception as exc:
+            close("all")
             raise SltPlotError(
                 self._hdf5,
                 exc,
@@ -4797,6 +4805,7 @@ class Compound:
                 else:
                     fig.savefig(path.join(save_path, save_name), dpi=300)
             except Exception as exc:
+                close("all")
                 raise SltSaveError(
                     self._hdf5,
                     exc,
@@ -4812,6 +4821,7 @@ class Compound:
                     + PURPLE
                     + f"energyth_{group}.tiff",
                 ) from None
+        close("all")
 
     def plot_zeeman(
         self,
@@ -4890,7 +4900,7 @@ class Compound:
         slothpy.Compound.calculate_zeeman_splitting
         """
         try:
-            """Getting data from .slt"""
+            # Getting data from .slt
             zeeman = self[f"{group}_zeeman_splitting", f"{group}_zeeman"]
             fields = self[f"{group}_zeeman_splitting", f"{group}_fields"]
             if field == "H":
@@ -4920,7 +4930,7 @@ class Compound:
         try:
             if orientations.shape[1] != 3:
                 single = True
-            """Plotting in matplotlib"""
+            # Plotting in matplotlib
             if not single:
                 number_of_plots = orientations.shape[0]
                 if number_of_plots % 5 == 0:
@@ -4939,7 +4949,7 @@ class Compound:
                     fig = figure(figsize=(6.4, 3.2 * number_of_plots))
                     gs = GridSpec(1, number_of_plots)
                     divisor = 1
-                """Creating a plot"""
+                # Creating a plot
                 for i, zee in enumerate(zeeman):
                     if i % divisor != 0:
                         rc(
@@ -5098,7 +5108,7 @@ class Compound:
                 fig.supylabel(r"$\mathrm{Energy\ /\ cm^{-1}}$")
                 tight_layout()
                 if show_fig:
-                    show()
+                    _display_plot(fig, partial(close, "all"))
             elif single:
                 for i, zee in enumerate(zeeman):
                     rc(
@@ -5162,6 +5172,7 @@ class Compound:
                                     dpi=300,
                                 )
                         except Exception as exc:
+                            close("all")
                             raise SltSaveError(
                                 self._hdf5,
                                 exc,
@@ -5180,6 +5191,7 @@ class Compound:
                             ) from None
 
         except Exception as exc:
+            close("all")
             raise SltPlotError(
                 self._hdf5,
                 exc,
@@ -5207,6 +5219,7 @@ class Compound:
                         dpi=300,
                     )
             except Exception as exc:
+                close("all")
                 raise SltSaveError(
                     self._hdf5,
                     exc,
@@ -5222,6 +5235,7 @@ class Compound:
                     + PURPLE
                     + f"zeeman_{group}.tiff",
                 ) from None
+        close("all")
 
     def plot_3d(
         self,
@@ -5572,8 +5586,9 @@ class Compound:
             if axis_off:
                 ax.set_axis_off()
             if show_fig:
-                show()
+                _display_plot(fig, partial(close, "all"))
         except Exception as exc:
+            close("all")
             raise SltPlotError(
                 self._hdf5,
                 exc,
@@ -5618,6 +5633,7 @@ class Compound:
                             dpi=600,
                         )
             except Exception as exc:
+                close("all")
                 raise SltSaveError(
                     self._hdf5,
                     exc,
@@ -5633,7 +5649,7 @@ class Compound:
                     + PURPLE
                     + f"{group}_3d_{data_type}.tiff",
                 ) from None
-        close()
+        close("all")
 
     def animate_3d(
         self,
@@ -6248,6 +6264,7 @@ class Compound:
                         " temperature"
                     )
         except Exception as exc:
+            close("all")
             raise SltPlotError(
                 self._hdf5,
                 exc,
@@ -6261,7 +6278,8 @@ class Compound:
                 + RESET
                 + '".',
             ) from None
-        close()
+
+        close("all")
 
     def interactive_plot_3d(
         self,
@@ -6792,7 +6810,7 @@ class Compound:
             slider_field.on_changed(slider_update)
             if axis_off:
                 ax.set_axis_off()
-            show()
+            _display_plot(fig, partial(close, "all"))
         except Exception as exc:
             raise SltPlotError(
                 self._hdf5,

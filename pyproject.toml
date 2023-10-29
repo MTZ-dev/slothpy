@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [package.metadata.files]
-"./static/*" = "static"
+"./slothpy/static/*" = "static"
 
 [project]
 name = "slothpy"

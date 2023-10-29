@@ -13,6 +13,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from sys import argv
 from typing import Union
 from numpy import linspace
 from matplotlib.colors import LinearSegmentedColormap
@@ -30,11 +31,10 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QVBoxLayout,
 )
-from PyQt5.QtGui import QIcon, QCloseEvent
+from PyQt5.QtGui import QIcon, QCloseEvent, QFont
 from cycler import cycler
 
 from slothpy._general_utilities._system import _is_notebook
-from sys import argv, exit as sys_exit
 
 
 class MainView(QMainWindow):
@@ -68,7 +68,7 @@ class SlothGui(QApplication):
     ):
         super(SlothGui, self).__init__(sys_argv)
         self.main_view = MainView(fig, onclose=onClose)
-        app_icon = QIcon("./static/slothpy_3.png")
+        app_icon = QIcon("./slothpy/static/slothpy_3.png")
         SlothGui.setWindowIcon(app_icon)
 
     def show(self, fig):
@@ -78,6 +78,7 @@ class SlothGui(QApplication):
 
 if _is_notebook():
     app = SlothGui(sys_argv=argv)
+    app.setFont(QFont("Helvetica", 12))
 
 
 def _display_plot(fig: Figure = None, onClose: callable = None):
@@ -86,6 +87,7 @@ def _display_plot(fig: Figure = None, onClose: callable = None):
         app.show(fig)
     else:
         tmp_app = SlothGui(sys_argv=argv)
+        tmp_app.setFont(QFont("Helvetica", 12))
         tmp_app.main_view.set_fig(fig)
         tmp_app.main_view.show()
         tmp_app.exec_()

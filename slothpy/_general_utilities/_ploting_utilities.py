@@ -68,7 +68,7 @@ class SlothGui(QApplication):
     ):
         super(SlothGui, self).__init__(sys_argv)
         self.main_view = MainView(fig, onclose=onClose)
-        app_icon = QIcon("./slothpy/static/slothpy_3.png")
+        app_icon = QIcon("static/slothpy_3.png")
         SlothGui.setWindowIcon(app_icon)
 
     def show(self, fig):
@@ -76,6 +76,7 @@ class SlothGui(QApplication):
         self.main_view.show()
 
 
+# If we are in Jupyter notebook prepare blank gui page
 if _is_notebook():
     app = SlothGui(sys_argv=argv)
     app.setFont(QFont("Helvetica", 12))

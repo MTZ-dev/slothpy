@@ -2,12 +2,12 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[package.metadata.files]
-"./slothpy/static/*" = "static"
+[project.files]
+include = ["static/slothpy_3.png"]
 
 [project]
 name = "slothpy"
-version = "0.1.5"
+version = "0.1.6"
 authors = [
   { name="Mikolaj Tadeusz Zychowicz", email="mikolaj.zychowicz@uj.edu.pl" },
 ]

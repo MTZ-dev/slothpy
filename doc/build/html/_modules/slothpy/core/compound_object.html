@@ -565,8 +565,8 @@ document.write(`
 <span class="c1"># along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
 
 <span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
-
 <span class="kn">from</span> <span class="nn">h5py</span> <span class="kn">import</span> <span class="n">File</span><span class="p">,</span> <span class="n">Group</span><span class="p">,</span> <span class="n">Dataset</span>
 <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">ndarray</span><span class="p">,</span>
@@ -577,6 +577,9 @@ document.write(`
     <span class="n">linspace</span><span class="p">,</span>
     <span class="n">arange</span><span class="p">,</span>
     <span class="nb">max</span><span class="p">,</span>
+    <span class="n">newaxis</span><span class="p">,</span>
+    <span class="n">allclose</span><span class="p">,</span>
+    <span class="n">identity</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="kn">import</span> <span class="n">AutoMinorLocator</span><span class="p">,</span> <span class="n">MultipleLocator</span>
 <span class="kn">from</span> <span class="nn">matplotlib.gridspec</span> <span class="kn">import</span> <span class="n">GridSpec</span>
@@ -593,6 +596,7 @@ document.write(`
     <span class="n">title</span><span class="p">,</span>
     <span class="n">show</span><span class="p">,</span>
     <span class="n">cla</span><span class="p">,</span>
+    <span class="n">close</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">slothpy.core._slothpy_exceptions</span> <span class="kn">import</span> <span class="p">(</span>
@@ -653,6 +657,7 @@ document.write(`
     <span class="n">colour_map</span><span class="p">,</span>
     <span class="n">_custom_colour_cycler</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">slothpy._general_utilities._ploting_utilities</span> <span class="kn">import</span> <span class="n">_display_plot</span>
 
 
 <div class="viewcode-block" id="Compound">
@@ -1347,6 +1352,7 @@ document.write(`
         <span class="n">states_cutoff</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">number_cpu</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">number_threads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">rotation</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">slt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">autotune</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">_autotune_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
@@ -1382,6 +1388,11 @@ document.write(`
 <span class="sd">            algebra libraries used during the calculation. Higher values</span>
 <span class="sd">            benefit from the increasing size of matrices (states_cutoff) over</span>
 <span class="sd">            the parallelization over CPUs., by default 1</span>
+<span class="sd">        rotation : ndarray[float64], optional</span>
+<span class="sd">            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.</span>
+<span class="sd">            Note that the inverse matrix has to be given to rotate the</span>
+<span class="sd">            reference frame instead. It is useful here to orient your 3D plots</span>
+<span class="sd">            more conveniently., by default None</span>
 <span class="sd">        slt : str, optional</span>
 <span class="sd">            If given the results will be saved in a group of this name to .slt</span>
 <span class="sd">            file with suffix: _3d_magnetisation., by default None</span>
@@ -1514,6 +1525,7 @@ document.write(`
                 <span class="n">states_cutoff</span><span class="p">,</span>
                 <span class="n">number_cpu</span><span class="p">,</span>
                 <span class="n">number_threads</span><span class="p">,</span>
+                <span class="n">rotation</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltCompError</span><span class="p">(</span>
@@ -2173,6 +2185,7 @@ document.write(`
         <span class="n">number_threads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">exp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">T</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">rotation</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">slt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">autotune</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">_autotune_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
@@ -2229,6 +2242,11 @@ document.write(`
 <span class="sd">        T : bool, optional</span>
 <span class="sd">            Results are returned as a product with temperature chiT(H,T).,</span>
 <span class="sd">            by default True</span>
+<span class="sd">        rotation : ndarray[float64], optional</span>
+<span class="sd">            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.</span>
+<span class="sd">            Note that the inverse matrix has to be given to rotate the</span>
+<span class="sd">            reference frame instead. It is useful here to orient your 3D plots</span>
+<span class="sd">            more conveniently., by default None</span>
 <span class="sd">        slt : str, optional</span>
 <span class="sd">            If given the results will be saved in a group of this name to .slt</span>
 <span class="sd">            file with suffix: _3d_magnetisation., by default None</span>
@@ -2408,6 +2426,7 @@ document.write(`
                 <span class="n">number_threads</span><span class="p">,</span>
                 <span class="n">exp</span><span class="p">,</span>
                 <span class="n">T</span><span class="p">,</span>
+                <span class="n">rotation</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltCompError</span><span class="p">(</span>
@@ -2486,8 +2505,8 @@ document.write(`
         <span class="n">_autotune_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Calculates powder-averaged or directional Helmholtz (or internal) energy</span>
-<span class="sd">        for a given list of temperature and field values.</span>
+<span class="sd">        Calculates powder-averaged or directional Helmholtz (or internal)</span>
+<span class="sd">        energy for a given list of temperature and field values.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -2526,8 +2545,8 @@ document.write(`
 <span class="sd">            Turns on the calculation of internal energy., by default False</span>
 <span class="sd">        slt : str, optional</span>
 <span class="sd">            If given the results will be saved in a group of this name to .slt</span>
-<span class="sd">            file with suffix: _helmholtz_energy or _internal_energy., by default</span>
-<span class="sd">            None</span>
+<span class="sd">            file with suffix: _helmholtz_energy or _internal_energy.,</span>
+<span class="sd">            by default None</span>
 <span class="sd">        autotune : bool, optional</span>
 <span class="sd">            If True the program will automatically try to choose the best</span>
 <span class="sd">            number of threads (and therefore parallel processes), for the given</span>
@@ -2728,6 +2747,7 @@ document.write(`
         <span class="n">number_cpu</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">number_threads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">internal_energy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">rotation</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">slt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">autotune</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">_autotune_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
@@ -2765,6 +2785,11 @@ document.write(`
 <span class="sd">            the parallelization over CPUs., by default 1</span>
 <span class="sd">        internal_energy : bool, optional</span>
 <span class="sd">            Turns on the calculation of internal energy., by default False</span>
+<span class="sd">        rotation : ndarray[float64], optional</span>
+<span class="sd">            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.</span>
+<span class="sd">            Note that the inverse matrix has to be given to rotate the</span>
+<span class="sd">            reference frame instead. It is useful here to orient your 3D plots</span>
+<span class="sd">            more conveniently., by default None</span>
 <span class="sd">        slt : str, optional</span>
 <span class="sd">            If given the results will be saved in a group of this name to .slt</span>
 <span class="sd">            file with suffix: _3d_helmholtz_energy or _3d_internal_energy.,</span>
@@ -2906,6 +2931,7 @@ document.write(`
                 <span class="n">number_cpu</span><span class="p">,</span>
                 <span class="n">number_threads</span><span class="p">,</span>
                 <span class="n">internal_energy</span><span class="p">,</span>
+                <span class="n">rotation</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltCompError</span><span class="p">(</span>
@@ -4861,7 +4887,10 @@ document.write(`
     <span class="k">def</span> <span class="nf">plot_mth</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">show_fig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">save_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;rainbow&quot;</span><span class="p">,</span>
         <span class="n">xlim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
         <span class="n">ylim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
@@ -4870,16 +4899,23 @@ document.write(`
         <span class="n">field</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates graphs of M(H,T) given name of the group in HDF5 file, graphs</span>
+<span class="sd">        Creates graphs of M(H,T) given name of the group in .slt file, graphs</span>
 <span class="sd">        can be optionally shown, saved, colour palettes can be changed.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            Name of a group from HDF5 file for which a plot will be created.</span>
+<span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
+<span class="sd">        show_fig: bool = True</span>
+<span class="sd">            Determines if plot is shown.</span>
+<span class="sd">            Possible use: saving many plots automatically without preview.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
-<span class="sd">            following format: f&quot;mgh_{group}.tiff&quot;.</span>
+<span class="sd">            Determines if the plot is saved.</span>
+<span class="sd">        save_path: str = &quot;.&quot;</span>
+<span class="sd">            Determines a path where the file will be saved if save = True.</span>
+<span class="sd">        save_name: str = &quot;&quot;</span>
+<span class="sd">            Determines name of the file that would be created if save = True,</span>
+<span class="sd">            if left empty it will use following format: f&quot;mgh_{group}.tiff&quot;.</span>
 <span class="sd">        colour_map_name: str or list[str] = &quot;rainbow&quot;</span>
 <span class="sd">            Input of the colour_map function.</span>
 <span class="sd">        xlim: tuple(optional: float, optional: float) = ()</span>
@@ -4914,7 +4950,7 @@ document.write(`
 <span class="sd">        slothpy.Compound.calculate_mth</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Getting data from hdf5 or sloth file</span>
+            <span class="c1"># Getting data from .slt or sloth file</span>
             <span class="n">mth</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mth&quot;</span><span class="p">]</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
@@ -4983,8 +5019,10 @@ document.write(`
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">tight_layout</span><span class="p">()</span>
-            <span class="n">show</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">show_fig</span><span class="p">:</span>
+                <span class="n">_display_plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
@@ -5001,8 +5039,15 @@ document.write(`
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Saving plot figure</span>
-                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;mgh_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;mgh_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
@@ -5017,7 +5062,8 @@ document.write(`
                     <span class="o">+</span> <span class="s1">&#39;&quot;, filename: &#39;</span>
                     <span class="o">+</span> <span class="n">PURPLE</span>
                     <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;mgh_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+        <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Compound.plot_chitht">
@@ -5025,7 +5071,10 @@ document.write(`
     <span class="k">def</span> <span class="nf">plot_chitht</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">show_fig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">save_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;funmat&quot;</span><span class="p">,</span>
         <span class="n">xlim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
         <span class="n">ylim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
@@ -5042,9 +5091,16 @@ document.write(`
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
 <span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
+<span class="sd">        show_fig: bool = True</span>
+<span class="sd">            Determines if plot is shown.</span>
+<span class="sd">            Possible use: saving many plots automatically without preview.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
-<span class="sd">            following format: f&#39;chitht_{group}.tiff&#39;.</span>
+<span class="sd">            Determines if the plot is saved.</span>
+<span class="sd">        save_path: str = &quot;.&quot;</span>
+<span class="sd">            Determines a path where the file will be saved if save = True.</span>
+<span class="sd">        save_name: str = &quot;&quot;</span>
+<span class="sd">            Determines name of the file that would be created if save = True,</span>
+<span class="sd">            if left empty it will use following format: f&quot;chitht_{group}.tiff&quot;.</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;funmat&#39;</span>
 <span class="sd">            Input of colour_map function.</span>
 <span class="sd">        xlim: tuple(optional: float, optional: float) = ()</span>
@@ -5079,7 +5135,7 @@ document.write(`
 <span class="sd">        slothpy.Compound.calculate_chitht</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Getting data from hdf5 or sloth file</span>
+            <span class="c1"># Getting data from .slt or sloth file</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">chi</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_susceptibility&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_chiht&quot;</span><span class="p">]</span>
                 <span class="n">T</span> <span class="o">=</span> <span class="kc">False</span>
@@ -5158,8 +5214,10 @@ document.write(`
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
             <span class="n">tight_layout</span><span class="p">()</span>
-            <span class="n">show</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">show_fig</span><span class="p">:</span>
+                <span class="n">_display_plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
@@ -5176,8 +5234,14 @@ document.write(`
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Saving plot figure</span>
-                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;chitht_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;chitht_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
@@ -5192,7 +5256,8 @@ document.write(`
                     <span class="o">+</span> <span class="s1">&#39;&quot;, filename: &#39;</span>
                     <span class="o">+</span> <span class="n">PURPLE</span>
                     <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;chitht_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+        <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Compound.plot_helmholtz_energyth">
@@ -5201,7 +5266,10 @@ document.write(`
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">internal_energy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">show_fig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">save_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;PrOr&quot;</span><span class="p">,</span>
         <span class="n">xlim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
         <span class="n">ylim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
@@ -5220,9 +5288,16 @@ document.write(`
 <span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
 <span class="sd">        internal_energy: bool = False</span>
 <span class="sd">            Changes the plot from the Helmholtz to internal energy.</span>
+<span class="sd">        show_fig: bool = True</span>
+<span class="sd">            Determines if plot is shown.</span>
+<span class="sd">            Possible use: saving many plots automatically without preview.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
-<span class="sd">            following format: f&#39;energyth_{group}.tiff&#39;.</span>
+<span class="sd">            Determines if the plot is saved.</span>
+<span class="sd">        save_path: str = &quot;.&quot;</span>
+<span class="sd">            Determines a path where the file will be saved if save = True.</span>
+<span class="sd">        save_name: str = &quot;&quot;</span>
+<span class="sd">            Determines name of the file that would be created if save = True,</span>
+<span class="sd">            if left empty it will use following format: f&quot;energyth_{group}.tiff&quot;.</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;PrOr&#39;</span>
 <span class="sd">            Input of the colour_map function.</span>
 <span class="sd">        xlim: tuple(optional: float, optional: float) = ()</span>
@@ -5261,7 +5336,7 @@ document.write(`
         <span class="k">else</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;helmholtz&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Getting data from hdf5 or sloth file</span>
+            <span class="c1"># Getting data from .slt or sloth file</span>
             <span class="n">eth</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_eth&quot;</span><span class="p">]</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_energy&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
@@ -5328,8 +5403,10 @@ document.write(`
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">tight_layout</span><span class="p">()</span>
-            <span class="n">show</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">show_fig</span><span class="p">:</span>
+                <span class="n">_display_plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
@@ -5346,8 +5423,14 @@ document.write(`
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Saving plot figure</span>
-                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;energyth_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;energyth_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
@@ -5362,7 +5445,8 @@ document.write(`
                     <span class="o">+</span> <span class="s1">&#39;&quot;, filename: &#39;</span>
                     <span class="o">+</span> <span class="n">PURPLE</span>
                     <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;energyth_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+        <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Compound.plot_zeeman">
@@ -5370,7 +5454,10 @@ document.write(`
     <span class="k">def</span> <span class="nf">plot_zeeman</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">show_fig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">save_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">colour_map_name1</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BuPi&quot;</span><span class="p">,</span>
         <span class="n">colour_map_name2</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BuPi_r&quot;</span><span class="p">,</span>
         <span class="n">single</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -5381,18 +5468,25 @@ document.write(`
         <span class="n">field</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Function that creates graphs of E(H,orientation) given a name of the</span>
-<span class="sd">        group in .slt file, graphs can be optionally saved, colour palettes</span>
+<span class="sd">        Function that creates graphs of E(H,orientation) given name of</span>
+<span class="sd">        the group in .slt file, graphs can be optionally saved, colour palettes</span>
 <span class="sd">        can be changed.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
+<span class="sd">            Name of a group from .slt file for which plot will be created.</span>
+<span class="sd">        show_fig: bool = True</span>
+<span class="sd">            Determines if plot is shown.</span>
+<span class="sd">            Possible use: saving many plots automatically without preview.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
-<span class="sd">            following format: f&#39;zeeman_{group}.tiff&#39; or f&#39;zeeman_{group}</span>
-<span class="sd">            _Orientation {orientations[i]}.tiff&#39;.</span>
+<span class="sd">            Determines if the plot is saved.</span>
+<span class="sd">        save_path: str = &quot;.&quot;</span>
+<span class="sd">            Determines a path where the file will be saved if save = True.</span>
+<span class="sd">        save_name: str = &quot;&quot;</span>
+<span class="sd">            Determines name of the file that would be created if save = True,</span>
+<span class="sd">            if left empty it will use following format: f&quot;zeeman_{group}.tiff&quot;</span>
+<span class="sd">            or f&quot;zeeman_{group}_{orientation[i]}.tiff&quot;.</span>
 <span class="sd">        colour_map_name1: str or list[str] = &#39;BuPi&#39;</span>
 <span class="sd">            Input of the colour_map function, determines a colour of the lower</span>
 <span class="sd">            set of split lines.</span>
@@ -5400,13 +5494,14 @@ document.write(`
 <span class="sd">            Input of the colour_map function, determines a colour of the higher</span>
 <span class="sd">            set of split lines.</span>
 <span class="sd">        single: bool = False</span>
-<span class="sd">            Determines if all the orientations are plotted together.</span>
+<span class="sd">            Determines if all orientations are plotted together if plot is not</span>
+<span class="sd">            a result of averaging.</span>
 <span class="sd">        xlim: tuple of 1-2 floats = ()</span>
-<span class="sd">            Determines the lower and upper limit of the x-axis if two floats</span>
-<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">            Determines the lower and upper limit of x-axis if two floats are</span>
+<span class="sd">            passed, or just the upper limit if one is passed.</span>
 <span class="sd">        ylim: tuple of 1-2 floats = ()</span>
-<span class="sd">            Determines the lower and upper limit of the y-axis if two floats</span>
-<span class="sd">            are passed, or just the upper limit if one is passed.</span>
+<span class="sd">            Determines the lower and upper limit of y-axis if two floats are</span>
+<span class="sd">            passed, or just the upper limit if one is passed.</span>
 <span class="sd">        xticks: int or float = 1</span>
 <span class="sd">            Determines the frequency of x major ticks.</span>
 <span class="sd">        yticks: int or float = 0</span>
@@ -5421,7 +5516,7 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            If unable to load the data file. Most likely encountered if the</span>
+<span class="sd">            If unable to load data file. Most likely encountered if the</span>
 <span class="sd">            group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
 <span class="sd">            If unable to create the plot.</span>
@@ -5433,7 +5528,7 @@ document.write(`
 <span class="sd">        slothpy.Compound.calculate_zeeman_splitting</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Getting data from hdf5 or sloth file</span>
+            <span class="c1"># Getting data from .slt</span>
             <span class="n">zeeman</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_zeeman_splitting&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_zeeman&quot;</span><span class="p">]</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_zeeman_splitting&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
@@ -5447,7 +5542,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="s2">&quot;Failed to load Zeeman splitting file&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to load Zeeman splitting file&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5457,13 +5552,15 @@ document.write(`
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
                 <span class="o">+</span> <span class="n">RED</span>
-                <span class="o">+</span> <span class="s2">&quot;Check if the group exists.&quot;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="s2">&quot;Check if group exist.&quot;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">orientations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">single</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="c1"># Plotting in matplotlib</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">single</span><span class="p">:</span>
-                <span class="n">number_of_plots</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">orientations</span><span class="p">)</span>
+                <span class="n">number_of_plots</span> <span class="o">=</span> <span class="n">orientations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">number_of_plots</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mf">3.2</span> <span class="o">*</span> <span class="p">(</span><span class="n">number_of_plots</span> <span class="o">/</span> <span class="mi">5</span><span class="p">)))</span>
                     <span class="n">gs</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">number_of_plots</span> <span class="o">/</span> <span class="mi">5</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span>
@@ -5521,7 +5618,7 @@ document.write(`
                             <span class="n">title</span><span class="p">(</span><span class="s2">&quot;Averaged Splitting&quot;</span><span class="p">)</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">title</span><span class="p">(</span>
-                                <span class="sa">f</span><span class="s2">&quot;Orientation [</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;Orientation [</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
                                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span>
                             <span class="p">)</span>
                         <span class="k">if</span> <span class="n">xlim</span><span class="p">:</span>
@@ -5638,7 +5735,8 @@ document.write(`
                     <span class="n">fig</span><span class="o">.</span><span class="n">supxlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$H\ /\ \mathrm</span><span class="si">{kOe}</span><span class="s2">$&quot;</span><span class="p">)</span>
                 <span class="n">fig</span><span class="o">.</span><span class="n">supylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\mathrm{Energy\ /\ cm^{-1}}$&quot;</span><span class="p">)</span>
                 <span class="n">tight_layout</span><span class="p">()</span>
-                <span class="n">show</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">show_fig</span><span class="p">:</span>
+                    <span class="n">_display_plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">))</span>
             <span class="k">elif</span> <span class="n">single</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">zee</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">zeeman</span><span class="p">):</span>
                     <span class="n">rc</span><span class="p">(</span>
@@ -5682,20 +5780,31 @@ document.write(`
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
                     <span class="n">tight_layout</span><span class="p">()</span>
-                    <span class="n">show</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">show_fig</span><span class="p">:</span>
+                        <span class="n">show</span><span class="p">()</span>
                     <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
                         <span class="k">try</span><span class="p">:</span>
                             <span class="c1"># Saving plot figure</span>
-                            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
-                                <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_Orientation&quot;</span>
-                                <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
-                                <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
-                            <span class="p">)</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
+                                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                                    <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                                        <span class="n">save_path</span><span class="p">,</span>
+                                        <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_Orientation&quot;</span>
+                                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
+                                    <span class="p">),</span>
+                                    <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                                <span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                                    <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span>
+                                    <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                                <span class="p">)</span>
                         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                            <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
                             <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                                 <span class="n">exc</span><span class="p">,</span>
-                                <span class="s2">&quot;Failed to save Zeeman splitting data plot&quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;Failed to save zeeman splitting data plot&quot;</span>
                                 <span class="o">+</span> <span class="n">BLUE</span>
                                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5710,10 +5819,11 @@ document.write(`
                             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="s2">&quot;Failed to plot Zeeman splitting data&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to plot zeeman splitting data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5726,12 +5836,22 @@ document.write(`
         <span class="k">if</span> <span class="n">save</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">single</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Saving plot figure</span>
-                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span>
+                        <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span>
+                        <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                    <span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
-                    <span class="s2">&quot;Failed to save Zeeman splitting data plot &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to save zeeman splitting data plot &quot;</span>
                     <span class="o">+</span> <span class="n">BLUE</span>
                     <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                     <span class="o">+</span> <span class="n">RESET</span>
@@ -5742,7 +5862,8 @@ document.write(`
                     <span class="o">+</span> <span class="s1">&#39;&quot;, filename: &#39;</span>
                     <span class="o">+</span> <span class="n">PURPLE</span>
                     <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+        <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Compound.plot_3d">
@@ -5759,7 +5880,10 @@ document.write(`
         <span class="p">],</span>
         <span class="n">field_i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">temp_i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">show_fig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">save_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dark_rainbow_r_l&quot;</span><span class="p">,</span>
         <span class="n">round_temp</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
         <span class="n">round_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
@@ -5767,7 +5891,16 @@ document.write(`
         <span class="n">ticks</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">r_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">c_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">elev</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="n">azim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">60</span><span class="p">,</span>
+        <span class="n">roll</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">axis_off</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">add_g_tensor_axes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">axes_group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">axes_colors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
+        <span class="n">doublet_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">axes_scale_factor</span><span class="p">:</span> <span class="n">float64</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">rotation</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates 3d plots of data dependent on field B[T] and temperature T[K].</span>
@@ -5784,9 +5917,17 @@ document.write(`
 <span class="sd">        temp_i: int</span>
 <span class="sd">            Index of the temperature from the dataset that will be used for the</span>
 <span class="sd">            plot.</span>
+<span class="sd">        show_fig: bool = True</span>
+<span class="sd">            Determines if plot is shown.</span>
+<span class="sd">            Possible use: saving many plots automatically without preview.</span>
 <span class="sd">        save: bool = False</span>
-<span class="sd">            Determines if the plot is saved, name of the file will be in the</span>
-<span class="sd">            following format: f&#39;{group}_3d_{data_type}.tiff&#39;.</span>
+<span class="sd">            Determines if the plot is saved.</span>
+<span class="sd">        save_path: str = &quot;.&quot;</span>
+<span class="sd">            Determines path where file will be saved if save = True.</span>
+<span class="sd">        save_name: str = &quot;&quot;</span>
+<span class="sd">            Determines name of a file that would be created if save = True,</span>
+<span class="sd">            if left empty it will use following format:</span>
+<span class="sd">            f&quot;{group}_3d_{data_type}.tiff&quot;.</span>
 <span class="sd">        colour_map_name: str or list[str] = &#39;dark_rainbow_r_l&#39;</span>
 <span class="sd">            Input of the colour_map function.</span>
 <span class="sd">        round_temp: int = 3</span>
@@ -5804,8 +5945,35 @@ document.write(`
 <span class="sd">            Determines the rcount of a 3D plot.</span>
 <span class="sd">        c_density: int = 0</span>
 <span class="sd">            Determines the ccount of a 3D plot.</span>
+<span class="sd">        elev: int = 30</span>
+<span class="sd">            Determines an angle between a viewing position and the xy plane.</span>
+<span class="sd">        azim: int = -60</span>
+<span class="sd">            Determines a rotation of a viewing position in ralation to z axis.</span>
+<span class="sd">        roll: int = 0</span>
+<span class="sd">            Determines a rotation of camera around the viewing (position) axis.</span>
 <span class="sd">        axis_off: bool = False</span>
 <span class="sd">            Determines if the axes are turned off.</span>
+<span class="sd">        add_g_tensor_axes: bool = False</span>
+<span class="sd">            Determines if add to the plot main magnetic axes scaled by the</span>
+<span class="sd">            correcponding pseudo-g-tensor values.</span>
+<span class="sd">        axes_group: str = &quot;&quot;</span>
+<span class="sd">            Name of a group from calculate_g_tensor_axes method from .slt file.</span>
+<span class="sd">        axes_colors: list[str] = [&#39;r&#39;,&#39;g&#39;,&#39;b&#39;]</span>
+<span class="sd">            Determines the colors of the magnetic axes in order of x, y, z.</span>
+<span class="sd">            Accepts matplotlib colors inputs, for example HTML colour codes.</span>
+<span class="sd">        doublet_number: int = None</span>
+<span class="sd">            Number of a doublet for which axes will be added to the plot.</span>
+<span class="sd">        axes_scale_factor: float64 = 1.0</span>
+<span class="sd">            Scale factor determining the length of the longest (main) magnetic</span>
+<span class="sd">            axis concerning the maximal value of the loaded data and setting</span>
+<span class="sd">            a maximal limit of the plot&#39;s xyz axes. It should be set &gt; 1</span>
+<span class="sd">            otherwise, some data will end up missing from the plot! The limit</span>
+<span class="sd">            is max(loaded_data) * axes_scale_factor.</span>
+<span class="sd">        rotation: ndarray[float64] = None</span>
+<span class="sd">            Has to be given if 3d data was calculated with optional rotation of</span>
+<span class="sd">            the coordinate frame and add_g_tensor_axes option is turned on.</span>
+<span class="sd">            One must provide the same rotation as that used for the simulation</span>
+<span class="sd">            to apply it to the magnetic axes.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -5814,17 +5982,28 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            If unable to load data file. Most likely encountered if group name is incorrect.</span>
+<span class="sd">            If unable to load data file. Most likely encountered if the group</span>
+<span class="sd">            name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
-<span class="sd">            If unable to create plot.</span>
+<span class="sd">            If unable to create the plot.</span>
 <span class="sd">        SltSaveError</span>
-<span class="sd">            If unable to save plot as image.</span>
+<span class="sd">            If unable to save the plot as an image.</span>
 
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
 <span class="sd">        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,</span>
-<span class="sd">        slothpy.Compound.calculate_helmholtz_energy_3d</span>
+<span class="sd">        slothpy.Compound.calculate_helmholtz_energy_3d,</span>
+<span class="sd">        slothpy.Compound.calculate_g_tensor_axes</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axes_scale_factor</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">axes_scale_factor</span> <span class="o">&lt;</span> <span class="mi">1</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Axes scale factor has to be a float greater than 1.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
         <span class="k">try</span><span class="p">:</span>
             <span class="n">T</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
@@ -5909,7 +6088,7 @@ document.write(`
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="s2">&quot;Failed to load the 3D data file&quot;</span>
+                <span class="s2">&quot;Failed to load the 3D data file &quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -5917,15 +6096,17 @@ document.write(`
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
-                <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
-                <span class="o">+</span> <span class="n">RED</span>
-                <span class="o">+</span> <span class="s2">&quot;Check if the group exists.&quot;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="s1">&#39;&quot;. &#39;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Check if the group exists and data type </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;matches one from the list &quot;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39; &quot;magnetisation&quot;].&#39;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span><span class="p">()</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">)</span>
             <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
-            <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
+            <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span> <span class="o">*</span> <span class="n">axes_scale_factor</span>
             <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
             <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
             <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
@@ -6022,11 +6203,50 @@ document.write(`
             <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
             <span class="n">ax</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">azim</span> <span class="o">=</span> <span class="n">azim</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="n">elev</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">roll</span> <span class="o">=</span> <span class="n">roll</span>
             <span class="n">title</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
+                <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>
+                <span class="n">g_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors&quot;</span>
+                <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>
+
+                <span class="n">vec</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="n">newaxis</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>
+                <span class="k">if</span> <span class="n">rotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">rotation</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                            <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="s2">&quot;Input rotation matrix must be a 3x3 matrix.&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                    <span class="n">product</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">rotation</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">allclose</span><span class="p">(</span><span class="n">product</span><span class="p">,</span> <span class="n">identity</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                            <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="s2">&quot;Input rotation matrix must be orthogonal.&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                    <span class="n">vec</span> <span class="o">=</span> <span class="n">rotation</span> <span class="o">@</span> <span class="n">vec</span>
+                <span class="n">max_vec</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
+                <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">*</span> <span class="n">lim</span> <span class="o">/</span> <span class="n">max_vec</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                        <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                        <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                        <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                        <span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                    <span class="p">)</span>
             <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
-            <span class="n">show</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">show_fig</span><span class="p">:</span>
+                <span class="n">_display_plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
@@ -6043,13 +6263,35 @@ document.write(`
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
-                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_</span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
-                        <span class="n">transparent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                        <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_</span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
+                        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                            <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                                <span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_</span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2">.tiff&quot;</span>
+                            <span class="p">),</span>
+                            <span class="n">transparent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                            <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span>
+                            <span class="n">transparent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
+                        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                            <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                                <span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_</span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2">.tiff&quot;</span>
+                            <span class="p">),</span>
+                            <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+                            <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span>
+                            <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+                        <span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
@@ -6064,7 +6306,8 @@ document.write(`
                     <span class="o">+</span> <span class="s1">&#39;&quot;, filename: &#39;</span>
                     <span class="o">+</span> <span class="n">PURPLE</span>
                     <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_</span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+        <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Compound.animate_3d">
@@ -6076,7 +6319,8 @@ document.write(`
             <span class="s2">&quot;chit&quot;</span><span class="p">,</span>
             <span class="s2">&quot;chi&quot;</span><span class="p">,</span>
             <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;internal_energy&quot;</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;internal_energy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;magnetisation&quot;</span><span class="p">,</span>
         <span class="p">],</span>
         <span class="n">animation_variable</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;field&quot;</span><span class="p">],</span>
         <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6096,59 +6340,94 @@ document.write(`
         <span class="n">bar_colour_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dark_rainbow_r&quot;</span><span class="p">,</span>
         <span class="n">temp_rounding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">field_rounding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">elev</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="n">azim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">60</span><span class="p">,</span>
+        <span class="n">roll</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">add_g_tensor_axes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">axes_group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">axes_colors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
+        <span class="n">doublet_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">axes_scale_factor</span><span class="p">:</span> <span class="n">float64</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">rotation</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates animations of 3d plots of data dependent on field B[T] and</span>
-<span class="sd">        temperature T[K].</span>
+<span class="sd">        Creates animations of 3d plots dependent on field B[T]</span>
+<span class="sd">        and temperature T[K].</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            Name of a group from .slt file for which a plot will be created.</span>
+<span class="sd">            Name of a group from .slt file for which plot will be created.</span>
 <span class="sd">        data_type: Union[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,</span>
 <span class="sd">          &quot;magnetisation&quot;]</span>
-<span class="sd">            Type of the data that will be used to create the plot.</span>
+<span class="sd">            Type of data that will be used to create plot.</span>
 <span class="sd">        animation_variable: Union[&quot;temperature&quot;, &quot;field&quot;]</span>
-<span class="sd">            Variable changing during the animation, can take one of two values:</span>
+<span class="sd">            Variable changing during animation, can take one of two values:</span>
 <span class="sd">            temperature or field.</span>
 <span class="sd">        filename: str</span>
 <span class="sd">            Name of the output .gif file.</span>
 <span class="sd">        i_start: int = 0</span>
-<span class="sd">            Index of the first frame&#39;s field/temperature.</span>
+<span class="sd">            Index of first frame&#39;s field/temperature.</span>
 <span class="sd">        i_end: int = -1</span>
-<span class="sd">            Index of the last frame&#39;s field/temperature.</span>
+<span class="sd">            Index of last frame&#39;s field/temperature.</span>
 <span class="sd">        i_constant: int</span>
-<span class="sd">            Index of the constant temperature/field value.</span>
+<span class="sd">            Index of constant temperature/field.</span>
 <span class="sd">        colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            Input of tje colour_map function, determines a colour of the</span>
-<span class="sd">            main figure.</span>
+<span class="sd">            Input of colour_map function, determines colour of main figure.</span>
 <span class="sd">        lim_scalar: float = 1.</span>
-<span class="sd">            Scalar used to set the limits of axes, smaller values magnify the</span>
-<span class="sd">            plotted figure.</span>
+<span class="sd">            Scalar used to set limits of axes, smaller values magnify plotted</span>
+<span class="sd">            figure.</span>
 <span class="sd">        ticks: float = 1</span>
 <span class="sd">            Determines the ticks spacing.</span>
 <span class="sd">        r_density: int = 0</span>
-<span class="sd">            Determines the rcount of the 3D plot.</span>
+<span class="sd">            Determines rcount of 3D plot.</span>
 <span class="sd">        c_density: int = 0</span>
-<span class="sd">            Determines the ccount of the 3D plot.</span>
+<span class="sd">            Determines ccount of 3D plot.</span>
 <span class="sd">        axis_off: bool = False</span>
-<span class="sd">            Determines if the axes are turned off.</span>
+<span class="sd">            Determines if axes are turned off.</span>
 <span class="sd">        fps: int</span>
-<span class="sd">            Number of frames per second in the animation.</span>
+<span class="sd">            Number of frames per second in animation.</span>
 <span class="sd">        dpi: int</span>
-<span class="sd">            Dots per inch resolution of the frames.</span>
+<span class="sd">            Dots per inch resolution of frames.</span>
 <span class="sd">        bar: bool = True</span>
-<span class="sd">            Determines if the bar representing animation variable is shown.</span>
+<span class="sd">            Determines if bar representing animation variable is shown.</span>
 <span class="sd">        bar_scale: bool = False</span>
 <span class="sd">            Determines if a scale should be shown for bar.</span>
 <span class="sd">        bar_colour_map_name: str or list = &#39;dark_rainbow_r_l&#39;</span>
-<span class="sd">            Input of the colour_map function, determines a colour of the bar.</span>
+<span class="sd">            Input of the colour_map function, determines the colour of the bar.</span>
 <span class="sd">        temp_rounding: int = 0</span>
-<span class="sd">            Determines how many decimal places are shown in the bar/plot labels</span>
+<span class="sd">            Determines how many decimal places are shown in bar/plot labels</span>
 <span class="sd">            for temperatures.</span>
 <span class="sd">        field_rounding: int = 0</span>
-<span class="sd">            Determines how many decimal places are shown in the bar/plot labels</span>
+<span class="sd">            Determines how many decimal places are shown in bar/plot labels</span>
 <span class="sd">            for fields.</span>
+<span class="sd">        elev: int = 30</span>
+<span class="sd">            Determines an angle between a viewing position and the xy plane.</span>
+<span class="sd">        azim: int = -60</span>
+<span class="sd">            Determines a rotation of a viewing position in ralation to z axis.</span>
+<span class="sd">        roll: int = 0</span>
+<span class="sd">            Determines a rotation of camera around the viewing (position) axis.</span>
+<span class="sd">        add_g_tensor_axes: bool = False</span>
+<span class="sd">            Determines if add to the plot main magnetic axes scaled by the</span>
+<span class="sd">            correcponding pseudo-g-tensor values.</span>
+<span class="sd">        axes_group: str = &quot;&quot;</span>
+<span class="sd">            Name of a group from calculate_g_tensor_axes method from .slt file.</span>
+<span class="sd">        axes_colors: list[str] = [&#39;r&#39;,&#39;g&#39;,&#39;b&#39;]</span>
+<span class="sd">            Determines the colors of the magnetic axes in order of x, y, z.</span>
+<span class="sd">            Accepts matplotlib colors inputs, for example HTML colour codes.</span>
+<span class="sd">        doublet_number: int = None</span>
+<span class="sd">            Number of a doublet for which axes will be added to the plot.</span>
+<span class="sd">        axes_scale_factor: float64 = 1.0</span>
+<span class="sd">            Scale factor determining the length of the longest (main) magnetic</span>
+<span class="sd">            axis concerning the maximal value of the loaded data and setting</span>
+<span class="sd">            a maximal limit of the plot&#39;s xyz axes. It should be set &gt; 1</span>
+<span class="sd">            otherwise, some data will end up missing from the plot! The limit</span>
+<span class="sd">            is max(loaded_data) * axes_scale_factor.</span>
+<span class="sd">        rotation: ndarray[float64] = None</span>
+<span class="sd">            Has to be given if 3d data was calculated with optional rotation of</span>
+<span class="sd">            the coordinate frame and add_g_tensor_axes option is turned on.</span>
+<span class="sd">            One must provide the same rotation as that used for the simulation</span>
+<span class="sd">            to apply it to the magnetic axes.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -6157,7 +6436,7 @@ document.write(`
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        SltFileError</span>
-<span class="sd">            If unable to load the data file. Most likely encountered if the</span>
+<span class="sd">            If unable to load data file. Most likely encountered if the</span>
 <span class="sd">            group name is incorrect.</span>
 <span class="sd">        SltPlotError</span>
 <span class="sd">            If unable to create the plot.</span>
@@ -6165,8 +6444,18 @@ document.write(`
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
 <span class="sd">        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,</span>
-<span class="sd">        slothpy.Compound.calculate_helmholtz_energy_3d</span>
+<span class="sd">        slothpy.Compound.calculate_helmholtz_energy_3d,</span>
+<span class="sd">        slothpy.Compound.calculate_g_tensor_axes</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axes_scale_factor</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">axes_scale_factor</span> <span class="o">&lt;</span> <span class="mi">1</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Axes scale factor has to be a float greater than 1.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
         <span class="k">try</span><span class="p">:</span>
             <span class="n">T</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
@@ -6229,30 +6518,40 @@ document.write(`
                     <span class="s2">&quot;Acceptable data types: chit, chi, helmholtz_energy and&quot;</span>
                     <span class="s2">&quot; magnetisation&quot;</span>
                 <span class="p">)</span>
+            <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
+                <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>
+                <span class="n">g_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors&quot;</span>
+                <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>
+
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="s2">&quot;Failed to load 3D data file&quot;</span>
+                <span class="s2">&quot;Failed to load the 3D data file &quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
-                <span class="o">+</span> <span class="s2">&quot; Group &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
-                <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
-                <span class="o">+</span> <span class="n">RED</span>
-                <span class="o">+</span> <span class="s2">&quot;Check if the group exists.&quot;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="s1">&#39;&quot;. &#39;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Check if the group exists and data type </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;matches one from the list &quot;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39; &quot;magnetisation&quot;].&#39;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">animation_variable</span> <span class="o">==</span> <span class="s2">&quot;temperature&quot;</span><span class="p">:</span>
             <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;f</span><span class="si">{</span><span class="n">data_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_type</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> dependence&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_type</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> dependence&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot; on direction, B=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> T&quot;</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">animation_variable</span> <span class="o">==</span> <span class="s2">&quot;field&quot;</span><span class="p">:</span>
             <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;f</span><span class="si">{</span><span class="n">data_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_type</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> dependence&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_type</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> dependence&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot; on direction, T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -6348,7 +6647,7 @@ document.write(`
                                 <span class="s2">&quot; helmholtz_energy and magnetisation&quot;</span>
                             <span class="p">)</span>
                         <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
-                        <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
+                        <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span> <span class="o">*</span> <span class="n">axes_scale_factor</span>
                         <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
                         <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
                         <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
@@ -6365,6 +6664,36 @@ document.write(`
                             <span class="n">facecolors</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span>
                             <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                            <span class="n">vec</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="n">newaxis</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>
+                            <span class="k">if</span> <span class="n">rotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">rotation</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+                                    <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                                        <span class="ne">ValueError</span><span class="p">(</span>
+                                            <span class="s2">&quot;Input rotation matrix must be a&quot;</span>
+                                            <span class="s2">&quot; 3x3 matrix.&quot;</span>
+                                        <span class="p">)</span>
+                                    <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                                <span class="n">product</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">rotation</span>
+                                <span class="k">if</span> <span class="ow">not</span> <span class="n">allclose</span><span class="p">(</span>
+                                    <span class="n">product</span><span class="p">,</span> <span class="n">identity</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mi">0</span>
+                                <span class="p">):</span>
+                                    <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                                        <span class="ne">ValueError</span><span class="p">(</span>
+                                            <span class="s2">&quot;Input rotation matrix must be&quot;</span>
+                                            <span class="s2">&quot; orthogonal.&quot;</span>
+                                        <span class="p">)</span>
+                                    <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                                <span class="n">vec</span> <span class="o">=</span> <span class="n">rotation</span> <span class="o">@</span> <span class="n">vec</span>
+                            <span class="n">max_vec</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
+                            <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">*</span> <span class="n">lim</span> <span class="o">/</span> <span class="n">max_vec</span>
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                                    <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                                    <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                                    <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                                    <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                <span class="p">)</span>
                         <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
@@ -6399,6 +6728,9 @@ document.write(`
                         <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">azim</span> <span class="o">=</span> <span class="n">azim</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="n">elev</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">roll</span> <span class="o">=</span> <span class="n">roll</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
                         <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
@@ -6508,8 +6840,9 @@ document.write(`
                                 <span class="s2">&quot;Acceptable data types: chit, chi,&quot;</span>
                                 <span class="s2">&quot; helmholtz_energy and magnetisation&quot;</span>
                             <span class="p">)</span>
+                        <span class="c1"># title = description</span>
                         <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
-                        <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
+                        <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span> <span class="o">*</span> <span class="n">axes_scale_factor</span>
                         <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
                         <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
                         <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
@@ -6526,6 +6859,36 @@ document.write(`
                             <span class="n">facecolors</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span>
                             <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                            <span class="n">vec</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="n">newaxis</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>
+                            <span class="k">if</span> <span class="n">rotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">rotation</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+                                    <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                                        <span class="ne">ValueError</span><span class="p">(</span>
+                                            <span class="s2">&quot;Input rotation matrix must be a&quot;</span>
+                                            <span class="s2">&quot; 3x3 matrix.&quot;</span>
+                                        <span class="p">)</span>
+                                    <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                                <span class="n">product</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">rotation</span>
+                                <span class="k">if</span> <span class="ow">not</span> <span class="n">allclose</span><span class="p">(</span>
+                                    <span class="n">product</span><span class="p">,</span> <span class="n">identity</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mi">0</span>
+                                <span class="p">):</span>
+                                    <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                                        <span class="ne">ValueError</span><span class="p">(</span>
+                                            <span class="s2">&quot;Input rotation matrix must be&quot;</span>
+                                            <span class="s2">&quot; orthogonal.&quot;</span>
+                                        <span class="p">)</span>
+                                    <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                                <span class="n">vec</span> <span class="o">=</span> <span class="n">rotation</span> <span class="o">@</span> <span class="n">vec</span>
+                            <span class="n">max_vec</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
+                            <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">*</span> <span class="n">lim</span> <span class="o">/</span> <span class="n">max_vec</span>
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                                    <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                                    <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                                    <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                                    <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                <span class="p">)</span>
                         <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
@@ -6560,6 +6923,9 @@ document.write(`
                         <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">azim</span> <span class="o">=</span> <span class="n">azim</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="n">elev</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">roll</span> <span class="o">=</span> <span class="n">roll</span>
 
                         <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
                             <span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
@@ -6609,10 +6975,11 @@ document.write(`
                         <span class="s2">&quot; temperature&quot;</span>
                     <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="s2">&quot;Failed to plot and save 3D data&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to plot and save 3d data&quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="s2">&quot; Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
@@ -6621,7 +6988,9 @@ document.write(`
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span><span class="p">,</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span></div>
+            <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
+        <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Compound.interactive_plot_3d">
@@ -6648,6 +7017,12 @@ document.write(`
         <span class="n">temp_rounding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
         <span class="n">field_rounding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
         <span class="n">axis_off</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">add_g_tensor_axes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">axes_group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">axes_colors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
+        <span class="n">doublet_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">axes_scale_factor</span><span class="p">:</span> <span class="n">float64</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">rotation</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates interactive widget plot dependent on field and temperature</span>
@@ -6656,7 +7031,7 @@ document.write(`
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        group: str</span>
-<span class="sd">            Name of a group from HDF5 file for which plot will be created.</span>
+<span class="sd">            Name of a group from .slt file for which plot will be created.</span>
 <span class="sd">        data_type: Union[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,</span>
 <span class="sd">          &quot;magnetisation&quot;]</span>
 <span class="sd">            Type of the data that will be used to create the plot.</span>
@@ -6690,6 +7065,37 @@ document.write(`
 <span class="sd">            int(value) for field.</span>
 <span class="sd">        axis_off: bool = False</span>
 <span class="sd">            Determines if the axes are turned off.</span>
+<span class="sd">        add_g_tensor_axes: bool = False</span>
+<span class="sd">            Determines if add to the plot main magnetic axes scaled by the</span>
+<span class="sd">            correcponding pseudo-g-tensor values.</span>
+<span class="sd">        axes_group: str = &quot;&quot;</span>
+<span class="sd">            Name of a group from calculate_g_tensor_axes method from .slt file.</span>
+<span class="sd">        axes_colors: list[str] = [&#39;r&#39;,&#39;g&#39;,&#39;b&#39;]</span>
+<span class="sd">            Determines the colors of the magnetic axes in order of x, y, z.</span>
+<span class="sd">            Accepts matplotlib colors inputs, for example HTML colour codes.</span>
+<span class="sd">        doublet_number: int = None</span>
+<span class="sd">            Number of a doublet for which axes will be added to the plot.</span>
+<span class="sd">        axes_scale_factor: float64 = 1.0</span>
+<span class="sd">            Scale factor determining lenght of the longest (main) magnetic axis</span>
+<span class="sd">            with respect to the maximal value of the loaded data and setting</span>
+<span class="sd">            maximal limit of the plot&#39;s xyz axes. It should be set &gt; 1</span>
+<span class="sd">            otherwise some data will end up missing on the plot! The limit is</span>
+<span class="sd">            max(loaded_data) * axes_scale_factor.</span>
+<span class="sd">        axes_group: str = &quot;&quot;</span>
+<span class="sd">            Name of a group from calculate_g_tensor_axes method from .slt file.</span>
+<span class="sd">        doublet_number: int = None</span>
+<span class="sd">            Number of a doublet for which axes will be added to the plot.</span>
+<span class="sd">        axes_scale_factor: float64 = 1.0</span>
+<span class="sd">            Scale factor determining the length of the longest (main) magnetic</span>
+<span class="sd">            axis concerning the maximal value of the loaded data and setting</span>
+<span class="sd">            a maximal limit of the plot&#39;s xyz axes. It should be set &gt; 1</span>
+<span class="sd">            otherwise, some data will end up missing from the plot! The limit is</span>
+<span class="sd">            max(loaded_data) * axes_scale_factor.</span>
+<span class="sd">        rotation: ndarray[float64] = None</span>
+<span class="sd">            Has to be given if 3d data was calculated with optional rotation of</span>
+<span class="sd">            the coordinate frame and add_g_tensor_axes option is turned on.</span>
+<span class="sd">            One must provide the same rotation as that used for the simulation</span>
+<span class="sd">            to apply it to the magnetic axes.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -6706,8 +7112,18 @@ document.write(`
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
 <span class="sd">        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,</span>
-<span class="sd">        slothpy.Compound.calculate_helmholtz_energy_3d</span>
+<span class="sd">        slothpy.Compound.calculate_helmholtz_energy_3d,</span>
+<span class="sd">        slothpy.Compound.calculate_g_tensor_axes</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axes_scale_factor</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">axes_scale_factor</span> <span class="o">&lt;</span> <span class="mi">1</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Axes scale factor has to be a float greater than 1.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
         <span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">T</span> <span class="o">=</span> <span class="kc">False</span>
@@ -6769,21 +7185,31 @@ document.write(`
                 <span class="n">temps</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
                 <span class="p">]</span>
+            <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
+                <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>
+                <span class="n">g_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors&quot;</span>
+                <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>
+
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
                 <span class="n">exc</span><span class="p">,</span>
-                <span class="s2">&quot;Failed to load 3d data file&quot;</span>
+                <span class="s2">&quot;Failed to load the 3D data file &quot;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
-                <span class="o">+</span> <span class="s2">&quot; Group &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
-                <span class="o">+</span> <span class="n">RED</span>
-                <span class="o">+</span> <span class="s2">&quot;Check if the group exists.&quot;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Check if the group exists and data type </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;matches one from the list&quot;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39; [&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39; &quot;magnetisation&quot;].&#39;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span><span class="p">()</span>
@@ -6812,7 +7238,7 @@ document.write(`
             <span class="n">z</span> <span class="o">=</span> <span class="n">z0</span><span class="p">[</span><span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
 
             <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
-            <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
+            <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span> <span class="o">*</span> <span class="n">axes_scale_factor</span>
             <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
             <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
             <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
@@ -6827,6 +7253,32 @@ document.write(`
                 <span class="n">facecolors</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span>
                 <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                <span class="n">vec</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="n">newaxis</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>
+                <span class="k">if</span> <span class="n">rotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">rotation</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                            <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="s2">&quot;Input rotation matrix must be a 3x3 matrix.&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                    <span class="n">product</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">rotation</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">allclose</span><span class="p">(</span><span class="n">product</span><span class="p">,</span> <span class="n">identity</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                            <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="s2">&quot;Input rotation matrix must be orthogonal.&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                    <span class="n">vec</span> <span class="o">=</span> <span class="n">rotation</span> <span class="o">@</span> <span class="n">vec</span>
+                <span class="n">max_vec</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
+                <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">*</span> <span class="n">lim</span> <span class="o">/</span> <span class="n">max_vec</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                        <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                        <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                        <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="p">)</span>
             <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
@@ -6980,7 +7432,7 @@ document.write(`
                 <span class="n">z</span> <span class="o">=</span> <span class="n">z0</span><span class="p">[</span><span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
 
                 <span class="n">max_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">z</span><span class="p">)])</span>
-                <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span>
+                <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_array</span><span class="p">)</span> <span class="o">*</span> <span class="n">axes_scale_factor</span>
                 <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
                 <span class="n">colors</span> <span class="o">=</span> <span class="n">colour_map</span><span class="p">(</span><span class="n">colour_map_name</span><span class="p">)(</span><span class="n">norm</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
                 <span class="n">rcount</span><span class="p">,</span> <span class="n">ccount</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">shape</span>
@@ -6995,6 +7447,35 @@ document.write(`
                     <span class="n">facecolors</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span>
                     <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="p">)</span>
+                <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                    <span class="n">vec</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="n">newaxis</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>
+                    <span class="k">if</span> <span class="n">rotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">rotation</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+                            <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                                <span class="ne">ValueError</span><span class="p">(</span>
+                                    <span class="s2">&quot;Input rotation matrix must be a 3x3&quot;</span>
+                                    <span class="s2">&quot; matrix.&quot;</span>
+                                <span class="p">)</span>
+                            <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                        <span class="n">product</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">rotation</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">allclose</span><span class="p">(</span>
+                            <span class="n">product</span><span class="p">,</span> <span class="n">identity</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mi">0</span>
+                        <span class="p">):</span>
+                            <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                                <span class="ne">ValueError</span><span class="p">(</span>
+                                    <span class="s2">&quot;Input rotation matrix must be orthogonal.&quot;</span>
+                                <span class="p">)</span>
+                            <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+                        <span class="n">vec</span> <span class="o">=</span> <span class="n">rotation</span> <span class="o">@</span> <span class="n">vec</span>
+                    <span class="n">max_vec</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
+                    <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">*</span> <span class="n">lim</span> <span class="o">/</span> <span class="n">max_vec</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                            <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                            <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                            <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
+                            <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                        <span class="p">)</span>
                 <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
@@ -7088,7 +7569,7 @@ document.write(`
             <span class="n">slider_field</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">slider_update</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
-            <span class="n">show</span><span class="p">()</span>
+            <span class="n">_display_plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltPlotError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>

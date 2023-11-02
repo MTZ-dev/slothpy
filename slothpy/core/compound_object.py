@@ -28,6 +28,8 @@ from numpy import (
     arange,
     max,
     newaxis,
+    allclose,
+    identity,
 )
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.gridspec import GridSpec
@@ -5156,7 +5158,7 @@ class Compound:
                         show()
                     if save:
                         try:
-                            """Saving plot figure"""
+                            # Saving plot figure
                             if not save_name:
                                 fig.savefig(
                                     path.join(
@@ -5207,7 +5209,7 @@ class Compound:
             ) from None
         if save and not single:
             try:
-                """Saving plot figure"""
+                # Saving plot figure
                 if not save_name:
                     fig.savefig(
                         path.join(save_path, f"zeeman_{group}.tiff"),
@@ -5266,8 +5268,10 @@ class Compound:
         axis_off: bool = False,
         add_g_tensor_axes: bool = False,
         axes_group: str = "",
+        axes_colors: list[str] = ["r", "g", "b"],
         doublet_number: int = None,
         axes_scale_factor: float64 = 1.0,
+        rotation: ndarray[float64] = None,
     ):
         """
         Creates 3d plots of data dependent on field B[T] and temperature T[K].
@@ -5325,6 +5329,9 @@ class Compound:
             correcponding pseudo-g-tensor values.
         axes_group: str = ""
             Name of a group from calculate_g_tensor_axes method from .slt file.
+        axes_colors: list[str] = ['r','g','b']
+            Determines the colors of the magnetic axes in order of x, y, z.
+            Accepts matplotlib colors inputs, for example HTML colour codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
         axes_scale_factor: float64 = 1.0
@@ -5333,6 +5340,11 @@ class Compound:
             a maximal limit of the plot's xyz axes. It should be set > 1
             otherwise, some data will end up missing from the plot! The limit
             is max(loaded_data) * axes_scale_factor.
+        rotation: ndarray[float64] = None
+            Has to be given if 3d data was calculated with optional rotation of
+            the coordinate frame and add_g_tensor_axes option is turned on.
+            One must provide the same rotation as that used for the simulation
+            to apply it to the magnetic axes.
 
         Returns
         -------
@@ -5447,7 +5459,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                "Failed to load the 3D data file"
+                "Failed to load the 3D data file "
                 + BLUE
                 + "Group "
                 + RESET
@@ -5455,9 +5467,11 @@ class Compound:
                 + BLUE
                 + f"{group}"
                 + RESET
-                + '".'
-                + RED
-                + "Check if the group exists.",
+                + '". '
+                + f"Check if the group exists and data type {data_type} "
+                + f"matches one from the list "
+                + f'["chit", "chi", "helmholtz_energy", "internal_energy",'
+                f' "magnetisation"].',
             ) from None
         try:
             fig = figure()
@@ -5571,8 +5585,23 @@ class Compound:
                 g_tensor = self[
                     f"{axes_group}_g_tensors_axes", f"{axes_group}_g_tensors"
                 ][doublet_number]
-                color_dict = {0: "r", 1: "g", 2: "b"}
+
                 vec = axes_matrix * g_tensor[newaxis, 1:]
+                if rotation is not None:
+                    if rotation.shape != (3, 3):
+                        raise SltInputError(
+                            ValueError(
+                                "Input rotation matrix must be a 3x3 matrix."
+                            )
+                        ) from None
+                    product = rotation.T @ rotation
+                    if not allclose(product, identity(3), atol=1e-2, rtol=0):
+                        raise SltInputError(
+                            ValueError(
+                                "Input rotation matrix must be orthogonal."
+                            )
+                        ) from None
+                    vec = rotation @ vec
                 max_vec = max(vec)
                 vec = vec * lim / max_vec
                 for i in range(3):
@@ -5580,7 +5609,7 @@ class Compound:
                         [vec[0, i], -vec[0, i]],
                         [vec[1, i], -vec[1, i]],
                         [vec[2, i], -vec[2, i]],
-                        color_dict[i],
+                        axes_colors[i],
                         linewidth=3,
                     )
             if axis_off:
@@ -5684,8 +5713,10 @@ class Compound:
         roll: int = 0,
         add_g_tensor_axes: bool = False,
         axes_group: str = "",
+        axes_colors: list[str] = ["r", "g", "b"],
         doublet_number: int = None,
         axes_scale_factor: float64 = 1.0,
+        rotation: ndarray[float64] = None,
     ):
         """
         Creates animations of 3d plots dependent on field B[T]
@@ -5749,6 +5780,9 @@ class Compound:
             correcponding pseudo-g-tensor values.
         axes_group: str = ""
             Name of a group from calculate_g_tensor_axes method from .slt file.
+        axes_colors: list[str] = ['r','g','b']
+            Determines the colors of the magnetic axes in order of x, y, z.
+            Accepts matplotlib colors inputs, for example HTML colour codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
         axes_scale_factor: float64 = 1.0
@@ -5757,6 +5791,11 @@ class Compound:
             a maximal limit of the plot's xyz axes. It should be set > 1
             otherwise, some data will end up missing from the plot! The limit
             is max(loaded_data) * axes_scale_factor.
+        rotation: ndarray[float64] = None
+            Has to be given if 3d data was calculated with optional rotation of
+            the coordinate frame and add_g_tensor_axes option is turned on.
+            One must provide the same rotation as that used for the simulation
+            to apply it to the magnetic axes.
 
         Returns
         -------
@@ -5854,22 +5893,24 @@ class Compound:
                 g_tensor = self[
                     f"{axes_group}_g_tensors_axes", f"{axes_group}_g_tensors"
                 ][doublet_number]
-                color_dict = {0: "r", 1: "g", 2: "b"}
+
         except Exception as exc:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load 3d data file"
+                "Failed to load the 3D data file "
                 + BLUE
-                + " Group "
+                + "Group "
                 + RESET
                 + '"'
                 + BLUE
                 + f"{group}"
                 + RESET
-                + '".'
-                + RED
-                + "Check if group exist.",
+                + '". '
+                + f"Check if the group exists and data type {data_type} "
+                + f"matches one from the list "
+                + f'["chit", "chi", "helmholtz_energy", "internal_energy",'
+                f' "magnetisation"].',
             ) from None
         if animation_variable == "temperature":
             description = (
@@ -5993,6 +6034,25 @@ class Compound:
                         )
                         if add_g_tensor_axes:
                             vec = axes_matrix * g_tensor[newaxis, 1:]
+                            if rotation is not None:
+                                if rotation.shape != (3, 3):
+                                    raise SltInputError(
+                                        ValueError(
+                                            "Input rotation matrix must be a"
+                                            " 3x3 matrix."
+                                        )
+                                    ) from None
+                                product = rotation.T @ rotation
+                                if not allclose(
+                                    product, identity(3), atol=1e-2, rtol=0
+                                ):
+                                    raise SltInputError(
+                                        ValueError(
+                                            "Input rotation matrix must be"
+                                            " orthogonal."
+                                        )
+                                    ) from None
+                                vec = rotation @ vec
                             max_vec = max(vec)
                             vec = vec * lim / max_vec
                             for i in range(3):
@@ -6000,7 +6060,7 @@ class Compound:
                                     [vec[0, i], -vec[0, i]],
                                     [vec[1, i], -vec[1, i]],
                                     [vec[2, i], -vec[2, i]],
-                                    color_dict[i],
+                                    axes_colors[i],
                                 )
                         surface.set_facecolor((0, 0, 0, 0))
                         ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
@@ -6169,6 +6229,25 @@ class Compound:
                         )
                         if add_g_tensor_axes:
                             vec = axes_matrix * g_tensor[newaxis, 1:]
+                            if rotation is not None:
+                                if rotation.shape != (3, 3):
+                                    raise SltInputError(
+                                        ValueError(
+                                            "Input rotation matrix must be a"
+                                            " 3x3 matrix."
+                                        )
+                                    ) from None
+                                product = rotation.T @ rotation
+                                if not allclose(
+                                    product, identity(3), atol=1e-2, rtol=0
+                                ):
+                                    raise SltInputError(
+                                        ValueError(
+                                            "Input rotation matrix must be"
+                                            " orthogonal."
+                                        )
+                                    ) from None
+                                vec = rotation @ vec
                             max_vec = max(vec)
                             vec = vec * lim / max_vec
                             for i in range(3):
@@ -6176,7 +6255,7 @@ class Compound:
                                     [vec[0, i], -vec[0, i]],
                                     [vec[1, i], -vec[1, i]],
                                     [vec[2, i], -vec[2, i]],
-                                    color_dict[i],
+                                    axes_colors[i],
                                 )
                         surface.set_facecolor((0, 0, 0, 0))
                         ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
@@ -6305,8 +6384,10 @@ class Compound:
         axis_off: int = False,
         add_g_tensor_axes: bool = False,
         axes_group: str = "",
+        axes_colors: list[str] = ["r", "g", "b"],
         doublet_number: int = None,
         axes_scale_factor: float64 = 1.0,
+        rotation: ndarray[float64] = None,
     ):
         """
         Creates interactive widget plot dependent on field and temperature
@@ -6354,6 +6435,9 @@ class Compound:
             correcponding pseudo-g-tensor values.
         axes_group: str = ""
             Name of a group from calculate_g_tensor_axes method from .slt file.
+        axes_colors: list[str] = ['r','g','b']
+            Determines the colors of the magnetic axes in order of x, y, z.
+            Accepts matplotlib colors inputs, for example HTML colour codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
         axes_scale_factor: float64 = 1.0
@@ -6372,6 +6456,11 @@ class Compound:
             a maximal limit of the plot's xyz axes. It should be set > 1
             otherwise, some data will end up missing from the plot! The limit is
             max(loaded_data) * axes_scale_factor.
+        rotation: ndarray[float64] = None
+            Has to be given if 3d data was calculated with optional rotation of
+            the coordinate frame and add_g_tensor_axes option is turned on.
+            One must provide the same rotation as that used for the simulation
+            to apply it to the magnetic axes.
 
         Returns
         -------
@@ -6468,22 +6557,24 @@ class Compound:
                 g_tensor = self[
                     f"{axes_group}_g_tensors_axes", f"{axes_group}_g_tensors"
                 ][doublet_number]
-                color_dict = {0: "r", 1: "g", 2: "b"}
+
         except Exception as exc:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                "Failed to load 3d data file"
+                "Failed to load the 3D data file "
                 + BLUE
-                + " Group "
+                + "Group "
                 + RESET
                 + '"'
                 + BLUE
                 + f"{group}"
                 + RESET
                 + '".'
-                + RED
-                + "Check if the group exists.",
+                + f"Check if the group exists and data type {data_type} "
+                + f"matches one from the list"
+                + f' ["chit", "chi", "helmholtz_energy", "internal_energy",'
+                f' "magnetisation"].',
             ) from None
         try:
             fig = figure()
@@ -6529,6 +6620,21 @@ class Compound:
             )
             if add_g_tensor_axes:
                 vec = axes_matrix * g_tensor[newaxis, 1:]
+                if rotation is not None:
+                    if rotation.shape != (3, 3):
+                        raise SltInputError(
+                            ValueError(
+                                "Input rotation matrix must be a 3x3 matrix."
+                            )
+                        ) from None
+                    product = rotation.T @ rotation
+                    if not allclose(product, identity(3), atol=1e-2, rtol=0):
+                        raise SltInputError(
+                            ValueError(
+                                "Input rotation matrix must be orthogonal."
+                            )
+                        ) from None
+                    vec = rotation @ vec
                 max_vec = max(vec)
                 vec = vec * lim / max_vec
                 for i in range(3):
@@ -6536,7 +6642,7 @@ class Compound:
                         [vec[0, i], -vec[0, i]],
                         [vec[1, i], -vec[1, i]],
                         [vec[2, i], -vec[2, i]],
-                        color_dict[i],
+                        axes_colors[i],
                     )
             surface.set_facecolor((0, 0, 0, 0))
             ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
@@ -6708,6 +6814,24 @@ class Compound:
                 )
                 if add_g_tensor_axes:
                     vec = axes_matrix * g_tensor[newaxis, 1:]
+                    if rotation is not None:
+                        if rotation.shape != (3, 3):
+                            raise SltInputError(
+                                ValueError(
+                                    "Input rotation matrix must be a 3x3"
+                                    " matrix."
+                                )
+                            ) from None
+                        product = rotation.T @ rotation
+                        if not allclose(
+                            product, identity(3), atol=1e-2, rtol=0
+                        ):
+                            raise SltInputError(
+                                ValueError(
+                                    "Input rotation matrix must be orthogonal."
+                                )
+                            ) from None
+                        vec = rotation @ vec
                     max_vec = max(vec)
                     vec = vec * lim / max_vec
                     for i in range(3):
@@ -6715,7 +6839,7 @@ class Compound:
                             [vec[0, i], -vec[0, i]],
                             [vec[1, i], -vec[1, i]],
                             [vec[2, i], -vec[2, i]],
-                            color_dict[i],
+                            axes_colors[i],
                         )
                 surface.set_facecolor((0, 0, 0, 0))
                 ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)

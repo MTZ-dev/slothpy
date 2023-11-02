@@ -69,9 +69,7 @@ class SlothGui(QApplication):
     ):
         super(SlothGui, self).__init__(sys_argv)
         self.main_view = MainView(fig, onclose=onClose)
-        image_path = resource_filename(
-            "slothpy", "slothpy/static/slothpy_3.png"
-        )
+        image_path = resource_filename("slothpy", "static/slothpy_3.png")
         app_icon = QIcon(image_path)
         SlothGui.setWindowIcon(app_icon)
 

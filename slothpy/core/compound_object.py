@@ -4424,10 +4424,10 @@ class Compound:
                 # Saving plot figure
                 if not save_name:
                     fig.savefig(
-                        path.join(save_path, f"mgh_{group}.tiff"), dpi=300
+                        path.join(save_path, f"mgh_{group}.tiff"), dpi=600
                     )
                 else:
-                    fig.savefig(path.join(save_path, save_name), dpi=300)
+                    fig.savefig(path.join(save_path, save_name), dpi=600)
 
             except Exception as exc:
                 close("all")
@@ -4802,10 +4802,10 @@ class Compound:
                 # Saving plot figure
                 if not save_name:
                     fig.savefig(
-                        path.join(save_path, f"energyth_{group}.tiff"), dpi=300
+                        path.join(save_path, f"energyth_{group}.tiff"), dpi=600
                     )
                 else:
-                    fig.savefig(path.join(save_path, save_name), dpi=300)
+                    fig.savefig(path.join(save_path, save_name), dpi=600)
             except Exception as exc:
                 close("all")
                 raise SltSaveError(
@@ -5166,12 +5166,12 @@ class Compound:
                                         f"zeeman_{group}_Orientation"
                                         f" {orientations[i]}.tiff",
                                     ),
-                                    dpi=300,
+                                    dpi=600,
                                 )
                             else:
                                 fig.savefig(
                                     path.join(save_path, save_name),
-                                    dpi=300,
+                                    dpi=600,
                                 )
                         except Exception as exc:
                             close("all")
@@ -5213,12 +5213,12 @@ class Compound:
                 if not save_name:
                     fig.savefig(
                         path.join(save_path, f"zeeman_{group}.tiff"),
-                        dpi=300,
+                        dpi=600,
                     )
                 else:
                     fig.savefig(
                         path.join(save_path, save_name),
-                        dpi=300,
+                        dpi=600,
                     )
             except Exception as exc:
                 close("all")

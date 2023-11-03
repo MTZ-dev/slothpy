@@ -31,11 +31,43 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
     QVBoxLayout,
+    QAction,
+    QFileDialog,
 )
 from PyQt5.QtGui import QIcon, QCloseEvent, QFont
 from cycler import cycler
 
 from slothpy._general_utilities._system import _is_notebook
+
+
+class CustomNavigationToolbar(NavigationToolbar):
+    def __init__(self, canvas, parent, fig):
+        super(CustomNavigationToolbar, self).__init__(canvas, parent)
+
+        # Add a custom save button to the toolbar
+        self.addSeparator()
+        self.save_custom_action = QAction("Save 600 DPI", self)
+        self.save_custom_action.triggered.connect(self.save_custom_figure)
+        self.addAction(self.save_custom_action)
+        self.fig = fig
+
+    def save_custom_figure(self):
+        # Get the save path and filename using a file dialog
+        save_path, _ = QFileDialog.getSaveFileName(
+            self, "Save Figure", "", "PNG Files (*.png)"
+        )
+        if not save_path:
+            return  # User canceled the operation
+
+        if not save_path.lower().endswith(".png"):
+            save_path += ".png"
+
+        # Set the desired DPI
+        dpi = 600
+
+        # Save the figure with the specified parameters
+        self.fig.savefig(save_path, transparent=True, dpi=dpi)
+        print(f"Figure saved to {save_path} with DPI={dpi}")
 
 
 class MainView(QMainWindow):
@@ -54,7 +86,7 @@ class MainView(QMainWindow):
 
     def set_fig(self, fig):
         mpl_canvas = FigureCanvasQTAgg(fig)
-        toolbar = NavigationToolbar(mpl_canvas, self)
+        toolbar = CustomNavigationToolbar(mpl_canvas, self, fig)
         layout = QVBoxLayout()
         layout.addWidget(toolbar)
         layout.addWidget(mpl_canvas)

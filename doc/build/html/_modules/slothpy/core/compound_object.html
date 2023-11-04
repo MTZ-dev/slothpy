@@ -612,6 +612,7 @@ document.write(`
     <span class="n">GREEN</span><span class="p">,</span>
     <span class="n">BLUE</span><span class="p">,</span>
     <span class="n">PURPLE</span><span class="p">,</span>
+    <span class="n">YELLOW</span><span class="p">,</span>
     <span class="n">RESET</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">slothpy._magnetism._g_tensor</span> <span class="kn">import</span> <span class="n">_g_tensor_and_axes_doublet</span>
@@ -3128,10 +3129,33 @@ document.write(`
                 <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The list of fields has to be a 1D array.&quot;</span><span class="p">)</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">max_states</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;SOC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc1</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">max_states</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;SOC_energies&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
+                    <span class="n">exc2</span><span class="p">,</span>
+                    <span class="n">YELLOW</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc1</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="o">+</span> <span class="n">RESET</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">exc1</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">Failed to get SOC states from &quot;</span>
+                    <span class="o">+</span> <span class="n">BLUE</span>
+                    <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
+                    <span class="o">+</span> <span class="n">RESET</span>
+                    <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+                    <span class="o">+</span> <span class="n">BLUE</span>
+                    <span class="o">+</span> <span class="n">group</span>
+                    <span class="o">+</span> <span class="n">RESET</span>
+                    <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span><span class="p">,</span>
+                <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
         <span class="k">if</span> <span class="p">(</span>
             <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">number_of_states</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
             <span class="ow">or</span> <span class="n">number_of_states</span> <span class="o">&lt;=</span> <span class="mi">0</span>
-            <span class="ow">or</span> <span class="n">number_of_states</span> <span class="o">&gt;</span> <span class="n">states_cutoff</span>
+            <span class="ow">or</span> <span class="n">number_of_states</span> <span class="o">&gt;</span> <span class="n">max_states</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>
@@ -5041,10 +5065,10 @@ document.write(`
                 <span class="c1"># Saving plot figure</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
                     <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
-                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;mgh_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span>
+                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;mgh_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
 
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
@@ -5425,10 +5449,10 @@ document.write(`
                 <span class="c1"># Saving plot figure</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
                     <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
-                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;energyth_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span>
+                        <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;energyth_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">SltSaveError</span><span class="p">(</span>
@@ -5792,12 +5816,12 @@ document.write(`
                                         <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_Orientation&quot;</span>
                                         <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">orientations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">,</span>
                                     <span class="p">),</span>
-                                    <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                                    <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
                                 <span class="p">)</span>
                             <span class="k">else</span><span class="p">:</span>
                                 <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
                                     <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span>
-                                    <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                                    <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
                                 <span class="p">)</span>
                         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                             <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
@@ -5839,12 +5863,12 @@ document.write(`
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">save_name</span><span class="p">:</span>
                     <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
                         <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;zeeman_</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">.tiff&quot;</span><span class="p">),</span>
-                        <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                        <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
                         <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span>
-                        <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                        <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
                     <span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
                 <span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>

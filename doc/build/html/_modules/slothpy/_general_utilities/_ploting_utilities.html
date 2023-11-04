@@ -581,11 +581,43 @@ document.write(`
     <span class="n">QMainWindow</span><span class="p">,</span>
     <span class="n">QVBoxLayout</span><span class="p">,</span>
     <span class="n">QVBoxLayout</span><span class="p">,</span>
+    <span class="n">QAction</span><span class="p">,</span>
+    <span class="n">QFileDialog</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">PyQt5.QtGui</span> <span class="kn">import</span> <span class="n">QIcon</span><span class="p">,</span> <span class="n">QCloseEvent</span><span class="p">,</span> <span class="n">QFont</span>
 <span class="kn">from</span> <span class="nn">cycler</span> <span class="kn">import</span> <span class="n">cycler</span>
 
 <span class="kn">from</span> <span class="nn">slothpy._general_utilities._system</span> <span class="kn">import</span> <span class="n">_is_notebook</span>
+
+
+<span class="k">class</span> <span class="nc">CustomNavigationToolbar</span><span class="p">(</span><span class="n">NavigationToolbar</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">canvas</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">fig</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CustomNavigationToolbar</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+
+        <span class="c1"># Add a custom save button to the toolbar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addSeparator</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_custom_action</span> <span class="o">=</span> <span class="n">QAction</span><span class="p">(</span><span class="s2">&quot;Save 600 DPI&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_custom_action</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">save_custom_figure</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">save_custom_action</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">fig</span>
+
+    <span class="k">def</span> <span class="nf">save_custom_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Get the save path and filename using a file dialog</span>
+        <span class="n">save_path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">QFileDialog</span><span class="o">.</span><span class="n">getSaveFileName</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Save Figure&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;PNG Files (*.png)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">save_path</span><span class="p">:</span>
+            <span class="k">return</span>  <span class="c1"># User canceled the operation</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">save_path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.png&quot;</span><span class="p">):</span>
+            <span class="n">save_path</span> <span class="o">+=</span> <span class="s2">&quot;.png&quot;</span>
+
+        <span class="c1"># Set the desired DPI</span>
+        <span class="n">dpi</span> <span class="o">=</span> <span class="mi">600</span>
+
+        <span class="c1"># Save the figure with the specified parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">transparent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Figure saved to </span><span class="si">{</span><span class="n">save_path</span><span class="si">}</span><span class="s2"> with DPI=</span><span class="si">{</span><span class="n">dpi</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">MainView</span><span class="p">(</span><span class="n">QMainWindow</span><span class="p">):</span>
@@ -604,7 +636,7 @@ document.write(`
 
     <span class="k">def</span> <span class="nf">set_fig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fig</span><span class="p">):</span>
         <span class="n">mpl_canvas</span> <span class="o">=</span> <span class="n">FigureCanvasQTAgg</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
-        <span class="n">toolbar</span> <span class="o">=</span> <span class="n">NavigationToolbar</span><span class="p">(</span><span class="n">mpl_canvas</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="n">toolbar</span> <span class="o">=</span> <span class="n">CustomNavigationToolbar</span><span class="p">(</span><span class="n">mpl_canvas</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
         <span class="n">layout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">()</span>
         <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">toolbar</span><span class="p">)</span>
         <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">mpl_canvas</span><span class="p">)</span>

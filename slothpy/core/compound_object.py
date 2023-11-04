@@ -62,6 +62,7 @@ from slothpy._general_utilities._constants import (
     GREEN,
     BLUE,
     PURPLE,
+    YELLOW,
     RESET,
 )
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
@@ -2547,10 +2548,33 @@ class Compound:
                 ValueError("The list of fields has to be a 1D array.")
             ) from None
 
+        try:
+            max_states = self[f"{group}", "SOC"].shape[0]
+        except Exception as exc1:
+            try:
+                max_states = self[f"{group}", "SOC_energies"].shape[0]
+            except Exception as exc2:
+                raise SltFileError(
+                    self._hdf5,
+                    exc2,
+                    YELLOW
+                    + f" {type(exc1).__name__}"
+                    + RESET
+                    + f": {str(exc1)} \nFailed to get SOC states from "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + group
+                    + RESET
+                    + '".',
+                ) from None
+
         if (
             not isinstance(number_of_states, int)
             or number_of_states <= 0
-            or number_of_states > states_cutoff
+            or number_of_states > max_states
         ):
             raise SltInputError(
                 ValueError(
@@ -5155,7 +5179,7 @@ class Compound:
                             ax.set_ylim(ylim[0])
                     tight_layout()
                     if show_fig:
-                        show()
+                        _display_plot(fig, partial(close, "all"))
                     if save:
                         try:
                             # Saving plot figure

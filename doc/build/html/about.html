@@ -62,7 +62,7 @@
     <link rel="author" title="About these documents" href="#" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation" href="installation.html" />
+    <link rel="next" title="Installation Guide" href="installation.html" />
     <link rel="prev" title="SlothPy" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -186,7 +186,7 @@ document.write(`
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="installation.html">
-                        Installation
+                        Installation Guide
                       </a>
                     </li>
                 
@@ -369,7 +369,7 @@ document.write(`
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="installation.html">
-                        Installation
+                        Installation Guide
                       </a>
                     </li>
                 
@@ -493,8 +493,13 @@ document.write(`
 <h3><a href="index.html">Table of Contents</a></h3>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">About</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#core-features">Core Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#technology-stack">Technology Stack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#support-and-feedback">Support and Feedback</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_start.html">How to Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="slothpy.html">Reference Manual</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_cite.html">How to Cite</a></li>
@@ -553,11 +558,81 @@ document.write(`
                   
   <section id="about">
 <h1>About<a class="headerlink" href="#about" title="Link to this heading">#</a></h1>
-<p>SlothPy software aims to become a general utility package for computational molecular magnetism. It prioritizes interactive, scripting-like use through Jupyter Notebooks or terminal environments. It is easily extendable to accommodate results from your favorite chemistry programs (currently, it can handle MOLCAS and ORCA) only given a file format to be read with relevant matrices of spin and angular momenta (please contact the developers to include your software in the future releases).</p>
-<p>SlothPy is</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">slothpy</span>
-</pre></div>
-</div>
+<p><strong>SlothPy</strong> is a cutting-edge software package dedicated to computational
+molecular magnetism. Developed by <strong>Mikołaj Żychowicz</strong>, with significant
+contributions from <strong>Hubert Dziełak</strong> in plotting and exporting modules, SlothPy is
+under continuous evolution to meet the growing demands and and advancements of the field.
+It aims to become a general utility library containing all relevant routines for
+the theoretical investigation of nanomagnets.</p>
+<section id="core-features">
+<h2>Core Features<a class="headerlink" href="#core-features" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Interactive Scripting:</strong> Designed for interactive use via Jupyter Notebooks
+or terminal environments, SlothPy offers a user-friendly, scripting-like
+experience. SlothPy harnesses advanced threading and multiprocessing techniques
+to ensure efficient performance, even with complex simulations. For guidance on
+getting started with interactive scripting, see the <a class="reference internal" href="how_to_start.html#how-to-start"><span class="std std-ref">How to Start</span></a> section.</p></li>
+<li><p><strong>Customizable Workflows:</strong> The software’s flexible architecture allows users
+to craft their own pipelines and automated processes within Python environment.
+Thanks to Just-In-Time (JIT) compilation, SlothPy ensures that all workflows are
+inherently fast and efficient, facilitating rapid data processing and analysis.
+Refer to the <a class="reference internal" href="how_to_start.html#how-to-start"><span class="std std-ref">How to Start</span></a> section for more on setting up your workflows.</p></li>
+<li><p><strong>Enhanced User Experience:</strong> SlothPy enhances the user experience with custom
+error handling, an improved printout system, a comprehensive user manual, and
+extensive documentation. These features make it easier for users to understand,
+troubleshoot, and effectively utilize the software. For detailed guidance and
+best practices, users are encouraged to consult the <a class="reference internal" href="slothpy.html#reference-manual"><span class="std std-ref">Reference Manual</span></a> section,
+which offers in-depth insights into SlothPy’s capabilities.</p></li>
+<li><p><strong>Extensibility:</strong> Easily integrate results from popular chemistry programs
+like MOLCAS and ORCA. We are constantly expanding compatibility – reach out
+to include your preferred software in future releases. SlothPy utilizes HDF5
+files as a robust framework for data management, enhancing the scalability and
+accessibility of computational data.</p></li>
+<li><p><strong>Highly Visual:</strong> SlothPy provides built-in functions for convenient data
+visualization, enabling users to easily interpret complex molecular data. The
+software includes a variety of visualization tools tailored to the needs of
+molecular magnetism, facilitating insightful and intuitive analysis.</p></li>
+<li><p><strong>Licensing &amp; Access:</strong> SlothPy is distributed under the GPL-3.0 license.
+Explore and contribute to the source code on <a class="reference external" href="https://github.com/MTZ-dev/slothpy/">GitHub</a>.
+Download the latest version from the <a class="reference external" href="https://pypi.org/project/slothpy/">PyPi repository</a>.</p></li>
+</ul>
+</section>
+<section id="technology-stack">
+<h2>Technology Stack<a class="headerlink" href="#technology-stack" title="Link to this heading">#</a></h2>
+<p>SlothPy is built using a robust stack of technologies and libraries, ensuring
+high performance, flexibility, and a wide range of features:</p>
+<ul class="simple">
+<li><p><strong>NumPy:</strong> Fundamental package for scientific computing in Python, used for
+efficient array data structures. Visit <a class="reference external" href="https://numpy.org/">NumPy</a>.</p></li>
+<li><p><strong>Numba:</strong> An open-source JIT compiler that translates Python and NumPy code
+into fast machine code. Explore <a class="reference external" href="https://numba.pydata.org/">Numba</a>.</p></li>
+<li><p><strong>h5py:</strong> Interface to the HDF5 binary data format, utilized for managing
+complex data structures. Learn more about <a class="reference external" href="https://www.h5py.org/">h5py</a>.</p></li>
+<li><p><strong>Matplotlib:</strong> A comprehensive library for creating static, animated, and
+interactive visualizations in Python. Check out <a class="reference external" href="https://matplotlib.org/">Matplotlib</a>.</p></li>
+<li><p><strong>ThreadPoolCtl:</strong> Used for controlling the number of threads used in native
+libraries. More on <a class="reference external" href="https://github.com/joblib/threadpoolctl">ThreadPoolCtl</a>.</p></li>
+<li><p><strong>SciPy:</strong> Python-based ecosystem of open-source software for mathematics,
+science, and engineering, specifically for linear algebra algorithms. Visit <a class="reference external" href="https://scipy.org/">SciPy</a>.</p></li>
+<li><p><strong>PyQt5:</strong> A comprehensive set of Python bindings for Qt application framework, used for
+developing the GUI elements in the plotting modules. Learn more about <a class="reference external" href="https://riverbankcomputing.com/software/pyqt/intro">PyQt5</a>.</p></li>
+<li><p><strong>Pandas:</strong> A powerful data analysis and manipulation library, used for
+integrating pipelines and exporting data efficiently. Explore <a class="reference external" href="https://pandas.pydata.org/">Pandas</a>.</p></li>
+<li><p><strong>Multiprocessing &amp; Multithreaded Linear Algebra Libraries:</strong> Utilizes Python’s
+multiprocessing for parallel processing and OpenMP (OMP) for multithreaded
+linear algebra operations.</p></li>
+</ul>
+<p>By leveraging these technologies, SlothPy provides a powerful and versatile
+platform for molecular magnetism research.</p>
+</section>
+<section id="support-and-feedback">
+<h2>Support and Feedback<a class="headerlink" href="#support-and-feedback" title="Link to this heading">#</a></h2>
+<p>Encounter an issue or have a suggestion? File a report on our <a class="reference external" href="https://github.com/MTZ-dev/slothpy/issues">GitHub Issues page</a> or contact Mikołaj Żychowicz
+directly at <a class="reference external" href="mailto:mikolaj&#46;zychowicz&#37;&#52;&#48;uj&#46;edu&#46;pl">mikolaj<span>&#46;</span>zychowicz<span>&#64;</span>uj<span>&#46;</span>edu<span>&#46;</span>pl</a>.</p>
+<p>We hope that SlothPy will become a useful tool for the community dedicated to advancing molecular
+magnetism research. Join us in shaping its future by sending us everything from bug reports, requests,
+and suggestions, to feedback and comments.</p>
+</section>
 </section>
 
 
@@ -584,7 +659,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Installation</p>
+        <p class="prev-next-title">Installation Guide</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

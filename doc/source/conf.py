@@ -38,6 +38,7 @@ extensions = [
     "jupyter_sphinx",
     "matplotlib.sphinxext.plot_directive",
     "sphinxcontrib.youtube",
+    "sphinx.ext.autosectionlabel",
 ]
 
 templates_path = ["_templates"]

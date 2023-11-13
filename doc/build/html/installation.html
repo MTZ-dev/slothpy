@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Installation &#8212; SlothPy 0.1.0 documentation</title>
+    <title>Installation Guide &#8212; SlothPy 0.1.0 documentation</title>
   
   
   
@@ -186,7 +186,7 @@ document.write(`
 
                     <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="#">
-                        Installation
+                        Installation Guide
                       </a>
                     </li>
                 
@@ -369,7 +369,7 @@ document.write(`
 
                     <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="#">
-                        Installation
+                        Installation Guide
                       </a>
                     </li>
                 
@@ -494,7 +494,12 @@ document.write(`
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#install-via-pip">Install via pip</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-from-github-repository">Install from GitHub Repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_start.html">How to Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="slothpy.html">Reference Manual</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how_to_cite.html">How to Cite</a></li>
@@ -534,7 +539,7 @@ document.write(`
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page">Installation</li>
+    <li class="breadcrumb-item active" aria-current="page">Installation Guide</li>
   </ul>
 </nav>
 </div>
@@ -551,12 +556,87 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h1>
-<p>To install:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">slothpy</span>
+  <section id="installation-guide">
+<span id="id1"></span><h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Link to this heading">#</a></h1>
+<p>SlothPy is designed for easy installation, offering flexible options to suit a variety of user preferences. You can install SlothPy directly using pip, either within a virtual environment (recommended) or system-wide.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>SlothPy requires Python 3.10 or higher for installation, with Python 3.11 recommended for improved performance.</p>
+</div>
+<section id="install-via-pip">
+<h2>Install via pip<a class="headerlink" href="#install-via-pip" title="Link to this heading">#</a></h2>
+<p>The simplest way to install SlothPy is via pip.</p>
+<p><strong>Creating a Virtual Environment (Recommended):</strong></p>
+<p>Using a virtual environment is a good practice as it manages dependencies effectively and keeps your workspace organized.</p>
+<ul>
+<li><p><strong>On Linux/macOS:</strong></p>
+<ol class="arabic">
+<li><p>Open your terminal.</p></li>
+<li><p>Create a new virtual environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>SlothPy_Env
 </pre></div>
 </div>
+</li>
+<li><p>Activate the virtual environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>SlothPy_Env/bin/activate
+</pre></div>
+</div>
+</li>
+</ol>
+</li>
+<li><p><strong>On Windows:</strong></p>
+<ol class="arabic">
+<li><p>Open Command Prompt.</p></li>
+<li><p>Create a new virtual environment:</p>
+<div class="highlight-batch notranslate"><div class="highlight"><pre><span></span>python -m venv SlothPy_Env
+</pre></div>
+</div>
+</li>
+<li><p>Activate the virtual environment:</p>
+<div class="highlight-batch notranslate"><div class="highlight"><pre><span></span>SlothPy_Env\Scripts\activate
+</pre></div>
+</div>
+</li>
+</ol>
+</li>
+</ul>
+<p><strong>Installing SlothPy:</strong></p>
+<p>With the virtual environment activated (or directly in your system), install SlothPy using pip:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>slothpy
+</pre></div>
+</div>
+<p>This will install SlothPy along with all necessary dependencies.</p>
+</section>
+<section id="install-from-github-repository">
+<h2>Install from GitHub Repository<a class="headerlink" href="#install-from-github-repository" title="Link to this heading">#</a></h2>
+<p>For those who prefer to install directly from the source:</p>
+<ol class="arabic">
+<li><p>Clone the SlothPy repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/MTZ-dev/slothpy.git
+</pre></div>
+</div>
+</li>
+<li><p>Navigate to the cloned directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>slothpy
+</pre></div>
+</div>
+</li>
+<li><p>Install using the requirements file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When installing SlothPy from the GitHub repository, ensure your scripts are in the same directory as SlothPy to enable proper importing of the SlothPy modules.</p>
+</div>
+<p>You’re all set! SlothPy is now installed and ready for use.</p>
+</section>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h2>
+<p>Once SlothPy is installed, dive into its features by visiting the <a class="reference internal" href="how_to_start.html#how-to-start"><span class="std std-ref">How to Start</span></a> section. We’re excited to see the innovative ways you’ll use SlothPy in your molecular magnetism research!</p>
+</section>
 </section>
 
 

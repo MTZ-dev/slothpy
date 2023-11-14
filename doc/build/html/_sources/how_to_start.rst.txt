@@ -9,7 +9,7 @@ Click on the images to open the tutorials, or use the download links to work wit
 Tutorial 1: Getting Started with SlothPy
 ----------------------------------------
 
-.. image:: slothpy_3.png
+.. image:: _static/slothpy_3.png
    :width: 400
    :target: SlothPy_tutorial.html
 

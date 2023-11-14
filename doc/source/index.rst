@@ -17,6 +17,7 @@ Welcome to the program.
    installation
    how_to_start
    slothpy
+   theory
    how_to_cite
 
 Indices and tables

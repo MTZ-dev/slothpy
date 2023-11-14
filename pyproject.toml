@@ -7,7 +7,7 @@ include = ["slothpy/static/slothpy_3.png"]
 
 [project]
 name = "slothpy"
-version = "0.1.11"
+version = "0.1.12"
 authors = [
   { name="Mikolaj Tadeusz Zychowicz", email="mikolaj.zychowicz@uj.edu.pl" },
 ]

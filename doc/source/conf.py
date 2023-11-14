@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "SlothPy"
 copyright = "2023, Mikołaj Tadeusz Żychowicz"
 author = "Mikołaj Tadeusz Żychowicz"
-release = "0.1.0"
+release = "0.1.11"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -29,15 +29,12 @@ extensions = [
     "sphinx.ext.graphviz",
     "sphinx.ext.ifconfig",
     "matplotlib.sphinxext.plot_directive",
-    "IPython.sphinxext.ipython_console_highlighting",
-    "IPython.sphinxext.ipython_directive",
+    "nbsphinx",
     "sphinx.ext.mathjax",
     "sphinx_copybutton",
     "numpydoc",
     "sphinx_togglebutton",
-    "jupyter_sphinx",
     "matplotlib.sphinxext.plot_directive",
-    "sphinxcontrib.youtube",
     "sphinx.ext.autosectionlabel",
 ]
 
@@ -65,8 +62,12 @@ html_theme_options = {
         "sourcelink",
     ],  # Here add "page-toc" for table of contents on the right
     "navbar_align": "content",
-    "navbar_center": ["version-switcher", "navbar-nav"],
-    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "navbar_center": ["navbar-nav"],
+    "navbar_end": [
+        "custom_version.html",
+        "theme-switcher",
+        "navbar-icon-links",
+    ],
     "header_links_before_dropdown": 10,
     "icon_links": [
         {
@@ -102,6 +103,9 @@ html_context = {
     "doc_path": "doc",
 }
 html_static_path = ["_static"]
+html_additional_pages = {
+    "custom_version.html": "_templates/custom_version.html"
+}
 html_css_files = ["css/custom.css"]
 html_js_files = ["custom-icon.js"]
 html_sidebars = {
@@ -114,3 +118,5 @@ html_sidebars = {
 
 html_logo = "_static/slothpy_3.png"
 html_favicon = "_static/slothpy_3.png"
+
+nbsphinx_execute = "never"

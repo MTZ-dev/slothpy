@@ -1,0 +1,1267 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>SlothPy Tutorial &#8212; SlothPy 0.1.11 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=362ab14a" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css?v=7f9a90b1" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=e20e6182" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=ac02cc09edc035673794" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
+  <script src="_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
+
+    <script src="_static/documentation_options.js?v=932d0dab"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'SlothPy_tutorial';</script>
+    <script src="_static/custom-icon.js?v=e5a97373"></script>
+    <link rel="icon" href="_static/slothpy_3.png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/slothpy_3.png" class="logo__image only-light" alt="SlothPy"/>
+    <script>document.write(`<img src="_static/slothpy_3.png" class="logo__image only-dark" alt="SlothPy"/>`);</script>
+  
+  
+    <p class="title logo__title">SlothPy</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="about.html">
+                        About
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="installation.html">
+                        Installation Guide
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="how_to_start.html">
+                        How to Start
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="slothpy.html">
+                        Reference Manual
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="theory.html">
+                        Theory
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="how_to_cite.html">
+                        How to Cite
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
+<div class="custom-version-indicator">
+    <span class="version-text">SlothPy Version: 0.1.11</span>
+</div>
+
+<style>
+.custom-version-indicator {
+    padding: 0.5em;
+    margin-left: auto;
+    font-size: 1em;
+    color: #138496
+}
+.version-text {
+    font-weight: 600;
+}
+</style></div>
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/multilumimater" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/MTZ-dev/slothpy" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/slothpy/" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+        <li class="nav-item">
+            
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="_static/mlmg.png" class="icon-link-image" alt="MultiLumiMater"/></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="about.html">
+                        About
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="installation.html">
+                        Installation Guide
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="how_to_start.html">
+                        How to Start
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="slothpy.html">
+                        Reference Manual
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="theory.html">
+                        Theory
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="how_to_cite.html">
+                        How to Cite
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
+<div class="custom-version-indicator">
+    <span class="version-text">SlothPy Version: 0.1.11</span>
+</div>
+
+<style>
+.custom-version-indicator {
+    padding: 0.5em;
+    margin-left: auto;
+    font-size: 1em;
+    color: #138496
+}
+.version-text {
+    font-weight: 600;
+}
+</style></div>
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/multilumimater" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/MTZ-dev/slothpy" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/slothpy/" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-custom fa-pypi fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+        <li class="nav-item">
+            
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://multilumimater.pl/" title="MultiLumiMater" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="_static/mlmg.png" class="icon-link-image" alt="MultiLumiMater"/></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+        <div class="sidebar-primary-item">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_start.html">How to Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slothpy.html">Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_cite.html">How to Cite</a></li>
+</ul>
+</div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">SlothPy Tutorial</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="SlothPy-Tutorial">
+<h1>SlothPy Tutorial<a class="headerlink" href="#SlothPy-Tutorial" title="Link to this heading">#</a></h1>
+<p>SlothPy makes extensive use of the HDF5 file format (powerful and portable binary format for fast I/O and big data) to store all the data related to the software. The core file format .slt is in fact .hdf5/h5 file in disguise, so it can be additionally opened and modified with programs such as HDFView and HDFCompas programs or directly accessed through the h5py Python wrapper. Firstly, let us import the pacgake</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">slothpy</span> <span class="k">as</span> <span class="nn">slt</span>
+</pre></div>
+</div>
+</div>
+<p>To start using SlothPy one has to create at least one instance of the core class object - Compound. The Compound is intrinsically associated with a .slt file stored on your disk. You can create the Compound from an output file of quantum chemistry software, access the existing .slt file, or add more data to it. Those operations are handled by the Compound creation methods. There is one .rassi.h5 file produced from the MOLCAS calculation included in the “examples” folder from our repository on
+GitHub. We will use it as an example in this tutorial. To create a Compound from it we have to include its relative path and use slt.compound_from_molcas() method. Note: always check the documentation of the used methods on our website or use your editor to do so (e.g. Shift+Tab in Jupyter Notebooks).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span> <span class="o">=</span> <span class="n">slt</span><span class="o">.</span><span class="n">compound_from_molcas</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;Nd_tutorial&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="s2">&quot;./examples&quot;</span><span class="p">,</span> <span class="s2">&quot;NdCo_DG_bas3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>After the creation, you can check what is inside your file using the print() method or like this:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span>
+</pre></div>
+</div>
+</div>
+<p>You can see the list of HDF5 groups and data sets contained in the file together with their Description attributes. This is the way that SlothPy will save all your results. Having already .slt file on your disk you can add to it more ab initio results (just use the path and name of an existing file) or access it at a later point using slt.compound_from_slt() method.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span> <span class="o">=</span> <span class="n">slt</span><span class="o">.</span><span class="n">compound_from_slt</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;Nd_tutorial&quot;</span><span class="p">)</span>
+<span class="c1"># If you already created &quot;Nd_tutorial.slt&quot; on your disk, use this line only.</span>
+</pre></div>
+</div>
+</div>
+<p>All available methods are accessed through an instance of the Compound class that constitutes the user interface and API documented in the Reference Manual. Let us start by computing molar powder-averaged magnetisation for our Nd-based compound. Firstly, we need some imports to create a range of magnetic field and temperature values:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">linspace</span>
+
+<span class="n">fields_mth</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">temperatures_mth</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The method for computing magnetisation as a function of field and temperature is called calculate_mth().</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Here, we calculate powder-averaged (using Lebedev-Laikov integration grid) magnetisation for the Nd-based compound in the magnetic field range from 1 Oe to 7 T (50 points) and for 10 temperature values from 1 K to 10 K. We include in the Zeeman Hamiltonian only 10 Spin-Orbit states from the ground multiplet $ ^{4}I_{9/2} $ of Nd(III). The calculation should finish immediately due to the very low amount of SO states included.</p>
+<p>The result is a numpy NdArray (10, 50) with the structure [temperatures, fields] returned from the function call to the mth variable. It is ready for you to process it using Python as you want. Remember to always check the output format in the Reference Manual (or using your editor/IDE) - Returns section of each method.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mth</span>
+</pre></div>
+</div>
+</div>
+<p>We can, for example, plot it as a magnetic field function M(H) iterating over different temperatures:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="n">plot</span><span class="p">,</span> <span class="n">show</span>
+
+<span class="k">for</span> <span class="n">mh</span> <span class="ow">in</span> <span class="n">mth</span><span class="p">:</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">fields_mth</span><span class="p">,</span> <span class="n">mh</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>or save it to a .csv file on the disk to be accessible for your other programs:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">savetxt</span>
+<span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;my_mth_array.csv&#39;</span><span class="p">,</span> <span class="n">mth</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span> <span class="c1"># Here we transpose to have data for each temperature in columns</span>
+</pre></div>
+</div>
+</div>
+<p>Now, let us run the above calculation once again, but this time we will use a better, denser grid and include more SO-states. It will take a little more time. Additionally, we will save the results to our Nd_tutorial.slt file using slt keyword. (confront the documentation for the comprehensive description of all the options)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>If you invoke the representation of the Nd_tutorial.slt file once again you can see that a new group “bas3_magnetisation” was created which contains datasets for magnetisation (bas3_mth), magnetic fields (bas3_fields), and temperatures (bas3_temperatures). (all with Description attributes)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span>
+</pre></div>
+</div>
+</div>
+<p>SlothPy provides an array-like interface for reading and writing data from and to .slt files. As an example, let us read the magnetisation to another variable mth_custom_read together with field values:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mth_custom_read</span> <span class="o">=</span> <span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;bas3_magnetisation&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3_mth&quot;</span><span class="p">]</span>
+<span class="n">field_values</span> <span class="o">=</span> <span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;bas3_magnetisation&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3_fields&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Here, we provide a full group and dataset name to access the data. Now we can do what we want with the arrays. Let us confirm that they indeed represent magnetisation once again by plotting them:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">mh</span> <span class="ow">in</span> <span class="n">mth_custom_read</span><span class="p">:</span>
+    <span class="n">plot</span><span class="p">(</span><span class="n">field_values</span><span class="p">,</span> <span class="n">mh</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>Since we have our data saved in the .slt file we can actually plot it using the build-in function (available for various methods - see documentation, all starting with “plot” and having plenty of customization parameters).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>When you invoke plotting functions for specific methods you do not need to provide a suffix, like “_magnetisation”, the program will handle it for you.</p>
+<p>If you need you can even create your own custom groups with datasets (in the form of numpy NdArrays) in the file and use them in your scripts.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">one_to_ten</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;my_custom_group&quot;</span><span class="p">,</span> <span class="s2">&quot;one_to_ten_dataset&quot;</span><span class="p">,</span> <span class="s2">&quot;My description of the dataset&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;My description of the whole group&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">one_to_ten</span>
+<span class="n">NdCo</span>
+</pre></div>
+</div>
+</div>
+<p>The last two strings giving a description of the group and data set are optional. Later you can add to the existing group more data sets or create datasets without a group (they have to be at least 1-dimensional ArrayLike):</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;my_custom_group&quot;</span><span class="p">,</span> <span class="s2">&quot;123_dataset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;my_dataset_without_a_group&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">NdCo</span>
+</pre></div>
+</div>
+</div>
+<p>If you now try to re-run the previous calculation you should see a SlothPyError, due to the already existing name of the group (SlothPy prevents you from accidentally overwriting the data).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We can use delete_group_dataset to manually remove datases/groups from the .slt file.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">delete_group_dataset</span><span class="p">(</span><span class="s2">&quot;my_dataset_without_a_group&quot;</span><span class="p">)</span>
+<span class="n">NdCo</span><span class="o">.</span><span class="n">delete_group_dataset</span><span class="p">(</span><span class="s2">&quot;my_custom_group&quot;</span><span class="p">,</span> <span class="s2">&quot;123_dataset&quot;</span><span class="p">)</span>
+<span class="n">NdCo</span><span class="o">.</span><span class="n">delete_group_dataset</span><span class="p">(</span><span class="s2">&quot;bas3_magnetisation&quot;</span><span class="p">)</span>
+<span class="n">NdCo</span>
+</pre></div>
+</div>
+</div>
+<p>As you already should notice (when reading the docstring of calculate_mth method) SlopthPy provides you full control over the amount of CPUs you want to assign to your calculation and threads to be used. Computationally demanding methods are parallelized using a certain amount of separate processes - the number of processes that will be used is (number of CPUs) // (number of threads). Additionally, in the Note section of each method, the user is informed over what quantity the job will be
+parallelized. In the case of calcualte_mth, the work is distributed over field values (here 50). So using for example 10 parallel processes each will compute the magnetisation for 5 values of the field. As default, SlothPy uses all available logical cores with 1 thread for the linear algebra libraries. For jobs with a very high number of points to be parallelized, you should benefit from a greater number of processes (not including time for Python’s multiprocessing setup for a huge amount of
+data). On the other hand with increasing matrices size it is beneficial to use more threads for operations such as diagonalization etc. It is not a trivial task to choose good settings for very demanding calculations that is why we provide, within SlothPy, the autotune module to do it for you. It tests all possible meaningful setups and gives you time estimates for each of them. It takes some time to do this (because it actually truly does a part of the calculations to benchmark them) so it is
+advised to use it for jobs that will take hours. To demonstrate it with very small matrices provided in our file (they are 364 x 364 - that is how many SO states are there) we will run two examples using all available CPUs on your machine (if you want to leave some you should change number_cpu = 0 to your desired number):</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fields_process</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+<span class="n">fields_threads</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_process</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">autotune</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_threads</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">autotune</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>In the first case autotune module should choose (but depending on your hardware) more processes and fewer threads than in the second one, where we paralleize only over 3 field points. Time estimates include only pure calculation steps and in our tests for a variety of different methods they should give results within 15-20% of overall execution time maximal error. After autotuning you can run the calculation with the chosen setting manually to see how much time it will take compared to our
+estimate. Can you choose better settings by yourself?</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">num_of_cpu</span> <span class="o">=</span> <span class="c1">#fill here the number you were autotuning for</span>
+<span class="n">num_of_threads</span> <span class="o">=</span> <span class="c1">#fill here the number of threads chosen by the autotune module (for fields_process and _threads)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_process</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">num_of_cpu</span><span class="p">,</span> <span class="n">num_of_threads</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_threads</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">num_of_cpu</span><span class="p">,</span> <span class="n">num_of_threads</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The necessity of the autotune module will become visible for matrices with a number of states over 500-1000 or even 2000+ when calculations with certain settings (how many field values and grids) can take many hours or even days. It also all depends on your hardware e.g. how many possibilities is there to check. For me writing this tutorial now I am testing it on 128 logical cores (64 physical) CPU, so there are many possibilities to choose a number of threads and processes - therefore it is
+harder and also more time-consuming for the module, but still better than trying manually all the possibilities.</p>
+<p>In the following part of the tutorial, we will give a glimpse into more methods presenting their use for our Nd-based compound. Make sure to check the documentation of each presented method - it always contains a comprehensive description of all the used parameters. We begin by calculating magnetic susceptibility - in the form of a product with temperature - (the derivative of magnetisation with respect to the magnetic field) in 1000, 2000, 3000, and 5000 Oe.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">temperatures</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+<span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">chitht</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_chitht</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">number_of_points</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">delta_h</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span>
+                               <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">number_cpu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">number_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_chitht</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>You can calculate the Helmholtz free energy or internal energy in the applied magnetic field (here instead of averaging we calculate with the field applied in the “z” direction):</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">temperatures</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+<span class="n">fields</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">eth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_helmholtz_energyth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="p">[[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]],</span> <span class="n">temperatures</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                  <span class="n">number_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">internal_energy</span><span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_helmholtz_energyth</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>You can calculate the Zeeman splitting of the ground $ ^{4}I_{9/2} $ multiplet for various directions (here x, y, z) or take powder-average:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">zeeman</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_zeeman_splitting</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span> <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">364</span><span class="p">,</span>
+                                <span class="n">number_cpu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">number_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_zeeman</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>SlothPy allows you to calculate directional data of the above quantities in the form of 3D plots over spherical angles. This type of calculation is pretty demanding and heavy on memory usage. See the Note sections for the following methods to see examples of memory estimation that is needed to handle big resulting and intermediate arrays!!! (example: for a calculation with 100 field values 1-10 T, 300 temperatures 1-300 K, and spherical_grid = 60, the resulting array will take 3 * 100 * 300 *
+2 * 60 * 60 * 8 bytes = 5.184 GB)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_helmholtz_energy_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">internal_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mag_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_chit_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+<span class="c1"># Carefull! This is the most demanding calculation it has to perform (2*number_of_points+1) times the</span>
+<span class="c1"># magnetisation calculation for numerical differentiation using finite difference method with the custom stencil.</span>
+</pre></div>
+</div>
+</div>
+<p>At this point, you may need to adjust (lower or raise) states_cutoff-s, density of spherical grid, or number of field values depending on your hardware (CPU and memory) capability. Also, the autotune module should always choose 1 thread due to the large number of the point we parallelize over (number of fields) * 2 * spherical_grid**2, since your matrices are small and can have at most 364 x 364 size it cannot prioritize multithreading for them.</p>
+<p>After you succeed we can plot the results for particular temperatures and field values with the plot_3d method which supports energy, magnetisation, and susceptibility plotting (see the datatype keyword):</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_3d</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">,</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<span class="c1"># Options: &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;, &quot;magnetisation&quot;, &quot;chi&quot;, &quot;chit&quot;</span>
+</pre></div>
+</div>
+</div>
+<p>Anyway, probably the best method to examine this type of data is to scan it using an interactive 3D plot where you can change fields and temperatures using sliders and see changes in real-time!</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">interactive_plot_3d</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">,</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">)</span>
+<span class="c1"># Options: &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;, &quot;magnetisation&quot;, &quot;chi&quot;, &quot;chit&quot;</span>
+</pre></div>
+</div>
+</div>
+<p>After you manually find all the instersting “phase” transitions you can even prepare .gif animations varying temperature or field strenght while keepeing the other constant.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">animate_3d</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">,</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">,</span> <span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;animation&quot;</span><span class="p">,</span> <span class="n">i_start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">i_end</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">i_constant</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+               <span class="n">fps</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The animation should be saved to your current directory.</p>
+<p>We will end this basic tutorial just by mentioning other methods. More advanced combinations resulting in e.g. studies on relaxation dynamics for molecular magnets will be addressed in more specialized tutorials.</p>
+<p>In order to calculate pseudo-g-tensors for doublet states within the ground $ ^{4}I_{9/2} $ multiplet (10 states - 5 doublets) you can run the:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">g_tensors</span><span class="p">,</span> <span class="n">magnetic_axes</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_g_tensor_and_axes_doublet</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">g_tensors</span><span class="p">,</span> <span class="n">magnetic_axes</span>
+</pre></div>
+</div>
+</div>
+<p>The first entry of the tuple contains g-tensor components x, y, and z for the doublets and magnetic_axes are rotation matrices from the initial coordinate system to the main magnetic axes of each doublet (Coordinates of the main axes X, Y, and Z in the initial x, y, z frame are columns of such matrices). We can use those matrices to rotate angular momenta in almost all the following methods to express the quantities in the reference frame of the chosen doublet’s magnetic axes. Note, that you
+need to use the inverse rotation (transpose of an orthogonal matrix) to express everything in the new reference frame! (see also Exporting Module for an easy way to add the main magnetic axes to your .mol2/.xyz files with molecular coordinates)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">your_rotation</span> <span class="o">=</span> <span class="n">magnetic_axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="c1"># Inverse rotation for the ground doublet</span>
+<span class="n">your_rotation</span>
+</pre></div>
+</div>
+</div>
+<p>As an example, we calculate the susceptibility (Van-Vleck) tensor using true numerical differentiation in the reference frame of the ground doublet state:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">temperatures</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+<span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_chit_tensorht</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">number_of_points</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">delta_h</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">364</span><span class="p">,</span>
+                             <span class="n">number_cpu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">number_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Now we will do a little demonstration considering our 10-state ground manifold. Firstly, let us take a look at SOC energies of the states:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">soc_energies_cm_1</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>They come in doublets as expected for the Krammers ion. We can then obtain Crystal-Fields-Parameters for S = 9/2 pseudo-spin (in the form of J - total angular momneta) for the SOC matrix taking as “z” quantization axis the main magnetic axis of a ground doublet (use your_rotation). Note that the order of CFPs cannot exceed 2S here and because SOC Hamiltonian (without magnetic fields) is time even operator we only need even orders. We will use real parameters.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">soc_crystal_field_parameters</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">pseudo_kind</span> <span class="o">=</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">,</span>
+                                  <span class="n">even_order</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>For the comparison let us get the initial SOC matrix in the same pseudo-spin Jz basis:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">soc_matrix</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">soc_zeem_in_z_angular_magnetic_momentum_basis</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="s2">&quot;soc&quot;</span><span class="p">,</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">,</span>
+                                                                <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">)</span>
+<span class="n">soc_matrix</span>
+</pre></div>
+</div>
+</div>
+<p>Verify it by computing its eigenvalues which should be the same as SOC energies from before.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">eigvalsh</span>
+<span class="n">energies</span> <span class="o">=</span> <span class="n">eigvalsh</span><span class="p">(</span><span class="n">soc_matrix</span><span class="p">)</span> <span class="o">*</span> <span class="mf">219474.6</span> <span class="c1"># Convert it from Hartree to cm-1</span>
+<span class="n">energies</span>
+</pre></div>
+</div>
+</div>
+<p>We can rebuild the whole matrix from the saved CFP (ITO) parameters and verify that it is the same as soc_matrix (giving the same eigenvalues):</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">soc_matrix_from_cfp</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">matrix_from_ito</span><span class="p">(</span><span class="s2">&quot;your_name_soc_ito_decomposition&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+<span class="n">energies</span> <span class="o">=</span> <span class="n">eigvalsh</span><span class="p">(</span><span class="n">soc_matrix_from_cfp</span><span class="p">)</span> <span class="o">*</span> <span class="mf">219474.6</span> <span class="c1"># Convert it from Hartree to cm-1</span>
+<span class="n">energies</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">soc_matrix</span> <span class="o">-</span> <span class="n">soc_matrix_from_cfp</span>
+</pre></div>
+</div>
+</div>
+<p>If you need numerical precision for the matrix recreation, you should use odd orders of ITOs (Irreducible Tensor Operators) as well:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">soc_crystal_field_parameters</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">pseudo_kind</span> <span class="o">=</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">,</span>
+                                  <span class="n">even_order</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name_odd&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">soc_matrix_from_cfp_odd</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">matrix_from_ito</span><span class="p">(</span><span class="s2">&quot;your_name_odd_soc_ito_decomposition&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+<span class="n">energies</span> <span class="o">=</span> <span class="n">eigvalsh</span><span class="p">(</span><span class="n">soc_matrix_from_cfp</span><span class="p">)</span> <span class="o">*</span> <span class="mf">219474.6</span> <span class="c1"># Convert it from Hartree to cm-1</span>
+<span class="n">energies</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">soc_matrix</span> <span class="o">-</span> <span class="n">soc_matrix_from_cfp_odd</span>
+</pre></div>
+</div>
+</div>
+<p>Using all orders is necessary e.g. when dealing with Zeeman Hamiltonians containing interaction with magnetic field on top of the energy of SOC states. We can follow the seam procedure for a full Zeeman matrix originating from interaction with a magnetic field in the “y” direction (2 T):</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">zeeman_matrix_ito_decpomosition</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="n">order</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">pseudo_kind</span> <span class="o">=</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">,</span>
+                                     <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">zeeman_matrix</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">soc_zeem_in_z_angular_magnetic_momentum_basis</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="s2">&quot;zeeman&quot;</span><span class="p">,</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="mf">2.</span><span class="p">,</span>
+                                                                   <span class="n">orientation</span><span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span>
+                                                                   <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">)</span>
+<span class="n">zeeman_matrix</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">zeeman_matrix_from_cfp</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">matrix_from_ito</span><span class="p">(</span><span class="s2">&quot;your_name_zeeman_ito_decomposition&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+<span class="n">energies</span> <span class="o">=</span> <span class="n">eigvalsh</span><span class="p">(</span><span class="n">zeeman_matrix_from_cfp</span><span class="p">)</span> <span class="o">*</span> <span class="mf">219474.6</span> <span class="c1"># Convert it from Hartree to cm-1</span>
+<span class="n">energies</span> <span class="c1"># Zeeman splitting</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">energies</span> <span class="o">=</span> <span class="n">eigvalsh</span><span class="p">(</span><span class="n">zeeman_matrix</span><span class="p">)</span> <span class="o">*</span> <span class="mf">219474.6</span> <span class="c1"># Convert it from Hartree to cm-1</span>
+<span class="n">energies</span> <span class="c1"># Zeeman splitting</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">zeeman_matrix</span> <span class="o">-</span> <span class="n">zeeman_matrix_from_cfp</span>
+</pre></div>
+</div>
+</div>
+<p>Feel free to experiment with two available pseudo-spin bases (total angular or magnetic).</p>
+<p>We will end this short introduction to SlothPy software by showing how to obtain a % decomposition in the pseudo-spin basis of a SOC/Zeeman matrix.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">matrix_decomposition_in_z_pseudo_spin_basis</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="s2">&quot;soc&quot;</span><span class="p">,</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">matrix_decomposition_in_z_pseudo_spin_basis</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="s2">&quot;zeeman&quot;</span><span class="p">,</span> <span class="s2">&quot;magnetic&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">,</span>
+                                                <span class="n">orientation</span><span class="o">=</span><span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="n">field</span><span class="o">=</span><span class="mf">2.</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Here, the resulting matrix contains % weights of pseudo-spin states (columns - from -S to S) in each state from the list (rows - here 10 states from 0 to 9) where pseudo-spin number S = number_of_states / 2 - 1/2 = 10/2 - 1/2 = 9/2.</p>
+<p>To explore more methods check the Reference Manual and more specialized, upcoming tutorials.</p>
+<p>MTZ</p>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  <!-- Previous / next buttons -->
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/MTZ-dev/Sloth/edit/dev-doc/doc/SlothPy_tutorial.ipynb">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div class="tocsection sourcelink">
+    <a href="_sources/SlothPy_tutorial.ipynb.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=ac02cc09edc035673794"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Mikołaj Tadeusz Żychowicz.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.14.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

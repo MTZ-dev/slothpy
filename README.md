@@ -8,7 +8,6 @@ https://pypi.org/project/slothpy/)
 https://stackoverflow.com/questions/tagged/slothpy)
 [![Journal Paper](https://img.shields.io/badge/DOI-your-paper-doi-blue)](
 https://doi.org/your-paper-doi)
-[![Security Scorecard](https://api.securityscorecards.dev/projects/github.com/MTZ-dev/slothpy/badge)](https://api.securityscorecards.dev/projects/github.com/MTZ-dev/slothpy)
 
 SlothPy is a comprehensive package for computational molecular magnetism.
 
@@ -65,7 +64,7 @@ Authors. (Year). "Title of the Paper." Journal Name, Volume(Issue), pages. DOI: 
 
 ## Contributing
 
-We welcome contributions in the form of issue reports, pull requests and suggestions send directly via e-mail Please see our [About section](link-to-about) 
+We welcome contributions in the form of issue reports, pull requests and suggestions send directly via e-mail Please see our [About section](link-to-about). 
 
 ## License
 

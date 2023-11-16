@@ -23,6 +23,17 @@ Core Features
   inherently fast and efficient, facilitating rapid data processing and analysis.
   Refer to the :ref:`how-to-start` section for more on setting up your workflows.
 
+- **Autotune Module:** Unlock the power of your hardware with a unique autotune
+  feature that optimizes the performance of your machine. It automatically tunes
+  and selects the optimal number of threads and processes for your CPU, providing
+  access to the full performance potential. This module also estimates job completion
+  times under various settings, allowing for more efficient workflow planning.
+
+- **HDF5 File Utilization:** Emphasizing the use of HDF5 files, SlothPy offers
+ powerful data management capabilities. HDF5's speed, portability, and ease of
+ integration make it an ideal choice for handling complex data structures
+ efficiently in computational workflows.
+
 - **Enhanced User Experience:** SlothPy enhances the user experience with custom
   error handling, an improved printout system, a comprehensive user manual, and
   extensive documentation. These features make it easier for users to understand,

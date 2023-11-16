@@ -89,3 +89,16 @@ Getting Started
 ---------------
 
 Once SlothPy is installed, dive into its features by visiting the :ref:`how-to-start` section. We're excited to see the innovative ways you'll use SlothPy in your molecular magnetism research!
+
+Keep Your Version Up to Date
+----------------------------
+
+SlothPy is a dynamically evolving software, with frequent updates to enhance features and performance. To ensure you are always working with the latest advancements, we recommend regularly updating your installation.
+
+To update SlothPy, use the following pip command:
+
+.. code-block:: bash
+
+   pip install -U slothpy
+
+This command will upgrade SlothPy to the latest available version, along with any required dependencies, ensuring you have access to the most current tools and improvements.

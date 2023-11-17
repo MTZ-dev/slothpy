@@ -30,9 +30,9 @@ Core Features
   times under various settings, allowing for more efficient workflow planning.
 
 - **HDF5 File Utilization:** Emphasizing the use of HDF5 files, SlothPy offers
- powerful data management capabilities. HDF5's speed, portability, and ease of
- integration make it an ideal choice for handling complex data structures
- efficiently in computational workflows.
+  powerful data management capabilities. HDF5's speed, portability, and ease of
+  integration make it an ideal choice for handling complex data structures
+  efficiently in computational workflows.
 
 - **Enhanced User Experience:** SlothPy enhances the user experience with custom
   error handling, an improved printout system, a comprehensive user manual, and

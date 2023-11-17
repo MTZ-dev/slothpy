@@ -13,4 +13,9 @@ Tutorial 1: Getting Started with SlothPy
    :width: 400
    :target: SlothPy_tutorial.html
 
-`Download Tutorial 1 <SlothPy_tutorial.ipynb>`_
+
+.. raw:: html
+
+   <a href="SlothPy_tutorial.ipynb" download>
+     Download Tutorial 1
+   </a>

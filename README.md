@@ -4,6 +4,8 @@
 
 [![PyPI Downloads](https://img.shields.io/pypi/dm/slothpy.svg?label=PyPI%20downloads)](
 https://pypi.org/project/slothpy/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![GitHub Releases](https://img.shields.io/github/release-pre/MTZ-dev/slothpy.svg)](https://github.com/MTZ-dev/slothpy/releases)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-Ask%20questions-blue.svg)](
 https://stackoverflow.com/questions/tagged/slothpy)
 [![Journal Paper](https://img.shields.io/badge/DOI-your-paper-doi-blue)](

@@ -16,7 +16,7 @@ Welcome to the program.
    about
    installation
    how_to_start
-   slothpy
+   reference_manual
    theory
    how_to_cite
 

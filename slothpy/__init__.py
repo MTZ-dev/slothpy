@@ -91,3 +91,5 @@ if current_process().name == "MainProcess":
         " slt.set_default_error_reporting_mode method for the printing of"
         " tracebacks."
     )
+
+set_plain_error_reporting_mode()

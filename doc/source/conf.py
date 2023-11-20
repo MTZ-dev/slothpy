@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "SlothPy"
 copyright = "2023, Mikołaj Tadeusz Żychowicz"
 author = "Mikołaj Tadeusz Żychowicz"
-release = "0.1.13"
+release = "0.1.14"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -107,7 +107,7 @@ html_additional_pages = {
     "custom_version.html": "_templates/custom_version.html"
 }
 html_css_files = ["css/custom.css"]
-html_js_files = ["custom-icon.js"]
+html_js_files = ["custom-icon.js", "collapsible_toc.js"]
 html_sidebars = {
     "**": [
         "search-field.html",

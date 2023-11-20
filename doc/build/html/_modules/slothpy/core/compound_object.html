@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>slothpy.core.compound_object &#8212; SlothPy 0.1.0 documentation</title>
+    <title>slothpy.core.compound_object &#8212; SlothPy 0.1.13 documentation</title>
   
   
   
@@ -32,31 +32,29 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/plot_directive.css?v=7f9a90b1" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=13237357" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/jupyter-sphinx.css?v=572af1d6" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/thebelab.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=dd5636d6" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=b9cefd7c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/collapsible_toc.css?v=31571550" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=ac02cc09edc035673794" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
   <script src="../../../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
 
-    <script src="../../../_static/documentation_options.js?v=38b66d78"></script>
+    <script src="../../../_static/documentation_options.js?v=1adce326"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/thebelab-helper.js"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
     <script src="../../../_static/togglebutton.js?v=4a39c7ea"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/slothpy/core/compound_object';</script>
     <script src="../../../_static/custom-icon.js?v=e5a97373"></script>
+    <script src="../../../_static/collapsible_toc.js?v=5de68f8b"></script>
     <link rel="icon" href="../../../_static/slothpy_3.png"/>
     <link rel="author" title="About these documents" href="../../../about.html" />
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -150,21 +148,6 @@
     
     <div class="me-auto navbar-header-items__center">
       
-        <div class="navbar-item">
-<script>
-document.write(`
-  <div class="version-switcher__container dropdown">
-    <button id="versionswitcherbutton" type="button" role="button" class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="listbox" aria-controls="versionswitcherlist" aria-label="Version switcher list">
-      Choose version  <!-- this text may get changed later by javascript -->
-      <span class="caret"></span>
-    </button>
-    <div id="versionswitcherlist" class="version-switcher__menu dropdown-menu list-group-flush py-0" role="listbox" aria-labelledby="versionswitcherbutton">
-    <!-- dropdown will be populated by javascript on page load -->
-    </div>
-  </div>
-`);
-</script></div>
-      
         <div class="navbar-item"><nav class="navbar-nav">
   <p class="sidebar-header-items__title"
      role="heading"
@@ -183,7 +166,7 @@ document.write(`
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="../../../installation.html">
-                        Installation
+                        Installation Guide
                       </a>
                     </li>
                 
@@ -196,8 +179,15 @@ document.write(`
                 
 
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../../slothpy.html">
+                      <a class="nav-link nav-internal" href="../../../reference_manual.html">
                         Reference Manual
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../theory.html">
+                        Theory
                       </a>
                     </li>
                 
@@ -229,6 +219,23 @@ document.write(`
  </script>
         </div>
       
+      
+        <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
+<div class="custom-version-indicator">
+    <span class="version-text">SlothPy Version: 0.1.13</span>
+</div>
+
+<style>
+.custom-version-indicator {
+    padding: 0.5em;
+    margin-left: auto;
+    font-size: 1em;
+    color: #138496
+}
+.version-text {
+    font-weight: 600;
+}
+</style></div>
       
         <div class="navbar-item">
 <script>
@@ -329,21 +336,6 @@ document.write(`
     
       <div class="sidebar-header-items__center">
         
-          <div class="navbar-item">
-<script>
-document.write(`
-  <div class="version-switcher__container dropdown">
-    <button id="versionswitcherbutton" type="button" role="button" class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="listbox" aria-controls="versionswitcherlist" aria-label="Version switcher list">
-      Choose version  <!-- this text may get changed later by javascript -->
-      <span class="caret"></span>
-    </button>
-    <div id="versionswitcherlist" class="version-switcher__menu dropdown-menu list-group-flush py-0" role="listbox" aria-labelledby="versionswitcherbutton">
-    <!-- dropdown will be populated by javascript on page load -->
-    </div>
-  </div>
-`);
-</script></div>
-        
           <div class="navbar-item"><nav class="navbar-nav">
   <p class="sidebar-header-items__title"
      role="heading"
@@ -362,7 +354,7 @@ document.write(`
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="../../../installation.html">
-                        Installation
+                        Installation Guide
                       </a>
                     </li>
                 
@@ -375,8 +367,15 @@ document.write(`
                 
 
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../../slothpy.html">
+                      <a class="nav-link nav-internal" href="../../../reference_manual.html">
                         Reference Manual
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../theory.html">
+                        Theory
                       </a>
                     </li>
                 
@@ -395,6 +394,23 @@ document.write(`
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
+<div class="custom-version-indicator">
+    <span class="version-text">SlothPy Version: 0.1.13</span>
+</div>
+
+<style>
+.custom-version-indicator {
+    padding: 0.5em;
+    margin-left: auto;
+    font-size: 1em;
+    color: #138496
+}
+.version-text {
+    font-weight: 600;
+}
+</style></div>
         
           <div class="navbar-item">
 <script>
@@ -487,9 +503,10 @@ document.write(`
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../about.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../how_to_start.html">How to Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../slothpy.html">Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference_manual.html">Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory.html">Theory</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../how_to_cite.html">How to Cite</a></li>
 </ul>
 </div>
@@ -6232,6 +6249,21 @@ document.write(`
             <span class="n">ax</span><span class="o">.</span><span class="n">roll</span> <span class="o">=</span> <span class="n">roll</span>
             <span class="n">title</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                <span class="n">doublets</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">doublet_number</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">doublet_number</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">doublet_number</span> <span class="o">&gt;</span> <span class="n">doublets</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;Doublet number must be a nonnegative integer less&quot;</span>
+                            <span class="s2">&quot; or equal to the number of doublets in the axes&quot;</span>
+                            <span class="s2">&quot; group.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
                 <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
                 <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>
@@ -6543,6 +6575,21 @@ document.write(`
                     <span class="s2">&quot; magnetisation&quot;</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                <span class="n">doublets</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">doublet_number</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">doublet_number</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">doublet_number</span> <span class="o">&gt;</span> <span class="n">doublets</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;Doublet number must be a nonnegative integer less&quot;</span>
+                            <span class="s2">&quot; or equal to the number of doublets in the axes&quot;</span>
+                            <span class="s2">&quot; group.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
                 <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
                 <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>
@@ -7210,6 +7257,21 @@ document.write(`
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_3d_magnetisation&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span>
                 <span class="p">]</span>
             <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
+                <span class="n">doublets</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">doublet_number</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">doublet_number</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">doublet_number</span> <span class="o">&gt;</span> <span class="n">doublets</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">SltInputError</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;Doublet number must be a nonnegative integer less&quot;</span>
+                            <span class="s2">&quot; or equal to the number of doublets in the axes&quot;</span>
+                            <span class="s2">&quot; group.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
                 <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
                 <span class="p">][</span><span class="n">doublet_number</span><span class="p">]</span>

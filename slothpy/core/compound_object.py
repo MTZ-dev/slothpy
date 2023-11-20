@@ -5603,6 +5603,21 @@ class Compound:
             ax.roll = roll
             title(description)
             if add_g_tensor_axes:
+                doublets = axes_matrix = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
+                ].shape[0]
+                if (
+                    (not isinstance(doublet_number, int))
+                    or (doublet_number < 0)
+                    or (doublet_number > doublets - 1)
+                ):
+                    raise SltInputError(
+                        ValueError(
+                            "Doublet number must be a nonnegative integer less"
+                            " or equal to the number of doublets in the axes"
+                            " group."
+                        )
+                    ) from None
                 axes_matrix = self[
                     f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
                 ][doublet_number]
@@ -5911,6 +5926,21 @@ class Compound:
                     " magnetisation"
                 )
             if add_g_tensor_axes:
+                doublets = axes_matrix = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
+                ].shape[0]
+                if (
+                    (not isinstance(doublet_number, int))
+                    or (doublet_number < 0)
+                    or (doublet_number > doublets - 1)
+                ):
+                    raise SltInputError(
+                        ValueError(
+                            "Doublet number must be a nonnegative integer less"
+                            " or equal to the number of doublets in the axes"
+                            " group."
+                        )
+                    ) from None
                 axes_matrix = self[
                     f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
                 ][doublet_number]
@@ -6575,6 +6605,21 @@ class Compound:
                     f"{group}_3d_magnetisation", f"{group}_temperatures"
                 ]
             if add_g_tensor_axes:
+                doublets = axes_matrix = self[
+                    f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
+                ].shape[0]
+                if (
+                    (not isinstance(doublet_number, int))
+                    or (doublet_number < 0)
+                    or (doublet_number > doublets - 1)
+                ):
+                    raise SltInputError(
+                        ValueError(
+                            "Doublet number must be a nonnegative integer less"
+                            " or equal to the number of doublets in the axes"
+                            " group."
+                        )
+                    ) from None
                 axes_matrix = self[
                     f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
                 ][doublet_number]

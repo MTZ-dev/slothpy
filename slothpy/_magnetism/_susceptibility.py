@@ -171,6 +171,7 @@ def _chitht_tensor(
             states_cutoff,
             num_cpu,
             num_threads,
+            rotation,
         )
 
         stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)
@@ -220,6 +221,7 @@ def _chit_3d(
             states_cutoff,
             num_cpu,
             num_threads,
+            rotation,
         )
 
         chi_3d_array = (
@@ -249,8 +251,8 @@ def _chit_3d(
             states_cutoff,
             num_cpu,
             num_threads,
-            True,
             rotation,
+            True,
         )
 
         stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)

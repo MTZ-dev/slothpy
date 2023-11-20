@@ -394,8 +394,8 @@ def _mag_3d(
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
-    sus_3d_num: bool = False,
     rotation: ndarray = None,
+    sus_3d_num: bool = False,
 ) -> ndarray:
     # Get number of parallel proceses to be used
     num_process, num_threads = _get_num_of_processes(

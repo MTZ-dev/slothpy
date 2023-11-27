@@ -45,6 +45,7 @@ from matplotlib.pyplot import (
     title,
     cla,
     close,
+    Normalize,
 )
 from slothpy.core._slothpy_exceptions import (
     SltFileError,

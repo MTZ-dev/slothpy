@@ -312,7 +312,7 @@ def _get_zeeman_matrix(
 def _calculate_helmholtz_energy(
     energies: ndarray, temperature: float64, internal_energy: False
 ) -> float64:
-    energies = energies[1:] - energies[0]
+    energies = energies - energies[0]
 
     # Boltzman weights
     exp_diff = exp(-(energies) / (KB * temperature))

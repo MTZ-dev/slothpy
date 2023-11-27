@@ -37,18 +37,15 @@ from matplotlib.animation import PillowWriter
 from matplotlib.widgets import Slider
 from matplotlib.ticker import FuncFormatter
 from matplotlib.pyplot import (
-    Normalize,
     plot,
     figure,
     subplots,
     rc,
     tight_layout,
     title,
-    show,
     cla,
     close,
 )
-
 from slothpy.core._slothpy_exceptions import (
     SltFileError,
     SltCompError,
@@ -66,7 +63,9 @@ from slothpy._general_utilities._constants import (
     RESET,
 )
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
-from slothpy._magnetism._magnetisation import _mth, _mag_3d
+
+from slothpy._magnetism._magnetisation_dask_2 import _mth
+from slothpy._magnetism._magnetisation import _mag_3d
 from slothpy._magnetism._susceptibility import (
     _chitht,
     _chitht_tensor,
@@ -716,31 +715,31 @@ class Compound:
                     + '".',
                 ) from None
 
-        try:
-            mth_array = _mth(
-                self._hdf5,
-                group,
-                fields,
-                grid,
-                temperatures,
-                states_cutoff,
-                number_cpu,
-                number_threads,
-            )
-        except Exception as exc:
-            raise SltCompError(
-                self._hdf5,
-                exc,
-                "Failed to compute M(T,H) from "
-                + BLUE
-                + "Group "
-                + RESET
-                + '"'
-                + BLUE
-                + f"{group}"
-                + RESET
-                + '".',
-            ) from None
+        # try:
+        mth_array = _mth(
+            self._hdf5,
+            group,
+            fields,
+            grid,
+            temperatures,
+            states_cutoff,
+            number_cpu,
+            number_threads,
+        )
+        # except Exception as exc:
+        #     raise SltCompError(
+        #         self._hdf5,
+        #         exc,
+        #         "Failed to compute M(T,H) from "
+        #         + BLUE
+        #         + "Group "
+        #         + RESET
+        #         + '"'
+        #         + BLUE
+        #         + f"{group}"
+        #         + RESET
+        #         + '".',
+        #     ) from None
 
         if slt is not None:
             try:

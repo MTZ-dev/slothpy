@@ -104,6 +104,7 @@ class SlothGui(QApplication):
         image_path = resource_filename("slothpy", "static/slothpy_3.png")
         app_icon = QIcon(image_path)
         SlothGui.setWindowIcon(app_icon)
+        SlothGui.setFont(QFont("Helvetica", 12))
 
     def show(self, fig):
         self.main_view.set_fig(fig)

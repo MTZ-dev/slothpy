@@ -65,8 +65,9 @@ from slothpy._general_utilities._constants import (
 )
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
 
-from slothpy._magnetism._magnetisation_dask_2 import _mth
-from slothpy._magnetism._magnetisation import _mag_3d
+from slothpy._magnetism._magnetisation_dask_2 import _mth, _mag_3d
+
+# from slothpy._magnetism._magnetisation import _mag_3d
 from slothpy._magnetism._susceptibility import (
     _chitht,
     _chitht_tensor,
@@ -785,7 +786,8 @@ class Compound:
         self,
         group: str,
         fields: ndarray[float64],
-        spherical_grid: int,
+        grid_type,
+        grid_number: int,
         temperatures: ndarray[float64],
         states_cutoff: int = 0,
         number_cpu: int = 0,
@@ -920,7 +922,7 @@ class Compound:
                 ValueError("The list of temperatures has to be a 1D array.")
             ) from None
 
-        if (not isinstance(spherical_grid, int)) or spherical_grid <= 0:
+        if (not isinstance(grid_number, int)) or grid_number <= 0:
             raise SltInputError(
                 ValueError("Spherical grid has to be a positive integer.")
             ) from None
@@ -930,7 +932,7 @@ class Compound:
                 number_cpu, number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields.size * 2 * spherical_grid**2,
+                    fields.size * 2 * grid_number**2,
                     states_cutoff,
                     1,  # Single grid point in the inner loop
                     temperatures.size,
@@ -953,32 +955,33 @@ class Compound:
                     + '".',
                 ) from None
 
-        try:
-            mag_3d_array = _mag_3d(
-                self._hdf5,
-                group,
-                fields,
-                spherical_grid,
-                temperatures,
-                states_cutoff,
-                number_cpu,
-                number_threads,
-                rotation,
-            )
-        except Exception as exc:
-            raise SltCompError(
-                self._hdf5,
-                exc,
-                "Failed to compute 3D magnetisation from "
-                + BLUE
-                + "Group "
-                + RESET
-                + '"'
-                + BLUE
-                + f"{group}"
-                + RESET
-                + '".',
-            ) from None
+        # try:
+        mag_3d_array = _mag_3d(
+            self._hdf5,
+            group,
+            fields,
+            grid_type,
+            grid_number,
+            temperatures,
+            states_cutoff,
+            number_cpu,
+            number_threads,
+            rotation,
+        )
+        # except Exception as exc:
+        #     raise SltCompError(
+        #         self._hdf5,
+        #         exc,
+        #         "Failed to compute 3D magnetisation from "
+        #         + BLUE
+        #         + "Group "
+        #         + RESET
+        #         + '"'
+        #         + BLUE
+        #         + f"{group}"
+        #         + RESET
+        #         + '".',
+        #     ) from None
 
         if slt is not None:
             try:

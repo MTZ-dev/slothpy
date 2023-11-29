@@ -32,7 +32,7 @@ from slothpy.core._slothpy_exceptions import (
     SltSaveError,
     SltInputError,
 )
-from slothpy._general_utilities._constants import BLUE, YELLOW, RESET
+from slothpy._general_utilities._constants import BLUE, YELLOW, RED, RESET
 
 
 def table_energy_and_g(

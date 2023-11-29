@@ -786,7 +786,7 @@ class Compound:
         self,
         group: str,
         fields: ndarray[float64],
-        grid_type,
+        grid_type: Union["mesh", "fibonacci"],
         grid_number: int,
         temperatures: ndarray[float64],
         states_cutoff: int = 0,
@@ -877,11 +877,11 @@ class Compound:
         Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
-        distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
-        aware that the resulting arrays and computations can quickly consume
+        distribute the workload over the number of points on spherical grid.
+        Be aware that the resulting arrays and computations can quickly consume
         much memory (e.g. for a calculation with 100 field values 1-10 T, 300
-        temperatures 1-300 K, and spherical_grid = 60, the resulting array will
-        take 3*100*300*2*60*60*8 bytes = 5.184 GB).
+        temperatures 1-300 K, and mesh grid with grid_number = 60, the
+        resulting array will take 3*100*300*2*60*60*8 bytes = 5.184 GB).
 
         See Also
         --------
@@ -955,33 +955,33 @@ class Compound:
                     + '".',
                 ) from None
 
-        # try:
-        mag_3d_array = _mag_3d(
-            self._hdf5,
-            group,
-            fields,
-            grid_type,
-            grid_number,
-            temperatures,
-            states_cutoff,
-            number_cpu,
-            number_threads,
-            rotation,
-        )
-        # except Exception as exc:
-        #     raise SltCompError(
-        #         self._hdf5,
-        #         exc,
-        #         "Failed to compute 3D magnetisation from "
-        #         + BLUE
-        #         + "Group "
-        #         + RESET
-        #         + '"'
-        #         + BLUE
-        #         + f"{group}"
-        #         + RESET
-        #         + '".',
-        #     ) from None
+        try:
+            mag_3d_array = _mag_3d(
+                self._hdf5,
+                group,
+                fields,
+                grid_type,
+                grid_number,
+                temperatures,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+                rotation,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute 3D magnetisation from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:

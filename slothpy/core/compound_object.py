@@ -717,31 +717,31 @@ class Compound:
                     + '".',
                 ) from None
 
-        # try:
-        mth_array = _mth(
-            self._hdf5,
-            group,
-            fields,
-            grid,
-            temperatures,
-            states_cutoff,
-            number_cpu,
-            number_threads,
-        )
-        # except Exception as exc:
-        #     raise SltCompError(
-        #         self._hdf5,
-        #         exc,
-        #         "Failed to compute M(T,H) from "
-        #         + BLUE
-        #         + "Group "
-        #         + RESET
-        #         + '"'
-        #         + BLUE
-        #         + f"{group}"
-        #         + RESET
-        #         + '".',
-        #     ) from None
+        try:
+            mth_array = _mth(
+                self._hdf5,
+                group,
+                fields,
+                grid,
+                temperatures,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute M(T,H) from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
@@ -809,10 +809,18 @@ class Compound:
         fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which 3D magnetisation will be computed.
-        spherical_grid : int
-            Controls the density of the angular grid for the 3D magnetisation
-            calculation. A grid of dimension (spherical_grid*2*spherical_grid)
-            for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
+        grid_type: Union["mesh", "fibonacci"]
+            Determines the type of a spherical grid used for the 3D
+            magnetisation simulation. Two grids can be used: a classical
+            meshgrid and a Fibonacci sphere. The latter can only be plotted as
+            a scatter but is uniformly distributed on the sphere, avoiding
+            accumulation points near the poles - fewer points are needed.
+        grid_number : int
+            Controls the density (number of points) of the angular grid for the
+            3D magnetisation calculation. A grid of dimension (spherical_grid*
+            2*spherical_grid) for spherical angles, phi [0, pi] and theta
+            [0, 2*pi] will be used for meshgrid or when Fibonacci sphere is
+            chosen grid_number points will be distributed on the sphere.
         temperatures : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temperature values (K) at which 3D magnetisation will be computed.
@@ -848,12 +856,16 @@ class Compound:
         Returns
         -------
         ndarray[float64]
-            The resulting mag_3d_array gives magnetisation in Bohr magnetons
-            and is in the form [coordinates, fields, temperatures, mesh, mesh]
-            - the first dimension runs over coordinates (0-x, 1-y, 2-z), the
-            second over field values, and the third over temperatures. The last
-            two dimensions are in a form of meshgrids over theta and phi, ready
-            for 3D plots as xyz.
+            For the meshgrid the resulting mag_3d_array gives magnetisation in
+            Bohr magnetons and is in the form [coordinates, fields,
+            temperatures, mesh, mesh] - the first dimension runs over
+            coordinates (0-x, 1-y, 2-z), the second over field values, and the
+            third over temperatures. The last two dimensions are in the form of
+            meshgrids over theta and phi, ready for 3D plots as xyz. For
+            Fibonacci, the array has the form [fields, temperatures,
+            points[x,y,z]] where points[x,y,z] are two-dimensional
+            (grid_number, 3) arrays holding coordinates of grid_number points
+            in the [x, y, z] convention.
 
         Raises
         ------
@@ -866,7 +878,9 @@ class Compound:
         SltInputError
             If temperatures are not a one-diemsional array.
         SltInputError
-            If spherical_grid is not a positive integer.
+            If grid_type is not "mesh" or "fibonacci".
+        SltInputError
+            If grid_number is not a positive integer.
         SltCompError
             If autotuning a number of processes and threads is unsuccessful.
         SltCompError
@@ -922,9 +936,16 @@ class Compound:
                 ValueError("The list of temperatures has to be a 1D array.")
             ) from None
 
+        if grid_type != "mesh" and grid_type != "fibonacci":
+            raise SltInputError(
+                ValueError(
+                    'The only allowed grid types are "mesh" or "fibonacci".'
+                )
+            ) from None
+
         if (not isinstance(grid_number, int)) or grid_number <= 0:
             raise SltInputError(
-                ValueError("Spherical grid has to be a positive integer.")
+                ValueError("Grid number has to be a positive integer.")
             ) from None
 
         if autotune:
@@ -955,46 +976,57 @@ class Compound:
                     + '".',
                 ) from None
 
-        try:
-            mag_3d_array = _mag_3d(
-                self._hdf5,
-                group,
-                fields,
-                grid_type,
-                grid_number,
-                temperatures,
-                states_cutoff,
-                number_cpu,
-                number_threads,
-                rotation,
-            )
-        except Exception as exc:
-            raise SltCompError(
-                self._hdf5,
-                exc,
-                "Failed to compute 3D magnetisation from "
-                + BLUE
-                + "Group "
-                + RESET
-                + '"'
-                + BLUE
-                + f"{group}"
-                + RESET
-                + '".',
-            ) from None
+        # try:
+        mag_3d_array = _mag_3d(
+            self._hdf5,
+            group,
+            fields,
+            grid_type,
+            grid_number,
+            temperatures,
+            states_cutoff,
+            number_cpu,
+            number_threads,
+            rotation,
+        )
+        # except Exception as exc:
+        #     raise SltCompError(
+        #         self._hdf5,
+        #         exc,
+        #         "Failed to compute 3D magnetisation from "
+        #         + BLUE
+        #         + "Group "
+        #         + RESET
+        #         + '"'
+        #         + BLUE
+        #         + f"{group}"
+        #         + RESET
+        #         + '".',
+        #     ) from None
 
         if slt is not None:
             try:
-                self[
-                    slt_group_name,
-                    f"{slt}_mag_3d",
-                    "Dataset containing 3D magnetisation as meshgird"
-                    " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
-                    " temperature, meshgrid, meshgrid) calculated from"
-                    f" group: {group}.",
-                    f"Group({slt}) containing 3D magnetisation calculated"
-                    f" from group: {group}.",
-                ] = mag_3d_array[:, :, :, :, :]
+                if grid_type == "mesh":
+                    self[
+                        slt_group_name,
+                        f"{slt}_mag_3d",
+                        "Dataset containing 3D magnetisation as meshgird"
+                        " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
+                        " temperature, meshgrid, meshgrid) calculated from"
+                        f" group: {group}.",
+                        f"Group({slt}) containing 3D magnetisation calculated"
+                        f" from group: {group}.",
+                    ] = mag_3d_array[:, :, :, :, :]
+                else:
+                    self[
+                        slt_group_name,
+                        f"{slt}_mag_3d",
+                        "Dataset containing 3D magnetisation as xyz points"
+                        " (field, temperature, points[x,y,z]) calculated from"
+                        f" group: {group}.",
+                        f"Group({slt}) containing 3D magnetisation calculated"
+                        f" from group: {group}.",
+                    ] = mag_3d_array[:, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
@@ -5289,6 +5321,7 @@ class Compound:
         ticks: float = 1.0,
         r_density: int = 0,
         c_density: int = 0,
+        points_size: float = 0.2,
         elev: int = 30,
         azim: int = -60,
         roll: int = 0,
@@ -5343,6 +5376,8 @@ class Compound:
             Determines the rcount of a 3D plot.
         c_density: int = 0
             Determines the ccount of a 3D plot.
+        points_size: float = 0.2
+            Determines points size for Fibonacci scatter plots.
         elev: int = 30
             Determines an angle between a viewing position and the xy plane.
         azim: int = -60
@@ -5405,15 +5440,32 @@ class Compound:
         try:
             T = False
             if data_type == "chit":
-                x = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                    0, field_i, temp_i, :, :
-                ]
-                y = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                    1, field_i, temp_i, :, :
-                ]
-                z = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                    2, field_i, temp_i, :, :
-                ]
+                if (
+                    self[f"{group}_3d_susceptibility", f"{group}_chit_3d"].ndim
+                    == 5
+                ):
+                    x = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                        0, field_i, temp_i, :, :
+                    ]
+                    y = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                        1, field_i, temp_i, :, :
+                    ]
+                    z = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                        2, field_i, temp_i, :, :
+                    ]
+                elif (
+                    self[f"{group}_3d_susceptibility", f"{group}_chit_3d"].ndim
+                    == 4
+                ):
+                    x = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                        field_i, temp_i, :, 0
+                    ]
+                    y = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                        field_i, temp_i, :, 1
+                    ]
+                    z = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
+                        field_i, temp_i, :, 2
+                    ]
                 description = (
                     "ChiT dependance on direction,"
                     f" B={round(self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i], round_field)} T,"
@@ -5466,15 +5518,27 @@ class Compound:
                     f"T={round(self[f'{group}_3d_internal_energy', f'{group}_temperatures'][temp_i], round_temp)} K"
                 )
             elif data_type == "magnetisation":
-                x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                    0, field_i, temp_i, :, :
-                ]
-                y = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                    1, field_i, temp_i, :, :
-                ]
-                z = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                    2, field_i, temp_i, :, :
-                ]
+                dim = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"].ndim
+                if dim == 5:
+                    x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                        0, field_i, temp_i, :, :
+                    ]
+                    y = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                        1, field_i, temp_i, :, :
+                    ]
+                    z = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                        2, field_i, temp_i, :, :
+                    ]
+                elif dim == 4:
+                    x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                        field_i, temp_i, :, 0
+                    ]
+                    y = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                        field_i, temp_i, :, 1
+                    ]
+                    z = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
+                        field_i, temp_i, :, 2
+                    ]
                 description = (
                     "Magnetisation dependence on direction,"
                     f" B={round(self[f'{group}_3d_magnetisation', f'{group}_fields'][field_i], round_field)} T,"
@@ -5512,16 +5576,19 @@ class Compound:
                 r_density = rcount
             if not c_density:
                 c_density = ccount
-            surface = ax.plot_surface(
-                x,
-                y,
-                z,
-                rcount=r_density,
-                ccount=c_density,
-                facecolors=colors,
-                shade=False,
-            )
-            surface.set_facecolor((0, 0, 0, 0))
+            if dim == 5:
+                surface = ax.plot_surface(
+                    x,
+                    y,
+                    z,
+                    rcount=r_density,
+                    ccount=c_density,
+                    facecolors=colors,
+                    shade=False,
+                )
+                surface.set_facecolor((0, 0, 0, 0))
+            if dim == 4:
+                ax.scatter(x, y, z, s=points_size, facecolors=colors)
             ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)

@@ -26,6 +26,7 @@ from numpy import (
     cos,
     sin,
     float64,
+    abs,
 )
 from numba import jit
 
@@ -42,10 +43,11 @@ def _fibonacci_over_sphere(num_points):
     phi = pi * (3.0 - sqrt(5.0))  # golden angle in radians
     xyz_trans = zeros((3, num_points))
 
-    y = 1 - (indices / float(num_points - 1)) * 2  # y goes from 1 to -1
-    radius = sqrt(1 - y * y)  # radius at y
+    y = 1 - (indices / float64(num_points - 1)) * 2  # y goes from 1 to -1
+    radius = sqrt(abs(1.0 - y * y))  # radius at y
 
     theta = phi * indices  # golden angle increment
+    print(radius)
 
     x = cos(theta) * radius
     z = sin(theta) * radius

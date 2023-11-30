@@ -468,7 +468,6 @@ def _mag_3d(
         raise (
             ValueError('Grid type can only be set to "mesh" or "fibonacci".')
         )
-    print(grid)
     # Get number of parallel proceses to be used
     num_process, num_threads = _get_num_of_processes(
         num_cpu, num_threads, num_points

@@ -976,33 +976,33 @@ class Compound:
                     + '".',
                 ) from None
 
-        # try:
-        mag_3d_array = _mag_3d(
-            self._hdf5,
-            group,
-            fields,
-            grid_type,
-            grid_number,
-            temperatures,
-            states_cutoff,
-            number_cpu,
-            number_threads,
-            rotation,
-        )
-        # except Exception as exc:
-        #     raise SltCompError(
-        #         self._hdf5,
-        #         exc,
-        #         "Failed to compute 3D magnetisation from "
-        #         + BLUE
-        #         + "Group "
-        #         + RESET
-        #         + '"'
-        #         + BLUE
-        #         + f"{group}"
-        #         + RESET
-        #         + '".',
-        #     ) from None
+        try:
+            mag_3d_array = _mag_3d(
+                self._hdf5,
+                group,
+                fields,
+                grid_type,
+                grid_number,
+                temperatures,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+                rotation,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute 3D magnetisation from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if slt is not None:
             try:
@@ -5438,111 +5438,37 @@ class Compound:
             )
 
         try:
-            T = False
-            if data_type == "chit":
-                if (
-                    self[f"{group}_3d_susceptibility", f"{group}_chit_3d"].ndim
-                    == 5
-                ):
-                    x = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                        0, field_i, temp_i, :, :
-                    ]
-                    y = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                        1, field_i, temp_i, :, :
-                    ]
-                    z = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                        2, field_i, temp_i, :, :
-                    ]
-                elif (
-                    self[f"{group}_3d_susceptibility", f"{group}_chit_3d"].ndim
-                    == 4
-                ):
-                    x = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                        field_i, temp_i, :, 0
-                    ]
-                    y = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                        field_i, temp_i, :, 1
-                    ]
-                    z = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][
-                        field_i, temp_i, :, 2
-                    ]
+            if (data_type == "chit") or (data_type == "chit"):
+                group_name = f"{group}_3d_susceptibility"
+                xyz = self[group_name, f"{group}_chit_3d"]
                 description = (
-                    "ChiT dependance on direction,"
-                    f" B={round(self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i], round_field)} T,"
-                    f"T={round(self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i], round_temp)} K"
+                    f"Chi{'T' if data_type == 'chit' else ''} dependance on"
+                    " direction,"
+                    f" B={round(self[group_name, f'{group}_fields'][field_i], round_field)} T, "
+                    f"T={round(self[group_name, f'{group}_temperatures'][temp_i], round_temp)} K"
                 )
-                T = True
-            elif data_type == "chi":
-                x = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
-                    0, field_i, temp_i, :, :
-                ]
-                y = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
-                    1, field_i, temp_i, :, :
-                ]
-                z = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][
-                    2, field_i, temp_i, :, :
-                ]
-                description = (
-                    "Chi dependance on direction,"
-                    f" B={round(self[f'{group}_3d_susceptibility', f'{group}_fields'][field_i], round_field)} T,"
-                    f"T={round(self[f'{group}_3d_susceptibility', f'{group}_temperatures'][temp_i], round_temp)} K"
-                )
-            elif data_type == "helmholtz_energy":
-                x = self[f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"][
-                    0, field_i, temp_i, :, :
-                ]
-                y = self[f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"][
-                    1, field_i, temp_i, :, :
-                ]
-                z = self[f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"][
-                    2, field_i, temp_i, :, :
-                ]
-                description = (
-                    "Hemholtz energy dependence on direction,"
-                    f" B={round(self[f'{group}_3d_helmholtz_energy', f'{group}_fields'][field_i], round_field)} T,"
-                    f"T={round(self[f'{group}_3d_helmholtz_energy', f'{group}_temperatures'][temp_i], round_temp)} K"
-                )
-            elif data_type == "internal_energy":
-                x = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    0
-                ]
-                y = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    1
-                ]
-                z = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    2
-                ]
-                description = (
-                    "Internal energy dependence on distance,"
-                    f" B={round(self[f'{group}_3d_internal_energy', f'{group}_fields'][field_i], round_field)} T,"
-                    f"T={round(self[f'{group}_3d_internal_energy', f'{group}_temperatures'][temp_i], round_temp)} K"
-                )
+            elif (data_type == "helmholtz_energy") or (
+                data_type == "internal_energy"
+            ):
+                if data_type == "helmholtz_energy":
+                    group_name = f"{group}_3d_helmholtz_energy"
+                    energy_type = "Helmholtz"
+                else:
+                    group_name = f"{group}_3d_internal_energy"
+                    energy_type = "Internal"
+                    xyz = self[group_name, f"{group}_energy_3d"]
+                    description = (
+                        f"{energy_type} energy dependence on direction,"
+                        f" B={round(self[group_name, f'{group}_fields'][field_i], round_field)} T, "
+                        f"T={round(self[group_name, f'{group}_temperatures'][temp_i], round_temp)} K"
+                    )
             elif data_type == "magnetisation":
-                dim = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"].ndim
-                if dim == 5:
-                    x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                        0, field_i, temp_i, :, :
-                    ]
-                    y = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                        1, field_i, temp_i, :, :
-                    ]
-                    z = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                        2, field_i, temp_i, :, :
-                    ]
-                elif dim == 4:
-                    x = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                        field_i, temp_i, :, 0
-                    ]
-                    y = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                        field_i, temp_i, :, 1
-                    ]
-                    z = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][
-                        field_i, temp_i, :, 2
-                    ]
+                group_name = f"{group}_3d_magnetisation"
+                xyz = self[group_name, f"{group}_mag_3d"]
                 description = (
                     "Magnetisation dependence on direction,"
-                    f" B={round(self[f'{group}_3d_magnetisation', f'{group}_fields'][field_i], round_field)} T,"
-                    f"T={round(self[f'{group}_3d_magnetisation', f'{group}_temperatures'][temp_i], round_temp)} K"
+                    f" B={round(self[group_name, f'{group}_fields'][field_i], round_field)} T, "
+                    f"T={round(self[group_name, f'{group}_temperatures'][temp_i], round_temp)} K"
                 )
             else:
                 raise ValueError
@@ -5567,16 +5493,27 @@ class Compound:
         try:
             fig = figure()
             ax = fig.add_subplot(projection="3d")
+            if xyz.ndim == 5:
+                x = xyz[0, field_i, temp_i, :, :]
+                y = xyz[1, field_i, temp_i, :, :]
+                z = xyz[2, field_i, temp_i, :, :]
+            elif xyz.ndim == 4:
+                x = xyz[field_i, temp_i, :, 0]
+                y = xyz[field_i, temp_i, :, 1]
+                z = xyz[field_i, temp_i, :, 2]
             max_array = array([max(x), max(y), max(z)])
             lim = max(max_array) * axes_scale_factor
             norm = Normalize(z.min(), z.max())
             colors = colour_map(colour_map_name)(norm(z))
-            rcount, ccount, _ = colors.shape
+            if z.ndim == 1:
+                rcount, ccount = colors.shape
+            else:
+                rcount, ccount, _ = colors.shape
             if not r_density:
                 r_density = rcount
             if not c_density:
                 c_density = ccount
-            if dim == 5:
+            if xyz.ndim == 5:
                 surface = ax.plot_surface(
                     x,
                     y,
@@ -5587,14 +5524,14 @@ class Compound:
                     shade=False,
                 )
                 surface.set_facecolor((0, 0, 0, 0))
-            if dim == 4:
+            if xyz.ndim == 4:
                 ax.scatter(x, y, z, s=points_size, facecolors=colors)
             ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
             # Important order of operations!
             if data_type == "susceptibility":
-                if T:
+                if data_type == "chit":
                     ax.set_xlabel(
                         r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
                         labelpad=20 * len(str(ticks)) / 4,
@@ -5622,15 +5559,28 @@ class Compound:
                     )
             elif data_type == "helmholtz_energy":
                 ax.set_xlabel(
-                    r"$E\ /\ \mathrm{cm^{-1}}$",
+                    r"$F\ /\ \mathrm{cm^{-1}}$",
                     labelpad=20 * len(str(ticks)) / 4,
                 )
                 ax.set_ylabel(
-                    r"$E\ /\ \mathrm{cm^{-1}}$",
+                    r"$F\ /\ \mathrm{cm^{-1}}$",
                     labelpad=20 * len(str(ticks)) / 4,
                 )
                 ax.set_zlabel(
-                    r"$E\ /\ \mathrm{cm^{-1}}$",
+                    r"$F\ /\ \mathrm{cm^{-1}}$",
+                    labelpad=20 * len(str(ticks)) / 4,
+                )
+            elif data_type == "internal_energy":
+                ax.set_xlabel(
+                    r"$U\ /\ \mathrm{cm^{-1}}$",
+                    labelpad=20 * len(str(ticks)) / 4,
+                )
+                ax.set_ylabel(
+                    r"$U\ /\ \mathrm{cm^{-1}}$",
+                    labelpad=20 * len(str(ticks)) / 4,
+                )
+                ax.set_zlabel(
+                    r"$U\ /\ \mathrm{cm^{-1}}$",
                     labelpad=20 * len(str(ticks)) / 4,
                 )
             elif data_type == "magnetisation":
@@ -5661,7 +5611,7 @@ class Compound:
                 ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                 ax.yaxis.set_minor_locator(AutoMinorLocator(2))
                 ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                if not (not T and ticks == 1):
+                if data_type == "chit" or ticks != 1:
                     ax.xaxis.set_major_locator(MultipleLocator(ticks))
                     ax.yaxis.set_major_locator(MultipleLocator(ticks))
                     ax.zaxis.set_major_locator(MultipleLocator(ticks))
@@ -5743,33 +5693,16 @@ class Compound:
         if save:
             try:
                 if axis_off:
-                    if not save_name:
-                        fig.savefig(
-                            path.join(
-                                save_path, f"{group}_3d_{data_type}.tiff"
-                            ),
-                            transparent=True,
-                            dpi=600,
-                        )
-                    else:
-                        fig.savefig(
-                            path.join(save_path, save_name),
-                            transparent=True,
-                            dpi=600,
-                        )
+                    transp = True
                 else:
-                    if not save_name:
-                        fig.savefig(
-                            path.join(
-                                save_path, f"{group}_3d_{data_type}.tiff"
-                            ),
-                            dpi=600,
-                        )
-                    else:
-                        fig.savefig(
-                            path.join(save_path, save_name),
-                            dpi=600,
-                        )
+                    transp = False
+                if save_name == "":
+                    save_name = f"{group}_3d_{data_type}.tiff"
+                fig.savefig(
+                    path.join(save_path, save_name),
+                    dpi=600,
+                    transparent=transp,
+                )
             except Exception as exc:
                 close("all")
                 raise SltSaveError(

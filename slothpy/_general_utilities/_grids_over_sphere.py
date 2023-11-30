@@ -47,7 +47,6 @@ def _fibonacci_over_sphere(num_points):
     radius = sqrt(abs(1.0 - y * y))  # radius at y
 
     theta = phi * indices  # golden angle increment
-    print(radius)
 
     x = cos(theta) * radius
     z = sin(theta) * radius

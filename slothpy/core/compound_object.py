@@ -14,11 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Test
-
 from os import path
 from functools import partial
-from typing import Tuple, Union
+from typing import Tuple, Union, Literal
 from h5py import File, Group, Dataset
 from numpy import (
     ndarray,
@@ -67,7 +65,7 @@ from slothpy._general_utilities._constants import (
 )
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
 
-from slothpy._magnetism._magnetisation_dask_2 import _mth, _mag_3d
+from slothpy._magnetism._magnetisation import _mth, _mag_3d
 
 # from slothpy._magnetism._magnetisation import _mag_3d
 from slothpy._magnetism._susceptibility import (
@@ -788,7 +786,7 @@ class Compound:
         self,
         group: str,
         fields: ndarray[float64],
-        grid_type: Union["mesh", "fibonacci"],
+        grid_type: Literal["mesh", "fibonacci"],
         grid_number: int,
         temperatures: ndarray[float64],
         states_cutoff: int = 0,
@@ -811,7 +809,7 @@ class Compound:
         fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which 3D magnetisation will be computed.
-        grid_type: Union["mesh", "fibonacci"]
+        grid_type: Literal["mesh", "fibonacci"]
             Determines the type of a spherical grid used for the 3D
             magnetisation simulation. Two grids can be used: a classical
             meshgrid and a Fibonacci sphere. The latter can only be plotted as
@@ -1643,7 +1641,8 @@ class Compound:
         group: str,
         temperatures: ndarray[float64],
         fields: ndarray[float64],
-        spherical_grid: int,
+        grid_type: Literal["mesh", "fibonacci"],
+        grid_number: int,
         number_of_points: int = 1,
         delta_h: float = 0.0001,
         states_cutoff: int = 0,
@@ -1673,10 +1672,18 @@ class Compound:
         fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which 3D magnetic susceptibility will be computed.
-        spherical_grid : int
-            Controls the density of the angular grid for the 3D susceptibility
-            calculation. A grid of dimension (spherical_grid*2*spherical_grid)
-            for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
+        grid_type: Literal["mesh", "fibonacci"]
+            Determines the type of a spherical grid used for the 3D
+            susceptibility simulation. Two grids can be used: a classical
+            meshgrid and a Fibonacci sphere. The latter can only be plotted as
+            a scatter but is uniformly distributed on the sphere, avoiding
+            accumulation points near the poles - fewer points are needed.
+        grid_number : int
+            Controls the density (number of points) of the angular grid for the
+            3D susceptibility  calculation. A grid of dimension (spherical_grid*
+            2*spherical_grid) for spherical angles, phi [0, pi] and theta
+            [0, 2*pi] will be used for meshgrid or when Fibonacci sphere is
+            chosen grid_number points will be distributed on the sphere.
         number_of_points : int, optional
             Controls the number of points for numerical differentiation over
             the magnetic field values using the finite difference method with
@@ -1715,7 +1722,7 @@ class Compound:
             more conveniently., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with suffix: _3d_magnetisation., by default None
+            file with suffix: _3d_susceptibility., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -1728,13 +1735,16 @@ class Compound:
         Returns
         -------
         ndarray[float64]
-            The resulting chi_3d_array gives magnetic susceptibility (or
-            product with temperature) in cm^3 (or * K) and is in the form
-            [coordinates, fields, temperatures, mesh, mesh] - the first
-            dimension runs over coordinates (0-x, 1-y, 2-z), the second over
-            field values, and the third over temperatures. The last two
-            dimensions are in a form of meshgrids over theta and phi, ready
-            for 3D plots as xyz.
+            For the meshgrid the resulting chi(t)_3d_array gives susceptibility
+            in cm^3 (or * K) and is in the form [coordinates, fields,
+            temperatures, mesh, mesh] - the first dimension runs over
+            coordinates (0-x, 1-y, 2-z), the second over field values, and the
+            third over temperatures. The last two dimensions are in the form of
+            meshgrids over theta and phi, ready for 3D plots as xyz. For
+            Fibonacci, the array has the form [fields, temperatures,
+            points[x,y,z]] where points[x,y,z] are two-dimensional
+            (grid_number, 3) arrays holding coordinates of grid_number points
+            in the [x, y, z] convention.
 
         Raises
         ------
@@ -1747,7 +1757,9 @@ class Compound:
         SltInputError
             If fields are not a one-diemsional array.
         SltInputError
-            If spherical_grid is not a positive integer.
+            If grid_type is not "mesh" or "fibonacci".
+        SltInputError
+            If grid_number is not a positive integer
         SltInputError
             If the  number of points for finite difference method is not
             a possitive integer.
@@ -1764,20 +1776,18 @@ class Compound:
         Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
-        distribute the workload over len(fields)*(2*number_of_points + 1)
-        *2*shperical_grid**2 tasks. Be aware that the resulting arrays and
-        computations can quickly consume much memory (e.g. for calculation with
-        100 field values 1-10 T, 300 temperatures 1-300 K, number_of_points=3,
-        and spherical_grid = 60, the intermediate array (before numerical
-        differentiation) will take 7*100*300*2*60*60*8 bytes = 12.096 GB).
+        distribute the workload over the number of points on spherical grid.
+        Be aware that the resulting arrays and computations can quickly
+        consume much memory (e.g. for calculation with 100 field values 1-10 T,
+        300 temperatures 1-300 K, number_of_points=3, and spherical_grid = 60,
+        the intermediate array (before numerical differentiation) will take
+        7*100*300*2*60*60*8 bytes = 12.096 GB).
 
         See Also
         --------
         slothpy.Compound.plot_3d, slothpy.Compound.interactive_plot_3d,
         slothpy.Compound.animate_3d
         """
-        temperatures = array(temperatures, dtype=float64)
-        fields = array(fields, dtype=float64)
 
         if slt is not None:
             slt_group_name = f"{slt}_3d_susceptibility"
@@ -1812,9 +1822,16 @@ class Compound:
                 ValueError("The list of fields has to be a 1D array.")
             ) from None
 
-        if (not isinstance(spherical_grid, int)) or spherical_grid <= 0:
+        if grid_type != "mesh" and grid_type != "fibonacci":
             raise SltInputError(
-                ValueError("Spherical grid has to be a positive integer.")
+                ValueError(
+                    'The only allowed grid types are "mesh" or "fibonacci".'
+                )
+            ) from None
+
+        if (not isinstance(grid_number, int)) or grid_number <= 0:
+            raise SltInputError(
+                ValueError("Grid number has to be a positive integer.")
             ) from None
 
         if (not isinstance(number_of_points, int)) or number_of_points < 0:
@@ -1835,13 +1852,13 @@ class Compound:
 
         if autotune:
             if exp:
-                num_to_parallel = fields.size * 2 * spherical_grid**2
+                num_to_parallel = fields.size * 2 * grid_number**2
             else:
                 num_to_parallel = (
                     (2 * number_of_points + 1)
                     * fields.size
                     * 2
-                    * spherical_grid**2
+                    * grid_number**2
                 )
 
             try:
@@ -1884,7 +1901,8 @@ class Compound:
                 group,
                 temperatures,
                 fields,
-                spherical_grid,
+                grid_type,
+                grid_number,
                 number_of_points,
                 delta_h,
                 states_cutoff,
@@ -1912,16 +1930,27 @@ class Compound:
 
         if slt is not None:
             try:
-                self[
-                    slt_group_name,
-                    f"{slt}_{chi_file}_3d",
-                    "Dataset containing 3D magnetic susceptibility"
-                    f" {chi_name} as meshgird (0-x,1-y,2-z) arrays over"
-                    " sphere ((xyz, field, temperature, meshgrid,"
-                    f" meshgrid) calculated from group: {group}.",
-                    f"Group({slt}) containing 3D magnetic susceptibility"
-                    f" {chi_name} calculated from group: {group}.",
-                ] = chit_3d_array[:, :, :, :, :]
+                if grid_type == "mesh":
+                    self[
+                        slt_group_name,
+                        f"{slt}_{chi_file}_3d",
+                        "Dataset containing 3D magnetic susceptibility"
+                        f" {chi_name} as meshgird (0-x,1-y,2-z) arrays over"
+                        " sphere ((xyz, field, temperature, meshgrid,"
+                        f" meshgrid) calculated from group: {group}.",
+                        f"Group({slt}) containing 3D magnetic susceptibility"
+                        f" {chi_name} calculated from group: {group}.",
+                    ] = chit_3d_array[:, :, :, :, :]
+                else:
+                    self[
+                        slt_group_name,
+                        f"{slt}_mag_3d",
+                        "Dataset containing 3D magnetic susceptibility as xyz"
+                        " points (field, temperature, points[x,y,z])"
+                        f" calculated from group: {group}.",
+                        f"Group({slt}) containing 3D magnetic susceptibility"
+                        f" calculated from group: {group}.",
+                    ] = chit_3d_array[:, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",
@@ -7010,6 +7039,7 @@ class Compound:
                 ax.set_axis_off()
             _display_plot(fig, partial(close, "all"))
         except Exception as exc:
+            close("all")
             raise SltPlotError(
                 self._hdf5,
                 exc,
@@ -7023,3 +7053,4 @@ class Compound:
                 + RESET
                 + '".',
             ) from None
+        close("all")

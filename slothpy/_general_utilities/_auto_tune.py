@@ -36,7 +36,6 @@ from numpy import (
 from numpy.linalg import eigh, eigvalsh
 from threadpoolctl import threadpool_limits
 from slothpy._magnetism._magnetisation import (
-    _mt_over_grid,
     _calculate_magnetization,
 )
 from slothpy._magnetism._zeeman import (

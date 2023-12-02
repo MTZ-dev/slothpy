@@ -122,7 +122,7 @@ def _mt_over_fields_grid(
                     * grid[j, 3]
                 )
 
-        mht_array[i, :] = mt_array
+        mht_array[i, :] = mt_array[:]
 
     return mht_array
 
@@ -192,7 +192,11 @@ def _mt_over_fields_tensor(
     fastmath=True,
 )
 def _mt_over_grid_fields(
-    magnetic_momenta, soc_energies, fields, grid, temperatures
+    magnetic_momenta: ndarray,
+    soc_energies: ndarray,
+    fields: ndarray,
+    grid: ndarray,
+    temperatures: ndarray,
 ):
     fields_shape_0 = fields.shape[0]
     temperatures_shape_0 = temperatures.shape[0]
@@ -201,16 +205,15 @@ def _mt_over_grid_fields(
     mght_array = zeros(
         (grid_shape_0, fields_shape_0, temperatures_shape_0), dtype=float64
     )
-    magnetic_momenta_cont = ascontiguousarray(magnetic_momenta)
 
     for g in range(grid_shape_0):
         mht_array = zeros(
             (fields_shape_0, temperatures_shape_0), dtype=float64
         )
         grid_momenta = (
-            grid[g, 0] * magnetic_momenta_cont[0]
-            + grid[g, 1] * magnetic_momenta_cont[1]
-            + grid[g, 2] * magnetic_momenta_cont[2]
+            grid[g, 0] * magnetic_momenta[0]
+            + grid[g, 1] * magnetic_momenta[1]
+            + grid[g, 2] * magnetic_momenta[2]
         )
 
         for f in range(fields_shape_0):
@@ -557,10 +560,7 @@ def _mag_3d(
         magnetic_momenta,
         soc_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename,
-        group,
-        states_cutoff,
-        rotation,
+        filename, group, states_cutoff, rotation
     )
 
     #  Allocate arrays as contiguous

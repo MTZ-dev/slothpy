@@ -76,8 +76,8 @@ from slothpy._magnetism._susceptibility import (
 from slothpy._magnetism._zeeman import (
     _zeeman_splitting,
     _get_zeeman_matrix,
-    _helmholtz_energyth,
-    _helmholtz_energy_3d,
+    _eth,
+    _energy_3d,
 )
 from slothpy._general_utilities._grids_over_hemisphere import (
     lebedev_laikov_grid,
@@ -1944,7 +1944,7 @@ class Compound:
                 else:
                     self[
                         slt_group_name,
-                        f"{slt}_mag_3d",
+                        f"{slt}_{chi_file}_3d",
                         "Dataset containing 3D magnetic susceptibility as xyz"
                         " points (field, temperature, points[x,y,z])"
                         f" calculated from group: {group}.",
@@ -1982,16 +1982,16 @@ class Compound:
 
         return chit_3d_array
 
-    def calculate_helmholtz_energyth(
+    def calculate_helmholtz_energy(
         self,
         group: str,
         fields: ndarray[float64],
-        grid: ndarray[float64],
+        grid: Union[int, ndarray[float64]],
         temperatures: ndarray[float64],
-        states_cutoff: int,
-        number_cpu: int,
-        number_threads: int,
-        internal_energy: bool = False,
+        energy_type: Literal["helmholtz", "internal"],
+        states_cutoff: int = 0,
+        number_cpu: int = 0,
+        number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
         _autotune_size: int = 2,
@@ -2021,6 +2021,9 @@ class Compound:
         temperatures : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temeperature values (K) at which energy will be computed
+        energy_type: Literal["helmholtz", "internal"]
+            Determines which kind of energy, Helmholtz or internal, will be
+            calculated.
         states_cutoff : int
             Number of states that will be taken into account for construction
             of Zeeman Hamiltonian. If set to zero, all available states from
@@ -2033,8 +2036,6 @@ class Compound:
             algebra libraries used during the calculation. Higher values
             benefit from the increasing size of matrices (states_cutoff) over
             the parallelization over CPUs., by default 1
-        internal_energy : bool, optional
-            Turns on the calculation of internal energy., by default False
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
             file with suffix: _helmholtz_energy or _internal_energy.,
@@ -2057,6 +2058,8 @@ class Compound:
 
         Raises
         ------
+        SltInputError
+            if energy_type is not "helmholtz" or "internal".
         SltSaveError
             If the name of the group already exists in the .slt file.
         SltInputError
@@ -2083,12 +2086,18 @@ class Compound:
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
         """
-        if internal_energy:
+        if energy_type == "internal":
             group_suffix = "_internal_energy"
             name = "internal"
-        else:
+        elif energy_type == "helmholtz":
             group_suffix = "_helmholtz_energy"
             name = "Helmholtz"
+        else:
+            raise SltInputError(
+                ValueError(
+                    'Energy type must be set to "helmholtz" or "internal".'
+                )
+            ) from None
 
         if slt is not None:
             slt_group_name = f"{slt}{group_suffix}"
@@ -2159,16 +2168,16 @@ class Compound:
                 ) from None
 
         try:
-            energyth_array = _helmholtz_energyth(
+            energyth_array = _eth(
                 self._hdf5,
                 group,
                 fields,
                 grid,
                 temperatures,
+                energy_type,
                 states_cutoff,
                 number_cpu,
                 number_threads,
-                internal_energy,
             )
         except Exception as exc:
             raise SltCompError(
@@ -2230,8 +2239,10 @@ class Compound:
         self,
         group: str,
         fields: ndarray[float64],
-        spherical_grid: int,
+        grid_type: Literal["mesh", "fibonacci"],
+        grid_number: int,
         temperatures: ndarray[float64],
+        energy_type: Literal["helmholtz", "internal"],
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
@@ -2253,13 +2264,24 @@ class Compound:
         fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which 3D energy will be computed.
-        spherical_grid : int
-            Controls the density of the angular grid for the 3D magnetisation
-            calculation. A grid of dimension (spherical_grid*2*spherical_grid)
-            for spherical angles theta [0, pi], and phi [0, 2*pi] will be used.
+        grid_type: Literal["mesh", "fibonacci"]
+            Determines the type of a spherical grid used for the 3D
+            energy simulation. Two grids can be used: a classical
+            meshgrid and a Fibonacci sphere. The latter can only be plotted as
+            a scatter but is uniformly distributed on the sphere, avoiding
+            accumulation points near the poles - fewer points are needed.
+        grid_number : int
+            Controls the density (number of points) of the angular grid for the
+            3D magnetisation calculation. A grid of dimension (spherical_grid*
+            2*spherical_grid) for spherical angles, phi [0, pi] and theta
+            [0, 2*pi] will be used for meshgrid or when Fibonacci sphere is
+            chosen grid_number points will be distributed on the sphere.
         temperatures : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temperature values (K) at which 3D energy will be computed.
+        energy_type: Literal["helmholtz", "internal"]
+            Determines which kind of energy, Helmholtz or internal, will be
+            calculated.
         states_cutoff : int, optional
             Number of states that will be taken into account for construction
             of Zeeman Hamiltonian. If set to zero, all available states from
@@ -2295,15 +2317,20 @@ class Compound:
         Returns
         -------
         ndarray[float64]
-            The resulting energy_3d_array gives energy in cm-1
+            For the meshgrid the resulting energy_3d_array gives energy in cm-1
             and is in the form [coordinates, fields, temperatures, mesh, mesh]
             - the first dimension runs over coordinates (0-x, 1-y, 2-z), the
             second over field values, and the third over temperatures. The last
-            two dimensions are in a form of meshgrids over theta and phi, ready
-            for 3D plots as xyz.
+            two dimensions are in the form of meshgrids over theta and phi,
+            ready for 3D plots as xyz. For Fibonacci, the array has the form 
+            [fields, temperatures, points[x,y,z]] where points[x,y,z] are
+            two-dimensional (grid_number, 3) arrays holding coordinates of
+            grid_number points in the [x, y, z] convention.
 
         Raises
         ------
+        SltInputError
+            if energy_type is not "helmholtz" or "internal".
         SltSaveError
             If the name of the group already exists in the .slt file.
         SltInputError
@@ -2313,7 +2340,9 @@ class Compound:
         SltInputError
             If temperatures are not a one-diemsional array.
         SltInputError
-           If spherical_grid is not a positive integer.
+            If grid_type is not "mesh" or "fibonacci".
+        SltInputError
+            If grid_number is not a positive integer.
         SltCompError
             If autotuning a number of processes and threads is unsuccessful.
         SltCompError
@@ -2324,23 +2353,29 @@ class Compound:
         Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
-        distribute the workload over len(fields)*2*shperical_grid**2 tasks. Be
-        aware that the resulting arrays and computations can quickly consume
+        distribute the workload over the number of points on spherical grid.
+        Be aware that the resulting arrays and computations can quickly consume
         much memory (e.g. for a calculation with 100 field values 1-10 T, 300
-        temperatures 1-300 K, and spherical_grid = 60, the resulting array will
-        take 3*100*300*2*60*60*8 bytes = 5.184 GB).
+        temperatures 1-300 K, and mesh grid with grid_number = 60, the
+        resulting array will take 3*100*300*2*60*60*8 bytes = 5.184 GB).
 
         See Also
         --------
         slothpy.Compound.plot_3d, slothpy.Compound.interactive_plot_3d,
         slothpy.Compound.animate_3d
         """
-        if internal_energy:
-            group_suffix = "_3d_internal_energy"
+        if energy_type == "internal":
+            group_suffix = "_internal_energy"
             name = "internal"
-        else:
-            group_suffix = "_3d_helmholtz_energy"
+        elif energy_type == "helmholtz":
+            group_suffix = "_helmholtz_energy"
             name = "Helmholtz"
+        else:
+            raise SltInputError(
+                ValueError(
+                    'Energy type must be set to "helmholtz" or "internal".'
+                )
+            ) from None"
 
         if slt is not None:
             slt_group_name = f"{slt}{group_suffix}"
@@ -2375,9 +2410,16 @@ class Compound:
                 ValueError("The list of temperatures has to be a 1D array.")
             ) from None
 
-        if (not isinstance(spherical_grid, int)) or spherical_grid <= 0:
+        if grid_type != "mesh" and grid_type != "fibonacci":
             raise SltInputError(
-                ValueError("Spherical grid has to be a positive integer.")
+                ValueError(
+                    'The only allowed grid types are "mesh" or "fibonacci".'
+                )
+            ) from None
+
+        if (not isinstance(grid_number, int)) or grid_number <= 0:
+            raise SltInputError(
+                ValueError("Grid number has to be a positive integer.")
             ) from None
 
         if autotune:
@@ -2385,7 +2427,7 @@ class Compound:
                 number_cpu, number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields.size * 2 * spherical_grid**2,
+                    fields.size * 2 * grid_number**2, ## add everywhere Fibonacci option
                     states_cutoff,
                     1,  # Single grid point in the inner loop
                     temperatures.size,
@@ -2410,16 +2452,17 @@ class Compound:
                 ) from None
 
         try:
-            energy_3d_array = _helmholtz_energy_3d(
+            energy_3d_array = _energy_3d(
                 self._hdf5,
                 group,
                 fields,
-                spherical_grid,
+                grid_type,
+                grid_number,
                 temperatures,
+                energy_type,
                 states_cutoff,
                 number_cpu,
                 number_threads,
-                internal_energy,
                 rotation,
             )
         except Exception as exc:
@@ -2439,16 +2482,27 @@ class Compound:
 
         if slt is not None:
             try:
-                self[
-                    slt_group_name,
-                    f"{slt}_energy_3d",
-                    "Dataset containing 3D {name} energy as meshgird"
-                    " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
-                    " temperature, meshgrid, meshgrid) calculated from"
-                    f" group: {group}.",
-                    f"Group({slt}) containing 3D {name}_energy"
-                    f" calculated from group: {group}.",
-                ] = energy_3d_array[:, :, :, :, :]
+                if grid_type == "mesh":
+                    self[
+                        slt_group_name,
+                        f"{slt}_energy_3d",
+                        f"Dataset containing 3D {name} energy as meshgird"
+                        " (0-x,1-y,2-z) arrays over sphere (xyz, field,"
+                        " temperature, meshgrid, meshgrid) calculated from"
+                        f" group: {group}.",
+                        f"Group({slt}) containing 3D {name}_energy"
+                        f" calculated from group: {group}.",
+                    ] = energy_3d_array[:, :, :, :, :]
+                else:
+                    self[
+                        slt_group_name,
+                        f"{slt}_energy_3d",
+                        f"Dataset containing 3D {name} energy as xyz points"
+                        " (field, temperature, points[x,y,z]) calculated from"
+                        f" group: {group}.",
+                        f"Group({slt}) containing 3D {name}_energy"
+                        f" calculated from group: {group}.",
+                    ] = energy_3d_array[:, :, :, :]
                 self[
                     slt_group_name,
                     f"{slt}_fields",

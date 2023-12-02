@@ -2322,7 +2322,7 @@ class Compound:
             - the first dimension runs over coordinates (0-x, 1-y, 2-z), the
             second over field values, and the third over temperatures. The last
             two dimensions are in the form of meshgrids over theta and phi,
-            ready for 3D plots as xyz. For Fibonacci, the array has the form 
+            ready for 3D plots as xyz. For Fibonacci, the array has the form
             [fields, temperatures, points[x,y,z]] where points[x,y,z] are
             two-dimensional (grid_number, 3) arrays holding coordinates of
             grid_number points in the [x, y, z] convention.
@@ -2365,17 +2365,17 @@ class Compound:
         slothpy.Compound.animate_3d
         """
         if energy_type == "internal":
-            group_suffix = "_internal_energy"
+            group_suffix = "_3d_internal_energy"
             name = "internal"
         elif energy_type == "helmholtz":
-            group_suffix = "_helmholtz_energy"
+            group_suffix = "_3d_helmholtz_energy"
             name = "Helmholtz"
         else:
             raise SltInputError(
                 ValueError(
                     'Energy type must be set to "helmholtz" or "internal".'
                 )
-            ) from None"
+            ) from None
 
         if slt is not None:
             slt_group_name = f"{slt}{group_suffix}"
@@ -2427,7 +2427,9 @@ class Compound:
                 number_cpu, number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields.size * 2 * grid_number**2, ## add everywhere Fibonacci option
+                    fields.size
+                    * 2
+                    * grid_number**2,  ## add everywhere Fibonacci option
                     states_cutoff,
                     1,  # Single grid point in the inner loop
                     temperatures.size,
@@ -2740,32 +2742,32 @@ class Compound:
                     + '".',
                 ) from None
 
-        try:
-            zeeman_array = _zeeman_splitting(
-                self._hdf5,
-                group,
-                number_of_states,
-                fields,
-                grid,
-                states_cutoff,
-                number_cpu,
-                number_threads,
-                average,
-            )
-        except Exception as exc:
-            raise SltCompError(
-                self._hdf5,
-                exc,
-                "Failed to compute Zeeman splitting from "
-                + BLUE
-                + "Group "
-                + RESET
-                + '"'
-                + BLUE
-                + f"{group}"
-                + RESET
-                + '".',
-            ) from None
+        # try:
+        zeeman_array = _zeeman_splitting(
+            self._hdf5,
+            group,
+            number_of_states,
+            fields,
+            grid,
+            states_cutoff,
+            number_cpu,
+            number_threads,
+            average,
+        )
+        # except Exception as exc:
+        #     raise SltCompError(
+        #         self._hdf5,
+        #         exc,
+        #         "Failed to compute Zeeman splitting from "
+        #         + BLUE
+        #         + "Group "
+        #         + RESET
+        #         + '"'
+        #         + BLUE
+        #         + f"{group}"
+        #         + RESET
+        #         + '".',
+        #     ) from None
 
         if average:
             name = "average "
@@ -5541,12 +5543,12 @@ class Compound:
                 else:
                     group_name = f"{group}_3d_internal_energy"
                     energy_type = "Internal"
-                    xyz = self[group_name, f"{group}_energy_3d"]
-                    description = (
-                        f"{energy_type} energy dependence on direction,"
-                        f" B={round(self[group_name, f'{group}_fields'][field_i], round_field)} T, "
-                        f"T={round(self[group_name, f'{group}_temperatures'][temp_i], round_temp)} K"
-                    )
+                xyz = self[group_name, f"{group}_energy_3d"]
+                description = (
+                    f"{energy_type} energy dependence on direction,"
+                    f" B={round(self[group_name, f'{group}_fields'][field_i], round_field)} T, "
+                    f"T={round(self[group_name, f'{group}_temperatures'][temp_i], round_temp)} K"
+                )
             elif data_type == "magnetisation":
                 group_name = f"{group}_3d_magnetisation"
                 xyz = self[group_name, f"{group}_mag_3d"]

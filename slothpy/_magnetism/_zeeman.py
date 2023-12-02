@@ -79,82 +79,103 @@ def _calculate_zeeman_matrix(
 
 
 @jit(
-    "float64[:,:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+    "float64[:,:,:](complex128[:,:,:], float64[:], float64[:], float64[:,:],"
     " int64, boolean)",
     nopython=True,
     cache=True,
     nogil=True,
     fastmath=True,
 )
-def _zeeman_over_grid(
+def _zeeman_over_fields_grid(
     magnetic_momenta,
     soc_energies,
-    field,
+    fields,
     grid,
     num_of_states,
     average: bool = False,
 ):
-    # Initialize arrays and scale energy to the ground SOC state
-    if average:
-        zeeman_array = zeros((1, num_of_states), dtype=float64)
-    else:
-        zeeman_array = zeros((grid.shape[0], num_of_states), dtype=float64)
+    fields_shape_0 = fields.shape[0]
+    grid_shape_0 = grid.shape[0]
     magnetic_momenta = ascontiguousarray(magnetic_momenta)
+    # Initialize arrays and scale energy to the ground SOC state
     soc_energies = ascontiguousarray(soc_energies - soc_energies[0])
-
-    # Perform calculations for each magnetic field orientation
-    for j in range(grid.shape[0]):
-        orientation = grid[j, :3]
-
-        zeeman_matrix = _calculate_zeeman_matrix(
-            magnetic_momenta, soc_energies, field, orientation
+    if average:
+        zeeman_h_array = zeros(
+            (fields_shape_0, 1, num_of_states), dtype=float64
+        )
+    else:
+        zeeman_h_array = zeros(
+            (fields_shape_0, grid.shape[0], num_of_states), dtype=float64
         )
 
-        # Diagonalize full Zeeman Hamiltonian
-        energies = eigvalsh(zeeman_matrix)
+    for i in range(fields_shape_0):
+        zeeman_array = zeros(
+            (zeeman_h_array.shape[1], zeeman_h_array.shape[2]), dtype=float64
+        )
 
-        # Get only desired number of states in cm-1
-        energies = energies[:num_of_states] * H_CM_1
+        # Perform calculations for each magnetic field orientation
+        for j in range(grid_shape_0):
+            orientation = grid[j, :3]
 
-        if average:
-            zeeman_array[0, :] += energies * grid[j, 3]
-        # Collect the results
-        else:
-            zeeman_array[j, :] = energies
+            zeeman_matrix = _calculate_zeeman_matrix(
+                magnetic_momenta, soc_energies, fields[i], orientation
+            )
 
-    return zeeman_array
+            # Diagonalize full Zeeman Hamiltonian
+            energies = eigvalsh(zeeman_matrix)
+
+            # Get only desired number of states in cm-1
+            energies = energies[:num_of_states] * H_CM_1
+
+            if average:
+                zeeman_array[0, :] += energies * grid[j, 3]
+            # Collect the results
+            else:
+                zeeman_array[j, :] = energies
+
+        zeeman_h_array[i] = zeeman_array
+
+    return zeeman_h_array
 
 
 def _calculate_zeeman_splitting(
-    magnetic_momenta: str,
-    soc_energies: str,
-    field: float64,
-    grid: str,
-    m_s: int,
-    s_s: int,
-    g_s: int,
+    magnetic_momenta_name: str,
+    soc_energies_name: str,
+    fields_name: str,
+    grid_name: str,
+    magnetic_momenta_shape: tuple,
+    soc_energies_shape: tuple,
+    grid_shape: tuple,
+    field_chunk: tuple,
     num_of_states,
     average: bool = False,
 ) -> ndarray:
     # Option to enable calculations with only a single grid point.
 
-    grid_s = SharedMemory(name=grid)
-    grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
-
-    magnetic_momenta_s = SharedMemory(name=magnetic_momenta)
-    magnetic_momenta_a = ndarray(
-        m_s,
-        dtype=complex128,
-        buffer=magnetic_momenta_s.buf,
+    magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
+    magnetic_momenta_array = ndarray(
+        magnetic_momenta_shape,
+        complex128,
+        magnetic_momenta_shared.buf,
     )
-    soc_energies_s = SharedMemory(name=soc_energies)
-    soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
+    soc_energies_shared = SharedMemory(soc_energies_name)
+    soc_energies_array = ndarray(
+        soc_energies_shape, float64, soc_energies_shared.buf
+    )
+    grid_shared = SharedMemory(grid_name)
+    grid_array = ndarray(grid_shape, float64, grid_shared.buf)
 
-    return _zeeman_over_grid(
-        magnetic_momenta_a,
-        soc_energies_a,
-        field,
-        grid_a,
+    offset = dtype(float64).itemsize * field_chunk[0]
+    chunk_length = field_chunk[1] - field_chunk[0]
+
+    fields_shared = SharedMemory(fields_name)
+    fields_array = ndarray((chunk_length,), float64, fields_shared.buf, offset)
+
+    return _zeeman_over_fields_grid(
+        magnetic_momenta_array,
+        soc_energies_array,
+        fields_array,
+        grid_array,
         num_of_states,
         average,
     )
@@ -167,27 +188,29 @@ def _caculate_zeeman_splitting_wrapper(args):
 
 
 def _arg_iter_zeeman(
-    magnetic_momenta,
-    soc_energies,
-    fields,
-    grid,
-    m_s,
-    s_s,
-    g_s,
+    magnetic_momenta_name,
+    soc_energies_name,
+    fields_name,
+    grid_name,
+    magnetic_momenta_shape,
+    soc_energies_shape,
+    grid_shape,
+    fields_chunks,
     num_of_states,
     average: bool = False,
 ):
     # Iterator generator for arguments with different field values to be
     # distributed along num_process processes
-    for i in range(fields.shape[0]):
+    for field_chunk in fields_chunks:
         yield (
-            magnetic_momenta,
-            soc_energies,
-            fields[i],
-            grid,
-            m_s,
-            s_s,
-            g_s,
+            magnetic_momenta_name,
+            soc_energies_name,
+            fields_name,
+            grid_name,
+            magnetic_momenta_shape,
+            soc_energies_shape,
+            grid_shape,
+            field_chunk,
             num_of_states,
             average,
         )
@@ -220,6 +243,8 @@ def _zeeman_splitting(
     # Get magnetic field in a.u. and allocate arrays as contiguous
     fields = ascontiguousarray(fields)
     grid = ascontiguousarray(grid)
+    fields_shape_0 = fields.shape[0]
+    grid_shape_0 = grid.shape[0]
 
     with SharedMemoryManager() as smm:
         # Create shared memory for arrays
@@ -253,33 +278,41 @@ def _zeeman_splitting(
         fields_shared_arr[:] = fields[:]
         grid_shared_arr[:] = grid[:]
 
+        del magnetic_momenta
+        del soc_energies
+        del fields
+        del grid
+
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
+                set_num_threads(num_threads)
                 with Pool(num_process) as p:
                     zeeman = p.map(
                         _caculate_zeeman_splitting_wrapper,
                         _arg_iter_zeeman(
                             magnetic_momenta_shared.name,
                             soc_energies_shared.name,
-                            fields_shared_arr,
+                            fields_shared.name,
                             grid_shared.name,
                             magnetic_momenta_shared_arr.shape,
                             soc_energies_shared_arr.shape,
                             grid_shared_arr.shape,
+                            _distribute_chunks(
+                                fields_shared_arr.shape[0], num_process
+                            ),
                             num_of_states,
                             average,
                         ),
                     )
 
-    zeeman_array = array(zeeman, dtype=float64).transpose((1, 0, 2))
+    zeeman_array = concatenate(zeeman)
+    zeeman_array = zeeman_array.transpose((1, 0, 2))
 
     if average:
-        zeeman_array = zeeman_array.reshape(
-            (1, fields.shape[0], num_of_states)
-        )
+        zeeman_array = zeeman_array.reshape((1, fields_shape_0, num_of_states))
     else:
         zeeman_array = zeeman_array.reshape(
-            (grid.shape[0], fields.shape[0], num_of_states)
+            (grid_shape_0, fields_shape_0, num_of_states)
         )
 
     return zeeman_array
@@ -353,7 +386,7 @@ def _calculate_internal_energy(
 
 
 @jit(
-    "float64[:,:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+    "float64[:,:](complex128[:,:,:], float64[:], float64[:], float64[:,:],"
     " float64[:])",
     nopython=True,
     cache=True,
@@ -404,7 +437,7 @@ def _helmholtz_energyt_over_fields_grid(
 
 
 @jit(
-    "float64[:,:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+    "float64[:,:](complex128[:,:,:], float64[:], float64[:], float64[:,:],"
     " float64[:])",
     nopython=True,
     cache=True,
@@ -455,7 +488,7 @@ def _internal_energyt_over_fields_grid(
 
 
 @jit(
-    "float64[:,:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+    "float64[:,:,:](complex128[:,:,:], float64[:], float64[:], float64[:,:],"
     " float64[:])",
     nopython=True,
     cache=True,
@@ -500,13 +533,13 @@ def _helmholtz_energyt_over_grid_fields(
                     eigenvalues, temperatures[t]
                 )
 
-        eght_array[g, :, :] = eht_array[:, :, :]
+        eght_array[g, :, :] = eht_array[:, :]
 
     return eght_array
 
 
 @jit(
-    "float64[:,:](complex128[:,:,:], float64[:], float64, float64[:,:],"
+    "float64[:,:,:](complex128[:,:,:], float64[:], float64[:], float64[:,:],"
     " float64[:])",
     nopython=True,
     cache=True,
@@ -551,7 +584,7 @@ def _internal_energyt_over_grid_fields(
                     eigenvalues, temperatures[t]
                 )
 
-        eght_array[g, :, :] = eht_array[:, :, :]
+        eght_array[g, :, :] = eht_array[:, :]
 
     return eght_array
 

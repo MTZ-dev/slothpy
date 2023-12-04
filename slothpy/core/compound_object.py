@@ -30,6 +30,7 @@ from numpy import (
     newaxis,
     allclose,
     identity,
+    ones,
 )
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.gridspec import GridSpec
@@ -794,7 +795,6 @@ class Compound:
         rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates 3D magnetisation over a spherical grid for a given list of
@@ -949,15 +949,22 @@ class Compound:
 
         if autotune:
             try:
-                number_cpu, number_threads = _auto_tune(
+                if grid_type == "mesh":
+                    num_to_parallelize = 2 * grid_number**2
+                elif grid_type == "fibonacci":
+                    num_to_parallelize = grid_number
+                grid = ones((num_to_parallelize, 3))
+                number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields.size * 2 * grid_number**2,
+                    fields,
+                    grid,
+                    temperatures,
                     states_cutoff,
-                    1,  # Single grid point in the inner loop
-                    temperatures.size,
                     number_cpu,
-                    _autotune_size,
+                    num_to_parallelize,
+                    fields.shape[0],
+                    "magnetisation",
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -1070,7 +1077,6 @@ class Compound:
         grid: Union[int, ndarray[float64]] = None,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates powder-averaged or directional molar magnetic susceptibility
@@ -1238,26 +1244,29 @@ class Compound:
             grid = _normalize_grid_vectors(grid)
 
         if autotune:
-            if exp:
-                num_to_parallel = fields.size
-            else:
-                num_to_parallel = (2 * number_of_points + 1) * fields.size
-
-            if grid is None:
-                grid_shape = 3  # xyz grid in the inner loop
-            else:
-                grid_shape = grid.shape[0]
-
             try:
-                number_cpu, number_threads = _auto_tune(
+                if exp:
+                    num_to_parallelize = fields.size
+                else:
+                    num_to_parallelize = (
+                        2 * number_of_points + 1
+                    ) * fields.size
+
+                if grid is None:
+                    grid_shape = 3  # xyz grid in the inner loop
+                else:
+                    grid_shape = grid.shape[0]
+                number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    num_to_parallel,
+                    fields,
+                    grid,
+                    temperatures,
                     states_cutoff,
-                    grid_shape,
-                    temperatures.shape[0],
                     number_cpu,
-                    _autotune_size,
+                    num_to_parallelize,
+                    grid_shape,
+                    "magnetisation",
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -1368,7 +1377,6 @@ class Compound:
         rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates magnetic susceptibility chi(H,T) (Van Vleck) tensor for
@@ -1523,21 +1531,25 @@ class Compound:
             ) from None
 
         if autotune:
-            if exp:
-                num_to_parallel = fields.size
-            else:
-                num_to_parallel = (2 * number_of_points + 1) * fields.size
-
             try:
-                number_cpu, number_threads = _auto_tune(
+                if exp:
+                    num_to_parallelize = fields.size
+                else:
+                    num_to_parallelize = (
+                        2 * number_of_points + 1
+                    ) * fields.size
+                grid = ones((9, 3))
+                number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    num_to_parallel,
+                    fields,
+                    grid,
+                    temperatures,
                     states_cutoff,
-                    9,  # Size of 3x3 tensor in the inner loop
-                    temperatures.shape[0],
                     number_cpu,
-                    _autotune_size,
+                    num_to_parallelize,
+                    9,
+                    "magnetisation",
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -1652,7 +1664,6 @@ class Compound:
         rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates 3D magnetic susceptibility over a spherical grid for a given
@@ -1850,26 +1861,27 @@ class Compound:
             ) from None
 
         if autotune:
-            if exp:
-                num_to_parallel = fields.size * 2 * grid_number**2
-            else:
-                num_to_parallel = (
-                    (2 * number_of_points + 1)
-                    * fields.size
-                    * 2
-                    * grid_number**2
-                )
-
             try:
-                number_cpu, number_threads = _auto_tune(
+                if exp:
+                    inner_loop_size = fields.size
+                else:
+                    inner_loop_size = (2 * number_of_points + 1) * fields.size
+                if grid_type == "mesh":
+                    num_to_parallelize = 2 * grid_number**2
+                elif grid_type == "fibonacci":
+                    num_to_parallelize = grid_number
+                grid = ones((num_to_parallelize, 3))
+                number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    num_to_parallel,
+                    fields,
+                    grid,
+                    temperatures,
                     states_cutoff,
-                    1,  # Single grid point in the inner loop
-                    temperatures.shape[0],
                     number_cpu,
-                    _autotune_size,
+                    num_to_parallelize,
+                    inner_loop_size,
+                    "magnetisation",
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -1981,7 +1993,7 @@ class Compound:
 
         return chit_3d_array
 
-    def calculate_helmholtz_energy(
+    def calculate_energy(
         self,
         group: str,
         fields: ndarray[float64],
@@ -1993,10 +2005,9 @@ class Compound:
         number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
-        Calculates powder-averaged or directional Helmholtz (or internal)
+        Calculates powder-averaged or directional Helmholtz or internal
         energy for a given list of temperature and field values.
 
         Parameters
@@ -2139,16 +2150,18 @@ class Compound:
 
         if autotune:
             try:
-                number_cpu, number_threads = _auto_tune(
+                number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields.size,
+                    fields,
+                    grid,
+                    temperatures,
                     states_cutoff,
-                    grid.shape[0],
-                    temperatures.size,
                     number_cpu,
-                    _autotune_size,
-                    True,
+                    fields.shape[0],
+                    grid.shape[0],
+                    "energy",
+                    energy_type=energy_type,
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -2245,14 +2258,12 @@ class Compound:
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
-        internal_energy: bool = False,
         rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
-        Calculates 3D Helmholtz (or internal) energy over a spherical grid for
+        Calculates 3D Helmholtz or internal energy over a spherical grid for
         a given list of temperature and field values.
 
         Parameters
@@ -2423,18 +2434,23 @@ class Compound:
 
         if autotune:
             try:
-                number_cpu, number_threads = _auto_tune(
+                if grid_type == "mesh":
+                    num_to_parallelize = 2 * grid_number**2
+                elif grid_type == "fibonacci":
+                    num_to_parallelize = grid_number
+                grid = ones((num_to_parallelize, 3))
+                number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields.size
-                    * 2
-                    * grid_number**2,  ## add everywhere Fibonacci option
+                    fields,
+                    grid,
+                    temperatures,
                     states_cutoff,
-                    1,  # Single grid point in the inner loop
-                    temperatures.size,
                     number_cpu,
-                    _autotune_size,
-                    True,
+                    num_to_parallelize,
+                    fields.shape[0],
+                    "energy",
+                    energy_type=energy_type,
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -2547,7 +2563,6 @@ class Compound:
         average: bool = False,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates directional or powder-averaged Zeeman splitting for a given
@@ -2714,16 +2729,20 @@ class Compound:
 
         if autotune:
             try:
-                number_cpu, number_threads = _auto_tune(
+                temperatures = array([1])
+                number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields.size,
+                    fields,
+                    grid,
+                    temperatures,
                     states_cutoff,
-                    grid.shape[0],
-                    1,
                     number_cpu,
-                    _autotune_size,
-                    True,
+                    fields.shape[0],
+                    grid.shape[0],
+                    "zeeman",
+                    num_of_states=number_of_states,
+                    average=average,
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -4787,7 +4806,7 @@ class Compound:
     def plot_energy(
         self,
         group: str,
-        internal_energy: bool = False,
+        energy_type: Literal["helmholtz", "internal"],
         show_fig: bool = True,
         save: bool = False,
         save_path: str = ".",
@@ -4808,8 +4827,9 @@ class Compound:
         ----------
         group: str
             Name of a group from .slt file for which a plot will be created.
-        internal_energy: bool = False
-            Changes the plot from the Helmholtz to internal energy.
+        energy_type: Literal["helmholtz", "internal"]
+            Determines which kind of energy, Helmholtz or internal, will be
+            calculated.
         show_fig: bool = True
             Determines if plot is shown.
             Possible use: saving many plots automatically without preview.
@@ -4853,10 +4873,16 @@ class Compound:
         --------
         slothpy.Compound.calculate_energy
         """
-        if internal_energy:
+        if energy_type == "internal":
             name = "internal"
-        else:
+        elif energy_type == "helmholtz":
             name = "helmholtz"
+        else:
+            raise SltInputError(
+                ValueError(
+                    'Energy type must be set to "helmholtz" or "internal".'
+                )
+            ) from None
         try:
             # Getting data from .slt or sloth file
             eth = self[f"{group}_{name}_energy", f"{group}_eth"]

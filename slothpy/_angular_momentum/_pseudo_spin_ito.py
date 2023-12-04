@@ -30,6 +30,7 @@ from numpy import (
     int64,
     float64,
     complex128,
+    mean,
 )
 from numba import jit
 from slothpy._general_utilities._io import (
@@ -126,6 +127,9 @@ def _get_soc_matrix_in_z_pseudo_spin_basis(
 
     momenta = momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
+    soc_energies = soc_energies - mean(
+        soc_energies
+    )  ############################## WHYY?
     soc_matrix = diag(soc_energies).astype(complex128)
     soc_matrix = _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
         momenta, soc_matrix

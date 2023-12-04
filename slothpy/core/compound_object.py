@@ -66,8 +66,6 @@ from slothpy._general_utilities._constants import (
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
 
 from slothpy._magnetism._magnetisation import _mth, _mag_3d
-
-# from slothpy._magnetism._magnetisation import _mag_3d
 from slothpy._magnetism._susceptibility import (
     _chitht,
     _chitht_tensor,
@@ -553,7 +551,7 @@ class Compound:
 
         return g_tensor_list, magnetic_axes_list
 
-    def calculate_mth(
+    def calculate_magnetisation(
         self,
         group: str,
         fields: ndarray[float64],
@@ -564,7 +562,6 @@ class Compound:
         number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
-        _autotune_size: int = 2,
     ) -> ndarray[float64]:
         """
         Calculates powder-averaged or directional molar magnetisation M(T,H)
@@ -646,7 +643,7 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.plot_mth,
+        slothpy.Compound.plot_magnetisation,
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
         """
@@ -691,15 +688,17 @@ class Compound:
 
         if autotune:
             try:
-                number_cpu, number_threads = _auto_tune(
+                number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields.size,
+                    fields,
+                    grid,
+                    temperatures,
                     states_cutoff,
-                    grid.shape[0],
-                    temperatures.size,
                     number_cpu,
-                    _autotune_size,
+                    fields.shape[0],
+                    grid.shape[0],
+                    "magnetisation",
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -782,7 +781,7 @@ class Compound:
 
         return mth_array
 
-    def calculate_mag_3d(
+    def calculate_magnetisation_3d(
         self,
         group: str,
         fields: ndarray[float64],
@@ -843,7 +842,7 @@ class Compound:
             more conveniently., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with suffix: _3d_magnetisation., by default None
+            file with suffix: _magnetisation_3d., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -904,7 +903,7 @@ class Compound:
         """
 
         if slt is not None:
-            slt_group_name = f"{slt}_3d_magnetisation"
+            slt_group_name = f"{slt}_magnetisation_3d"
             if _group_exists(self._hdf5, slt_group_name):
                 raise SltSaveError(
                     self._hdf5,
@@ -1056,7 +1055,7 @@ class Compound:
 
         return mag_3d_array
 
-    def calculate_chitht(
+    def calculate_susceptibility(
         self,
         group: str,
         temperatures: ndarray[float64],
@@ -1182,7 +1181,7 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.plot_chitht
+        slothpy.Compound.plot_susceptibility
         """
         if slt is not None:
             slt_group_name = f"{slt}_susceptibility"
@@ -1354,7 +1353,7 @@ class Compound:
 
         return chitht_array
 
-    def calculate_chit_tensorht(
+    def calculate_susceptibility_tensor(
         self,
         group: str,
         temperatures: ndarray[float64],
@@ -1636,7 +1635,7 @@ class Compound:
 
         return chitht_tensor_array
 
-    def calculate_chit_3d(
+    def calculate_susceptibility_3d(
         self,
         group: str,
         temperatures: ndarray[float64],
@@ -1722,7 +1721,7 @@ class Compound:
             more conveniently., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with suffix: _3d_susceptibility., by default None
+            file with suffix: _susceptibility_3d., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -1790,7 +1789,7 @@ class Compound:
         """
 
         if slt is not None:
-            slt_group_name = f"{slt}_3d_susceptibility"
+            slt_group_name = f"{slt}_susceptibility_3d"
             if _group_exists(self._hdf5, slt_group_name):
                 raise SltSaveError(
                     self._hdf5,
@@ -2082,7 +2081,7 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.plot_helmholtz_energyth
+        slothpy.Compound.plot_energy
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
         """
@@ -2235,7 +2234,7 @@ class Compound:
 
         return energyth_array
 
-    def calculate_helmholtz_energy_3d(
+    def calculate_energy_3d(
         self,
         group: str,
         fields: ndarray[float64],
@@ -2303,7 +2302,7 @@ class Compound:
             more conveniently., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
-            file with suffix: _3d_helmholtz_energy or _3d_internal_energy.,
+            file with suffix: _helmholtz_energy_3d or _internal_energy_3d.,
             by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
@@ -2365,10 +2364,10 @@ class Compound:
         slothpy.Compound.animate_3d
         """
         if energy_type == "internal":
-            group_suffix = "_3d_internal_energy"
+            group_suffix = "_internal_energy_3d"
             name = "internal"
         elif energy_type == "helmholtz":
-            group_suffix = "_3d_helmholtz_energy"
+            group_suffix = "_helmholtz_energy_3d"
             name = "Helmholtz"
         else:
             raise SltInputError(
@@ -2742,32 +2741,32 @@ class Compound:
                     + '".',
                 ) from None
 
-        # try:
-        zeeman_array = _zeeman_splitting(
-            self._hdf5,
-            group,
-            number_of_states,
-            fields,
-            grid,
-            states_cutoff,
-            number_cpu,
-            number_threads,
-            average,
-        )
-        # except Exception as exc:
-        #     raise SltCompError(
-        #         self._hdf5,
-        #         exc,
-        #         "Failed to compute Zeeman splitting from "
-        #         + BLUE
-        #         + "Group "
-        #         + RESET
-        #         + '"'
-        #         + BLUE
-        #         + f"{group}"
-        #         + RESET
-        #         + '".',
-        #     ) from None
+        try:
+            zeeman_array = _zeeman_splitting(
+                self._hdf5,
+                group,
+                number_of_states,
+                fields,
+                grid,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+                average,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute Zeeman splitting from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
 
         if average:
             name = "average "
@@ -3545,8 +3544,8 @@ class Compound:
     def matrix_decomposition_in_z_pseudo_spin_basis(
         self,
         group: str,
-        matrix: Union["soc", "zeeman"],
-        pseudo_kind: Union["magnetic", "total_angular"],
+        matrix: Literal["soc", "zeeman"],
+        pseudo_kind: Literal["magnetic", "total_angular"],
         start_state: int = 0,
         stop_state: int = 0,
         rotation: ndarray[float64] = None,
@@ -3562,10 +3561,10 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the construction of the matrix.
-        matrix : Union["soc", "zeeman"]
+        matrix : Literal["soc", "zeeman"]
             Type of a matrix to be decomposed. Two options available: "soc" or
             "zeeman".
-        pseudo_kind : Union["magnetic", "total_angular"]
+        pseudo_kind : Literal["magnetic", "total_angular"]
             Kind of a pseudo-spin basis. Two options available: "magnetic" or
             "total_angular" for the decomposition in a particular basis.
         start_state : int, optional
@@ -3698,7 +3697,7 @@ class Compound:
         start_state: int,
         stop_state: int,
         order: int,
-        pseudo_kind: Union["magnetic", "total_angular"],
+        pseudo_kind: Literal["magnetic", "total_angular"],
         even_order: bool = True,
         complex: bool = False,
         rotation: ndarray[float64] = None,
@@ -3719,7 +3718,7 @@ class Compound:
             are set to zero all available states from the file will be used.
         order : int
             Order of the highest ITO (CFP) to be included in the decomposition.
-        pseudo_kind : Union["magnetic", "total_angular"]
+        pseudo_kind : Literal["magnetic", "total_angular"]
             Kind of a pseudo-spin basis. Two options available: "magnetic" or
             "total_angular" for the decomposition in a particular basis.
         even_order : bool, optional
@@ -3892,7 +3891,7 @@ class Compound:
         field: float64,
         orientation: ndarray[float64],
         order: int,
-        pseudo_kind: Union["magnetic", "total_angular"],
+        pseudo_kind: Literal["magnetic", "total_angular"],
         complex: bool = False,
         rotation: ndarray[float64] = None,
         slt: str = None,
@@ -3919,7 +3918,7 @@ class Compound:
             direction_y, direction_z].
         order : int
             Order of the highest ITO (CFP) to be included in the decomposition.
-        pseudo_kind : Union["magnetic", "total_angular"]
+        pseudo_kind : Literal["magnetic", "total_angular"]
             Kind of a pseudo-spin basis. Two options available: "magnetic" or
             "total_angular" for the decomposition in a particular basis.
         complex : bool, optional
@@ -4245,8 +4244,8 @@ class Compound:
         group: str,
         start_state: int,
         stop_state: int,
-        matrix_type: Union["soc", "zeeman"],
-        basis_kind: Union["magnetic", "total_angular"],
+        matrix_type: Literal["soc", "zeeman"],
+        basis_kind: Literal["magnetic", "total_angular"],
         rotation: ndarray[float64] = None,
         field: float64 = None,
         orientation: ndarray[float64] = None,
@@ -4266,10 +4265,10 @@ class Compound:
         stop_state : int
             Number of the last SOC state to be included. If both start and stop
             are set to zero all available states from the file will be used
-        matrix_type : Union["soc", "zeeman"]
+        matrix_type : Literal["soc", "zeeman"]
             Type of a matrix to be decomposed. Two options available: "soc" or
             "zeeman".
-        basis_kind : Union["magnetic", "total_angular"]
+        basis_kind : Literal["magnetic", "total_angular"]
             Kind of a basis. Two options available: "magnetic" or
             "total_angular" for the decomposition in a particular basis
         rotation : ndarray[float64], optional
@@ -4413,7 +4412,7 @@ class Compound:
 
         return matrix
 
-    def plot_mth(
+    def plot_magnetisation(
         self,
         group: str,
         show_fig: bool = True,
@@ -4425,7 +4424,7 @@ class Compound:
         ylim: tuple[int or float] = (),
         xticks: int or float = 1,
         yticks: int or float = 0,
-        field: Union["B", "H"] = "B",
+        field: Literal["B", "H"] = "B",
     ):
         """
         Creates graphs of M(H,T) given name of the group in .slt file, graphs
@@ -4457,7 +4456,7 @@ class Compound:
             Determines the frequency of x major ticks.
         yticks: int or float = 0
             Determines the frequency of y major ticks.
-        field: Union['B','H'] = 'B'
+        field: Literal['B','H'] = 'B'
             Determines the field unit - B[T] or H[kOe].
 
         Returns
@@ -4476,7 +4475,7 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.calculate_mth
+        slothpy.Compound.calculate_magnetisation
         """
         try:
             # Getting data from .slt or sloth file
@@ -4594,7 +4593,7 @@ class Compound:
                 ) from None
         close("all")
 
-    def plot_chitht(
+    def plot_susceptibility(
         self,
         group: str,
         show_fig: bool = True,
@@ -4606,7 +4605,7 @@ class Compound:
         ylim: tuple[int or float] = (),
         xticks: int or float = 100,
         yticks: int or float = 0,
-        field: Union["B", "H"] = "B",
+        field: Literal["B", "H"] = "B",
     ):
         """
         Creates graphs of chiT(H,T) or chi(H,T) depending on the content of
@@ -4626,7 +4625,8 @@ class Compound:
             Determines a path where the file will be saved if save = True.
         save_name: str = ""
             Determines name of the file that would be created if save = True,
-            if left empty it will use following format: f"chitht_{group}.tiff".
+            if left empty it will use the following format:
+            f"susceptibility_{group}.tiff".
         colour_map_name: str or list[str] = 'funmat'
             Input of colour_map function.
         xlim: tuple(optional: float, optional: float) = ()
@@ -4639,7 +4639,7 @@ class Compound:
             Determines the frequency of x major ticks.
         yticks: int or float = 0
             Determines the frequency of y major ticks.
-        field: Union['B','H'] = 'B'
+        field: Literal['B','H'] = 'B'
             Determines the field unit - B[T] or H[kOe].
 
         Returns
@@ -4658,7 +4658,7 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.calculate_chitht
+        slothpy.Compound.calculate_susceptibility
         """
         try:
             # Getting data from .slt or sloth file
@@ -4761,31 +4761,30 @@ class Compound:
             try:
                 # Saving plot figure
                 if not save_name:
-                    fig.savefig(
-                        path.join(save_path, f"chitht_{group}.tiff"), dpi=300
-                    )
+                    file = path.join(save_path, f"susceptibility_{group}.tiff")
                 else:
-                    fig.savefig(path.join(save_path, save_name), dpi=300)
+                    file = path.join(save_path, save_name)
+                fig.savefig(file, dpi=300)
             except Exception as exc:
                 close("all")
                 raise SltSaveError(
                     self._hdf5,
                     exc,
-                    "Failed to save susceptibility data plot "
+                    "Failed to save susceptibility data plot from "
                     + BLUE
-                    + "Group "
+                    + "Group: "
                     + RESET
                     + '"'
                     + BLUE
                     + f"{group}"
                     + RESET
-                    + '", filename: '
+                    + '", file: '
                     + PURPLE
-                    + f"chitht_{group}.tiff",
+                    + f"{file}",
                 ) from None
         close("all")
 
-    def plot_helmholtz_energyth(
+    def plot_energy(
         self,
         group: str,
         internal_energy: bool = False,
@@ -4798,7 +4797,7 @@ class Compound:
         ylim: tuple[int or float] = (),
         xticks: int or float = 1,
         yticks: int or float = 0,
-        field: Union["B", "H"] = "B",
+        field: Literal["B", "H"] = "B",
     ):
         """
         Creates graphs of Helmholtz energy(T,H) or internal energy(T,H) given a
@@ -4833,7 +4832,7 @@ class Compound:
             Determines the frequency of x major ticks.
         yticks: int = 0
             Determines the freqency of y major ticks.
-        field: Union['B','H'] = 'B'
+        field: Literal['B','H'] = 'B'
             Determines the field unit - B[T] or H[kOe].
 
         Returns
@@ -4852,7 +4851,7 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.calculate_helmholtz_energyth
+        slothpy.Compound.calculate_energy
         """
         if internal_energy:
             name = "internal"
@@ -4985,7 +4984,7 @@ class Compound:
         ylim: tuple[int or float] = (),
         xticks: int or float = 1,
         yticks: int or float = 0,
-        field: Union["H", "B"] = "B",
+        field: Literal["H", "B"] = "B",
     ):
         """
         Function that creates graphs of E(H,orientation) given name of
@@ -5026,7 +5025,7 @@ class Compound:
             Determines the frequency of x major ticks.
         yticks: int or float = 0
             Determines the frequency of y major ticks.
-        field: Union['B','H'] = 'B'
+        field: Literal['B','H'] = 'B'
             Determines the field unit - B[T] or H[kOe].
 
         Returns
@@ -5388,7 +5387,7 @@ class Compound:
     def plot_3d(
         self,
         group: str,
-        data_type: Union[
+        data_type: Literal[
             "chit",
             "chi",
             "helmholtz_energy",
@@ -5427,7 +5426,7 @@ class Compound:
         ----------
         group: str
             Name of a group from .slt file for which a plot will be created.
-        data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
+        data_type: Literal["chit", "chi", "helmholtz_energy", "internal_energy",
           "magnetisation"]
             Type of the data that will be used to create plot.
         field_i: int
@@ -5468,14 +5467,14 @@ class Compound:
         elev: int = 30
             Determines an angle between a viewing position and the xy plane.
         azim: int = -60
-            Determines a rotation of a viewing position in ralation to z axis.
+            Determines a rotation of a viewing position in relation to z axis.
         roll: int = 0
             Determines a rotation of camera around the viewing (position) axis.
         axis_off: bool = False
             Determines if the axes are turned off.
         add_g_tensor_axes: bool = False
             Determines if add to the plot main magnetic axes scaled by the
-            correcponding pseudo-g-tensor values.
+            corresponding pseudo-g-tensor values.
         axes_group: str = ""
             Name of a group from calculate_g_tensor_axes method from .slt file.
         axes_colors: list[str] = ['r','g','b']
@@ -5511,11 +5510,11 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
-        slothpy.Compound.calculate_helmholtz_energy_3d,
+        slothpy.Compound.calculate_magnetisation_3d, slothpy.Compound.calculate_susceptibility_3d,
+        slothpy.Compound.calculate_energy_3d,
         slothpy.Compound.calculate_g_tensor_axes
         """
-        if (not isinstance(axes_scale_factor, float)) or (
+        if (not isinstance(axes_scale_factor, (float, int))) or (
             axes_scale_factor < 1
         ):
             raise SltInputError(
@@ -5526,10 +5525,10 @@ class Compound:
 
         try:
             if (data_type == "chit") or (data_type == "chit"):
-                group_name = f"{group}_3d_susceptibility"
+                group_name = f"{group}_susceptibility_3d"
                 xyz = self[group_name, f"{group}_chit_3d"]
                 description = (
-                    f"Chi{'T' if data_type == 'chit' else ''} dependance on"
+                    f"Chi{'T' if data_type == 'chit' else ''} dependence on"
                     " direction,"
                     f" B={round(self[group_name, f'{group}_fields'][field_i], round_field)} T, "
                     f"T={round(self[group_name, f'{group}_temperatures'][temp_i], round_temp)} K"
@@ -5538,10 +5537,10 @@ class Compound:
                 data_type == "internal_energy"
             ):
                 if data_type == "helmholtz_energy":
-                    group_name = f"{group}_3d_helmholtz_energy"
+                    group_name = f"{group}_helmholtz_energy_3d"
                     energy_type = "Helmholtz"
                 else:
-                    group_name = f"{group}_3d_internal_energy"
+                    group_name = f"{group}_internal_energy_3d"
                     energy_type = "Internal"
                 xyz = self[group_name, f"{group}_energy_3d"]
                 description = (
@@ -5550,7 +5549,7 @@ class Compound:
                     f"T={round(self[group_name, f'{group}_temperatures'][temp_i], round_temp)} K"
                 )
             elif data_type == "magnetisation":
-                group_name = f"{group}_3d_magnetisation"
+                group_name = f"{group}_magnetisation_3d"
                 xyz = self[group_name, f"{group}_mag_3d"]
                 description = (
                     "Magnetisation dependence on direction,"
@@ -5720,9 +5719,9 @@ class Compound:
                 ):
                     raise SltInputError(
                         ValueError(
-                            "Doublet number must be a nonnegative integer less"
-                            " or equal to the number of doublets in the axes"
-                            " group."
+                            "Doublet number must be a not negative integer"
+                            " less or equal to the number of doublets in the"
+                            " axes group."
                         )
                     ) from None
                 axes_matrix = self[
@@ -5812,14 +5811,14 @@ class Compound:
     def animate_3d(
         self,
         group: str,
-        data_type: Union[
+        data_type: Literal[
             "chit",
             "chi",
             "helmholtz_energy",
             "internal_energy",
             "magnetisation",
         ],
-        animation_variable: Union["temperature", "field"],
+        animation_variable: Literal["temperature", "field"],
         filename: str,
         i_start: int = 0,
         i_end: int = -1,
@@ -5829,6 +5828,7 @@ class Compound:
         ticks: int or float = 1,
         r_density: int = 0,
         c_density: int = 0,
+        points_size: float = 0.2,
         axis_off: bool = False,
         fps: int = 15,
         dpi: int = 100,
@@ -5855,10 +5855,10 @@ class Compound:
         ----------
         group: str
             Name of a group from .slt file for which plot will be created.
-        data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
+        data_type: Literal["chit", "chi", "helmholtz_energy", "internal_energy",
           "magnetisation"]
             Type of data that will be used to create plot.
-        animation_variable: Union["temperature", "field"]
+        animation_variable: Literal["temperature", "field"]
             Variable changing during animation, can take one of two values:
             temperature or field.
         filename: str
@@ -5880,6 +5880,8 @@ class Compound:
             Determines rcount of 3D plot.
         c_density: int = 0
             Determines ccount of 3D plot.
+        points_size: float = 0.2
+            Determines points size for Fibonacci scatter plots.
         axis_off: bool = False
             Determines if axes are turned off.
         fps: int
@@ -5906,7 +5908,7 @@ class Compound:
             Determines a rotation of camera around the viewing (position) axis.
         add_g_tensor_axes: bool = False
             Determines if add to the plot main magnetic axes scaled by the
-            correcponding pseudo-g-tensor values.
+            corresponding pseudo-g-tensor values.
         axes_group: str = ""
             Name of a group from calculate_g_tensor_axes method from .slt file.
         axes_colors: list[str] = ['r','g','b']
@@ -5940,11 +5942,11 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
-        slothpy.Compound.calculate_helmholtz_energy_3d,
+        slothpy.Compound.calculate_magnetisation_3d, slothpy.Compound.calculate_susceptibility_3d,
+        slothpy.Compound.calculate_energy_3d,
         slothpy.Compound.calculate_g_tensor_axes
         """
-        if (not isinstance(axes_scale_factor, float)) or (
+        if (not isinstance(axes_scale_factor, (float, int))) or (
             axes_scale_factor < 1
         ):
             raise SltInputError(
@@ -5954,67 +5956,33 @@ class Compound:
             )
 
         try:
-            T = False
-            if data_type == "chit":
-                x0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][0]
-                y0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][1]
-                z0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][2]
-                fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
-                temps = self[
-                    f"{group}_3d_susceptibility", f"{group}_temperatures"
-                ]
-                T = True
-            elif data_type == "chi":
-                x0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][0]
-                y0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][1]
-                z0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][2]
-                fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
-                temps = self[
-                    f"{group}_3d_susceptibility", f"{group}_temperatures"
-                ]
-            elif data_type == "helmholtz_energy":
-                x0 = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
-                ][0]
-                y0 = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
-                ][1]
-                z0 = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
-                ][2]
-                fields = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_fields"
-                ]
-                temps = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_temperatures"
-                ]
-            elif data_type == "internal_energy":
-                x0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    0
-                ]
-                y0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    1
-                ]
-                z0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    2
-                ]
-                fields = self[f"{group}_3d_internal_energy", f"{group}_fields"]
-                temps = self[
-                    f"{group}_3d_internal_energy", f"{group}_temperatures"
-                ]
+            if (data_type == "chit") or (data_type == "chit"):
+                group_name = f"{group}_susceptibility_3d"
+                x0y0z0 = self[group_name, f"{group}_chit_3d"]
+            elif (data_type == "helmholtz_energy") or (
+                data_type == "internal_energy"
+            ):
+                if data_type == "helmholtz_energy":
+                    group_name = f"{group}_helmholtz_energy_3d"
+                    energy_type = "Helmholtz"
+                else:
+                    group_name = f"{group}_internal_energy_3d"
+                    energy_type = "Internal"
+                x0y0z0 = self[group_name, f"{group}_energy_3d"]
             elif data_type == "magnetisation":
-                x0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][0]
-                y0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][1]
-                z0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][2]
-                fields = self[f"{group}_3d_magnetisation", f"{group}_fields"]
-                temps = self[
-                    f"{group}_3d_magnetisation", f"{group}_temperatures"
-                ]
+                group_name = f"{group}_magnetisation_3d"
+                x0y0z0 = self[group_name, f"{group}_mag_3d"]
             else:
                 raise ValueError(
                     "Acceptable data types: chit, chi, helmholtz_energy and"
                     " magnetisation"
                 )
+            fields = self[group_name, f"{group}_fields"]
+            temps = self[group_name, f"{group}_temperatures"]
+            if x0y0z0.ndim == 5:
+                plot_style = "globe"
+            elif x0y0z0.ndim == 4:
+                plot_style = "scatter"
             if add_g_tensor_axes:
                 doublets = axes_matrix = self[
                     f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
@@ -6026,9 +5994,9 @@ class Compound:
                 ):
                     raise SltInputError(
                         ValueError(
-                            "Doublet number must be a nonnegative integer less"
-                            " or equal to the number of doublets in the axes"
-                            " group."
+                            "Doublet number must be a not negative integer"
+                            " less or equal to the number of doublets in the"
+                            " axes group."
                         )
                     ) from None
                 axes_matrix = self[
@@ -6073,71 +6041,119 @@ class Compound:
             )
         title = description
 
-        try:
-            fig = figure()
-            ax = fig.add_subplot(projection="3d")
-            if bar:
-                colour = iter(
-                    colour_map(bar_colour_map_name)(
-                        linspace(0, 1, i_end - i_start)
-                    )
+        fig = figure()
+        ax = fig.add_subplot(projection="3d")
+        if i_end == -1:
+            i_end = (
+                len(fields) - 1
+                if animation_variable == "field"
+                else len(temps) - 1
+            )
+        if bar:
+            colour = iter(
+                colour_map(bar_colour_map_name)(
+                    linspace(0, 1, i_end - i_start)
                 )
-                indicator = linspace(0, 1, i_end - i_start)
-                if bar_scale:
+            )
+            indicator = linspace(0, 1, i_end - i_start)
+            if bar_scale:
 
-                    def my_ticks(x, pos):
-                        if animation_variable == "temperature":
-                            return f"{round(x * temps[-1], temp_rounding)} K"
-                        else:
-                            return f"{round(x * fields[-1], field_rounding)} T"
+                def my_ticks(x, pos):
+                    if animation_variable == "temperature":
+                        return f"{round(x * temps[-1], temp_rounding)} K"
+                    else:
+                        return f"{round(x * fields[-1], field_rounding)} T"
 
+        try:
             writer = PillowWriter(fps=fps)
             with writer.saving(fig, f"{filename}.gif", dpi):
+                surface = None
                 if animation_variable == "temperature":
                     for i_temp in range(i_start, i_end):
-                        x = x0[i_constant, i_temp, :, :]
-                        y = y0[i_constant, i_temp, :, :]
-                        z = z0[i_constant, i_temp, :, :]
-                        if data_type == "chit":
+                        if plot_style == "globe":
+                            x = x0y0z0[0, i_constant, i_temp, :, :]
+                            y = x0y0z0[1, i_constant, i_temp, :, :]
+                            z = x0y0z0[2, i_constant, i_temp, :, :]
+                            max_array = array([max(x), max(y), max(z)])
+                            lim = max(max_array) * axes_scale_factor
+                            norm = Normalize(z.min(), z.max())
+                            colors = colour_map(colour_map_name)(norm(z))
+                            rcount, ccount, _ = colors.shape
+                            if not r_density:
+                                r_density = rcount
+                            if not c_density:
+                                c_density = ccount
+                            surface = ax.plot_surface(
+                                x,
+                                y,
+                                z,
+                                rcount=r_density,
+                                ccount=c_density,
+                                facecolors=colors,
+                                shade=False,
+                            )
+                        elif plot_style == "scatter":
+                            x = x0y0z0[i_constant, i_temp, :, 0]
+                            y = x0y0z0[i_constant, i_temp, :, 1]
+                            z = x0y0z0[i_constant, i_temp, :, 2]
+                            max_array = array([max(x), max(y), max(z)])
+                            lim = max(max_array) * axes_scale_factor
+                            norm = Normalize(z.min(), z.max())
+                            colors = colour_map(colour_map_name)(norm(z))
+                            surface = ax.scatter(
+                                x, y, z, s=points_size, facecolors=colors
+                            )
+                        if data_type == "susceptibility":
+                            if data_type == "chit":
+                                ax.set_xlabel(
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                                ax.set_ylabel(
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                                ax.set_zlabel(
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                            else:
+                                ax.set_xlabel(
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                                ax.set_ylabel(
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                                ax.set_zlabel(
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                        elif data_type == "helmholtz_energy":
                             ax.set_xlabel(
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                r"$F\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_ylabel(
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                r"$F\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_zlabel(
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                r"$F\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
-                        elif data_type == "chi":
+                        elif data_type == "internal_energy":
                             ax.set_xlabel(
-                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
+                                r"$U\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_ylabel(
-                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
+                                r"$U\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_zlabel(
-                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                                labelpad=20 * len(str(ticks)) / 4,
-                            )
-                        elif (
-                            data_type == "helmholtz_energy"
-                            or "internal_energy"
-                        ):
-                            ax.set_xlabel(
-                                r"$E\ /\ \mathrm{cm^{-1}}$",
-                                labelpad=20 * len(str(ticks)) / 4,
-                            )
-                            ax.set_ylabel(
-                                r"$E\ /\ \mathrm{cm^{-1}}$",
-                                labelpad=20 * len(str(ticks)) / 4,
-                            )
-                            ax.set_zlabel(
-                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                r"$U\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                         elif data_type == "magnetisation":
@@ -6158,24 +6174,7 @@ class Compound:
                                 "Acceptable data types: chit, chi,"
                                 " helmholtz_energy and magnetisation"
                             )
-                        max_array = array([max(x), max(y), max(z)])
-                        lim = max(max_array) * axes_scale_factor
-                        norm = Normalize(z.min(), z.max())
-                        colors = colour_map(colour_map_name)(norm(z))
-                        rcount, ccount, _ = colors.shape
-                        if not r_density:
-                            r_density = rcount
-                        if not c_density:
-                            c_density = ccount
-                        surface = ax.plot_surface(
-                            x,
-                            y,
-                            z,
-                            rcount=r_density,
-                            ccount=c_density,
-                            facecolors=colors,
-                            shade=False,
-                        )
+
                         if add_g_tensor_axes:
                             vec = axes_matrix * g_tensor[newaxis, 1:]
                             if rotation is not None:
@@ -6206,7 +6205,8 @@ class Compound:
                                     [vec[2, i], -vec[2, i]],
                                     axes_colors[i],
                                 )
-                        surface.set_facecolor((0, 0, 0, 0))
+                        if surface is not None:
+                            surface.set_facecolor((0, 0, 0, 0))
                         ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
                         ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
                         ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
@@ -6227,7 +6227,7 @@ class Compound:
                             ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                             ax.yaxis.set_minor_locator(AutoMinorLocator(2))
                             ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                            if not (not T and ticks == 1):
+                            if data_type == "chit" or ticks != 1:
                                 ax.xaxis.set_major_locator(
                                     MultipleLocator(ticks)
                                 )
@@ -6292,46 +6292,90 @@ class Compound:
 
                 elif animation_variable == "field":
                     for i_field in range(i_start, i_end):
-                        x = x0[i_field, i_constant, :, :]
-                        y = y0[i_field, i_constant, :, :]
-                        z = z0[i_field, i_constant, :, :]
-                        if data_type == "chit":
-                            ax.set_xlabel(
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
-                                labelpad=20 * len(str(ticks)) / 4,
+                        if plot_style == "globe":
+                            x = x0y0z0[0, i_field, i_constant, :, :]
+                            y = x0y0z0[1, i_field, i_constant, :, :]
+                            z = x0y0z0[2, i_field, i_constant, :, :]
+                            max_array = array([max(x), max(y), max(z)])
+                            lim = max(max_array) * axes_scale_factor
+                            norm = Normalize(z.min(), z.max())
+                            colors = colour_map(colour_map_name)(norm(z))
+                            rcount, ccount, _ = colors.shape
+                            if not r_density:
+                                r_density = rcount
+                            if not c_density:
+                                c_density = ccount
+                            surface = ax.plot_surface(
+                                x,
+                                y,
+                                z,
+                                rcount=r_density,
+                                ccount=c_density,
+                                facecolors=colors,
+                                shade=False,
                             )
-                            ax.set_ylabel(
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
-                                labelpad=20 * len(str(ticks)) / 4,
+                        elif plot_style == "scatter":
+                            x = x0y0z0[i_field, i_constant, :, 0]
+                            y = x0y0z0[i_field, i_constant, :, 1]
+                            z = x0y0z0[i_field, i_constant, :, 2]
+                            max_array = array([max(x), max(y), max(z)])
+                            lim = max(max_array) * axes_scale_factor
+                            norm = Normalize(z.min(), z.max())
+                            colors = colour_map(colour_map_name)(norm(z))
+                            ax.scatter(
+                                x, y, z, s=points_size, facecolors=colors
                             )
-                            ax.set_zlabel(
-                                r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
-                                labelpad=20 * len(str(ticks)) / 4,
-                            )
-                        elif data_type == "chi":
-                            ax.set_xlabel(
-                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                                labelpad=20 * len(str(ticks)) / 4,
-                            )
-                            ax.set_ylabel(
-                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                                labelpad=20 * len(str(ticks)) / 4,
-                            )
-                            ax.set_zlabel(
-                                r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
-                                labelpad=20 * len(str(ticks)) / 4,
-                            )
+                        if data_type == "susceptibility":
+                            if data_type == "chit":
+                                ax.set_xlabel(
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                                ax.set_ylabel(
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                                ax.set_zlabel(
+                                    r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                            else:
+                                ax.set_xlabel(
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                                ax.set_ylabel(
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
+                                ax.set_zlabel(
+                                    r"$\chi_{\mathrm{M}}\ /\ \mathrm{cm^{3}mol^{-1}}$",
+                                    labelpad=20 * len(str(ticks)) / 4,
+                                )
                         elif data_type == "helmholtz_energy":
                             ax.set_xlabel(
-                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                r"$F\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_ylabel(
-                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                r"$F\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                             ax.set_zlabel(
-                                r"$E\ /\ \mathrm{cm^{-1}}$",
+                                r"$F\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                        elif data_type == "internal_energy":
+                            ax.set_xlabel(
+                                r"$U\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_ylabel(
+                                r"$U\ /\ \mathrm{cm^{-1}}$",
+                                labelpad=20 * len(str(ticks)) / 4,
+                            )
+                            ax.set_zlabel(
+                                r"$U\ /\ \mathrm{cm^{-1}}$",
                                 labelpad=20 * len(str(ticks)) / 4,
                             )
                         elif data_type == "magnetisation":
@@ -6347,30 +6391,6 @@ class Compound:
                                 r"$M\ /\ \mathrm{\mu_{B}}$",
                                 labelpad=10 * len(str(ticks)) / 4,
                             )
-                        else:
-                            raise ValueError(
-                                "Acceptable data types: chit, chi,"
-                                " helmholtz_energy and magnetisation"
-                            )
-                        # title = description
-                        max_array = array([max(x), max(y), max(z)])
-                        lim = max(max_array) * axes_scale_factor
-                        norm = Normalize(z.min(), z.max())
-                        colors = colour_map(colour_map_name)(norm(z))
-                        rcount, ccount, _ = colors.shape
-                        if not r_density:
-                            r_density = rcount
-                        if not c_density:
-                            c_density = ccount
-                        surface = ax.plot_surface(
-                            x,
-                            y,
-                            z,
-                            rcount=r_density,
-                            ccount=c_density,
-                            facecolors=colors,
-                            shade=False,
-                        )
                         if add_g_tensor_axes:
                             vec = axes_matrix * g_tensor[newaxis, 1:]
                             if rotation is not None:
@@ -6401,7 +6421,8 @@ class Compound:
                                     [vec[2, i], -vec[2, i]],
                                     axes_colors[i],
                                 )
-                        surface.set_facecolor((0, 0, 0, 0))
+                        if surface is not None:
+                            surface.set_facecolor((0, 0, 0, 0))
                         ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
                         ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
                         ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
@@ -6422,7 +6443,7 @@ class Compound:
                             ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                             ax.yaxis.set_minor_locator(AutoMinorLocator(2))
                             ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                            if not (not T and ticks == 1):
+                            if data_type == "chit" or ticks != 1:
                                 ax.xaxis.set_major_locator(
                                     MultipleLocator(ticks)
                                 )
@@ -6507,7 +6528,7 @@ class Compound:
     def interactive_plot_3d(
         self,
         group: str,
-        data_type: Union[
+        data_type: Literal[
             "chit",
             "chi",
             "helmholtz_energy",
@@ -6521,6 +6542,7 @@ class Compound:
         field_bar_colour_map_name: str or list[str] = "BuPi",
         lim_scalar: float = 1.0,
         ticks: int or float = 1,
+        points_size: float = 0.2,
         bar: bool = True,
         bar_scale: bool = False,
         temp_rounding: int = 2,
@@ -6541,7 +6563,7 @@ class Compound:
         ----------
         group: str
             Name of a group from .slt file for which plot will be created.
-        data_type: Union["chit", "chi", "helmholtz_energy", "internal_energy",
+        data_type: Literal["chit", "chi", "helmholtz_energy", "internal_energy",
           "magnetisation"]
             Type of the data that will be used to create the plot.
         colour_map_name: str or list = 'dark_rainbow_r_l'
@@ -6562,6 +6584,8 @@ class Compound:
             plotted figure.
         ticks: float = 1
             Determines the ticks spacing.
+        points_size: float = 0.2
+            Determines points size for Fibonacci scatter plots.
         bar: bool = True
             Determines if the bar is shown.
         bar_scale: bool = False
@@ -6576,22 +6600,12 @@ class Compound:
             Determines if the axes are turned off.
         add_g_tensor_axes: bool = False
             Determines if add to the plot main magnetic axes scaled by the
-            correcponding pseudo-g-tensor values.
+            corresponding pseudo-g-tensor values.
         axes_group: str = ""
             Name of a group from calculate_g_tensor_axes method from .slt file.
         axes_colors: list[str] = ['r','g','b']
             Determines the colors of the magnetic axes in order of x, y, z.
             Accepts matplotlib colors inputs, for example HTML colour codes.
-        doublet_number: int = None
-            Number of a doublet for which axes will be added to the plot.
-        axes_scale_factor: float64 = 1.0
-            Scale factor determining lenght of the longest (main) magnetic axis
-            with respect to the maximal value of the loaded data and setting
-            maximal limit of the plot's xyz axes. It should be set > 1
-            otherwise some data will end up missing on the plot! The limit is
-            max(loaded_data) * axes_scale_factor.
-        axes_group: str = ""
-            Name of a group from calculate_g_tensor_axes method from .slt file.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
         axes_scale_factor: float64 = 1.0
@@ -6620,11 +6634,11 @@ class Compound:
 
         See Also
         --------
-        slothpy.Compound.calculate_mag_3d, slothpy.Compound.calculate_chit_3d,
-        slothpy.Compound.calculate_helmholtz_energy_3d,
+        slothpy.Compound.calculate_magnetisation_3d, slothpy.Compound.calculate_susceptibility_3d,
+        slothpy.Compound.calculate_energy_3d,
         slothpy.Compound.calculate_g_tensor_axes
         """
-        if (not isinstance(axes_scale_factor, float)) or (
+        if (not isinstance(axes_scale_factor, (float, int))) or (
             axes_scale_factor < 1
         ):
             raise SltInputError(
@@ -6635,65 +6649,33 @@ class Compound:
 
         field_i, temp_i = 0, 0
         try:
-            T = False
-            if data_type == "chit":
-                x0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][0]
-                y0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][1]
-                z0 = self[f"{group}_3d_susceptibility", f"{group}_chit_3d"][2]
-                fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
-                temps = self[
-                    f"{group}_3d_susceptibility", f"{group}_temperatures"
-                ]
-                T = True
-            if data_type == "chi":
-                x0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][0]
-                y0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][1]
-                z0 = self[f"{group}_3d_susceptibility", f"{group}_chi_3d"][2]
-                fields = self[f"{group}_3d_susceptibility", f"{group}_fields"]
-                temps = self[
-                    f"{group}_3d_susceptibility", f"{group}_temperatures"
-                ]
-
-            elif data_type == "helmholtz_energy":
-                x0 = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
-                ][0]
-                y0 = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
-                ][1]
-                z0 = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_energy_3d"
-                ][2]
-                fields = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_fields"
-                ]
-                temps = self[
-                    f"{group}_3d_helmholtz_energy", f"{group}_temperatures"
-                ]
-
-            elif data_type == "internal_energy":
-                x0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    0
-                ]
-                y0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    1
-                ]
-                z0 = self[f"{group}_3d_internal_energy", f"{group}_energy_3d"][
-                    2
-                ]
-                fields = self[f"{group}_3d_internal_energy", f"{group}_fields"]
-                temps = self[
-                    f"{group}_3d_internal_energy", f"{group}_temperatures"
-                ]
-
+            if (data_type == "chit") or (data_type == "chit"):
+                group_name = f"{group}_susceptibility_3d"
+                x0y0z0 = self[group_name, f"{group}_chit_3d"]
+            elif (data_type == "helmholtz_energy") or (
+                data_type == "internal_energy"
+            ):
+                if data_type == "helmholtz_energy":
+                    group_name = f"{group}_helmholtz_energy_3d"
+                    energy_type = "Helmholtz"
+                else:
+                    group_name = f"{group}_internal_energy_3d"
+                    energy_type = "Internal"
+                x0y0z0 = self[group_name, f"{group}_energy_3d"]
             elif data_type == "magnetisation":
-                x0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][0]
-                y0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][1]
-                z0 = self[f"{group}_3d_magnetisation", f"{group}_mag_3d"][2]
-                fields = self[f"{group}_3d_magnetisation", f"{group}_fields"]
-                temps = self[
-                    f"{group}_3d_magnetisation", f"{group}_temperatures"
-                ]
+                group_name = f"{group}_magnetisation_3d"
+                x0y0z0 = self[group_name, f"{group}_mag_3d"]
+            else:
+                raise ValueError(
+                    "Acceptable data types: chit, chi, helmholtz_energy and"
+                    " magnetisation"
+                )
+            fields = self[group_name, f"{group}_fields"]
+            temps = self[group_name, f"{group}_temperatures"]
+            if x0y0z0.ndim == 5:
+                plot_style = "globe"
+            elif x0y0z0.ndim == 4:
+                plot_style = "scatter"
             if add_g_tensor_axes:
                 doublets = axes_matrix = self[
                     f"{axes_group}_g_tensors_axes", f"{axes_group}_axes"
@@ -6757,26 +6739,31 @@ class Compound:
                     def my_ticks2(x, pos):
                         return f"{round(x * fields[-1], field_rounding)} T"
 
-            x = x0[field_i, temp_i, :, :]
-            y = y0[field_i, temp_i, :, :]
-            z = z0[field_i, temp_i, :, :]
-
-            max_array = array([max(x), max(y), max(z)])
-            lim = max(max_array) * axes_scale_factor
-            norm = Normalize(z.min(), z.max())
-            colors = colour_map(colour_map_name)(norm(z))
-            rcount, ccount, _ = colors.shape
-            r_density = rcount
-            c_density = ccount
-            surface = ax.plot_surface(
-                x,
-                y,
-                z,
-                rcount=r_density,
-                ccount=c_density,
-                facecolors=colors,
-                shade=False,
-            )
+            if plot_style == "globe":
+                x = x0y0z0[0, field_i, temp_i, :, :]
+                y = x0y0z0[1, field_i, temp_i, :, :]
+                z = x0y0z0[2, field_i, temp_i, :, :]
+                max_array = array([max(x), max(y), max(z)])
+                lim = max(max_array) * axes_scale_factor
+                norm = Normalize(z.min(), z.max())
+                colors = colour_map(colour_map_name)(norm(z))
+                rcount, ccount, _ = colors.shape
+                surface = ax.plot_surface(
+                    x,
+                    y,
+                    z,
+                    facecolors=colors,
+                    shade=False,
+                )
+            elif plot_style == "scatter":
+                x = x0y0z0[field_i, temp_i, :, 0]
+                y = x0y0z0[field_i, temp_i, :, 1]
+                z = x0y0z0[field_i, temp_i, :, 2]
+                max_array = array([max(x), max(y), max(z)])
+                lim = max(max_array) * axes_scale_factor
+                norm = Normalize(z.min(), z.max())
+                colors = colour_map(colour_map_name)(norm(z))
+                surface = ax.scatter(x, y, z, s=points_size, facecolors=colors)
             if add_g_tensor_axes:
                 vec = axes_matrix * g_tensor[newaxis, 1:]
                 if rotation is not None:
@@ -6810,7 +6797,7 @@ class Compound:
             # Important order of operations!
             labelpad = 20 * len(str(ticks)) / 4
             if data_type in "chit":
-                if T:
+                if data_type == "chit":
                     ax_label = (
                         r"$\chi_{\mathrm{M}}T\ /\ \mathrm{cm^{3}mol^{-1}K}$"
                     )
@@ -6840,7 +6827,7 @@ class Compound:
                 ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                 ax.yaxis.set_minor_locator(AutoMinorLocator(2))
                 ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                if not (not T and ticks == 1):
+                if data_type == "chit" or ticks != 1:
                     ax.xaxis.set_major_locator(MultipleLocator(ticks))
                     ax.yaxis.set_major_locator(MultipleLocator(ticks))
                     ax.zaxis.set_major_locator(MultipleLocator(ticks))
@@ -6946,28 +6933,24 @@ class Compound:
                 color=B_slider_colour,
             )
 
-            def slider_update(val):
+            def slider_update_globe(val):
                 temp_i = slider_temp.val
                 field_i = slider_field.val
 
                 ax.cla()
-                x = x0[field_i, temp_i, :, :]
-                y = y0[field_i, temp_i, :, :]
-                z = z0[field_i, temp_i, :, :]
 
+                x = x0y0z0[0, field_i, temp_i, :, :]
+                y = x0y0z0[1, field_i, temp_i, :, :]
+                z = x0y0z0[2, field_i, temp_i, :, :]
                 max_array = array([max(x), max(y), max(z)])
                 lim = max(max_array) * axes_scale_factor
                 norm = Normalize(z.min(), z.max())
                 colors = colour_map(colour_map_name)(norm(z))
                 rcount, ccount, _ = colors.shape
-                r_density = rcount
-                c_density = ccount
                 surface = ax.plot_surface(
                     x,
                     y,
                     z,
-                    rcount=r_density,
-                    ccount=c_density,
                     facecolors=colors,
                     shade=False,
                 )
@@ -7026,7 +7009,7 @@ class Compound:
                     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
                     ax.yaxis.set_minor_locator(AutoMinorLocator(2))
                     ax.zaxis.set_minor_locator(AutoMinorLocator(2))
-                    if not (not T and ticks == 1):
+                    if ticks != 1:
                         ax.xaxis.set_major_locator(MultipleLocator(ticks))
                         ax.yaxis.set_major_locator(MultipleLocator(ticks))
                         ax.zaxis.set_major_locator(MultipleLocator(ticks))
@@ -7089,8 +7072,144 @@ class Compound:
 
                 fig.canvas.draw()
 
-            slider_temp.on_changed(slider_update)
-            slider_field.on_changed(slider_update)
+            def slider_update_scatter(val):
+                temp_i = slider_temp.val
+                field_i = slider_field.val
+
+                ax.cla()
+
+                x = x0y0z0[field_i, temp_i, :, 0]
+                y = x0y0z0[field_i, temp_i, :, 1]
+                z = x0y0z0[field_i, temp_i, :, 2]
+                max_array = array([max(x), max(y), max(z)])
+                lim = max(max_array) * axes_scale_factor
+                norm = Normalize(z.min(), z.max())
+                colors = colour_map(colour_map_name)(norm(z))
+                surface = ax.scatter(x, y, z, s=points_size, facecolors=colors)
+                if add_g_tensor_axes:
+                    vec = axes_matrix * g_tensor[newaxis, 1:]
+                    if rotation is not None:
+                        if rotation.shape != (3, 3):
+                            raise SltInputError(
+                                ValueError(
+                                    "Input rotation matrix must be a 3x3"
+                                    " matrix."
+                                )
+                            ) from None
+                        product = rotation.T @ rotation
+                        if not allclose(
+                            product, identity(3), atol=1e-2, rtol=0
+                        ):
+                            raise SltInputError(
+                                ValueError(
+                                    "Input rotation matrix must be orthogonal."
+                                )
+                            ) from None
+                        vec = rotation @ vec
+                    max_vec = max(vec)
+                    vec = vec * lim / max_vec
+                    for i in range(3):
+                        ax.plot(
+                            [vec[0, i], -vec[0, i]],
+                            [vec[1, i], -vec[1, i]],
+                            [vec[2, i], -vec[2, i]],
+                            axes_colors[i],
+                        )
+                surface.set_facecolor((0, 0, 0, 0))
+                ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
+                ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
+                ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
+                ax.set_title(
+                    f"B={fields[field_i]:.4f} T, T={temps[temp_i]:.4f} K"
+                )
+                ax.set_xlabel(ax_label, labelpad=labelpad)
+                ax.set_ylabel(ax_label, labelpad=labelpad)
+                ax.set_zlabel(ax_label, labelpad=labelpad)
+
+                if ticks == 0:
+                    for axis_i in [ax.xaxis, ax.yaxis, ax.zaxis]:
+                        axis_i.set_ticklabels([])
+                        axis_i._axinfo["axisline"]["linewidth"] = 1
+                        axis_i._axinfo["axisline"]["color"] = (0, 0, 0)
+                        axis_i._axinfo["grid"]["linewidth"] = 0.5
+                        axis_i._axinfo["grid"]["linestyle"] = "-"
+                        axis_i._axinfo["grid"]["color"] = (0, 0, 0)
+                        axis_i._axinfo["tick"]["inward_factor"] = 0.0
+                        axis_i._axinfo["tick"]["outward_factor"] = 0.0
+                        axis_i.set_pane_color((0.95, 0.95, 0.95))
+                else:
+                    ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+                    ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+                    ax.zaxis.set_minor_locator(AutoMinorLocator(2))
+                    if ticks != 1:
+                        ax.xaxis.set_major_locator(MultipleLocator(ticks))
+                        ax.yaxis.set_major_locator(MultipleLocator(ticks))
+                        ax.zaxis.set_major_locator(MultipleLocator(ticks))
+                ax.grid(False)
+                fig.subplots_adjust(left=0.1)
+                if bar:
+                    c = colour1[temp_i]
+                    axins = ax.inset_axes([-0.05, 0.7, 0.098, 0.2])
+                    axins.bar(1, indicator1[temp_i], width=0.2, color=c)
+                    axins.set_ylim(0, 1)
+                    c = colour2[field_i]
+                    axins2 = ax.inset_axes([-0.05, 0.2, 0.098, 0.2])
+                    axins2.bar(1, indicator2[field_i], width=0.2, color=c)
+                    axins2.set_ylim(0, 1)
+
+                    if not bar_scale:
+                        axins.text(
+                            1,
+                            1,
+                            s=f"{round(temps[-1], 1)} K",
+                            verticalalignment="bottom",
+                            horizontalalignment="center",
+                        )
+                        axins.text(
+                            1,
+                            -0.03,
+                            s=f"{round(temps[0], 1)} K",
+                            verticalalignment="top",
+                            horizontalalignment="center",
+                        )
+                        axins.axison = False
+                        axins2.text(
+                            1,
+                            1,
+                            s=f"{round(fields[-1], 1)} T",
+                            verticalalignment="bottom",
+                            horizontalalignment="center",
+                        )
+                        axins2.text(
+                            1,
+                            -0.03,
+                            s=f"{round(fields[0], 1)} T",
+                            verticalalignment="top",
+                            horizontalalignment="center",
+                        )
+                        axins2.axison = False
+                    if bar_scale:
+                        axins.get_xaxis().set_visible(False)
+                        axins.xaxis.set_tick_params(labelbottom=False)
+                        axins.yaxis.set_major_formatter(
+                            FuncFormatter(my_ticks)
+                        )
+                        axins.yaxis.set_minor_locator(AutoMinorLocator(2))
+                        axins2.get_xaxis().set_visible(False)
+                        axins2.xaxis.set_tick_params(labelbottom=False)
+                        axins2.yaxis.set_major_formatter(
+                            FuncFormatter(my_ticks2)
+                        )
+                        axins2.yaxis.set_minor_locator(AutoMinorLocator(2))
+
+                fig.canvas.draw()
+
+            if plot_style == "globe":
+                slider_temp.on_changed(slider_update_globe)
+                slider_field.on_changed(slider_update_globe)
+            else:
+                slider_temp.on_changed(slider_update_scatter)
+                slider_field.on_changed(slider_update_scatter)
             if axis_off:
                 ax.set_axis_off()
             _display_plot(fig, partial(close, "all"))

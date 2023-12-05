@@ -410,8 +410,8 @@ def _benchmark(
     setup_times = [sublist[0] for sublist in timings]
     exec_times = [sublist[1] for sublist in timings]
 
-    setup_time = mean(setup_times) - setup_time_start
-    exec_time = mean(exec_times)
+    setup_time = max(setup_times) - setup_time_start
+    exec_time = max(exec_times)
 
     return setup_time, exec_time
 
@@ -456,8 +456,6 @@ def _auto_tune(
             num_processes = old_processes
             num_threads = threads - 1
 
-            print(f"Num threads {num_threads}")
-
             setup_time, exec_time = _benchmark(
                 filename,
                 group,
@@ -472,16 +470,12 @@ def _auto_tune(
                 average,
                 energy_type,
             )
-            elo = num_to_parallelize * inner_loop_size / (4 * num_processes)
-            print(f"Setup time {setup_time}")
-            print(f"Exec time {exec_time}")
-            print(f"{elo}")
             # autotune_size ** 2 = 4
             current_time = (
                 setup_time
                 + num_to_parallelize
                 * inner_loop_size
-                / (12 * num_processes)
+                / (4 * num_processes)
                 * exec_time
             )
 

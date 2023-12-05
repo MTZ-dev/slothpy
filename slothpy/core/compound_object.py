@@ -105,8 +105,8 @@ from slothpy._general_utilities._math_expresions import (
 )
 from slothpy._general_utilities._auto_tune import _auto_tune
 from slothpy._general_utilities._ploting_utilities import (
-    colour_map,
-    _custom_colour_cycler,
+    color_map,
+    _custom_color_cycler,
 )
 from slothpy._general_utilities._ploting_utilities import _display_plot
 
@@ -4437,8 +4437,8 @@ class Compound:
         show_fig: bool = True,
         save: bool = False,
         save_path: str = ".",
-        save_name: str = "",
-        colour_map_name: str or list[str] = "rainbow",
+        save_name: str = None,
+        color_map_name: str or list[str] = "rainbow",
         xlim: tuple[int or float] = (),
         ylim: tuple[int or float] = (),
         xticks: int or float = 1,
@@ -4446,8 +4446,8 @@ class Compound:
         field: Literal["B", "H"] = "B",
     ):
         """
-        Creates graphs of M(H,T) given name of the group in .slt file, graphs
-        can be optionally shown, saved, colour palettes can be changed.
+        Creates graphs of M(H,T) given a name of the group in .slt file, graphs
+        can be optionally shown, saved, color palettes can be changed.
 
         Parameters
         ----------
@@ -4460,11 +4460,12 @@ class Compound:
             Determines if the plot is saved.
         save_path: str = "."
             Determines a path where the file will be saved if save = True.
-        save_name: str = ""
+        save_name: str = None
             Determines name of the file that would be created if save = True,
-            if left empty it will use following format: f"mgh_{group}.tiff".
-        colour_map_name: str or list[str] = "rainbow"
-            Input of the colour_map function.
+            if left empty it will use the following format: "magnetisation_
+            {group}.tiff".
+        color_map_name: str or list[str] = "rainbow"
+            Input of the color_map function.
         xlim: tuple(optional: float, optional: float) = ()
             Determines the lower and upper limit of the x-axis if two floats
             are passed, or just the upper limit if one is passed.
@@ -4524,13 +4525,11 @@ class Compound:
         try:
             # Plotting in matplotlib
             fig, ax = subplots()
-            # Defining colour maps for graphs
-            colour = iter(
-                colour_map(colour_map_name)(linspace(0, 1, len(temps)))
-            )
+            # Defining color maps for graphs
+            color = iter(color_map(color_map_name)(linspace(0, 1, len(temps))))
             # Creating a plot
             for i, mh in enumerate(mth):
-                c = next(colour)
+                c = next(color)
                 ax.plot(fields, mh, linewidth=2, c=c, label=f"{temps[i]} K")
 
             if yticks:
@@ -4586,13 +4585,13 @@ class Compound:
         if save:
             try:
                 # Saving plot figure
-                if not save_name:
-                    fig.savefig(
-                        path.join(save_path, f"mgh_{group}.tiff"), dpi=600
+                if save_name is None:
+                    filename = path.join(
+                        save_path, f"magnetisation_{group}.tiff"
                     )
                 else:
-                    fig.savefig(path.join(save_path, save_name), dpi=600)
-
+                    filename = path.join(save_path, save_name)
+                fig.savefig(filename, dpi=600)
             except Exception as exc:
                 close("all")
                 raise SltSaveError(
@@ -4608,7 +4607,7 @@ class Compound:
                     + RESET
                     + '", filename: '
                     + PURPLE
-                    + f"mgh_{group}.tiff",
+                    + f"{filename}",
                 ) from None
         close("all")
 
@@ -4618,8 +4617,8 @@ class Compound:
         show_fig: bool = True,
         save: bool = False,
         save_path: str = ".",
-        save_name: str = "",
-        colour_map_name: str or list[str] = "funmat",
+        save_name: str = None,
+        color_map_name: str or list[str] = "funmat",
         xlim: tuple[int or float] = (),
         ylim: tuple[int or float] = (),
         xticks: int or float = 100,
@@ -4629,7 +4628,7 @@ class Compound:
         """
         Creates graphs of chiT(H,T) or chi(H,T) depending on the content of
         .slt file, given a name of the group in .slt file, graphs can be
-        optionally saved, colour palettes can be changed.
+        optionally saved, color palettes can be changed.
 
         Parameters
         ----------
@@ -4642,12 +4641,12 @@ class Compound:
             Determines if the plot is saved.
         save_path: str = "."
             Determines a path where the file will be saved if save = True.
-        save_name: str = ""
+        save_name: str = None
             Determines name of the file that would be created if save = True,
             if left empty it will use the following format:
-            f"susceptibility_{group}.tiff".
-        colour_map_name: str or list[str] = 'funmat'
-            Input of colour_map function.
+            "susceptibility_{group}.tiff".
+        color_map_name: str or list[str] = 'funmat'
+            Input of color_map function.
         xlim: tuple(optional: float, optional: float) = ()
             Determines the lower and upper limit of the x-axis if two floats
             are passed, or just the upper limit if one is passed.
@@ -4711,13 +4710,13 @@ class Compound:
         try:
             # Plotting in matplotlib
             fig, ax = subplots()
-            # Defining colour maps for graphs
-            colour = iter(
-                colour_map(colour_map_name)(linspace(0, 1, len(fields)))
+            # Defining color maps for graphs
+            color = iter(
+                color_map(color_map_name)(linspace(0, 1, len(fields)))
             )
             # Creating a plot
             for i, ch in enumerate(chi):
-                c = next(colour)
+                c = next(color)
                 ax.plot(
                     temps,
                     ch,
@@ -4779,11 +4778,13 @@ class Compound:
         if save:
             try:
                 # Saving plot figure
-                if not save_name:
-                    file = path.join(save_path, f"susceptibility_{group}.tiff")
+                if save_name is None:
+                    filename = path.join(
+                        save_path, f"susceptibility_{group}.tiff"
+                    )
                 else:
-                    file = path.join(save_path, save_name)
-                fig.savefig(file, dpi=300)
+                    filename = path.join(save_path, save_name)
+                fig.savefig(filename, dpi=300)
             except Exception as exc:
                 close("all")
                 raise SltSaveError(
@@ -4799,7 +4800,7 @@ class Compound:
                     + RESET
                     + '", file: '
                     + PURPLE
-                    + f"{file}",
+                    + f"{filename}",
                 ) from None
         close("all")
 
@@ -4810,8 +4811,8 @@ class Compound:
         show_fig: bool = True,
         save: bool = False,
         save_path: str = ".",
-        save_name: str = "",
-        colour_map_name: str or list[str] = "PrOr",
+        save_name: str = None,
+        color_map_name: str or list[str] = "PrOr",
         xlim: tuple[int or float] = (),
         ylim: tuple[int or float] = (),
         xticks: int or float = 1,
@@ -4819,9 +4820,9 @@ class Compound:
         field: Literal["B", "H"] = "B",
     ):
         """
-        Creates graphs of Helmholtz energy(T,H) or internal energy(T,H) given a
-        name of the group in .slt file, graphs can be optionally saved, colour
-        palettes can be changed.
+        Creates graphs of Helmholtz energy F(T,H) or internal energy U(T,H)
+        given a name of the group in .slt file, graphs can be optionally saved,
+        color palettes can be changed.
 
         Parameters
         ----------
@@ -4837,11 +4838,12 @@ class Compound:
             Determines if the plot is saved.
         save_path: str = "."
             Determines a path where the file will be saved if save = True.
-        save_name: str = ""
+        save_name: str = None
             Determines name of the file that would be created if save = True,
-            if left empty it will use following format: f"energyth_{group}.tiff".
-        colour_map_name: str or list[str] = 'PrOr'
-            Input of the colour_map function.
+            if left empty it will use following format: "{energy_type}_
+            energy_{group}.tiff".
+        color_map_name: str or list[str] = 'PrOr'
+            Input of the color_map function.
         xlim: tuple(optional: float, optional: float) = ()
             Determines the lower and upper limit of the x-axis if two floats
             are passed, or just the upper limit if one is passed.
@@ -4911,13 +4913,11 @@ class Compound:
         try:
             # Plotting in matplotlib
             fig, ax = subplots()
-            # Defining colour maps for graphs
-            colour = iter(
-                colour_map(colour_map_name)(linspace(0, 1, len(temps)))
-            )
+            # Defining color maps for graphs
+            color = iter(color_map(color_map_name)(linspace(0, 1, len(temps))))
             # Creating a plot
             for i, eh in enumerate(eth):
-                c = next(colour)
+                c = next(color)
                 ax.plot(fields, eh, linewidth=2, c=c, label=f"{temps[i]} K")
 
             if yticks:
@@ -4971,12 +4971,13 @@ class Compound:
         if save:
             try:
                 # Saving plot figure
-                if not save_name:
-                    fig.savefig(
-                        path.join(save_path, f"energyth_{group}.tiff"), dpi=600
+                if save_name is None:
+                    filename = path.join(
+                        save_path, f"{name}_energy_{group}.tiff"
                     )
                 else:
-                    fig.savefig(path.join(save_path, save_name), dpi=600)
+                    filename = path.join(save_path, save_name)
+                fig.savefig(filename, dpi=600)
             except Exception as exc:
                 close("all")
                 raise SltSaveError(
@@ -5002,9 +5003,9 @@ class Compound:
         show_fig: bool = True,
         save: bool = False,
         save_path: str = ".",
-        save_name: str = "",
-        colour_map_name1: str or list[str] = "BuPi",
-        colour_map_name2: str or list[str] = "BuPi_r",
+        save_name: str = None,
+        color_map_name1: str or list[str] = "BuPi",
+        color_map_name2: str or list[str] = "BuPi_r",
         single: bool = False,
         xlim: tuple[int or float] = (),
         ylim: tuple[int or float] = (),
@@ -5013,8 +5014,8 @@ class Compound:
         field: Literal["H", "B"] = "B",
     ):
         """
-        Function that creates graphs of E(H,orientation) given name of
-        the group in .slt file, graphs can be optionally saved, colour palettes
+        Function that creates graphs of E(H,orientation) given a name of
+        the group in .slt file, graphs can be optionally saved, color palettes
         can be changed.
 
         Parameters
@@ -5028,15 +5029,15 @@ class Compound:
             Determines if the plot is saved.
         save_path: str = "."
             Determines a path where the file will be saved if save = True.
-        save_name: str = ""
+        save_name: str = None
             Determines name of the file that would be created if save = True,
             if left empty it will use following format: f"zeeman_{group}.tiff"
             or f"zeeman_{group}_{orientation[i]}.tiff".
-        colour_map_name1: str or list[str] = 'BuPi'
-            Input of the colour_map function, determines a colour of the lower
+        color_map_name1: str or list[str] = 'BuPi'
+            Input of the color_map function, determines a color of the lower
             set of split lines.
-        colour_map_name2: str or list[str] = 'BuPi_r'
-            Input of the colour_map function, determines a colour of the higher
+        color_map_name2: str or list[str] = 'BuPi_r'
+            Input of the color_map function, determines a color of the higher
             set of split lines.
         single: bool = False
             Determines if all orientations are plotted together if plot is not
@@ -5127,10 +5128,10 @@ class Compound:
                     if i % divisor != 0:
                         rc(
                             "axes",
-                            prop_cycle=_custom_colour_cycler(
+                            prop_cycle=_custom_color_cycler(
                                 len(zeeman[0][0]),
-                                colour_map_name1,
-                                colour_map_name2,
+                                color_map_name1,
+                                color_map_name2,
                             ),
                         )
                         multiple_plots = fig.add_subplot(
@@ -5181,10 +5182,10 @@ class Compound:
                         if (i // divisor) == 0:
                             rc(
                                 "axes",
-                                prop_cycle=_custom_colour_cycler(
+                                prop_cycle=_custom_color_cycler(
                                     len(zeeman[0][0]),
-                                    colour_map_name1,
-                                    colour_map_name2,
+                                    color_map_name1,
+                                    color_map_name2,
                                 ),
                             )
                             multiple_plots = fig.add_subplot(
@@ -5229,10 +5230,10 @@ class Compound:
                         else:
                             rc(
                                 "axes",
-                                prop_cycle=_custom_colour_cycler(
+                                prop_cycle=_custom_color_cycler(
                                     len(zeeman[0][0]),
-                                    colour_map_name1,
-                                    colour_map_name2,
+                                    color_map_name1,
+                                    color_map_name2,
                                 ),
                             )
                             multiple_plots = fig.add_subplot(
@@ -5286,10 +5287,10 @@ class Compound:
                 for i, zee in enumerate(zeeman):
                     rc(
                         "axes",
-                        prop_cycle=_custom_colour_cycler(
+                        prop_cycle=_custom_color_cycler(
                             len(zeeman[0][0]),
-                            colour_map_name1,
-                            colour_map_name2,
+                            color_map_name1,
+                            color_map_name2,
                         ),
                     )
                     fig, ax = subplots()
@@ -5330,20 +5331,18 @@ class Compound:
                     if save:
                         try:
                             # Saving plot figure
-                            if not save_name:
-                                fig.savefig(
-                                    path.join(
-                                        save_path,
-                                        f"zeeman_{group}_Orientation"
-                                        f" {orientations[i]}.tiff",
-                                    ),
-                                    dpi=600,
+                            if save_name is None:
+                                filename = path.join(
+                                    save_path,
+                                    f"zeeman_{group}_Orientation"
+                                    f" {orientations[i]}.tiff",
                                 )
                             else:
-                                fig.savefig(
-                                    path.join(save_path, save_name),
-                                    dpi=600,
-                                )
+                                filename = path.join(save_path, save_name)
+                            fig.savefig(
+                                filename,
+                                dpi=600,
+                            )
                         except Exception as exc:
                             close("all")
                             raise SltSaveError(
@@ -5360,7 +5359,7 @@ class Compound:
                                 + '", filename: '
                                 + PURPLE
                                 + f"zeeman_{group}_Orientation"
-                                + f" {orientations[i]}.tiff",
+                                + f" {filename}",
                             ) from None
 
         except Exception as exc:
@@ -5370,7 +5369,7 @@ class Compound:
                 exc,
                 f"Failed to plot zeeman splitting data"
                 + BLUE
-                + "Group "
+                + "Group: "
                 + RESET
                 + '"'
                 + BLUE
@@ -5381,16 +5380,11 @@ class Compound:
         if save and not single:
             try:
                 # Saving plot figure
-                if not save_name:
-                    fig.savefig(
-                        path.join(save_path, f"zeeman_{group}.tiff"),
-                        dpi=600,
-                    )
+                if save_name is None:
+                    filename = path.join(save_path, f"zeeman_{group}.tiff")
                 else:
-                    fig.savefig(
-                        path.join(save_path, save_name),
-                        dpi=600,
-                    )
+                    filename = path.join(save_path, save_name)
+                fig.savefig(filename, dpi=600)
             except Exception as exc:
                 close("all")
                 raise SltSaveError(
@@ -5406,7 +5400,7 @@ class Compound:
                     + RESET
                     + '", filename: '
                     + PURPLE
-                    + f"zeeman_{group}.tiff",
+                    + f"{filename}",
                 ) from None
         close("all")
 
@@ -5425,8 +5419,8 @@ class Compound:
         show_fig: bool = True,
         save: bool = False,
         save_path: str = ".",
-        save_name: str = "",
-        colour_map_name: str or list[str] = "dark_rainbow_r_l",
+        save_name: str = None,
+        color_map_name: str or list[str] = "dark_rainbow_r_l",
         round_temp: int = 3,
         round_field: int = 3,
         lim_scalar: float = 1.0,
@@ -5467,12 +5461,12 @@ class Compound:
             Determines if the plot is saved.
         save_path: str = "."
             Determines path where file will be saved if save = True.
-        save_name: str = ""
+        save_name: str = None
             Determines name of a file that would be created if save = True,
             if left empty it will use following format:
             f"{group}_3d_{data_type}.tiff".
-        colour_map_name: str or list[str] = 'dark_rainbow_r_l'
-            Input of the colour_map function.
+        color_map_name: str or list[str] = 'dark_rainbow_r_l'
+            Input of the color_map function.
         round_temp: int = 3
             Determines how many digits will be rounded in the graph's title
             for temperature.
@@ -5505,7 +5499,7 @@ class Compound:
             Name of a group from calculate_g_tensor_axes method from .slt file.
         axes_colors: list[str] = ['r','g','b']
             Determines the colors of the magnetic axes in order of x, y, z.
-            Accepts matplotlib colors inputs, for example HTML colour codes.
+            Accepts matplotlib colors inputs, for example HTML color codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
         axes_scale_factor: float64 = 1.0
@@ -5550,7 +5544,7 @@ class Compound:
             )
 
         try:
-            if (data_type == "chit") or (data_type == "chit"):
+            if (data_type == "chi") or (data_type == "chit"):
                 group_name = f"{group}_susceptibility_3d"
                 xyz = self[group_name, f"{group}_chit_3d"]
                 description = (
@@ -5616,7 +5610,7 @@ class Compound:
             max_array = array([max(x), max(y), max(z)])
             lim = max(max_array) * axes_scale_factor
             norm = Normalize(z.min(), z.max())
-            colors = colour_map(colour_map_name)(norm(z))
+            colors = color_map(color_map_name)(norm(z))
             if z.ndim == 1:
                 rcount, ccount = colors.shape
             else:
@@ -5849,7 +5843,7 @@ class Compound:
         i_start: int = 0,
         i_end: int = -1,
         i_constant: int = 0,
-        colour_map_name: str or list[str] = "dark_rainbow_r_l",
+        color_map_name: str or list[str] = "dark_rainbow_r_l",
         lim_scalar: float = 1.0,
         ticks: int or float = 1,
         r_density: int = 0,
@@ -5860,7 +5854,7 @@ class Compound:
         dpi: int = 100,
         bar: bool = True,
         bar_scale: bool = False,
-        bar_colour_map_name: str or list[str] = "dark_rainbow_r",
+        bar_color_map_name: str or list[str] = "dark_rainbow_r",
         temp_rounding: int = 0,
         field_rounding: int = 0,
         elev: int = 30,
@@ -5895,8 +5889,8 @@ class Compound:
             Index of last frame's field/temperature.
         i_constant: int
             Index of constant temperature/field.
-        colour_map_name: str or list = 'dark_rainbow_r_l'
-            Input of colour_map function, determines colour of main figure.
+        color_map_name: str or list = 'dark_rainbow_r_l'
+            Input of color_map function, determines color of main figure.
         lim_scalar: float = 1.
             Scalar used to set limits of axes, smaller values magnify plotted
             figure.
@@ -5918,8 +5912,8 @@ class Compound:
             Determines if bar representing animation variable is shown.
         bar_scale: bool = False
             Determines if a scale should be shown for bar.
-        bar_colour_map_name: str or list = 'dark_rainbow_r_l'
-            Input of the colour_map function, determines the colour of the bar.
+        bar_color_map_name: str or list = 'dark_rainbow_r_l'
+            Input of the color_map function, determines the color of the bar.
         temp_rounding: int = 0
             Determines how many decimal places are shown in bar/plot labels
             for temperatures.
@@ -5939,7 +5933,7 @@ class Compound:
             Name of a group from calculate_g_tensor_axes method from .slt file.
         axes_colors: list[str] = ['r','g','b']
             Determines the colors of the magnetic axes in order of x, y, z.
-            Accepts matplotlib colors inputs, for example HTML colour codes.
+            Accepts matplotlib colors inputs, for example HTML color codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
         axes_scale_factor: float64 = 1.0
@@ -5982,7 +5976,7 @@ class Compound:
             )
 
         try:
-            if (data_type == "chit") or (data_type == "chit"):
+            if (data_type == "chi") or (data_type == "chit"):
                 group_name = f"{group}_susceptibility_3d"
                 x0y0z0 = self[group_name, f"{group}_chit_3d"]
             elif (data_type == "helmholtz_energy") or (
@@ -6076,10 +6070,8 @@ class Compound:
                 else len(temps) - 1
             )
         if bar:
-            colour = iter(
-                colour_map(bar_colour_map_name)(
-                    linspace(0, 1, i_end - i_start)
-                )
+            color = iter(
+                color_map(bar_color_map_name)(linspace(0, 1, i_end - i_start))
             )
             indicator = linspace(0, 1, i_end - i_start)
             if bar_scale:
@@ -6103,7 +6095,7 @@ class Compound:
                             max_array = array([max(x), max(y), max(z)])
                             lim = max(max_array) * axes_scale_factor
                             norm = Normalize(z.min(), z.max())
-                            colors = colour_map(colour_map_name)(norm(z))
+                            colors = color_map(color_map_name)(norm(z))
                             rcount, ccount, _ = colors.shape
                             if not r_density:
                                 r_density = rcount
@@ -6125,7 +6117,7 @@ class Compound:
                             max_array = array([max(x), max(y), max(z)])
                             lim = max(max_array) * axes_scale_factor
                             norm = Normalize(z.min(), z.max())
-                            colors = colour_map(colour_map_name)(norm(z))
+                            colors = color_map(color_map_name)(norm(z))
                             surface = ax.scatter(
                                 x, y, z, s=points_size, facecolors=colors
                             )
@@ -6274,7 +6266,7 @@ class Compound:
                             ax.set_axis_off()
 
                         if bar:
-                            c = next(colour)
+                            c = next(color)
                             axins = ax.inset_axes([0, 0.6, 0.098, 0.2])
                             axins.bar(
                                 1,
@@ -6325,7 +6317,7 @@ class Compound:
                             max_array = array([max(x), max(y), max(z)])
                             lim = max(max_array) * axes_scale_factor
                             norm = Normalize(z.min(), z.max())
-                            colors = colour_map(colour_map_name)(norm(z))
+                            colors = color_map(color_map_name)(norm(z))
                             rcount, ccount, _ = colors.shape
                             if not r_density:
                                 r_density = rcount
@@ -6347,7 +6339,7 @@ class Compound:
                             max_array = array([max(x), max(y), max(z)])
                             lim = max(max_array) * axes_scale_factor
                             norm = Normalize(z.min(), z.max())
-                            colors = colour_map(colour_map_name)(norm(z))
+                            colors = color_map(color_map_name)(norm(z))
                             ax.scatter(
                                 x, y, z, s=points_size, facecolors=colors
                             )
@@ -6490,7 +6482,7 @@ class Compound:
                             axis("off")
 
                         if bar:
-                            c = next(colour)
+                            c = next(color)
                             axins = ax.inset_axes([0, 0.6, 0.098, 0.2])
                             axins.bar(
                                 1,
@@ -6561,14 +6553,15 @@ class Compound:
             "internal_energy",
             "magnetisation",
         ],
-        colour_map_name: str or list[str] = "dark_rainbow_r",
-        T_slider_colour: str = "#77f285",
-        B_slider_colour: str = "#794285",
-        temp_bar_colour_map_name: str or list[str] = "BuRd",
-        field_bar_colour_map_name: str or list[str] = "BuPi",
+        color_map_name: str or list[str] = "dark_rainbow_r",
+        T_slider_color: str = "#77f285",
+        B_slider_color: str = "#794285",
+        temp_bar_color_map_name: str or list[str] = "BuRd",
+        field_bar_color_map_name: str or list[str] = "BuPi",
         lim_scalar: float = 1.0,
         ticks: int or float = 1,
         points_size: float = 0.2,
+        solid_surface: bool = False,
         bar: bool = True,
         bar_scale: bool = False,
         temp_rounding: int = 2,
@@ -6592,18 +6585,18 @@ class Compound:
         data_type: Literal["chit", "chi", "helmholtz_energy", "internal_energy",
           "magnetisation"]
             Type of the data that will be used to create the plot.
-        colour_map_name: str or list = 'dark_rainbow_r_l'
-            Input of the colour_map function, determines a colour of the main
+        color_map_name: str or list = 'dark_rainbow_r_l'
+            Input of the color_map function, determines a color of the main
             figure.
-        T_slider_colour: str
-            Determines a colour of the temperature slider.
-        B_slider_colour: str
-            Determines a colour of the field slider.
-        temp_bar_colour_map_name: str or list[str] = 'BuRd'
-            Input of the colour_map function, determines a colour map of the
+        T_slider_color: str
+            Determines a color of the temperature slider.
+        B_slider_color: str
+            Determines a color of the field slider.
+        temp_bar_color_map_name: str or list[str] = 'BuRd'
+            Input of the color_map function, determines a color map of the
             temperature bar.
-        field_bar_colour_map_name: str or list[str] = 'BuPi'
-            Input of the colour_map function, determines a colour map of the
+        field_bar_color_map_name: str or list[str] = 'BuPi'
+            Input of the color_map function, determines a color map of the
             field bar.
         lim_scalar: float = 1.
             Scalar used to set limits of the axes, smaller values magnify the
@@ -6612,6 +6605,8 @@ class Compound:
             Determines the ticks spacing.
         points_size: float = 0.2
             Determines points size for Fibonacci scatter plots.
+        solid_surface: bool = False
+            Makes surface plots using meshgrid appear as solid.
         bar: bool = True
             Determines if the bar is shown.
         bar_scale: bool = False
@@ -6631,7 +6626,7 @@ class Compound:
             Name of a group from calculate_g_tensor_axes method from .slt file.
         axes_colors: list[str] = ['r','g','b']
             Determines the colors of the magnetic axes in order of x, y, z.
-            Accepts matplotlib colors inputs, for example HTML colour codes.
+            Accepts matplotlib colors inputs, for example HTML color codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
         axes_scale_factor: float64 = 1.0
@@ -6675,7 +6670,7 @@ class Compound:
 
         field_i, temp_i = 0, 0
         try:
-            if (data_type == "chit") or (data_type == "chit"):
+            if (data_type == "chi") or (data_type == "chit"):
                 group_name = f"{group}_susceptibility_3d"
                 x0y0z0 = self[group_name, f"{group}_chit_3d"]
             elif (data_type == "helmholtz_energy") or (
@@ -6748,10 +6743,10 @@ class Compound:
             global ax
             ax = fig.add_subplot(projection="3d")
             if bar:
-                colour1 = colour_map(temp_bar_colour_map_name)(
+                color1 = color_map(temp_bar_color_map_name)(
                     linspace(0, 1, len(temps))
                 )
-                colour2 = colour_map(field_bar_colour_map_name)(
+                color2 = color_map(field_bar_color_map_name)(
                     linspace(0, 1, len(fields))
                 )
 
@@ -6772,7 +6767,7 @@ class Compound:
                 max_array = array([max(x), max(y), max(z)])
                 lim = max(max_array) * axes_scale_factor
                 norm = Normalize(z.min(), z.max())
-                colors = colour_map(colour_map_name)(norm(z))
+                colors = color_map(color_map_name)(norm(z))
                 rcount, ccount, _ = colors.shape
                 surface = ax.plot_surface(
                     x,
@@ -6788,7 +6783,7 @@ class Compound:
                 max_array = array([max(x), max(y), max(z)])
                 lim = max(max_array) * axes_scale_factor
                 norm = Normalize(z.min(), z.max())
-                colors = colour_map(colour_map_name)(norm(z))
+                colors = color_map(color_map_name)(norm(z))
                 surface = ax.scatter(x, y, z, s=points_size, facecolors=colors)
             if add_g_tensor_axes:
                 vec = axes_matrix * g_tensor[newaxis, 1:]
@@ -6816,7 +6811,8 @@ class Compound:
                         [vec[2, i], -vec[2, i]],
                         axes_colors[i],
                     )
-            surface.set_facecolor((0, 0, 0, 0))
+            if plot_style == "globe" and solid_surface == False:
+                surface.set_facecolor((0, 0, 0, 0))
             ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
             ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
@@ -6862,11 +6858,11 @@ class Compound:
             ax.set_box_aspect([1, 1, 1])
             fig.subplots_adjust(left=0.1)
             if bar:
-                c = colour1[temp_i]
+                c = color1[temp_i]
                 axins = ax.inset_axes([-0.05, 0.7, 0.098, 0.2])
                 axins.bar(1, indicator1[temp_i], width=0.2, color=c)
                 axins.set_ylim(0, 1)
-                c = colour2[field_i]
+                c = color2[field_i]
                 axins2 = ax.inset_axes([-0.05, 0.2, 0.098, 0.2])
                 axins2.bar(1, indicator2[field_i], width=0.2, color=c)
                 axins2.set_ylim(0, 1)
@@ -6913,7 +6909,7 @@ class Compound:
                     axins2.yaxis.set_minor_locator(AutoMinorLocator(2))
 
             if bar:
-                c = colour1[temp_i]
+                c = color1[temp_i]
                 axins = ax.inset_axes([-0.05, 0.7, 0.098, 0.2])
                 axins.bar(1, indicator1[temp_i], width=0.2, color=c)
                 axins.set_ylim(0, 1)
@@ -6946,7 +6942,7 @@ class Compound:
                 orientation="vertical",
                 valstep=1,
                 initcolor=None,
-                color=T_slider_colour,
+                color=T_slider_color,
             )
             slider_field = Slider(
                 ax_field,
@@ -6956,7 +6952,7 @@ class Compound:
                 orientation="vertical",
                 initcolor=None,
                 valstep=1,
-                color=B_slider_colour,
+                color=B_slider_color,
             )
 
             def slider_update_globe(val):
@@ -6971,7 +6967,7 @@ class Compound:
                 max_array = array([max(x), max(y), max(z)])
                 lim = max(max_array) * axes_scale_factor
                 norm = Normalize(z.min(), z.max())
-                colors = colour_map(colour_map_name)(norm(z))
+                colors = color_map(color_map_name)(norm(z))
                 rcount, ccount, _ = colors.shape
                 surface = ax.plot_surface(
                     x,
@@ -7009,7 +7005,8 @@ class Compound:
                             [vec[2, i], -vec[2, i]],
                             axes_colors[i],
                         )
-                surface.set_facecolor((0, 0, 0, 0))
+                if solid_surface == False:
+                    surface.set_facecolor((0, 0, 0, 0))
                 ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
                 ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
                 ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
@@ -7042,11 +7039,11 @@ class Compound:
                 ax.grid(False)
                 fig.subplots_adjust(left=0.1)
                 if bar:
-                    c = colour1[temp_i]
+                    c = color1[temp_i]
                     axins = ax.inset_axes([-0.05, 0.7, 0.098, 0.2])
                     axins.bar(1, indicator1[temp_i], width=0.2, color=c)
                     axins.set_ylim(0, 1)
-                    c = colour2[field_i]
+                    c = color2[field_i]
                     axins2 = ax.inset_axes([-0.05, 0.2, 0.098, 0.2])
                     axins2.bar(1, indicator2[field_i], width=0.2, color=c)
                     axins2.set_ylim(0, 1)
@@ -7110,7 +7107,7 @@ class Compound:
                 max_array = array([max(x), max(y), max(z)])
                 lim = max(max_array) * axes_scale_factor
                 norm = Normalize(z.min(), z.max())
-                colors = colour_map(colour_map_name)(norm(z))
+                colors = color_map(color_map_name)(norm(z))
                 surface = ax.scatter(x, y, z, s=points_size, facecolors=colors)
                 if add_g_tensor_axes:
                     vec = axes_matrix * g_tensor[newaxis, 1:]
@@ -7141,7 +7138,6 @@ class Compound:
                             [vec[2, i], -vec[2, i]],
                             axes_colors[i],
                         )
-                surface.set_facecolor((0, 0, 0, 0))
                 ax.set_xlim(-lim * lim_scalar, lim * lim_scalar)
                 ax.set_ylim(-lim * lim_scalar, lim * lim_scalar)
                 ax.set_zlim(-lim * lim_scalar, lim * lim_scalar)
@@ -7174,11 +7170,11 @@ class Compound:
                 ax.grid(False)
                 fig.subplots_adjust(left=0.1)
                 if bar:
-                    c = colour1[temp_i]
+                    c = color1[temp_i]
                     axins = ax.inset_axes([-0.05, 0.7, 0.098, 0.2])
                     axins.bar(1, indicator1[temp_i], width=0.2, color=c)
                     axins.set_ylim(0, 1)
-                    c = colour2[field_i]
+                    c = color2[field_i]
                     axins2 = ax.inset_axes([-0.05, 0.2, 0.098, 0.2])
                     axins2.bar(1, indicator2[field_i], width=0.2, color=c)
                     axins2.set_ylim(0, 1)

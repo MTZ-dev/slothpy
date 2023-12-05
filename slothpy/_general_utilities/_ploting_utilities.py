@@ -129,9 +129,9 @@ def _display_plot(fig: Figure = None, onClose: callable = None):
         tmp_app.exec_()
 
 
-def colour_map(name: Union[str, list[str]]):
+def color_map(name: Union[str, list[str]]):
     """
-    Creates matplotlib colour map object.
+    Creates matplotlib color map object.
 
     Parameters
     ----------
@@ -140,23 +140,23 @@ def colour_map(name: Union[str, list[str]]):
         "funmat", "NdCoN322bpdo", "NdCoNO222bpdo", "NdCoI22bpdo", "viridis",
         "plasma", "inferno", "magma", "cividis"] or list[str]
 
-        One of the defined names for colour maps: BuPi, rainbow, dark_rainbow,
+        One of the defined names for color maps: BuPi, rainbow, dark_rainbow,
         light_rainbow,light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd,
         funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo, viridis, plasma,
-        inferno, magma, cividis or list of HTML colour codes from which the
-        colour map will be created by interpolation of colours between ones on
+        inferno, magma, cividis or list of HTML color codes from which the
+        color map will be created by interpolation of colors between ones on
         the list. The predefined names modifiers can be applied: _l loops
-        the list in a way that it starts and ends with the same colour, _r
+        the list in a way that it starts and ends with the same color, _r
         reverses the list.
     Returns
     -------
     matplotlib.colors.LinearSegmentedColormap
-        The Matplotlib's colour map object used for plotting.
+        The Matplotlib's color map object used for plotting.
     Raises
     ------
     ValueError
-        If the input is not acceptable for creating a colour map from the list
-        of colour codes or the name of predefined colour map was incorrectly
+        If the input is not acceptable for creating a color map from the list
+        of color codes or the name of predefined color map was incorrectly
         written.
     """
     cmap_list = []
@@ -381,32 +381,32 @@ def colour_map(name: Union[str, list[str]]):
             cmap = matplotlib.cm.cividis_r
     else:
         raise ValueError(
-            f"""There is no such colour map as {name} use one of those: BuPi, rainbow, dark_rainbow, light_rainbow, 
+            f"""There is no such color map as {name} use one of those: BuPi, rainbow, dark_rainbow, light_rainbow, 
                 light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd, funmat, NdCoN322bpdo, NdCoNO222bpdo,
-                NdCoI22bpdo, viridis, plasma, inferno, magma, cividis or enter list of HTML colour codes"""
+                NdCoI22bpdo, viridis, plasma, inferno, magma, cividis or enter list of HTML color codes"""
         ) from None
 
     return cmap
 
 
-def _custom_colour_cycler(number_of_colours: int, cmap1: str, cmap2: str):
+def _custom_color_cycler(number_of_colors: int, cmap1: str, cmap2: str):
     """
-    Creates a custom colour cycler from two colour maps in alternating pattern,
+    Creates a custom color cycler from two color maps in alternating pattern,
     suitable for use for matplotlib plots.
 
     Parameters
     ----------
-    number_of_colours: int
-        Number of colours in cycle.
+    number_of_colors: int
+        Number of colors in cycle.
     cmap1: str or list[str]
-        Input of the colour_map function.
+        Input of the color_map function.
     cmap2: str or list[str]
-        Input of the colour_map function.
+        Input of the color_map function.
 
     Returns
     -------
     cycler.cycler
-        Cycler object created based on two input colour maps.
+        Cycler object created based on two input color maps.
 
     Raises
     ------
@@ -415,37 +415,31 @@ def _custom_colour_cycler(number_of_colours: int, cmap1: str, cmap2: str):
         to trigger this error :).
     """
     try:
-        if number_of_colours % 2 == 0:
+        if number_of_colors % 2 == 0:
             increment = 0
-            lst1 = colour_map(cmap1)(
-                linspace(0, 1, int(number_of_colours / 2))
-            )
-            lst2 = colour_map(cmap2)(
-                linspace(0, 1, int(number_of_colours / 2))
-            )
-            colour_cycler_list = []
-            while increment < number_of_colours:
+            lst1 = color_map(cmap1)(linspace(0, 1, int(number_of_colors / 2)))
+            lst2 = color_map(cmap2)(linspace(0, 1, int(number_of_colors / 2)))
+            color_cycler_list = []
+            while increment < number_of_colors:
                 if increment % 2 == 0:
-                    colour_cycler_list.append(lst1[int(increment / 2)])
+                    color_cycler_list.append(lst1[int(increment / 2)])
                 else:
-                    colour_cycler_list.append(lst2[int((increment - 1) / 2)])
+                    color_cycler_list.append(lst2[int((increment - 1) / 2)])
                 increment += 1
         else:
             increment = 0
-            lst1 = colour_map(cmap1)(
-                linspace(0, 1, int((number_of_colours / 2) + 1))
+            lst1 = color_map(cmap1)(
+                linspace(0, 1, int((number_of_colors / 2) + 1))
             )
-            lst2 = colour_map(cmap2)(
-                linspace(0, 1, int(number_of_colours / 2))
-            )
-            colour_cycler_list = []
-            while increment < number_of_colours:
+            lst2 = color_map(cmap2)(linspace(0, 1, int(number_of_colors / 2)))
+            color_cycler_list = []
+            while increment < number_of_colors:
                 if increment % 2 == 0:
-                    colour_cycler_list.append(lst1[int(increment / 2)])
+                    color_cycler_list.append(lst1[int(increment / 2)])
                 else:
-                    colour_cycler_list.append(lst2[int((increment - 1) / 2)])
+                    color_cycler_list.append(lst2[int((increment - 1) / 2)])
                 increment += 1
-        return cycler(color=colour_cycler_list)
+        return cycler(color=color_cycler_list)
     except Exception as exc:
         raise SystemError(
             "Sloths are a Neotropical group of xenarthran mammals constituting"

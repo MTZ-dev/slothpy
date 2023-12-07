@@ -79,7 +79,6 @@ def _calculate_magnetization(
     nopython=True,
     nogil=True,
     cache=True,
-    fastmath=True,
 )
 def _mt_over_fields_grid(
     magnetic_momenta, soc_energies, fields, grid, temperatures
@@ -220,7 +219,6 @@ def _mt_over_grid_fields(
             zeeman_matrix = _calculate_zeeman_matrix(
                 magnetic_momenta, soc_energies, fields[f], grid[g]
             )
-
             eigenvalues, eigenvectors = eigh(zeeman_matrix)
 
             states_momenta = (
@@ -536,6 +534,14 @@ def _mag_3d(
     rotation: ndarray = None,
     sus_3d_num: bool = False,
 ) -> ndarray:
+    # Read data from HDF5 file
+    (
+        magnetic_momenta,
+        soc_energies,
+    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+        filename, group, states_cutoff, rotation
+    )
+
     if grid_type != "mesh" and grid_type != "fibonacci":
         raise ValueError(
             'The only allowed grid types are "mesh" or "fibonacci".'
@@ -553,14 +559,6 @@ def _mag_3d(
     # Get number of parallel proceses to be used
     num_process, num_threads = _get_num_of_processes(
         num_cpu, num_threads, num_points
-    )
-
-    # Read data from HDF5 file
-    (
-        magnetic_momenta,
-        soc_energies,
-    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff, rotation
     )
 
     #  Allocate arrays as contiguous

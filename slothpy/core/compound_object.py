@@ -109,6 +109,10 @@ from slothpy._general_utilities._ploting_utilities import (
     _custom_color_cycler,
 )
 from slothpy._general_utilities._ploting_utilities import _display_plot
+from slothpy._general_utilities._grids_over_sphere import (
+    _meshgrid_over_sphere_flatten,
+    _fibonacci_over_sphere,
+)
 
 
 class Compound:
@@ -950,21 +954,22 @@ class Compound:
         if autotune:
             try:
                 if grid_type == "mesh":
+                    grid_autotune = _meshgrid_over_sphere_flatten(grid_number)
                     num_to_parallelize = 2 * grid_number**2
                 elif grid_type == "fibonacci":
+                    grid_autotune = _fibonacci_over_sphere(grid_number)
                     num_to_parallelize = grid_number
-                grid = ones((num_to_parallelize, 3))
                 number_threads = _auto_tune(
                     self._hdf5,
                     group,
                     fields,
-                    grid,
+                    grid_autotune,
                     temperatures,
                     states_cutoff,
                     number_cpu,
                     num_to_parallelize,
                     fields.shape[0],
-                    "magnetisation",
+                    "magnetisation_3d",
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -1245,22 +1250,38 @@ class Compound:
 
         if autotune:
             try:
-                if exp:
+                if exp or number_of_points == 0:
                     num_to_parallelize = fields.size
                 else:
                     num_to_parallelize = (
                         2 * number_of_points + 1
                     ) * fields.size
-
                 if grid is None:
+                    grid_autotune = array(
+                        [
+                            [1.0, 0.0, 0.0, 0.3333333333333333],
+                            [0.0, 1.0, 0.0, 0.3333333333333333],
+                            [0.0, 0.0, 1.0, 0.3333333333333333],
+                        ],
+                        dtype=float64,
+                    )
                     grid_shape = 3  # xyz grid in the inner loop
                 else:
                     grid_shape = grid.shape[0]
+                if not (exp or number_of_points == 0):
+                    fields_autotune = (
+                        arange(-number_of_points, number_of_points + 1).astype(
+                            int64
+                        )
+                        * delta_h
+                    )[:, newaxis] + fields
+                    fields_autotune = fields_autotune.T.astype(float64)
+                    fields_autotune = fields_autotune.flatten()
                 number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields,
-                    grid,
+                    fields_autotune,
+                    grid_autotune,
                     temperatures,
                     states_cutoff,
                     number_cpu,
@@ -1532,18 +1553,27 @@ class Compound:
 
         if autotune:
             try:
-                if exp:
+                if exp or number_of_points == 0:
                     num_to_parallelize = fields.size
                 else:
                     num_to_parallelize = (
                         2 * number_of_points + 1
                     ) * fields.size
-                grid = ones((9, 3))
+                grid_autotune = ones((9, 4))
+                if not (exp or number_of_points == 0):
+                    fields_autotune = (
+                        arange(-number_of_points, number_of_points + 1).astype(
+                            int64
+                        )
+                        * delta_h
+                    )[:, newaxis] + fields
+                    fields_autotune = fields_autotune.T.astype(float64)
+                    fields_autotune = fields_autotune.flatten()
                 number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields,
-                    grid,
+                    fields_autotune,
+                    grid_autotune,
                     temperatures,
                     states_cutoff,
                     number_cpu,
@@ -1862,26 +1892,36 @@ class Compound:
 
         if autotune:
             try:
-                if exp:
+                if exp or number_of_points == 0:
                     inner_loop_size = fields.size
                 else:
                     inner_loop_size = (2 * number_of_points + 1) * fields.size
                 if grid_type == "mesh":
+                    grid_autotune = _meshgrid_over_sphere_flatten(grid_number)
                     num_to_parallelize = 2 * grid_number**2
                 elif grid_type == "fibonacci":
+                    grid_autotune = _fibonacci_over_sphere(grid_number)
                     num_to_parallelize = grid_number
-                grid = ones((num_to_parallelize, 3))
+                if not (exp or number_of_points == 0):
+                    fields_autotune = (
+                        arange(-number_of_points, number_of_points + 1).astype(
+                            int64
+                        )
+                        * delta_h
+                    )[:, newaxis] + fields
+                    fields_autotune = fields_autotune.T.astype(float64)
+                    fields_autotune = fields_autotune.flatten()
                 number_threads = _auto_tune(
                     self._hdf5,
                     group,
-                    fields,
-                    grid,
+                    fields_autotune,
+                    grid_autotune,
                     temperatures,
                     states_cutoff,
                     number_cpu,
                     num_to_parallelize,
                     inner_loop_size,
-                    "magnetisation",
+                    "magnetisation_3d",
                 )
             except Exception as exc:
                 raise SltCompError(
@@ -2435,21 +2475,22 @@ class Compound:
         if autotune:
             try:
                 if grid_type == "mesh":
+                    grid_autotune = _meshgrid_over_sphere_flatten(grid_number)
                     num_to_parallelize = 2 * grid_number**2
                 elif grid_type == "fibonacci":
+                    grid_autotune = _fibonacci_over_sphere(grid_number)
                     num_to_parallelize = grid_number
-                grid = ones((num_to_parallelize, 3))
                 number_threads = _auto_tune(
                     self._hdf5,
                     group,
                     fields,
-                    grid,
+                    grid_autotune,
                     temperatures,
                     states_cutoff,
                     number_cpu,
                     num_to_parallelize,
                     fields.shape[0],
-                    "energy",
+                    "energy_3d",
                     energy_type=energy_type,
                 )
             except Exception as exc:

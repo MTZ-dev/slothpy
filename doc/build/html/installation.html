@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Installation Guide &#8212; SlothPy 0.1.14 documentation</title>
+    <title>Installation Guide &#8212; SlothPy 0.2.0 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
   <script src="_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
 
-    <script src="_static/documentation_options.js?v=f2ffa296"></script>
+    <script src="_static/documentation_options.js?v=95e61db4"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -224,7 +224,7 @@
       
         <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
 <div class="custom-version-indicator">
-    <span class="version-text">SlothPy Version: 0.1.14</span>
+    <span class="version-text">SlothPy Version: 0.2.0</span>
 </div>
 
 <style>
@@ -403,7 +403,7 @@ document.write(`
         
           <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
 <div class="custom-version-indicator">
-    <span class="version-text">SlothPy Version: 0.1.14</span>
+    <span class="version-text">SlothPy Version: 0.2.0</span>
 </div>
 
 <style>
@@ -638,15 +638,22 @@ document.write(`
 </pre></div>
 </div>
 </li>
-<li><p>Install using the requirements file:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+<li><p>Now you can install the package in editable mode:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 </pre></div>
 </div>
 </li>
 </ol>
+<p>or just set up the environment by installing the requirements file:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>slothpy
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</div></blockquote>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>When installing SlothPy from the GitHub repository, ensure your scripts are in the same directory as SlothPy to enable proper importing of the SlothPy modules.</p>
+<p>When installing SlothPy from the GitHub repository this way, ensure your scripts are in the same directory as SlothPy to enable proper importing of the SlothPy modules.</p>
 </div>
 <p>You’re all set! SlothPy is now installed and ready for use.</p>
 </section>

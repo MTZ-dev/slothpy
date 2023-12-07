@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>General Utilities &#8212; SlothPy 0.1.14 documentation</title>
+    <title>General Utilities &#8212; SlothPy 0.2.0 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
   <script src="_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
 
-    <script src="_static/documentation_options.js?v=f2ffa296"></script>
+    <script src="_static/documentation_options.js?v=95e61db4"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -224,7 +224,7 @@
       
         <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
 <div class="custom-version-indicator">
-    <span class="version-text">SlothPy Version: 0.1.14</span>
+    <span class="version-text">SlothPy Version: 0.2.0</span>
 </div>
 
 <style>
@@ -403,7 +403,7 @@ document.write(`
         
           <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
 <div class="custom-version-indicator">
-    <span class="version-text">SlothPy Version: 0.1.14</span>
+    <span class="version-text">SlothPy Version: 0.2.0</span>
 </div>
 
 <style>
@@ -528,7 +528,6 @@ document.write(`
 <li class="toctree-l2"><a class="reference internal" href="compound.html">Compound</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">General Utilities</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#slothpy.lebedev_laikov_grid"><code class="docutils literal notranslate"><span class="pre">lebedev_laikov_grid()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#slothpy.colour_map"><code class="docutils literal notranslate"><span class="pre">colour_map()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#slothpy.set_default_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_default_error_reporting_mode()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#slothpy.set_plain_error_reporting_mode"><code class="docutils literal notranslate"><span class="pre">set_plain_error_reporting_mode()</span></code></a></li>
 </ul>
@@ -644,39 +643,6 @@ algebraic order of accuracy”
 Doklady Mathematics, Vol. 59, No. 3, 1999, pp. 477-481.</p>
 </div>
 </div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="slothpy.colour_map">
-<span class="sig-prename descclassname"><span class="pre">slothpy.</span></span><span class="sig-name descname"><span class="pre">colour_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slothpy/_general_utilities/_ploting_utilities.html#colour_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#slothpy.colour_map" title="Link to this definition">#</a></dt>
-<dd><p>Creates matplotlib colour map object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>name</strong> (<em>Union</em><em>[</em><em>&quot;BuPi&quot;</em><em>, </em><em>&quot;rainbow&quot;</em><em>, </em><em>&quot;dark_rainbow&quot;</em><em>, </em><em>&quot;light_rainbow&quot;</em><em>,</em>) – <p>“light_rainbow_alt”, “BuOr”, “BuYl”, “BuRd”, “GnYl”, “PrOr”, “GnRd”,
-“funmat”, “NdCoN322bpdo”, “NdCoNO222bpdo”, “NdCoI22bpdo”, “viridis”,
-“plasma”, “inferno”, “magma”, “cividis”] or list[str]</p>
-<p>One of the defined names for colour maps: BuPi, rainbow, dark_rainbow,
-light_rainbow,light_rainbow_alt, BuOr, BuYl, BuRd, GnYl, PrOr, GnRd,
-funmat, NdCoN322bpdo, NdCoNO222bpdo, NdCoI22bpdo, viridis, plasma,
-inferno, magma, cividis or list of HTML colour codes from which the
-colour map will be created by interpolation of colours between ones on
-the list. The predefined names modifiers can be applied: _l loops
-the list in a way that it starts and ends with the same colour, _r
-reverses the list.</p>
-</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The Matplotlib’s colour map object used for plotting.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>matplotlib.colors.LinearSegmentedColormap</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If the input is not acceptable for creating a colour map from the list
-of colour codes or the name of predefined colour map was incorrectly
-written.</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">

@@ -13,8 +13,8 @@ https://doi.org/your-paper-doi)
 
 SlothPy is a comprehensive package for computational molecular magnetism.
 
-- **Website:** [your-website](https://your-website)
-- **Documentation:** [link-to-docs](https://link-to-docs)
+- **Website:** [your-website](https://slothpy.org/)
+- **Documentation:** [link-to-docs](https://slothpy.org/reference_manual)
 - **E-mail the author:** [your-mailing-list](mikolaj.zychowicz@uj.edu.pl)
 - **PyPI:** [PyPI Repository](https://pypi.org/project/slothpy/)
 - **Source code:** [GitHub](https://github.com/MTZ-dev/slothpy)
@@ -40,7 +40,7 @@ SlothPy aims to become a comprehensive software package for computational molecu
 pip install slothpy
 ```
 
-For detailed installation instructions, please refer to the [Installation Guide](link-to-docs).
+For detailed installation instructions, please refer to the [Installation Guide](https://slothpy.org/installation).
 
 ## Usage
 
@@ -50,11 +50,11 @@ Start with importing SlothPy:
 import slothpy as slt
 ```
 
-and see your [How to Start](link-to-how-to-start) for various tutorials.
+and see your [How to Start](https://slothpy.org/how_to_start) for various tutorials.
 
 ## Documentation
 
-For comprehensive guides and tutorials, visit our [documentation](link-to-docs).
+For comprehensive guides and tutorials, visit our [documentation](https://slothpy.org).
 
 ## How to Cite
 
@@ -66,7 +66,7 @@ Authors. (Year). "Title of the Paper." Journal Name, Volume(Issue), pages. DOI: 
 
 ## Contributing
 
-We welcome contributions in the form of issue reports, pull requests and suggestions send directly via e-mail. Please see our [About section](link-to-about). 
+We welcome contributions in the form of issue reports, pull requests and suggestions send directly via e-mail. Please see our [About section](https://slothpy.org/about). 
 
 ## License
 

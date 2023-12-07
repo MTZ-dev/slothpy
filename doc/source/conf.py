@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "SlothPy"
 copyright = "2023, Mikołaj Tadeusz Żychowicz"
 author = "Mikołaj Tadeusz Żychowicz"
-release = "0.1.14"
+release = "0.1.15"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

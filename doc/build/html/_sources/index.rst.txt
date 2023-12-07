@@ -3,6 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. raw:: html
+
+    <div style="text-align: center;">
+
 SlothPy 
 =======
 
@@ -14,11 +18,11 @@ Begin your journey with SlothPy today!
 
 Start from the :ref:`about` section.
 
-
 .. raw:: html
     
-    <img src="https://raw.githubusercontent.com/MTZ-dev/slothpy/main/doc/source/_static/greeting_slothpy.png" width="400" alt="Image not found" onerror="this.onerror=null;this.src='_images/error_slothpy.png';">
+    <img src="https://raw.githubusercontent.com/MTZ-dev/slothpy/main/doc/source/_static/greeting_slothpy.png" width="400" alt="Image not found" onerror="this.onerror=null;this.src='_images/error_slothpy.png';" style="display: block; margin: auto;">
 
+    <br/>
 
 .. toctree::
    :maxdepth: 10
@@ -31,9 +35,14 @@ Start from the :ref:`about` section.
    theory
    how_to_cite
 
+.. raw:: html
+
+    </div>
+
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

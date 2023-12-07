@@ -160,7 +160,7 @@ def table_energy_and_g(
         raise SltFileError(
             slt_file._hdf5,
             exc,
-            f"Failed to load data required by table"
+            f"Failed to load data required by the table "
             + BLUE
             + "Group "
             + RESET

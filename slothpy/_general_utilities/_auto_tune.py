@@ -16,37 +16,41 @@
 
 from os import cpu_count
 from time import perf_counter_ns
-from math import ceil
-from statistics import mean
-from typing import Tuple
+from typing import Tuple, Literal
 from multiprocessing import Pool
 from multiprocessing.shared_memory import SharedMemory
 from multiprocessing.managers import SharedMemoryManager
 from numpy import (
     ndarray,
-    array,
+    dtype,
     ones,
     ascontiguousarray,
-    linspace,
-    zeros,
-    diag,
     float64,
     complex128,
 )
-from numpy.linalg import eigh, eigvalsh
 from threadpoolctl import threadpool_limits
+from numba import set_num_threads
 from slothpy._magnetism._magnetisation import (
-    _mt_over_grid,
-    _calculate_magnetization,
+    _mt_over_fields_grid,
+    _mt_over_grid_fields,
+    _arg_iter_mht,
+    _arg_iter_mght,
 )
 from slothpy._magnetism._zeeman import (
-    _calculate_helmholtz_energy,
-    _calculate_zeeman_matrix,
+    _zeeman_over_fields_grid,
+    _helmholtz_energyt_over_fields_grid,
+    _internal_energyt_over_fields_grid,
+    _helmholtz_energyt_over_grid_fields,
+    _internal_energyt_over_grid_fields,
+    _arg_iter_eht,
+    _arg_iter_zeeman,
+    _arg_iter_eght,
 )
 from slothpy._general_utilities._system import _get_num_of_processes
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
+from slothpy._general_utilities._system import _distribute_chunks
 from slothpy._general_utilities._constants import (
     YELLOW,
     BLUE,
@@ -57,251 +61,348 @@ from slothpy._general_utilities._constants import (
 )
 
 
-def _arg_iter_mth_benchmark(
-    magnetic_momenta,
-    soc_energies,
-    fields,
-    grid,
-    temperatures,
-    m_s,
-    s_s,
-    t_s,
-    g_s,
-    energy: bool = False,
-):
-    # Iterator generator for arguments with different field values to be
-    # distributed along num_process processes
-    for i in range(fields.shape[0]):
-        yield (
-            magnetic_momenta,
-            soc_energies,
-            fields[i],
-            grid,
-            temperatures,
-            m_s,
-            s_s,
-            t_s,
-            g_s,
-            energy,
-        )
-
-
-def _dummy_function(
-    magnetic_momenta: str,
-    soc_energies: str,
-    field: float64,
-    grid: str,
-    temperatures: str,
-    m_s: int,
-    s_s: int,
-    t_s: int,
-    g_s: int = 0,
-    energy: bool = False,
+def _calculate_zeeman_splitting(
+    magnetic_momenta_name: str,
+    soc_energies_name: str,
+    fields_name: str,
+    grid_name: str,
+    magnetic_momenta_shape: tuple,
+    soc_energies_shape: tuple,
+    grid_shape: tuple,
+    field_chunk: tuple,
+    num_of_states,
+    average: bool = False,
 ) -> ndarray:
-    grid_s = SharedMemory(name=grid)
-    grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
-    temperatures_s = SharedMemory(name=temperatures)
-    temperatures_a = ndarray(
-        t_s,
-        dtype=float64,
-        buffer=temperatures_s.buf,
+    # Option to enable calculations with only a single grid point.
+
+    magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
+    magnetic_momenta_array = ndarray(
+        magnetic_momenta_shape,
+        complex128,
+        magnetic_momenta_shared.buf,
     )
-    magnetic_momenta_s = SharedMemory(name=magnetic_momenta)
-    magnetic_momenta_a = ndarray(
-        m_s,
-        dtype=complex128,
-        buffer=magnetic_momenta_s.buf,
+    soc_energies_shared = SharedMemory(soc_energies_name)
+    soc_energies_array = ndarray(
+        soc_energies_shape, float64, soc_energies_shared.buf
     )
-    soc_energies_s = SharedMemory(name=soc_energies)
-    soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
+    grid_shared = SharedMemory(grid_name)
+    grid_array = ndarray(grid_shape, float64, grid_shared.buf)
 
-    dummy = soc_energies_a + 1
-    dummy = magnetic_momenta_a + 1
-    dummy = temperatures_a + 1
-    dummy = grid_a + 1
-    field = field + 1
+    offset = dtype(float64).itemsize * field_chunk[0]
+    chunk_length = field_chunk[1] - field_chunk[0]
 
-    if dummy.any():
-        return ones(temperatures_a.shape, dtype=float64)
-    else:
-        return ones(temperatures_a.shape, dtype=float64)
+    fields_shared = SharedMemory(fields_name)
+    fields_array = ndarray((chunk_length,), float64, fields_shared.buf, offset)
+
+    setup_time_end = perf_counter_ns()
+
+    # autotune_size = 4
+    grid_array = ones((4, grid_array.shape[1]), dtype=float64)
+    fields_array = ones((4,), dtype=float64)
+
+    exec_time_start = perf_counter_ns()
+
+    _zeeman_over_fields_grid(
+        magnetic_momenta_array,
+        soc_energies_array,
+        fields_array,
+        grid_array,
+        num_of_states,
+        average,
+    )
+
+    exec_time_end = perf_counter_ns()
+
+    return [setup_time_end, exec_time_end - exec_time_start]
 
 
-def _dummy_function_wrapper(args):
+def _calculate_eht(
+    magnetic_momenta_name: str,
+    soc_energies_name: str,
+    fields_name: str,
+    grid_name: str,
+    temperatures_name: str,
+    magnetic_momenta_shape: tuple,
+    soc_energies_shape: tuple,
+    grid_shape: tuple,
+    temperatures_shape: tuple,
+    field_chunk: tuple,
+    energy_type: Literal["helmholtz", "internal"],
+) -> ndarray:
+    # Option to enable calculations with only a single grid point.
+    magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
+    magnetic_momenta_array = ndarray(
+        magnetic_momenta_shape,
+        complex128,
+        magnetic_momenta_shared.buf,
+    )
+    soc_energies_shared = SharedMemory(soc_energies_name)
+    soc_energies_array = ndarray(
+        soc_energies_shape, float64, soc_energies_shared.buf
+    )
+    grid_shared = SharedMemory(grid_name)
+    grid_array = ndarray(grid_shape, float64, grid_shared.buf)
+    temperatures_shared = SharedMemory(temperatures_name)
+    temperatures_array = ndarray(
+        temperatures_shape,
+        float64,
+        temperatures_shared.buf,
+    )
+
+    offset = dtype(float64).itemsize * field_chunk[0]
+    chunk_length = field_chunk[1] - field_chunk[0]
+
+    fields_shared = SharedMemory(fields_name)
+    fields_array = ndarray((chunk_length,), float64, fields_shared.buf, offset)
+
+    setup_time_end = perf_counter_ns()
+
+    # autotune_size = 4
+    grid_array = ones((4, grid_array.shape[1]), dtype=float64)
+    fields_array = ones((4,), dtype=float64)
+
+    if energy_type == "helmholtz":
+        exec_time_start = perf_counter_ns()
+        _helmholtz_energyt_over_fields_grid(
+            magnetic_momenta_array,
+            soc_energies_array,
+            fields_array,
+            grid_array,
+            temperatures_array,
+        )
+        exec_time_end = perf_counter_ns()
+    elif energy_type == "internal":
+        exec_time_start = perf_counter_ns()
+        _internal_energyt_over_fields_grid(
+            magnetic_momenta_array,
+            soc_energies_array,
+            fields_array,
+            grid_array,
+            temperatures_array,
+        )
+        exec_time_end = perf_counter_ns()
+
+    return [setup_time_end, exec_time_end - exec_time_start]
+
+
+def _calculate_mht(
+    magnetic_momenta_name: str,
+    soc_energies_name: str,
+    fields_name: str,
+    grid_name: str,
+    temperatures_name: str,
+    magnetic_momenta_shape: tuple,
+    soc_energies_shape: tuple,
+    grid_shape: tuple,
+    temperatures_shape: tuple,
+    field_chunk: tuple,
+) -> ndarray:
+    magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
+    magnetic_momenta_array = ndarray(
+        magnetic_momenta_shape,
+        complex128,
+        magnetic_momenta_shared.buf,
+    )
+    soc_energies_shared = SharedMemory(soc_energies_name)
+    soc_energies_array = ndarray(
+        soc_energies_shape, float64, soc_energies_shared.buf
+    )
+    grid_shared = SharedMemory(grid_name)
+    grid_array = ndarray(grid_shape, float64, grid_shared.buf)
+    temperatures_shared = SharedMemory(temperatures_name)
+    temperatures_array = ndarray(
+        temperatures_shape,
+        float64,
+        temperatures_shared.buf,
+    )
+
+    offset = dtype(float64).itemsize * field_chunk[0]
+    chunk_length = field_chunk[1] - field_chunk[0]
+
+    fields_shared = SharedMemory(fields_name)
+    fields_array = ndarray((chunk_length,), float64, fields_shared.buf, offset)
+
+    setup_time_end = perf_counter_ns()
+
+    # autotune_size = 4
+    grid_array = ones((4, grid_array.shape[1]), dtype=float64)
+    fields_array = ones((4,), dtype=float64)
+
+    exec_time_start = perf_counter_ns()
+
+    _mt_over_fields_grid(
+        magnetic_momenta_array,
+        soc_energies_array,
+        fields_array,
+        grid_array,
+        temperatures_array,
+    )
+
+    exec_time_end = perf_counter_ns()
+
+    return [setup_time_end, exec_time_end - exec_time_start]
+
+
+def _calculate_mght(
+    magnetic_momenta_name: str,
+    soc_energies_name: str,
+    fields_name: str,
+    grid_name: str,
+    temperatures_name: str,
+    magnetic_momenta_shape: tuple,
+    soc_energies_shape: tuple,
+    fields_shape: tuple,
+    temperatures_shape: tuple,
+    grid_chunk: tuple,
+) -> ndarray:
+    magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
+    magnetic_momenta_array = ndarray(
+        magnetic_momenta_shape,
+        complex128,
+        magnetic_momenta_shared.buf,
+    )
+    soc_energies_shared = SharedMemory(soc_energies_name)
+    soc_energies_array = ndarray(
+        soc_energies_shape, float64, soc_energies_shared.buf
+    )
+    fields_shared = SharedMemory(fields_name)
+    fields_array = ndarray(fields_shape, float64, fields_shared.buf)
+    temperatures_shared = SharedMemory(temperatures_name)
+    temperatures_array = ndarray(
+        temperatures_shape,
+        float64,
+        temperatures_shared.buf,
+    )
+
+    offset = dtype(float64).itemsize * grid_chunk[0] * 3
+    chunk_length = grid_chunk[1] - grid_chunk[0]
+
+    grid_shared = SharedMemory(grid_name)
+    grid_array = ndarray((chunk_length, 3), float64, grid_shared.buf, offset)
+
+    setup_time_end = perf_counter_ns()
+
+    # autotune_size = 4
+    grid_array = ones((4, grid_array.shape[1]), dtype=float64)
+    fields_array = ones((4,), dtype=float64)
+
+    exec_time_start = perf_counter_ns()
+
+    _mt_over_grid_fields(
+        magnetic_momenta_array,
+        soc_energies_array,
+        fields_array,
+        grid_array,
+        temperatures_array,
+    )
+
+    exec_time_end = perf_counter_ns()
+
+    return [setup_time_end, exec_time_end - exec_time_start]
+
+
+def _calculate_eght(
+    magnetic_momenta_name: str,
+    soc_energies_name: str,
+    fields_name: str,
+    grid_name: str,
+    temperatures_name: str,
+    magnetic_momenta_shape: tuple,
+    soc_energies_shape: tuple,
+    fields_shape: tuple,
+    temperatures_shape: tuple,
+    grid_chunk: tuple,
+    energy_type: Literal["helmholtz", "internal"],
+) -> ndarray:
+    magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
+    magnetic_momenta_array = ndarray(
+        magnetic_momenta_shape,
+        complex128,
+        magnetic_momenta_shared.buf,
+    )
+    soc_energies_shared = SharedMemory(soc_energies_name)
+    soc_energies_array = ndarray(
+        soc_energies_shape, float64, soc_energies_shared.buf
+    )
+    fields_shared = SharedMemory(fields_name)
+    fields_array = ndarray(fields_shape, float64, fields_shared.buf)
+    temperatures_shared = SharedMemory(temperatures_name)
+    temperatures_array = ndarray(
+        temperatures_shape,
+        float64,
+        temperatures_shared.buf,
+    )
+
+    offset = dtype(float64).itemsize * grid_chunk[0] * 3
+    chunk_length = grid_chunk[1] - grid_chunk[0]
+
+    grid_shared = SharedMemory(grid_name)
+    grid_array = ndarray((chunk_length, 3), float64, grid_shared.buf, offset)
+
+    setup_time_end = perf_counter_ns()
+
+    # autotune_size = 4
+    grid_array = ones((4, grid_array.shape[1]), dtype=float64)
+    fields_array = ones((4,), dtype=float64)
+
+    if energy_type == "helmholtz":
+        exec_time_start = perf_counter_ns()
+        _helmholtz_energyt_over_grid_fields(
+            magnetic_momenta_array,
+            soc_energies_array,
+            fields_array,
+            grid_array,
+            temperatures_array,
+        )
+        exec_time_end = perf_counter_ns()
+    elif energy_type == "internal":
+        exec_time_start = perf_counter_ns()
+        _internal_energyt_over_grid_fields(
+            magnetic_momenta_array,
+            soc_energies_array,
+            fields_array,
+            grid_array,
+            temperatures_array,
+        )
+        exec_time_end = perf_counter_ns()
+
+    return [setup_time_end, exec_time_end - exec_time_start]
+
+
+def _calculate_eght_wrapper(args):
+    zeeman_array = _calculate_eght(*args)
+
+    return zeeman_array
+
+
+def _caculate_zeeman_splitting_wrapper(args):
+    zeeman_array = _calculate_zeeman_splitting(*args)
+
+    return zeeman_array
+
+
+def _calculate_eht_wrapper(args):
     # Unpack arguments and call the function
-    mt = _dummy_function(*args)
+    et = _calculate_eht(*args)
+
+    return et
+
+
+def _calculate_mht_wrapper(args):
+    # Unpack arguments and call the function
+    mt = _calculate_mht(*args)
 
     return mt
 
 
-def _helmholtz_energyt_over_grid(
-    magnetic_momenta: ndarray,
-    soc_energies: ndarray,
-    field: float64,
-    grid: ndarray,
-    temperatures: ndarray,
-    internal_energy: bool = False,
-) -> int:
-    # Initialize arrays
-    energyt_array = ascontiguousarray(
-        zeros((temperatures.shape[0]), dtype=float64)
-    )
-
-    times = []
-
-    # Perform calculations for each magnetic field orientation
-    for j in range(grid.shape[0]):
-        start = perf_counter_ns()
-        # Construct Zeeman matrix
-        orientation = grid[j, :3]
-
-        zeeman_matrix = _calculate_zeeman_matrix(
-            magnetic_momenta, soc_energies, field, orientation
-        )
-
-        # Diagonalize full Hamiltonian matrix
-        eigenvalues = eigvalsh(zeeman_matrix)
-        eigenvalues = ascontiguousarray(eigenvalues)
-
-        # Compute Helmholtz energy for each T
-        for t in range(temperatures.shape[0]):
-            energyt_array[t] += (
-                _calculate_helmholtz_energy(
-                    eigenvalues, temperatures[t], internal_energy
-                )
-                * grid[j, 3]
-            )
-        end = perf_counter_ns()
-
-        times.append(end - start)
-
-    return min(times) * grid.shape[0]
-
-
-def _mt_over_grid(
-    magnetic_momenta: ndarray,
-    soc_energies: ndarray,
-    field: float64,
-    grid: ndarray,
-    temperatures: ndarray,
-) -> int:
-    # Initialize arrays
-    mt_array = ascontiguousarray(zeros((temperatures.shape[0]), dtype=float64))
-
-    times = []
-
-    # Perform calculations for each magnetic field orientation
-    for j in range(grid.shape[0]):
-        start = perf_counter_ns()
-        # Construct Zeeman matrix
-        orientation = grid[j, :3]
-
-        zeeman_matrix = _calculate_zeeman_matrix(
-            magnetic_momenta, soc_energies, field, orientation
-        )
-
-        # Diagonalize full Hamiltonian matrix
-        eigenvalues, eigenvectors = eigh(zeeman_matrix)
-        magnetic_momenta = ascontiguousarray(magnetic_momenta)
-
-        # Transform momenta according to the new eigenvectors
-        states_momenta = (
-            eigenvectors.conj().T
-            @ (
-                grid[j, 0] * magnetic_momenta[0]
-                + grid[j, 1] * magnetic_momenta[1]
-                + grid[j, 2] * magnetic_momenta[2]
-            )
-            @ eigenvectors
-        )
-
-        # Get diagonal momenta of the new states
-        states_momenta = diag(states_momenta).real.astype(float64)
-
-        # Compute partition function and magnetization for each T
-        for t in range(temperatures.shape[0]):
-            mt_array[t] += (
-                _calculate_magnetization(
-                    eigenvalues, states_momenta, temperatures[t]
-                )
-                * grid[j, 3]
-            )
-        end = perf_counter_ns()
-
-        times.append(end - start)
-
-    return min(times) * grid.shape[0]
-
-
-def _get_mt_exec_time(
-    magnetic_momenta: str,
-    soc_energies: str,
-    field: float64,
-    grid: str,
-    temperatures: str,
-    m_s: int,
-    s_s: int,
-    t_s: int,
-    g_s: int = 0,
-    energy: bool = False,
-) -> list[int]:
-    grid_s = SharedMemory(name=grid)
-    grid_a = ndarray(g_s, dtype=float64, buffer=grid_s.buf)
-    temperatures_s = SharedMemory(name=temperatures)
-    temperatures_a = ndarray(
-        t_s,
-        dtype=float64,
-        buffer=temperatures_s.buf,
-    )
-    magnetic_momenta_s = SharedMemory(name=magnetic_momenta)
-    magnetic_momenta_a = ndarray(
-        m_s,
-        dtype=complex128,
-        buffer=magnetic_momenta_s.buf,
-    )
-    soc_energies_s = SharedMemory(name=soc_energies)
-    soc_energies_a = ndarray(s_s, dtype=float64, buffer=soc_energies_s.buf)
-
-    if energy:
-        start_time = perf_counter_ns()
-
-        exec_time = _helmholtz_energyt_over_grid(
-            magnetic_momenta_a,
-            soc_energies_a,
-            field,
-            grid_a,
-            temperatures_a,
-            False,
-        )
-
-        mt = array(exec_time)
-
-        end_time = perf_counter_ns()
-
-    else:
-        start_time = perf_counter_ns()
-
-        exec_time = _mt_over_grid(
-            magnetic_momenta_a, soc_energies_a, field, grid_a, temperatures_a
-        )
-
-        mt = array(exec_time)
-
-        end_time = perf_counter_ns()
-
-    setup_time = end_time - start_time - exec_time
-
-    return [exec_time, setup_time]
-
-
-def _get_mt_exec_time_wrapper(args):
+def _calculate_mght_wrapper(args):
     # Unpack arguments and call the function
-    mt = _get_mt_exec_time(*args)
+    mt = _calculate_mght(*args)
 
     return mt
 
 
-def _mth_load(
+def _benchmark(
     filename: str,
     group: str,
     fields: ndarray[float64],
@@ -310,8 +411,14 @@ def _mth_load(
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
-) -> int:
-    start_time_load = perf_counter_ns()
+    benchamark_type: Literal[
+        "zeeman", "energy", "magnetisation", "energy_3d", "magnetisation_3d"
+    ] = "magnetisation",
+    num_of_states: int = 0,
+    average: bool = False,
+    energy_type: Literal["helmholtz", "internal"] = "helmholtz",
+) -> ndarray:
+    setup_time_start = perf_counter_ns()
     # Read data from HDF5 file
     (
         magnetic_momenta,
@@ -320,11 +427,17 @@ def _mth_load(
         filename, group, states_cutoff
     )
 
-    num_process, num_threads = _get_num_of_processes(
-        num_cpu, num_threads, fields.shape[0]
-    )
+    if benchamark_type in ["zeeman", "energy", "magnetisation"]:
+        # Get number of parallel proceses to be used
+        num_process, num_threads = _get_num_of_processes(
+            num_cpu, num_threads, fields.shape[0]
+        )
+    elif benchamark_type in ["energy_3d", "magnetisation_3d"]:
+        num_process, num_threads = _get_num_of_processes(
+            num_cpu, num_threads, grid.shape[0]
+        )
 
-    # Get magnetic field in a.u. and allocate arrays as contiguous
+    #  Allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)
     temperatures = ascontiguousarray(temperatures, dtype=float64)
     grid = ascontiguousarray(grid, dtype=float64)
@@ -336,8 +449,8 @@ def _mth_load(
         )
         soc_energies_shared = smm.SharedMemory(size=soc_energies.nbytes)
         fields_shared = smm.SharedMemory(size=fields.nbytes)
-        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
         grid_shared = smm.SharedMemory(size=grid.nbytes)
+        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
 
         # Copy data to shared memory
         magnetic_momenta_shared_arr = ndarray(
@@ -353,159 +466,154 @@ def _mth_load(
         fields_shared_arr = ndarray(
             fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
         )
-        temperatures_shared_arr = ndarray(
-            temperatures.shape,
-            dtype=temperatures.dtype,
-            buffer=temperatures_shared.buf,
-        )
         grid_shared_arr = ndarray(
             grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
-        )
-
-        magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
-        soc_energies_shared_arr[:] = soc_energies[:]
-        fields_shared_arr[:] = fields[:]
-        temperatures_shared_arr[:] = temperatures[:]
-        grid_shared_arr[:] = grid[:]
-
-        with threadpool_limits(limits=num_threads, user_api="blas"):
-            with threadpool_limits(limits=num_threads, user_api="openmp"):
-                with Pool(num_process) as p:
-                    dummy_return = p.map(
-                        _dummy_function_wrapper,
-                        _arg_iter_mth_benchmark(
-                            magnetic_momenta_shared.name,
-                            soc_energies_shared.name,
-                            fields_shared_arr,
-                            grid_shared.name,
-                            temperatures_shared.name,
-                            magnetic_momenta_shared_arr.shape,
-                            soc_energies_shared_arr.shape,
-                            temperatures_shared_arr.shape,
-                            grid_shared_arr.shape,
-                        ),
-                    )
-    dummy_return = array(dummy_return)
-    end_time_load = perf_counter_ns()
-
-    return end_time_load - start_time_load
-
-
-def _mth_benchmark(
-    filename: str,
-    group: str,
-    fields: ndarray[float64],
-    grid: ndarray[float64],
-    temperatures: ndarray[float64],
-    states_cutoff: int,
-    num_cpu: int,
-    num_threads: int,
-    energy: bool = False,
-) -> float64:
-    # Read data from HDF5 file
-    (
-        magnetic_momenta,
-        soc_energies,
-    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff
-    )
-
-    num_process, num_threads = _get_num_of_processes(
-        num_cpu, num_threads, fields.shape[0]
-    )
-
-    # Get magnetic field in a.u. and allocate arrays as contiguous
-    fields = ascontiguousarray(fields, dtype=float64)
-    temperatures = ascontiguousarray(temperatures, dtype=float64)
-    grid = ascontiguousarray(grid, dtype=float64)
-
-    with SharedMemoryManager() as smm:
-        # Create shared memory for arrays
-        magnetic_momenta_shared = smm.SharedMemory(
-            size=magnetic_momenta.nbytes
-        )
-        soc_energies_shared = smm.SharedMemory(size=soc_energies.nbytes)
-        fields_shared = smm.SharedMemory(size=fields.nbytes)
-        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
-        grid_shared = smm.SharedMemory(size=grid.nbytes)
-
-        # Copy data to shared memory
-        magnetic_momenta_shared_arr = ndarray(
-            magnetic_momenta.shape,
-            dtype=magnetic_momenta.dtype,
-            buffer=magnetic_momenta_shared.buf,
-        )
-        soc_energies_shared_arr = ndarray(
-            soc_energies.shape,
-            dtype=soc_energies.dtype,
-            buffer=soc_energies_shared.buf,
-        )
-        fields_shared_arr = ndarray(
-            fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
         )
         temperatures_shared_arr = ndarray(
             temperatures.shape,
             dtype=temperatures.dtype,
             buffer=temperatures_shared.buf,
         )
-        grid_shared_arr = ndarray(
-            grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
-        )
 
         magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
         soc_energies_shared_arr[:] = soc_energies[:]
         fields_shared_arr[:] = fields[:]
-        temperatures_shared_arr[:] = temperatures[:]
         grid_shared_arr[:] = grid[:]
+        temperatures_shared_arr[:] = temperatures[:]
+
+        del magnetic_momenta
+        del soc_energies
+        del fields
+        del grid
+        del temperatures
 
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
-                with Pool(num_process) as p:
-                    times = p.map(
-                        _get_mt_exec_time_wrapper,
-                        _arg_iter_mth_benchmark(
-                            magnetic_momenta_shared.name,
-                            soc_energies_shared.name,
-                            fields_shared_arr,
-                            grid_shared.name,
-                            temperatures_shared.name,
-                            magnetic_momenta_shared_arr.shape,
-                            soc_energies_shared_arr.shape,
-                            temperatures_shared_arr.shape,
-                            grid_shared_arr.shape,
-                            energy,
-                        ),
-                    )
+                set_num_threads(num_threads)
+                if benchamark_type == "zeeman":
+                    with Pool(num_process) as p:
+                        timings = p.map(
+                            _caculate_zeeman_splitting_wrapper,
+                            _arg_iter_zeeman(
+                                magnetic_momenta_shared.name,
+                                soc_energies_shared.name,
+                                fields_shared.name,
+                                grid_shared.name,
+                                magnetic_momenta_shared_arr.shape,
+                                soc_energies_shared_arr.shape,
+                                grid_shared_arr.shape,
+                                _distribute_chunks(
+                                    fields_shared_arr.shape[0], num_process
+                                ),
+                                num_of_states,
+                                average,
+                            ),
+                        )
+                elif benchamark_type == "energy":
+                    with Pool(num_process) as p:
+                        timings = p.map(
+                            _calculate_eht_wrapper,
+                            _arg_iter_eht(
+                                magnetic_momenta_shared.name,
+                                soc_energies_shared.name,
+                                fields_shared.name,
+                                grid_shared.name,
+                                temperatures_shared.name,
+                                magnetic_momenta_shared_arr.shape,
+                                soc_energies_shared_arr.shape,
+                                grid_shared_arr.shape,
+                                temperatures_shared_arr.shape,
+                                _distribute_chunks(
+                                    fields_shared_arr.shape[0], num_process
+                                ),
+                                energy_type,
+                            ),
+                        )
+                elif benchamark_type == "magnetisation":
+                    with Pool(num_process) as p:
+                        timings = p.map(
+                            _calculate_mht_wrapper,
+                            _arg_iter_mht(
+                                magnetic_momenta_shared.name,
+                                soc_energies_shared.name,
+                                fields_shared.name,
+                                grid_shared.name,
+                                temperatures_shared.name,
+                                magnetic_momenta_shared_arr.shape,
+                                soc_energies_shared_arr.shape,
+                                grid_shared_arr.shape,
+                                temperatures_shared_arr.shape,
+                                _distribute_chunks(
+                                    fields_shared_arr.shape[0], num_process
+                                ),
+                            ),
+                        )
+                elif benchamark_type == "energy_3d":
+                    with Pool(num_process) as p:
+                        timings = p.map(
+                            _calculate_eght_wrapper,
+                            _arg_iter_eght(
+                                magnetic_momenta_shared.name,
+                                soc_energies_shared.name,
+                                fields_shared.name,
+                                grid_shared.name,
+                                temperatures_shared.name,
+                                magnetic_momenta_shared_arr.shape,
+                                soc_energies_shared_arr.shape,
+                                fields_shared_arr.shape,
+                                temperatures_shared_arr.shape,
+                                _distribute_chunks(
+                                    grid_shared_arr.shape[0], num_process
+                                ),
+                                energy_type,
+                            ),
+                        )
+                elif benchamark_type == "magnetisation_3d":
+                    with Pool(num_process) as p:
+                        timings = p.map(
+                            _calculate_mght_wrapper,
+                            _arg_iter_mght(
+                                magnetic_momenta_shared.name,
+                                soc_energies_shared.name,
+                                fields_shared.name,
+                                grid_shared.name,
+                                temperatures_shared.name,
+                                magnetic_momenta_shared_arr.shape,
+                                soc_energies_shared_arr.shape,
+                                fields_shared_arr.shape,
+                                temperatures_shared_arr.shape,
+                                _distribute_chunks(
+                                    grid_shared_arr.shape[0], num_process
+                                ),
+                            ),
+                        )
 
-    times = array(times, dtype=float64)
-    exec_time = sorted(times[:, 0])
-    setup_time = sorted(times[:, 1])
-    return (
-        mean(exec_time[: ceil(len(exec_time) / 4)]),
-        mean(setup_time[: ceil(len(exec_time) / 4)]),
-    )  # Can return min, max, median, or mean for different approaches
-    # depending on internal_loop_samples size in _auto_tune so be careful what
-    # you are doing.
+    setup_times = [sublist[0] for sublist in timings]
+    exec_times = [sublist[1] for sublist in timings]
+
+    setup_time = max(setup_times) - setup_time_start
+    exec_time = max(exec_times)
+
+    return setup_time, exec_time
 
 
 def _auto_tune(
-    filename,
-    group,
+    filename: str,
+    group: str,
+    fields: ndarray[float64],
+    grid: ndarray[float64],
+    temperatures: ndarray[float64],
+    states_cutoff: int,
+    num_cpu: int,
     num_to_parallelize: int,
-    matrix_size: int,
-    internal_loop_size: int,
-    internal_task_size: int,
-    num_cpu: int = 0,
-    internal_loop_samples: int = 1,
-    energy: bool = False,
+    inner_loop_size: int,
+    benchamark_type: Literal[
+        "zeeman", "energy", "magnetisation", "energy_3d", "magnetisation_3d"
+    ] = "magnetisation",
+    num_of_states: int = 0,
+    average: bool = False,
+    energy_type: Literal["helmholtz", "internal"] = "helmholtz",
 ) -> Tuple[int, int]:
-    temperatures = linspace(1, 600, internal_task_size, dtype=float64)
-    grid = ones(
-        (internal_loop_samples, 4),
-        dtype=float64,
-    )
-    fields_load = ones(num_to_parallelize, dtype=float64)
-
     if num_cpu == 0:
         num_cpu = int(cpu_count())
     final_num_of_processes = num_cpu
@@ -519,50 +627,43 @@ def _auto_tune(
 
     for threads in range(1, num_cpu + 2):
         new_processes = num_cpu // threads
+        if new_processes >= num_to_parallelize:
+            new_processes = num_to_parallelize
+            threads = num_cpu // new_processes
         if (
             new_processes != old_processes
             and old_processes <= num_to_parallelize
         ):
             num_processes = old_processes
             num_threads = threads - 1
-            if num_processes == num_to_parallelize:
-                fields = linspace(1, 10, num_processes)
-            else:
-                fields = linspace(1, 10, 2 * num_processes, dtype=float64)
 
-            exec_setup_time = _mth_benchmark(
+            setup_time, exec_time = _benchmark(
                 filename,
                 group,
                 fields,
                 grid,
                 temperatures,
-                matrix_size,
+                states_cutoff,
                 num_cpu,
                 num_threads,
-                energy,
+                benchamark_type,
+                num_of_states,
+                average,
+                energy_type,
             )
-
-            load_time = _mth_load(
-                filename,
-                group,
-                fields_load,
-                grid,
-                temperatures,
-                matrix_size,
-                num_cpu,
-                num_threads,
-            )
-
+            # autotune_size ** 2 = 16
             current_time = (
-                exec_setup_time[0]
-                * (internal_loop_size / internal_loop_samples)
-                + exec_setup_time[1]
-            ) * ceil(num_to_parallelize / num_processes) + load_time
+                setup_time
+                + num_to_parallelize
+                * inner_loop_size
+                / (16 * num_processes)
+                * exec_time
+            )
 
             info = (
                 "Processes:"
                 f" {num_processes}, threads: {num_threads}."
-                " Estimated minimal execution time: "
+                " Estimated maximal execution time: "
             )
 
             if current_time < best_time:
@@ -604,10 +705,10 @@ def _auto_tune(
         + RESET
         + ".\n"
         + "The calculation time (starting from now) is estimated to be at"
-        " least: "
+        " most: "
         + GREEN
         + f"{best_time/1e9} s"
         + RESET
         + "."
     )
-    return num_cpu, final_num_of_threads
+    return final_num_of_threads

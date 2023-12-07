@@ -19,7 +19,7 @@ from multiprocessing import current_process
 from .core import compound_from_orca, compound_from_slt, compound_from_molcas
 from ._general_utilities import (
     lebedev_laikov_grid,
-    colour_map,
+    color_map,
     set_default_error_reporting_mode,
     set_plain_error_reporting_mode,
 )
@@ -92,4 +92,4 @@ if current_process().name == "MainProcess":
         " tracebacks."
     )
 
-set_plain_error_reporting_mode()
+# set_plain_error_reporting_mode()

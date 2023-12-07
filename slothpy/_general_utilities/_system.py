@@ -62,6 +62,16 @@ def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
     return num_process, num_threads
 
 
+def _distribute_chunks(data_len, num_process):
+    chunk_size = data_len // num_process
+    remainder = data_len % num_process
+
+    for i in range(num_process):
+        start = i * chunk_size + min(i, remainder)
+        end = start + chunk_size + (1 if i < remainder else 0)
+        yield (start, end)
+
+
 # Determine if the module is executed in a Jupyter Notebook
 def _is_notebook():
     # Check if the get_ipython function is defined (typically only defined

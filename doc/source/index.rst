@@ -6,7 +6,9 @@
 SlothPy 
 =======
 
-SlothPy is your toolkit for exploring the fascinating aspects of molecular magnetism. It's designed to make complex simulations accessible and insightful. Begin your journey with SlothPy today!
+SlothPy is your toolkit for exploring the fascinating aspects of molecular magnetism. It's designed to make complex simulations accessible and insightful.
+
+Begin your journey with SlothPy today!
 
 Start from the :ref:`about` section.
 

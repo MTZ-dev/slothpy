@@ -30,6 +30,7 @@ from numpy import (
     int64,
     float64,
     complex128,
+    mean,
 )
 from numba import jit
 from slothpy._general_utilities._io import (
@@ -77,25 +78,18 @@ def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
     # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
     for i in range(momenta_matrix[0, :, :].shape[1] - 1):
         if (
-            real(momenta_matrix[0, i, i + 1]) > 1e-16
-            or abs(imag(momenta_matrix[0, i, i + 1])) > 1e-16
+            real(momenta_matrix[0, i, i + 1]) > 1e-17
+            or abs(imag(momenta_matrix[0, i, i + 1])) > 1e-17
         ):
-            c[i + 1] = (momenta_matrix[0, i, i + 1]).conjugate() / abs(
-                momenta_matrix[0, i, i + 1]
-            )
+            c[i + 1] = (
+                momenta_matrix[0, i, i + 1] * c[i].conjugate()
+            ).conjugate() / abs(momenta_matrix[0, i, i + 1])
+            if (
+                (momenta_matrix[0, i, i + 1] * c[i].conjugate()) * c[i + 1]
+            ).real > 0.0:
+                c[i + 1] = -c[i + 1]
         else:
             c[i + 1] = 1.0
-
-        momenta_matrix[:, i + 1, :] = (
-            momenta_matrix[:, i + 1, :] * c[i + 1].conjugate()
-        )
-        momenta_matrix[0, :, i + 1] = momenta_matrix[0, :, i + 1] * c[i + 1]
-
-    for i in range(momenta_matrix.shape[1] - 1):
-        if momenta_matrix[0, i, i + 1].real > 0:
-            c[i + 1] = -c[i + 1]
-            momenta_matrix[0, i + 1, :] = -(momenta_matrix[0, i + 1, :])
-            momenta_matrix[0, :, i + 1] = -(momenta_matrix[0, :, i + 1])
 
     # Apply the phases for eigenvecotrs
     eigenvectors = ascontiguousarray(eigenvectors * c)
@@ -133,6 +127,9 @@ def _get_soc_matrix_in_z_pseudo_spin_basis(
 
     momenta = momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
+    soc_energies = soc_energies - mean(
+        soc_energies
+    )  ############################## WHYY?
     soc_matrix = diag(soc_energies).astype(complex128)
     soc_matrix = _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
         momenta, soc_matrix

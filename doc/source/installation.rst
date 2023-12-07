@@ -74,14 +74,21 @@ For those who prefer to install directly from the source:
 
       cd slothpy
 
-3. Install using the requirements file:
+3. Now you can install the package in editable mode:
 
    .. code-block:: bash
 
+      pip install -e .
+
+or just set up the environment by installing the requirements file:
+
+   .. code-block:: bash
+
+      cd slothpy
       pip install -r requirements.txt
 
 .. note:: 
-   When installing SlothPy from the GitHub repository, ensure your scripts are in the same directory as SlothPy to enable proper importing of the SlothPy modules.
+   When installing SlothPy from the GitHub repository this way, ensure your scripts are in the same directory as SlothPy to enable proper importing of the SlothPy modules.
 
 You're all set! SlothPy is now installed and ready for use.
 

@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from typing import Literal
 from numpy import (
     ndarray,
     array,
@@ -127,8 +127,8 @@ def _chitht_tensor(
     rotation: ndarray[float64] = None,
 ) -> ndarray[float64]:
     # When passed to _mth activates tensor calculation and _mth actually
-    # returns mht format
-    grid = array([1])
+    # returns mht[3,3]-tensor format
+    grid = array([1.0])
 
     # Experimentalist model
     if exp or (num_of_points == 0):
@@ -200,7 +200,8 @@ def _chit_3d(
     group: str,
     temperatures: ndarray,
     fields: ndarray,
-    spherical_grid: int,
+    grid_type: Literal["mesh", "fibonacci"],
+    grid_number: int,
     num_of_points: int,
     delta_h: float64,
     states_cutoff: int,
@@ -210,29 +211,39 @@ def _chit_3d(
     T: bool = True,
     rotation: ndarray = None,
 ) -> ndarray[float64]:
+    if grid_type != "mesh" and grid_type != "fibonacci":
+        raise ValueError(
+            'The only allowed grid types are "mesh" or "fibonacci".'
+        ) from None
     # Experimentalist model
     if exp or (num_of_points == 0):
         mag_3d_array = _mag_3d(
             filename,
             group,
             fields,
-            spherical_grid,
+            grid_type,
+            grid_number,
             temperatures,
             states_cutoff,
             num_cpu,
             num_threads,
             rotation,
         )
-
-        chi_3d_array = (
-            mag_3d_array / fields[newaxis, :, newaxis, newaxis, newaxis]
-        )
-
-        if T:
+        if grid_type == "mesh":
             chi_3d_array = (
-                chi_3d_array
-                * temperatures[newaxis, newaxis, :, newaxis, newaxis]
+                mag_3d_array / fields[newaxis, :, newaxis, newaxis, newaxis]
             )
+            if T:
+                chi_3d_array = (
+                    chi_3d_array
+                    * temperatures[newaxis, newaxis, :, newaxis, newaxis]
+                )
+        if grid_type == "fibonacci":
+            chi_3d_array = mag_3d_array / fields[:, newaxis, newaxis, newaxis]
+            if T:
+                chi_3d_array = (
+                    chi_3d_array * temperatures[newaxis, :, newaxis, newaxis]
+                )
 
     else:
         fields_diffs = (
@@ -242,11 +253,12 @@ def _chit_3d(
         fields_diffs = fields_diffs.flatten()
 
         # Get M(T,H) for adjacent values of field
-        mag_3d = _mag_3d(
+        mag_3d, grid = _mag_3d(
             filename,
             group,
             fields_diffs,
-            spherical_grid,
+            grid_type,
+            grid_number,
             temperatures,
             states_cutoff,
             num_cpu,
@@ -257,32 +269,38 @@ def _chit_3d(
 
         stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)
 
-        mag_3d_array = mag_3d.reshape(
-            (
-                fields.size,
-                stencil_coeff.size,
-                temperatures.size,
-                spherical_grid,
-                2 * spherical_grid,
+        if grid_type == "mesh":
+            mag_3d_array = mag_3d.reshape(
+                (
+                    fields.size,
+                    stencil_coeff.size,
+                    temperatures.size,
+                    grid_number,
+                    grid_number * 2,
+                )
             )
-        )
-        mag_3d_array = mag_3d_array.transpose((0, 2, 3, 4, 1))
-        # Numerical derivative of M(T,H) around given field value
-        chi_3d = dot(mag_3d_array, stencil_coeff)
-
-        if T:
-            chi_3d = chi_3d * temperatures[newaxis, :, newaxis, newaxis]
-
-    theta = linspace(0, 2 * pi, 2 * spherical_grid, dtype=float64)
-    phi = linspace(0, pi, spherical_grid, dtype=float64)
-    theta, phi = meshgrid(theta, phi)
-
-    chi_3d = chi_3d * MU_B_CM_3
-
-    chi_3d_array = zeros((3, *chi_3d.shape), dtype=float64)
-
-    chi_3d_array[0] = (sin(phi) * cos(theta))[newaxis, newaxis, :, :] * chi_3d
-    chi_3d_array[1] = (sin(phi) * sin(theta))[newaxis, newaxis, :, :] * chi_3d
-    chi_3d_array[2] = (cos(phi))[newaxis, newaxis, :, :] * chi_3d
+            mag_3d_array = mag_3d_array.transpose((0, 2, 3, 4, 1))
+            # Numerical derivative of M(T,H) around given field value
+            chi_3d = dot(mag_3d_array, stencil_coeff)
+            if T:
+                chi_3d = chi_3d * temperatures[newaxis, :, newaxis, newaxis]
+            chi_3d_array = grid[:, newaxis, newaxis, :, :] * chi_3d
+        elif grid_type == "fibonacci":
+            mag_3d_array = mag_3d.reshape(
+                (
+                    grid_number,
+                    fields.size,
+                    stencil_coeff.size,
+                    temperatures.size,
+                )
+            )
+            mag_3d_array = mag_3d_array.transpose((0, 1, 3, 2))
+            chi_3d = dot(mag_3d_array, stencil_coeff)
+            if T:
+                chi_3d = chi_3d * temperatures[newaxis, newaxis, :]
+            chi_3d_array = (
+                grid[:, :, newaxis, newaxis] * chi_3d[:, newaxis, :, :]
+            )
+            chi_3d_array = chi_3d_array.transpose((2, 3, 0, 1))
 
     return chi_3d_array

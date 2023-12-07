@@ -69,9 +69,9 @@ def _calculate_g_tensor_and_axes_doublet(angular_momenta, doublets):
                 g_tensor_squared[i] = 0
         g_tensor = 2 * sqrt(g_tensor_squared)
 
-        # Simply flip new "z" axis if wrong handednes
+        # Simply flip the new "x" axis if wrong handednes
         if det(magnetic_axes) < 0:
-            magnetic_axes[:, 2] = -magnetic_axes[:, 2]
+            magnetic_axes[:, 0] = -magnetic_axes[:, 0]
 
         g_tensor_list[index, 0] = doublet
         g_tensor_list[index, 1:4] = g_tensor

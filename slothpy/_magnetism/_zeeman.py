@@ -324,16 +324,23 @@ def _get_zeeman_matrix(
     states_cutoff: int,
     fields: ndarray[float64],
     orientations: ndarray,
+    rotation: ndarray = None,
 ) -> ndarray:
-    zeeman_matrix = zeros(
-        (fields.shape[0], orientations.shape[0], states_cutoff, states_cutoff),
-        dtype=complex128,
-    )
     (
         magnetic_momenta,
         soc_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff
+        filename, group, states_cutoff, rotation
+    )
+
+    zeeman_matrix = zeros(
+        (
+            fields.shape[0],
+            orientations.shape[0],
+            magnetic_momenta.shape[1],
+            magnetic_momenta.shape[2],
+        ),
+        dtype=complex128,
     )
 
     for f, field in enumerate(fields):

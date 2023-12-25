@@ -2888,9 +2888,10 @@ class Compound:
     def zeeman_matrix(
         self,
         group: str,
-        states_cutoff: int,
         fields: ndarray[float64],
         orientations: ndarray[float64],
+        states_cutoff: int = 0,
+        rotation: ndarray[float64] = None,
         slt: str = None,
     ) -> ndarray[complex128]:
         """
@@ -2902,10 +2903,6 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the Zeeman matrices.
-        states_cutoff : int
-            Number of states that will be taken into account for construction
-            of Zeeman Hamiltonian. If set to zero, all available states from
-            the file will be used., by default 0
         fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) for which Zeeman matrices will be computed.
@@ -2914,6 +2911,15 @@ class Compound:
             for which Zeeman matrices will be constructed. The list has to
             follow the format: [[direction_x, direction_y, direction_z],...].
             The vectors will be automatically normalized.
+        states_cutoff : int
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0
+        rotation : ndarray[float64], optional
+            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
+            Note that the inverse matrix has to be given to rotate the
+            reference frame instead. It is useful here to orient your 3D plots
+            more conveniently., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
             file with suffix: _zeeman_matrix., by default None

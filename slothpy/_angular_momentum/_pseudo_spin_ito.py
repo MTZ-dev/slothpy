@@ -127,15 +127,61 @@ def _get_soc_matrix_in_z_pseudo_spin_basis(
 
     momenta = momenta[:, start_state:, start_state:]
     soc_energies = soc_energies[start_state:]
-    soc_energies = soc_energies - mean(
-        soc_energies
-    )  ############################## WHYY?
+    # soc_energies = soc_energies - mean(
+    #     soc_energies
+    # )  ############################## WHYY?
     soc_matrix = diag(soc_energies).astype(complex128)
     soc_matrix = _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
         momenta, soc_matrix
     )
 
     return soc_matrix
+
+
+def _get_zeeman_matrix_in_z_pseudo_spin_basis(
+    filename,
+    group,
+    field,
+    orientation,
+    start_state,
+    stop_state,
+    pseudo_kind,
+    rotation=None,
+):
+    if stop_state == 0:
+        stop_state = -1
+
+    (
+        magnetic_momenta,
+        soc_energies,
+    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+        filename, group, stop_state + 1, rotation
+    )
+    magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
+    soc_energies = soc_energies[start_state:]
+    zeeman_matrix = _calculate_zeeman_matrix(
+        magnetic_momenta, soc_energies, field, orientation
+    )
+
+    if pseudo_kind == "total_angular":
+        (
+            magnetic_momenta,
+            soc_energies,
+        ) = _get_soc_total_angular_momenta_and_energies_from_hdf5(
+            filename, group, stop_state + 1, rotation
+        )
+    elif pseudo_kind != "magnetic":
+        raise NotImplementedError(
+            'The only options for pseudo-spin type are: "magnetic" and'
+            ' "total_angular".'
+        )
+    zeeman_matrix = (
+        _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
+            magnetic_momenta, zeeman_matrix
+        )
+    )
+
+    return zeeman_matrix
 
 
 def _get_decomposition_in_z_pseudo_spin_basis(
@@ -177,53 +223,6 @@ def _get_decomposition_in_z_pseudo_spin_basis(
     decopmosition = _decomposition_of_hermitian_matrix(soc_matrix)
 
     return decopmosition
-
-
-def _get_zeeman_matrix_in_z_pseudo_spin_basis(
-    filename,
-    group,
-    field,
-    orientation,
-    start_state,
-    stop_state,
-    pseudo_kind,
-    rotation=None,
-):
-    if stop_state == 0:
-        stop_state = -1
-
-    (
-        magnetic_momenta,
-        soc_energies,
-    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, stop_state + 1, rotation
-    )
-    magnetic_momenta = magnetic_momenta[:, start_state:, start_state:]
-    soc_energies = soc_energies[start_state:]
-    zeeman_matrix = _calculate_zeeman_matrix(
-        magnetic_momenta, soc_energies, field, orientation
-    )
-
-    if pseudo_kind == "total_angular":
-        (
-            magnetic_momenta,
-            soc_energies,
-        ) = _get_soc_total_angular_momenta_and_energies_from_hdf5(
-            filename, group, stop_state + 1
-        )
-    elif pseudo_kind != "magnetic":
-        raise NotImplementedError(
-            'The only options for pseudo-spin type are: "magnetic" and'
-            ' "total_angular".'
-        )
-
-    zeeman_matrix = (
-        _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
-            magnetic_momenta, zeeman_matrix
-        )
-    )
-
-    return zeeman_matrix
 
 
 def _ito_matrix(J, k, q):

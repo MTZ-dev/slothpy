@@ -2,7 +2,7 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "b2c1c3e8",
+   "id": "7e774ec7",
    "metadata": {},
    "source": [
     "Copyright (c) 2023, Mikołaj Tadeusz Żychowicz (MTZ). All rights reserved.\n",
@@ -15,28 +15,45 @@
   },
   {
    "cell_type": "markdown",
-   "id": "6871555c",
+   "id": "6d1597c3",
    "metadata": {},
    "source": [
-    "SlothPy makes extensive use of the HDF5 file format (powerful and portable binary format for fast I/O and big data) to store all the data related to the software. The core file format .slt is in fact .hdf5/h5 file in disguise, so it can be additionally opened and modified with programs such as HDFView and HDFCompas programs or directly accessed through the h5py Python wrapper. Firstly, let us import the pacgake"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "41eba57d",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import slothpy as slt"
+    "I designed SlothPy to be used in interactive Jupyter notebooks and stand-alone scripts, which users can create and adjust to their needs, seemingly integrating into custom data pipelines. Remember, especially while working on Windows, to include into your programs `if __name__ == \"__main__\"` block for executing instructions after importing modules. You can follow the notebook or copy its contents to .py files and execute them as you prefer."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "23899e9f",
+   "id": "6ac36f18",
    "metadata": {},
    "source": [
-    "To start using SlothPy one has to create at least one instance of the core class object - Compound. The Compound is intrinsically associated with a .slt file stored on your disk. You can create the Compound from an output file of quantum chemistry software, access the existing .slt file, or add more data to it. Those operations are handled by the Compound creation methods. There is one .rassi.h5 file produced from the MOLCAS calculation included in the \"examples\" folder from our repository on GitHub. We will use it as an example in this tutorial. To create a Compound from it we have to include its relative path and use slt.compound_from_molcas() method. Note: always check the documentation of the used methods on our website or use your editor to do so (e.g. Shift+Tab in Jupyter Notebooks)."
+    "# HDF5 Integration in SlothPy\n",
+    "\n",
+    "SlothPy extensively utilizes the HDF5 file format—a versatile and portable binary format optimized for fast I/O operations and handling large datasets. The primary file extension used by SlothPy, `.slt`, is essentially an HDF5 file. This means it can be opened and manipulated with standard HDF5 tools like HDFView and HDFCompass or accessed programmatically via the `h5py` Python interface. Now, let's begin by importing SlothPy along with other essential packages for this tutorial."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "41eba57d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import slothpy as slt\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "# Make sure you have access to the libraries on your machine."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8f0f7a70",
+   "metadata": {},
+   "source": [
+    "\n",
+    "# Creating a Compound Object in SlothPy\n",
+    "\n",
+    "To start using SlothPy, it's essential to create an instance of the `Compound` class, which is a core element of SlothPy. The `Compound` instance is directly linked to a `.slt` file on your disk and provides access to all the methods serving as a user interface/API. You can create a `Compound` object from the output of quantum chemistry software, work with an existing `.slt` file, or append new data to it. Those operations are handled by the Compound creation methods (see [documentation](https://slothpy.org/creation_methods)). In this tutorial, we'll utilize a `.rassi.h5` file from a MOLCAS calculation, available for download [here](https://drive.google.com/file/d/1obU_bK9sc2hdy3vFXjLxtTUX7CBzl-wf/view) or on the [website](https://slothpy.org/how_to_start) (you can try to use your file if you already have access to one). To create a `Compound` from this file, we use the [`slt.compound_from_molcas()`](https://slothpy.org/creation_methods#slothpy.compound_from_molcas) method. It's important to always refer to the [documentation](https://slothpy.org/reference_manual) for details on the methods we use. In Jupyter Notebooks, a quick way to access method docstring is to press `Shift` + `Tab` in parenthesis after typing the method name. You need to provide appropriate paths and names for the files. (you can click the underscored links)"
    ]
   },
   {
@@ -46,15 +63,17 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "NdCo = slt.compound_from_molcas(\".\", \"Nd_tutorial\", \"bas3\", \"./examples\", \"NdCo_DG_bas3\")"
+    "NdCo = slt.compound_from_molcas(\".\", \"Nd_tutorial\", \"bas3\", \".\", \"NdCo_DG_bas3\")\n",
+    "# Provide paths to the locations of your .rassi.h5 file and where you want to store the resulting .slt file\n",
+    "# replacing \".\". You can also adjust the names."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "435a5d4f",
+   "id": "58098321",
    "metadata": {},
    "source": [
-    "After the creation, you can check what is inside your file using the print() method or like this:"
+    "We named the instance `NdCo`, and now it's directly linked to the new file `Nd_tutorial.slt`. After the creation, you can check what is inside your file using the print() method or directly in Notebook like this:"
    ]
   },
   {
@@ -71,10 +90,10 @@
   },
   {
    "cell_type": "markdown",
-   "id": "ba935eb4",
+   "id": "7cddbc2b",
    "metadata": {},
    "source": [
-    "You can see the list of HDF5 groups and data sets contained in the file together with their Description attributes. This is the way that SlothPy will save all your results. Having already .slt file on your disk you can add to it more ab initio results (just use the path and name of an existing file) or access it at a later point using slt.compound_from_slt() method."
+    "You should see the list of HDF5 groups (with `bas3` among them) and data sets contained in the file, together with their description attributes. This is the way that SlothPy will save all your future results. Having already .slt file on your disk, you can add to it more ab initio results (just use the path and name of an existing file) or access it at a later point using the [`slt.compound_from_slt() method`](https://slothpy.org/creation_methods#slothpy.compound_from_slt). You can also create many instances and files for different compounds or store them all in one file - the decision is up to you. More advanced use cases in actual workflows are demonstrated in Tutorial 2. (If you are interested in adding a new file format for loading energies, spin, and angular momenta data from your favorite quantum-chemistry package, please get in touch with me directly: mikolaj.zychowicz@uj.edu.pl or create an [issue](https://github.com/MTZ-dev/slothpy/issues).)"
    ]
   },
   {
@@ -85,15 +104,17 @@
    "outputs": [],
    "source": [
     "NdCo = slt.compound_from_slt(\".\", \"Nd_tutorial\")\n",
-    "# If you already created \"Nd_tutorial.slt\" on your disk, use this line only."
+    "# If you have created \"Nd_tutorial.slt\" on your disk, only use this line."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "4971fbfa",
+   "id": "17cd087b",
    "metadata": {},
    "source": [
-    "All available methods are accessed through an instance of the Compound class that constitutes the user interface and API documented in the Reference Manual. Let us start by computing molar powder-averaged magnetisation for our Nd-based compound. Firstly, we need some imports to create a range of magnetic field and temperature values:"
+    "## Utilizing SlothPy's  Methods\n",
+    "\n",
+    "All available methods are accessed through an instance of the Compound class that constitutes the user interface and API documented in the [Reference Manual](https://slothpy.org/reference_manual). Let us start by computing molar powder-averaged magnetisation as a function of temperature and magnetic field strength `M(T,H)` for our Nd-based compound. We must create one-dimensional lists or arrays of temperature and field values at which the magnetization will be computed. It's convenient to use the numpy linspace method here for fields between 0 and 7 T (50 points) and temperatures from 1 to 10 K with 1 K step."
    ]
   },
   {
@@ -103,18 +124,16 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "from numpy import linspace\n",
-    "\n",
-    "fields_mth = linspace(0.0001, 7, 50)\n",
-    "temperatures_mth = linspace(1, 10, 10)"
+    "fields_mth = np.linspace(0.0001, 7, 50)\n",
+    "temperatures_mth = np.linspace(1, 10, 10)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "f84f15aa",
+   "id": "d11c1c64",
    "metadata": {},
    "source": [
-    "The method for computing magnetisation as a function of field and temperature is called calculate_mth()."
+    "After that, we should reference the NdCo object. Use `NdCo. + Tab` here in the notebook or autocompletion in our IDE to see the list of all available functions. The method for computing magnetisation as a function of field and temperature is called [`calculate_magnetisation()`](https://slothpy.org/compound#slothpy.Compound.calculate_magnetisation). We need to provide the name of a group from which magnetisation will be calculated along with fields, option for integration grid, temperatures and states cutoff for Zeeman Hamiltonian diagonalization."
    ]
   },
   {
@@ -125,17 +144,17 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_mth, 4, temperatures_mth, 10)"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_mth, 4, temperatures_mth, 10)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "d939ed7c",
+   "id": "d027cb60",
    "metadata": {},
    "source": [
-    "Here, we calculate powder-averaged (using Lebedev-Laikov integration grid) magnetisation for the Nd-based compound in the magnetic field range from 1 Oe to 7 T (50 points) and for 10 temperature values from 1 K to 10 K. We include in the Zeeman Hamiltonian only 10 Spin-Orbit states from the ground multiplet $ ^{4}I_{9/2} $ of Nd(III). The calculation should finish immediately due to the very low amount of SO states included.\n",
+    "Here, we calculate powder-averaged (using Lebedev-Laikov integration grid on the hemisphere) magnetisation for the Nd-based compound in the magnetic field range from 1 Oe to 7 T (50 points) and for ten temperature values from 1 K to 10 K. We include in the Zeeman Hamiltonian only 10 Spin-Orbit states from the ground multiplet $ ^{4}I_{9/2} $ of Nd(III). The calculation should finish immediately due to the very low amount of SO states included.\n",
     "\n",
-    "The result is a numpy NdArray (10, 50) with the structure [temperatures, fields] returned from the function call to the mth variable. It is ready for you to process it using Python as you want.  Remember to always check the output format in the Reference Manual (or using your editor/IDE) - Returns section of each method."
+    "The result is a numpy NdArray (10, 50) with the structure [temperatures, fields] returned from the function call to the mth variable. It is ready for you to process it using Python as you want. Remember to always check the output format of methods in the [Reference Manual](https://slothpy.org/reference_manual) (or using your editor/IDE) - `Returns` section of each function in the documentation."
    ]
   },
   {
@@ -150,10 +169,11 @@
   },
   {
    "cell_type": "markdown",
-   "id": "cbf6b2c8",
+   "id": "7d712c7a",
    "metadata": {},
    "source": [
-    "We can, for example, plot it as a magnetic field function M(H) iterating over different temperatures:"
+    "# Data Manipulation and Visualisation\n",
+    "SlothPy seamlessly interfaces with the broader toolchain and Python scientific ecosystem by returning data in numpy array format. This compatibility allows you to leverage the full range of Python's data manipulation, exporting, and visualization tools in your scripts using your favorite libraries. As an illustrative example, let's plot the data contained in mth variable as a magnetic field function M(H) iterating over different temperatures using matplotlib:"
    ]
   },
   {
@@ -163,19 +183,17 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "from matplotlib.pyplot import plot, show\n",
-    "\n",
     "for mh in mth:\n",
-    "    plot(fields_mth, mh)\n",
-    "show()"
+    "    plt.plot(fields_mth, mh)\n",
+    "plt.show()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "59af2f08",
+   "id": "af6c8426",
    "metadata": {},
    "source": [
-    "or save it to a .csv file on the disk to be accessible for your other programs:"
+    "If you need to export the data to use it elsewhere we can simply save it to a .csv file on the disk to be accessible for you or your other programs directly:"
    ]
   },
   {
@@ -185,16 +203,50 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "from numpy import savetxt\n",
-    "savetxt('my_mth_array.csv', mth.T, delimiter=',') # Here we transpose to have data for each temperature in columns"
+    "np.savetxt('my_mth_array.csv', mth.T, delimiter=',')\n",
+    "# Here we transpose to have the data for each temperature value in columns"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "2d51eb2f",
+   "id": "e3429f7e",
    "metadata": {},
    "source": [
-    "Now, let us run the above calculation once again, but this time we will use a better, denser grid and include more SO-states. It will take a little more time. Additionally, we will save the results to our Nd_tutorial.slt file using slt keyword. (confront the documentation for the comprehensive description of all the options) "
+    "We can make it even better and create a well-formated data frame using pandas library for the data exporting:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9559a2e1",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fields_oe = fields_mth * 10000\n",
+    "magnetisation_df = pd.DataFrame({'Fields (Oe)': fields_oe})\n",
+    "\n",
+    "for i, mh in enumerate(mth):\n",
+    "    magnetisation_df[f\"{temperatures_mth[i]} K\"] = mh\n",
+    "\n",
+    "magnetisation_df.to_csv(os.path.join(\".\", \"magnetisation.csv\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "da97a906",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "As you can see, the possibilities are endless."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ab9bbe00",
+   "metadata": {},
+   "source": [
+    "Nevertheless, SlothPy offers you its own organized data storage inside the core .slt files along with a series of built-in methods to visualize it and proceed with multi-step complex computations. To demonstrate it, we will now run the above calculation once again, but this time we will use a better, denser grid and include more SO-states. It will take a little more time. Additionally, we will save the results to our Nd_tutorial.slt file using `slt` keyword. (confront the [documentation](https://slothpy.org/compound#slothpy.Compound.calculate_magnetisation) for the comprehensive description of all the options). "
    ]
   },
   {
@@ -207,15 +259,15 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_mth, 6, temperatures_mth, 32, slt=\"bas3\")"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_mth, 6, temperatures_mth, 32, slt=\"bas3\")"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "43ad1c5c",
+   "id": "6a7dd207",
    "metadata": {},
    "source": [
-    "If you invoke the representation of the Nd_tutorial.slt file once again you can see that a new group \"bas3_magnetisation\" was created which contains datasets for magnetisation (bas3_mth), magnetic fields (bas3_fields), and temperatures (bas3_temperatures). (all with Description attributes)"
+    "If you invoke the representation of the Nd_tutorial.slt file once again, you can see that a new group \"bas3_magnetisation\" was created which contains datasets for magnetisation (bas3_mth), magnetic fields (bas3_fields), and temperatures (bas3_temperatures). (all with description attributes)"
    ]
   },
   {
@@ -232,10 +284,10 @@
   },
   {
    "cell_type": "markdown",
-   "id": "a23e9dda",
+   "id": "a33b0828",
    "metadata": {},
    "source": [
-    "SlothPy provides an array-like interface for reading and writing data from and to .slt files. As an example, let us read the magnetisation to another variable mth_custom_read together with field values:"
+    "SlothPy provides an array-like interface for reading and writing data from and to .slt files. To access a particular dataset and read it in as a numpy array, you need to provide the name of a group followed by the dataset's name. As an example, let us read the magnetisation to another variable mth_custom_read together with field values:"
    ]
   },
   {
@@ -245,16 +297,16 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "mth_custom_read = NdCo[\"bas3_magnetisation\", \"bas3_mth\"]\n",
-    "field_values = NdCo[\"bas3_magnetisation\", \"bas3_fields\"]"
+    "mth_read = NdCo[\"bas3_magnetisation\", \"bas3_mth\"]\n",
+    "field_values_read = NdCo[\"bas3_magnetisation\", \"bas3_fields\"]"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "70828263",
+   "id": "4c6b67fe",
    "metadata": {},
    "source": [
-    "Here, we provide a full group and dataset name to access the data. Now we can do what we want with the arrays. Let us confirm that they indeed represent magnetisation once again by plotting them:"
+    "Here, we provide a <u>full</u> group and dataset name (with suffixes) to access the data! Now, once again, we can do whatever we want with the arrays. Let us confirm that they indeed represent the same magnetisation as before by plotting them:"
    ]
   },
   {
@@ -264,17 +316,17 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "for mh in mth_custom_read:\n",
-    "    plot(field_values, mh)\n",
-    "show()"
+    "for mh in mth_read:\n",
+    "    plt.plot(field_values_read, mh)\n",
+    "plt.show()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "72964863",
+   "id": "3a127429",
    "metadata": {},
    "source": [
-    "Since we have our data saved in the .slt file we can actually plot it using the build-in function (available for various methods - see documentation, all starting with \"plot\" and having plenty of customization parameters)."
+    "Since we have our data saved in the .slt file, we can plot it using the build-in function (available for various methods and having plenty of customizable parameters - see all the methods starting with \"plot\" in the [documentation](https://slothpy.org/reference_manual))."
    ]
   },
   {
@@ -289,12 +341,12 @@
   },
   {
    "cell_type": "markdown",
-   "id": "b0c9ab8f",
+   "id": "913b318d",
    "metadata": {},
    "source": [
-    "When you invoke plotting functions for specific methods you do not need to provide a suffix, like \"_magnetisation\", the program will handle it for you.\n",
+    "As you noticed, when using the built-in functions, you do not need to (actually, you can't) provide a name of the group with a suffix, like \"_magnetisation\"; just use the name you gave for the `slt` parameter of the method and the program will handle the rest for you.\n",
     "\n",
-    "If you need you can even create your own custom groups with datasets (in the form of numpy NdArrays) in the file and use them in your scripts."
+    "If you want to integrate the .slt file in your workflow, you can even create your custom groups with datasets (in the form of numpy NdArrays) in the file and use them in your programs and scripts."
    ]
   },
   {
@@ -314,10 +366,10 @@
   },
   {
    "cell_type": "markdown",
-   "id": "ac773c3b",
+   "id": "cddd2787",
    "metadata": {},
    "source": [
-    "The last two strings giving a description of the group and data set are optional. Later you can add to the existing group more data sets or create datasets without a group (they have to be at least 1-dimensional ArrayLike):"
+    "The last two strings giving a description of the dataset and group set are optional. Later you can add to the existing group more data sets or create datasets without a group (they have to be at least 1-dimensional ArrayLike):"
    ]
   },
   {

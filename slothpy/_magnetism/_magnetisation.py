@@ -23,6 +23,7 @@ from numpy import (
     ndarray,
     dtype,
     array,
+    vdot,
     sum,
     zeros,
     ascontiguousarray,
@@ -61,6 +62,8 @@ from slothpy._general_utilities._grids_over_sphere import (
 def _calculate_magnetization(
     energies: ndarray, states_momenta: ndarray, temperature: float64
 ) -> float64:
+    energies = ascontiguousarray(energies)
+    states_momenta = ascontiguousarray(states_momenta)
     # Boltzman weights
     exp_diff = exp(-(energies - energies[0]) / (KB * temperature))
 
@@ -69,6 +72,7 @@ def _calculate_magnetization(
 
     # Weighted magnetic moments of microstates
     m = sum(states_momenta * exp_diff)
+    # m = vdot(states_momenta, exp_diff)
 
     return m / z
 
@@ -98,8 +102,8 @@ def _mt_over_fields_grid(
                 magnetic_momenta, soc_energies, fields[i], orientation
             )
 
-            eigenvalues, eigenvectors = eigh(zeeman_matrix)
             magnetic_momenta_cont = ascontiguousarray(magnetic_momenta)
+            eigenvalues, eigenvectors = eigh(zeeman_matrix)
 
             states_momenta = (
                 eigenvectors.conj().T

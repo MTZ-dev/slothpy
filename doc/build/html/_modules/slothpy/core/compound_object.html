@@ -792,7 +792,7 @@ document.write(`
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        key : Union[str, Tuple[str, str], Tuple[str, str, str],</span>
-<span class="sd">          Tuple[str, str, str]]</span>
+<span class="sd">          Tuple[str, str, str, str]]</span>
 <span class="sd">            A string or a 2/3/4-tuple of strings representing a dataset or</span>
 <span class="sd">            group/dataset/dataset atribute/group atribute (Description),</span>
 <span class="sd">            respectively, to be created or added (to the existing group).</span>
@@ -962,7 +962,7 @@ document.write(`
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        first : str</span>
-<span class="sd">            A name of the gorup or dataset to be deleted.</span>
+<span class="sd">            A name of the group or dataset to be deleted.</span>
 <span class="sd">        second : str, optional</span>
 <span class="sd">            A name of the particular dataset inside the group from the first</span>
 <span class="sd">            argument to be deleted.</span>
@@ -3488,9 +3488,10 @@ document.write(`
     <span class="k">def</span> <span class="nf">zeeman_matrix</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">states_cutoff</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">fields</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span>
         <span class="n">orientations</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span>
+        <span class="n">states_cutoff</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">rotation</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">slt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">complex128</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -3502,10 +3503,6 @@ document.write(`
 <span class="sd">        group : str</span>
 <span class="sd">            Name of a group containing results of relativistic ab initio</span>
 <span class="sd">            calculations used for the computation of the Zeeman matrices.</span>
-<span class="sd">        states_cutoff : int</span>
-<span class="sd">            Number of states that will be taken into account for construction</span>
-<span class="sd">            of Zeeman Hamiltonian. If set to zero, all available states from</span>
-<span class="sd">            the file will be used., by default 0</span>
 <span class="sd">        fields : ndarray[float64]</span>
 <span class="sd">            ArrayLike structure (can be converted to numpy.NDArray) of field</span>
 <span class="sd">            values (T) for which Zeeman matrices will be computed.</span>
@@ -3514,6 +3511,15 @@ document.write(`
 <span class="sd">            for which Zeeman matrices will be constructed. The list has to</span>
 <span class="sd">            follow the format: [[direction_x, direction_y, direction_z],...].</span>
 <span class="sd">            The vectors will be automatically normalized.</span>
+<span class="sd">        states_cutoff : int</span>
+<span class="sd">            Number of states that will be taken into account for construction</span>
+<span class="sd">            of Zeeman Hamiltonian. If set to zero, all available states from</span>
+<span class="sd">            the file will be used., by default 0</span>
+<span class="sd">        rotation : ndarray[float64], optional</span>
+<span class="sd">            A (3,3) orthogonal rotation matrix used to rotate momenta matrices.</span>
+<span class="sd">            Note that the inverse matrix has to be given to rotate the</span>
+<span class="sd">            reference frame instead. It is useful here to orient your 3D plots</span>
+<span class="sd">            more conveniently., by default None</span>
 <span class="sd">        slt : str, optional</span>
 <span class="sd">            If given the results will be saved in a group of this name to .slt</span>
 <span class="sd">            file with suffix: _zeeman_matrix., by default None</span>
@@ -5191,9 +5197,7 @@ document.write(`
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
-                <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
-                <span class="o">+</span> <span class="n">RED</span>
-                <span class="o">+</span> <span class="s2">&quot;Check if the group exists.&quot;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -5379,9 +5383,7 @@ document.write(`
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
-                <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
-                <span class="o">+</span> <span class="n">RED</span>
-                <span class="o">+</span> <span class="s2">&quot;Check if the group exists.&quot;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -5586,8 +5588,7 @@ document.write(`
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
-                <span class="o">+</span> <span class="n">RED</span>
-                <span class="o">+</span> <span class="s2">&quot;Check if the group exists.&quot;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="n">RED</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -5780,8 +5781,7 @@ document.write(`
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
                 <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
-                <span class="o">+</span> <span class="n">RED</span>
-                <span class="o">+</span> <span class="s2">&quot;Check if group exist.&quot;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="n">RED</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -6111,9 +6111,12 @@ document.write(`
         <span class="n">round_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
         <span class="n">lim_scalar</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">ticks</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">plot_title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">field</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
         <span class="n">r_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">c_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">points_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">solid_surface</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">elev</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
         <span class="n">azim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">60</span><span class="p">,</span>
         <span class="n">roll</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -6164,12 +6167,18 @@ document.write(`
 <span class="sd">            plotted figure.</span>
 <span class="sd">        ticks: float = 1.</span>
 <span class="sd">            Frequency of the ticks on all axes.</span>
+<span class="sd">        plot_title: str = None</span>
+<span class="sd">            Determines the title of the figure, if left blank automatic title is used.</span>
+<span class="sd">        field: Literal[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
+<span class="sd">            Determines the field unit - B[T] or H[kOe].</span>
 <span class="sd">        r_density: int = 0</span>
 <span class="sd">            Determines the rcount of a 3D plot.</span>
 <span class="sd">        c_density: int = 0</span>
 <span class="sd">            Determines the ccount of a 3D plot.</span>
 <span class="sd">        points_size: float = 0.2</span>
 <span class="sd">            Determines points size for Fibonacci scatter plots.</span>
+<span class="sd">        solid_surface: bool = False</span>
+<span class="sd">            Makes surface plots using meshgrid appear as solid.</span>
 <span class="sd">        elev: int = 30</span>
 <span class="sd">            Determines an angle between a viewing position and the xy plane.</span>
 <span class="sd">        azim: int = -60</span>
@@ -6233,37 +6242,39 @@ document.write(`
             <span class="k">if</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chi&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">):</span>
                 <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_susceptibility_3d&quot;</span>
                 <span class="n">xyz</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_chit_3d&quot;</span><span class="p">]</span>
-                <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Chi</span><span class="si">{</span><span class="s1">&#39;T&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">data_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;chit&#39;</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2"> dependence on&quot;</span>
-                    <span class="s2">&quot; direction,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> T, &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
+                <span class="n">description1</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Susceptibility dependence on direction,&quot;</span>
             <span class="k">elif</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
                 <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span>
             <span class="p">):</span>
                 <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span>
                     <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_helmholtz_energy_3d&quot;</span>
                     <span class="n">energy_type</span> <span class="o">=</span> <span class="s2">&quot;Helmholtz&quot;</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_internal_energy_3d&quot;</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span>
                     <span class="n">energy_type</span> <span class="o">=</span> <span class="s2">&quot;Internal&quot;</span>
                 <span class="n">xyz</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">]</span>
-                <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">energy_type</span><span class="si">}</span><span class="s2"> energy dependence on direction,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> T, &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
-                <span class="p">)</span>
+                <span class="n">description1</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">energy_type</span><span class="si">}</span><span class="s2"> energy dependence on direction,&quot;</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetisation_3d&quot;</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span>
                 <span class="n">xyz</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">]</span>
-                <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;Magnetisation dependence on direction,&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; B=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> T, &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
-                <span class="p">)</span>
+                <span class="n">description1</span> <span class="o">=</span> <span class="s2">&quot;Magnetisation dependence on direction,&quot;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span>
+            <span class="n">field_scalar</span> <span class="o">=</span> <span class="mi">10</span> <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span> <span class="k">else</span> <span class="mi">1</span>
+            <span class="n">description2</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_fields&#39;</span><span class="p">][</span><span class="n">field_i</span><span class="p">]</span><span class="o">*</span><span class="n">field_scalar</span><span class="p">,</span><span class="w"> </span><span class="n">round_field</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;T&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">field</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;B&#39;</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;kOe&#39;</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s1">_temperatures&#39;</span><span class="p">][</span><span class="n">temp_i</span><span class="p">],</span><span class="w"> </span><span class="n">round_temp</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
+            <span class="p">)</span>
+            <span class="n">description</span> <span class="o">=</span> <span class="n">description1</span> <span class="o">+</span> <span class="n">description2</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
@@ -6276,11 +6287,7 @@ document.write(`
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
-                <span class="o">+</span> <span class="s1">&#39;&quot;. &#39;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Check if the group exists and data type </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2"> &quot;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;matches one from the list &quot;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,&#39;</span>
-                <span class="sa">f</span><span class="s1">&#39; &quot;magnetisation&quot;].&#39;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="s1">&#39;&quot;. &#39;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span><span class="p">()</span>
@@ -6315,79 +6322,23 @@ document.write(`
                     <span class="n">facecolors</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span>
                     <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">solid_surface</span><span class="p">:</span>
+                    <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">xyz</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">points_size</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="n">colors</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
             <span class="c1"># Important order of operations!</span>
-            <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;susceptibility&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                        <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                        <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                        <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                        <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                        <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                        <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                    <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span><span class="p">:</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                    <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="p">)</span>
+            <span class="n">labelpad</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span>
+            <span class="n">labelpad_scalar</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
+                <span class="n">labelpad_scalar</span> <span class="o">=</span> <span class="n">labelpad_scalar</span> <span class="o">*</span> <span class="mf">0.5</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">axis_i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
                     <span class="n">axis_i</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
@@ -6403,7 +6354,7 @@ document.write(`
                 <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span> <span class="ow">or</span> <span class="n">ticks</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ticks</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span>
@@ -6413,7 +6364,10 @@ document.write(`
             <span class="n">ax</span><span class="o">.</span><span class="n">azim</span> <span class="o">=</span> <span class="n">azim</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="n">elev</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">roll</span> <span class="o">=</span> <span class="n">roll</span>
-            <span class="n">title</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">plot_title</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">title</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">title</span><span class="p">(</span><span class="n">plot_title</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
                 <span class="n">doublets</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_g_tensors_axes&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">axes_group</span><span class="si">}</span><span class="s2">_axes&quot;</span>
@@ -6535,12 +6489,15 @@ document.write(`
         <span class="n">color_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dark_rainbow_r_l&quot;</span><span class="p">,</span>
         <span class="n">lim_scalar</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">ticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">plot_title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">field</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
         <span class="n">r_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">c_density</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">points_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">solid_surface</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">axis_off</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
-        <span class="n">dpi</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">dpi</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
         <span class="n">bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">bar_scale</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">bar_color_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dark_rainbow_r&quot;</span><span class="p">,</span>
@@ -6585,12 +6542,18 @@ document.write(`
 <span class="sd">            figure.</span>
 <span class="sd">        ticks: float = 1</span>
 <span class="sd">            Determines the ticks spacing.</span>
+<span class="sd">        plot_title: str = None</span>
+<span class="sd">            Determines the title of the figure, if left blank automatic title is used.</span>
+<span class="sd">        field: Literal[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
+<span class="sd">            Determines the field unit - B[T] or H[kOe].</span>
 <span class="sd">        r_density: int = 0</span>
 <span class="sd">            Determines rcount of 3D plot.</span>
 <span class="sd">        c_density: int = 0</span>
 <span class="sd">            Determines ccount of 3D plot.</span>
 <span class="sd">        points_size: float = 0.2</span>
 <span class="sd">            Determines points size for Fibonacci scatter plots.</span>
+<span class="sd">        solid_surface: bool = False</span>
+<span class="sd">            Makes surface plots using meshgrid appear as solid.</span>
 <span class="sd">        axis_off: bool = False</span>
 <span class="sd">            Determines if axes are turned off.</span>
 <span class="sd">        fps: int</span>
@@ -6668,18 +6631,35 @@ document.write(`
             <span class="k">if</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chi&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">):</span>
                 <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_susceptibility_3d&quot;</span>
                 <span class="n">x0y0z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_chit_3d&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
+                <span class="n">data_description</span> <span class="o">=</span> <span class="s2">&quot;Susceptibility dependence on direction, &quot;</span>
             <span class="k">elif</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
                 <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span>
             <span class="p">):</span>
                 <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
                     <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_helmholtz_energy_3d&quot;</span>
-                    <span class="n">energy_type</span> <span class="o">=</span> <span class="s2">&quot;Helmholtz&quot;</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span>
+                    <span class="n">data_description</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="s2">&quot;Helmholtz energy dependence on direction, &quot;</span>
+                    <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_internal_energy_3d&quot;</span>
-                    <span class="n">energy_type</span> <span class="o">=</span> <span class="s2">&quot;Internal&quot;</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span>
+                    <span class="n">data_description</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="s2">&quot;Internal energy dependence on direction, &quot;</span>
+                    <span class="p">)</span>
                 <span class="n">x0y0z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">]</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetisation_3d&quot;</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span>
+                <span class="n">data_description</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Magnetisation energy dependence on direction, &quot;</span>
+                <span class="p">)</span>
                 <span class="n">x0y0z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -6687,6 +6667,10 @@ document.write(`
                     <span class="s2">&quot; magnetisation&quot;</span>
                 <span class="p">)</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
+            <span class="n">field_unit</span> <span class="o">=</span> <span class="s2">&quot;T&quot;</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="n">fields</span> <span class="o">*</span> <span class="mi">10</span>
+                <span class="n">field_unit</span> <span class="o">=</span> <span class="s2">&quot;kOe&quot;</span>
             <span class="n">temps</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">x0y0z0</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
                 <span class="n">plot_style</span> <span class="o">=</span> <span class="s2">&quot;globe&quot;</span>
@@ -6727,28 +6711,20 @@ document.write(`
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
-                <span class="o">+</span> <span class="s1">&#39;&quot;. &#39;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Check if the group exists and data type </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2"> &quot;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;matches one from the list &quot;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;[&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,&#39;</span>
-                <span class="sa">f</span><span class="s1">&#39; &quot;magnetisation&quot;].&#39;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="s1">&#39;&quot;. &#39;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+
         <span class="k">if</span> <span class="n">animation_variable</span> <span class="o">==</span> <span class="s2">&quot;temperature&quot;</span><span class="p">:</span>
-            <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_type</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> dependence&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; on direction, B=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> T&quot;</span>
-            <span class="p">)</span>
+            <span class="n">description</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">elif</span> <span class="n">animation_variable</span> <span class="o">==</span> <span class="s2">&quot;field&quot;</span><span class="p">:</span>
-            <span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">data_type</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> dependence&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; on direction, T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
-            <span class="p">)</span>
+            <span class="n">description</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">i_constant</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;There exist only two animation variables: field and&quot;</span>
                 <span class="s2">&quot; temperature&quot;</span>
             <span class="p">)</span>
-        <span class="n">title</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="k">if</span> <span class="n">plot_title</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">plot_title</span> <span class="o">=</span> <span class="n">data_description</span> <span class="o">+</span> <span class="n">description</span>
 
         <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span><span class="p">()</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">)</span>
@@ -6769,7 +6745,14 @@ document.write(`
                     <span class="k">if</span> <span class="n">animation_variable</span> <span class="o">==</span> <span class="s2">&quot;temperature&quot;</span><span class="p">:</span>
                         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">temps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">temp_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span>
+                        <span class="k">return</span> <span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+
+        <span class="n">labelpad</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span>
+        <span class="n">labelpad_scalar</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
+            <span class="n">labelpad_scalar</span> <span class="o">=</span> <span class="n">labelpad_scalar</span> <span class="o">*</span> <span class="mf">0.5</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">writer</span> <span class="o">=</span> <span class="n">PillowWriter</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
@@ -6810,77 +6793,16 @@ document.write(`
                             <span class="n">surface</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
                                 <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">points_size</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="n">colors</span>
                             <span class="p">)</span>
-                        <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;susceptibility&quot;</span><span class="p">:</span>
-                            <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                            <span class="k">else</span><span class="p">:</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span><span class="p">:</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                                <span class="s2">&quot;Acceptable data types: chit, chi,&quot;</span>
-                                <span class="s2">&quot; helmholtz_energy and magnetisation&quot;</span>
-                            <span class="p">)</span>
+
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
+                            <span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span>
+                        <span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
+                            <span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span>
+                        <span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
+                            <span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span>
+                        <span class="p">)</span>
 
                         <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
                             <span class="n">vec</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="n">newaxis</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>
@@ -6912,7 +6834,7 @@ document.write(`
                                     <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
                                     <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                 <span class="p">)</span>
-                        <span class="k">if</span> <span class="n">surface</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">plot_style</span> <span class="o">==</span> <span class="s2">&quot;globe&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">solid_surface</span><span class="p">:</span>
                             <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
@@ -6934,7 +6856,7 @@ document.write(`
                             <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
-                            <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span> <span class="ow">or</span> <span class="n">ticks</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">ticks</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                                 <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span>
                                     <span class="n">MultipleLocator</span><span class="p">(</span><span class="n">ticks</span><span class="p">)</span>
                                 <span class="p">)</span>
@@ -6950,7 +6872,7 @@ document.write(`
                         <span class="n">ax</span><span class="o">.</span><span class="n">azim</span> <span class="o">=</span> <span class="n">azim</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="n">elev</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">roll</span> <span class="o">=</span> <span class="n">roll</span>
-                        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">plot_title</span><span class="p">)</span>
                         <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
 
@@ -7032,72 +6954,17 @@ document.write(`
                             <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
                                 <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">points_size</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="n">colors</span>
                             <span class="p">)</span>
-                        <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;susceptibility&quot;</span><span class="p">:</span>
-                            <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                            <span class="k">else</span><span class="p">:</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                    <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span><span class="p">,</span>
-                                    <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                                <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span><span class="p">:</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                        <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
-                                <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span><span class="p">,</span>
-                                <span class="n">labelpad</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
-                            <span class="p">)</span>
+
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span>
+                            <span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span>
+                        <span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
+                            <span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span>
+                        <span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span>
+                            <span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span>
+                        <span class="p">)</span>
+
                         <span class="k">if</span> <span class="n">add_g_tensor_axes</span><span class="p">:</span>
                             <span class="n">vec</span> <span class="o">=</span> <span class="n">axes_matrix</span> <span class="o">*</span> <span class="n">g_tensor</span><span class="p">[</span><span class="n">newaxis</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>
                             <span class="k">if</span> <span class="n">rotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -7128,7 +6995,7 @@ document.write(`
                                     <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
                                     <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                 <span class="p">)</span>
-                        <span class="k">if</span> <span class="n">surface</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">plot_style</span> <span class="o">==</span> <span class="s2">&quot;globe&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">solid_surface</span><span class="p">:</span>
                             <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
@@ -7150,7 +7017,7 @@ document.write(`
                             <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
-                            <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span> <span class="ow">or</span> <span class="n">ticks</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">ticks</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                                 <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span>
                                     <span class="n">MultipleLocator</span><span class="p">(</span><span class="n">ticks</span><span class="p">)</span>
                                 <span class="p">)</span>
@@ -7166,6 +7033,7 @@ document.write(`
                         <span class="n">ax</span><span class="o">.</span><span class="n">azim</span> <span class="o">=</span> <span class="n">azim</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="n">elev</span>
                         <span class="n">ax</span><span class="o">.</span><span class="n">roll</span> <span class="o">=</span> <span class="n">roll</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">plot_title</span><span class="p">)</span>
 
                         <span class="k">if</span> <span class="n">axis_off</span><span class="p">:</span>
                             <span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
@@ -7186,7 +7054,7 @@ document.write(`
                                     <span class="mi">1</span><span class="p">,</span>
                                     <span class="mi">1</span><span class="p">,</span>
                                     <span class="n">s</span><span class="o">=</span><span class="p">(</span>
-                                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="n">i_end</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span>
+                                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="n">i_end</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span>
                                     <span class="p">),</span>
                                     <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
                                     <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
@@ -7195,7 +7063,7 @@ document.write(`
                                     <span class="mi">1</span><span class="p">,</span>
                                     <span class="o">-</span><span class="mf">0.03</span><span class="p">,</span>
                                     <span class="n">s</span><span class="o">=</span><span class="p">(</span>
-                                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="n">i_start</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span>
+                                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="n">i_start</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span>
                                     <span class="p">),</span>
                                     <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
                                     <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
@@ -7252,6 +7120,7 @@ document.write(`
         <span class="n">field_bar_color_map_name</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BuPi&quot;</span><span class="p">,</span>
         <span class="n">lim_scalar</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">ticks</span><span class="p">:</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">field</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span>
         <span class="n">points_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
         <span class="n">solid_surface</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -7295,6 +7164,8 @@ document.write(`
 <span class="sd">            plotted figure.</span>
 <span class="sd">        ticks: float = 1</span>
 <span class="sd">            Determines the ticks spacing.</span>
+<span class="sd">        field: Literal[&#39;B&#39;,&#39;H&#39;] = &#39;B&#39;</span>
+<span class="sd">            Determines the field unit - B[T] or H[kOe].</span>
 <span class="sd">        points_size: float = 0.2</span>
 <span class="sd">            Determines points size for Fibonacci scatter plots.</span>
 <span class="sd">        solid_surface: bool = False</span>
@@ -7307,6 +7178,9 @@ document.write(`
 <span class="sd">            Determines how many significant digits are shown relative to the</span>
 <span class="sd">            int(value) for temperature.</span>
 <span class="sd">        temp_rounding: int = 2</span>
+<span class="sd">            Determines how many significant digits are shown relative to the</span>
+<span class="sd">            int(value) for temperature.</span>
+<span class="sd">        field_rounding: int = 2</span>
 <span class="sd">            Determines how many significant digits are shown relative to the</span>
 <span class="sd">            int(value) for field.</span>
 <span class="sd">        axis_off: bool = False</span>
@@ -7362,21 +7236,29 @@ document.write(`
 
         <span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
         <span class="k">try</span><span class="p">:</span>
+            <span class="k">global</span> <span class="n">label</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chi&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">):</span>
                 <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_susceptibility_3d&quot;</span>
                 <span class="n">x0y0z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_chit_3d&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
             <span class="k">elif</span> <span class="p">(</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
                 <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;internal_energy&quot;</span>
             <span class="p">):</span>
                 <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span><span class="p">:</span>
                     <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_helmholtz_energy_3d&quot;</span>
-                    <span class="n">energy_type</span> <span class="o">=</span> <span class="s2">&quot;Helmholtz&quot;</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$F\ /\ \mathrm{cm^{-1}}$&quot;</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_internal_energy_3d&quot;</span>
-                    <span class="n">energy_type</span> <span class="o">=</span> <span class="s2">&quot;Internal&quot;</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$U\ /\ \mathrm{cm^{-1}}$&quot;</span>
                 <span class="n">x0y0z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_energy_3d&quot;</span><span class="p">]</span>
             <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
                 <span class="n">group_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_magnetisation_3d&quot;</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span>
                 <span class="n">x0y0z0</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_mag_3d&quot;</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -7384,6 +7266,10 @@ document.write(`
                     <span class="s2">&quot; magnetisation&quot;</span>
                 <span class="p">)</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_fields&quot;</span><span class="p">]</span>
+            <span class="n">field_unit</span> <span class="o">=</span> <span class="s2">&quot;T&quot;</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="n">fields</span> <span class="o">*</span> <span class="mi">10</span>
+                <span class="n">field_unit</span> <span class="o">=</span> <span class="s2">&quot;kOe&quot;</span>
             <span class="n">temps</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">group_name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">_temperatures&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">x0y0z0</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
                 <span class="n">plot_style</span> <span class="o">=</span> <span class="s2">&quot;globe&quot;</span>
@@ -7424,11 +7310,7 @@ document.write(`
                 <span class="o">+</span> <span class="n">BLUE</span>
                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="o">+</span> <span class="n">RESET</span>
-                <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Check if the group exists and data type </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2"> &quot;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;matches one from the list&quot;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39; [&quot;chit&quot;, &quot;chi&quot;, &quot;helmholtz_energy&quot;, &quot;internal_energy&quot;,&#39;</span>
-                <span class="sa">f</span><span class="s1">&#39; &quot;magnetisation&quot;].&#39;</span><span class="p">,</span>
+                <span class="o">+</span> <span class="s1">&#39;&quot;.&#39;</span><span class="p">,</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span><span class="p">()</span>
@@ -7450,7 +7332,9 @@ document.write(`
                         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">temps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">temp_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> K&quot;</span>
 
                     <span class="k">def</span> <span class="nf">my_ticks2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">):</span>
-                        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span>
+                        <span class="k">return</span> <span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">field_rounding</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">plot_style</span> <span class="o">==</span> <span class="s2">&quot;globe&quot;</span><span class="p">:</span>
                 <span class="n">x</span> <span class="o">=</span> <span class="n">x0y0z0</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">field_i</span><span class="p">,</span> <span class="n">temp_i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
@@ -7503,29 +7387,23 @@ document.write(`
                         <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
                         <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                     <span class="p">)</span>
-            <span class="k">if</span> <span class="n">plot_style</span> <span class="o">==</span> <span class="s2">&quot;globe&quot;</span> <span class="ow">and</span> <span class="n">solid_surface</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">plot_style</span> <span class="o">==</span> <span class="s2">&quot;globe&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">solid_surface</span><span class="p">:</span>
                 <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
             <span class="c1"># Important order of operations!</span>
+            <span class="k">global</span> <span class="n">labelpad</span>
             <span class="n">labelpad</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span>
-            <span class="k">if</span> <span class="n">data_type</span> <span class="ow">in</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span><span class="p">:</span>
-                    <span class="n">ax_label</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}T\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}K}$&quot;</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">ax_label</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;$\chi_{\mathrm</span><span class="si">{M}</span><span class="s2">}\ /\ \mathrm{cm^</span><span class="si">{3}</span><span class="s2">mol^{-1}}$&quot;</span>
-                    <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;helmholtz_energy&quot;</span> <span class="ow">or</span> <span class="s2">&quot;internal_energy&quot;</span><span class="p">:</span>
-                <span class="n">ax_label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$E\ /\ \mathrm{cm^{-1}}$&quot;</span>
-            <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
-                <span class="n">ax_label</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;$M\ /\ \mathrm{\mu_</span><span class="si">{B}</span><span class="s2">}$&quot;</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
+            <span class="k">global</span> <span class="n">labelpad_scalar</span>
+            <span class="n">labelpad_scalar</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;magnetisation&quot;</span><span class="p">:</span>
+                <span class="n">labelpad_scalar</span> <span class="o">=</span> <span class="n">labelpad_scalar</span> <span class="o">*</span> <span class="mf">0.5</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">axis_i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
                     <span class="n">axis_i</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
@@ -7541,7 +7419,7 @@ document.write(`
                 <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">AutoMinorLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;chit&quot;</span> <span class="ow">or</span> <span class="n">ticks</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ticks</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">ticks</span><span class="p">))</span>
@@ -7578,14 +7456,14 @@ document.write(`
                     <span class="n">axins2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                         <span class="mi">1</span><span class="p">,</span>
                         <span class="mi">1</span><span class="p">,</span>
-                        <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span><span class="p">,</span>
+                        <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                         <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
                         <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">axins2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                         <span class="mi">1</span><span class="p">,</span>
                         <span class="o">-</span><span class="mf">0.03</span><span class="p">,</span>
-                        <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span><span class="p">,</span>
+                        <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                         <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
                         <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                     <span class="p">)</span>
@@ -7638,7 +7516,7 @@ document.write(`
             <span class="p">)</span>
             <span class="n">slider_field</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
                 <span class="n">ax_field</span><span class="p">,</span>
-                <span class="s2">&quot;B [index]&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2"> [index]&quot;</span><span class="p">,</span>
                 <span class="n">valmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                 <span class="n">valmax</span><span class="o">=</span><span class="n">fields</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
                 <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;vertical&quot;</span><span class="p">,</span>
@@ -7697,17 +7575,18 @@ document.write(`
                             <span class="p">[</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">vec</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">]],</span>
                             <span class="n">axes_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                         <span class="p">)</span>
-                <span class="k">if</span> <span class="n">solid_surface</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">solid_surface</span><span class="p">:</span>
                     <span class="n">surface</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;B=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">field_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> T, T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">temp_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">field_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">temp_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
                 <span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">axis_i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
@@ -7759,14 +7638,14 @@ document.write(`
                         <span class="n">axins2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                             <span class="mi">1</span><span class="p">,</span>
                             <span class="mi">1</span><span class="p">,</span>
-                            <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span><span class="p">,</span>
+                            <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                             <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
                             <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                         <span class="p">)</span>
                         <span class="n">axins2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                             <span class="mi">1</span><span class="p">,</span>
                             <span class="o">-</span><span class="mf">0.03</span><span class="p">,</span>
-                            <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span><span class="p">,</span>
+                            <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                             <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
                             <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                         <span class="p">)</span>
@@ -7834,11 +7713,12 @@ document.write(`
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">,</span> <span class="n">lim</span> <span class="o">*</span> <span class="n">lim_scalar</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;B=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">field_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> T, T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">temp_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">fields</span><span class="p">[</span><span class="n">field_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; T=</span><span class="si">{</span><span class="n">temps</span><span class="p">[</span><span class="n">temp_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K&quot;</span>
                 <span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">ax_label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="n">labelpad</span> <span class="o">*</span> <span class="n">labelpad_scalar</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">axis_i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">zaxis</span><span class="p">]:</span>
@@ -7890,14 +7770,14 @@ document.write(`
                         <span class="n">axins2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                             <span class="mi">1</span><span class="p">,</span>
                             <span class="mi">1</span><span class="p">,</span>
-                            <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span><span class="p">,</span>
+                            <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                             <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
                             <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                         <span class="p">)</span>
                         <span class="n">axins2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                             <span class="mi">1</span><span class="p">,</span>
                             <span class="o">-</span><span class="mf">0.03</span><span class="p">,</span>
-                            <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> T&quot;</span><span class="p">,</span>
+                            <span class="n">s</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">field_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                             <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
                             <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
                         <span class="p">)</span>

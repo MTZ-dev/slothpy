@@ -572,27 +572,41 @@ document.write(`
 <p>SlothPy is released under the GNU General Public License v3 (GPLv3). For details, see the <a class="reference external" href="https://github.com/MTZ-dev/slothpy/blob/main/LICENSE.txt">LICENSE</a> file.</p>
 <section id="SlothPy-Tutorial">
 <h1>SlothPy Tutorial<a class="headerlink" href="#SlothPy-Tutorial" title="Link to this heading">#</a></h1>
-<p><img alt="03f8aba9e3244a619194692fa12a46de" class="no-scaled-link" src="https://raw.githubusercontent.com/MTZ-dev/slothpy/main/doc/source/_static/slothpy_3.png" style="width: 300px;" /></p>
-<p>SlothPy makes extensive use of the HDF5 file format (powerful and portable binary format for fast I/O and big data) to store all the data related to the software. The core file format .slt is in fact .hdf5/h5 file in disguise, so it can be additionally opened and modified with programs such as HDFView and HDFCompas programs or directly accessed through the h5py Python wrapper. Firstly, let us import the pacgake</p>
+<p><img alt="40932b03c43e4ca988871b3c1569601e" class="no-scaled-link" src="https://raw.githubusercontent.com/MTZ-dev/slothpy/main/doc/source/_static/slothpy_3.png" style="width: 300px;" /></p>
+<p>I designed SlothPy to be used in interactive Jupyter notebooks and stand-alone scripts, which users can create and adjust to their needs, seemingly integrating into custom data pipelines. Remember, especially while working on Windows, to include into your programs <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">__name__</span> <span class="pre">==</span> <span class="pre">&quot;__main__&quot;</span></code> block for executing instructions after importing modules. You can follow the notebook or copy its contents to .py files and execute them as you prefer.</p>
+</section>
+<section id="HDF5-Integration-in-SlothPy">
+<h1>HDF5 Integration in SlothPy<a class="headerlink" href="#HDF5-Integration-in-SlothPy" title="Link to this heading">#</a></h1>
+<p>SlothPy extensively utilizes the HDF5 file format—a versatile and portable binary format optimized for fast I/O operations and handling large datasets. The primary file extension used by SlothPy, <code class="docutils literal notranslate"><span class="pre">.slt</span></code>, is essentially an HDF5 file. This means it can be opened and manipulated with standard HDF5 tools like HDFView and HDFCompass or accessed programmatically via the <code class="docutils literal notranslate"><span class="pre">h5py</span></code> Python interface. Now, let’s begin by importing SlothPy along with other essential packages for this tutorial.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">slothpy</span> <span class="k">as</span> <span class="nn">slt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="c1"># Make sure you have access to the libraries on your machine.</span>
 </pre></div>
 </div>
 </div>
-<p>To start using SlothPy one has to create at least one instance of the core class object - Compound. The Compound is intrinsically associated with a .slt file stored on your disk. You can create the Compound from an output file of quantum chemistry software, access the existing .slt file, or add more data to it. Those operations are handled by the Compound creation methods. There is one .rassi.h5 file produced from the MOLCAS calculation included in the “examples” folder from our repository on
-GitHub. We will use it as an example in this tutorial. To create a Compound from it we have to include its relative path and use slt.compound_from_molcas() method. Note: always check the documentation of the used methods on our website or use your editor to do so (e.g. Shift+Tab in Jupyter Notebooks).</p>
+</section>
+<section id="Creating-a-Compound-Object-in-SlothPy">
+<h1>Creating a Compound Object in SlothPy<a class="headerlink" href="#Creating-a-Compound-Object-in-SlothPy" title="Link to this heading">#</a></h1>
+<p>To start using SlothPy, it’s essential to create an instance of the <code class="docutils literal notranslate"><span class="pre">Compound</span></code> class, which is a core element of SlothPy. The <code class="docutils literal notranslate"><span class="pre">Compound</span></code> instance is directly linked to a <code class="docutils literal notranslate"><span class="pre">.slt</span></code> file on your disk and provides access to all the methods serving as a user interface/API. You can create a <code class="docutils literal notranslate"><span class="pre">Compound</span></code> object from the output of quantum chemistry software, work with an existing <code class="docutils literal notranslate"><span class="pre">.slt</span></code> file, or append new data to it. Those operations are handled by the Compound creation methods (see
+<a class="reference external" href="https://slothpy.org/creation_methods">documentation</a>). In this tutorial, we’ll utilize a <code class="docutils literal notranslate"><span class="pre">.rassi.h5</span></code> file from a MOLCAS calculation, available for download <a class="reference external" href="https://drive.google.com/file/d/1obU_bK9sc2hdy3vFXjLxtTUX7CBzl-wf/view">here</a> or on the <a class="reference external" href="https://slothpy.org/how_to_start">website</a> (you can try to use your file if you already have access to one). To create a <code class="docutils literal notranslate"><span class="pre">Compound</span></code> from this file, we use the
+<code class="docutils literal notranslate"><span class="pre">`slt.compound_from_molcas()</span></code> &lt;<a class="reference external" href="https://slothpy.org/creation_methods#slothpy.compound_from_molcas">https://slothpy.org/creation_methods#slothpy.compound_from_molcas</a>&gt;`__ method. It’s important to always refer to the <a class="reference external" href="https://slothpy.org/reference_manual">documentation</a> for details on the methods we use. In Jupyter Notebooks, a quick way to access method docstring is to press <code class="docutils literal notranslate"><span class="pre">Shift</span></code> + <code class="docutils literal notranslate"><span class="pre">Tab</span></code> in parenthesis after typing the method name. You need to provide appropriate paths and names for the files. (you can click the underscored links)</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span> <span class="o">=</span> <span class="n">slt</span><span class="o">.</span><span class="n">compound_from_molcas</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;Nd_tutorial&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="s2">&quot;./examples&quot;</span><span class="p">,</span> <span class="s2">&quot;NdCo_DG_bas3&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span> <span class="o">=</span> <span class="n">slt</span><span class="o">.</span><span class="n">compound_from_molcas</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;Nd_tutorial&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;NdCo_DG_bas3&quot;</span><span class="p">)</span>
+<span class="c1"># Provide paths to the locations of your .rassi.h5 file and where you want to store the resulting .slt file</span>
+<span class="c1"># replacing &quot;.&quot;. You can also adjust the names.</span>
 </pre></div>
 </div>
 </div>
-<p>After the creation, you can check what is inside your file using the print() method or like this:</p>
+<p>We named the instance <code class="docutils literal notranslate"><span class="pre">NdCo</span></code>, and now it’s directly linked to the new file <code class="docutils literal notranslate"><span class="pre">Nd_tutorial.slt</span></code>. After the creation, you can check what is inside your file using the print() method or directly in Notebook like this:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
@@ -601,40 +615,43 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 </pre></div>
 </div>
 </div>
-<p>You can see the list of HDF5 groups and data sets contained in the file together with their Description attributes. This is the way that SlothPy will save all your results. Having already .slt file on your disk you can add to it more ab initio results (just use the path and name of an existing file) or access it at a later point using slt.compound_from_slt() method.</p>
+<p>You should see the list of HDF5 groups (with <code class="docutils literal notranslate"><span class="pre">bas3</span></code> among them) and data sets contained in the file, together with their description attributes. This is the way that SlothPy will save all your future results. Having already .slt file on your disk, you can add to it more ab initio results (just use the path and name of an existing file) or access it at a later point using the <code class="docutils literal notranslate"><span class="pre">`slt.compound_from_slt()</span> <span class="pre">method</span></code> &lt;<a class="reference external" href="https://slothpy.org/creation_methods#slothpy.compound_from_slt">https://slothpy.org/creation_methods#slothpy.compound_from_slt</a>&gt;`__. You can also
+create many instances and files for different compounds or store them all in one file - the decision is up to you. More advanced use cases in actual workflows are demonstrated in Tutorial 2. (If you are interested in adding a new file format for loading energies, spin, and angular momenta data from your favorite quantum-chemistry package, please get in touch with me directly: <a class="reference external" href="mailto:mikolaj&#46;zychowicz&#37;&#52;&#48;uj&#46;edu&#46;pl">mikolaj<span>&#46;</span>zychowicz<span>&#64;</span>uj<span>&#46;</span>edu<span>&#46;</span>pl</a> or create an <a class="reference external" href="https://github.com/MTZ-dev/slothpy/issues">issue</a>.)</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span> <span class="o">=</span> <span class="n">slt</span><span class="o">.</span><span class="n">compound_from_slt</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;Nd_tutorial&quot;</span><span class="p">)</span>
-<span class="c1"># If you already created &quot;Nd_tutorial.slt&quot; on your disk, use this line only.</span>
+<span class="c1"># If you have created &quot;Nd_tutorial.slt&quot; on your disk, only use this line.</span>
 </pre></div>
 </div>
 </div>
-<p>All available methods are accessed through an instance of the Compound class that constitutes the user interface and API documented in the Reference Manual. Let us start by computing molar powder-averaged magnetisation for our Nd-based compound. Firstly, we need some imports to create a range of magnetic field and temperature values:</p>
+<section id="Utilizing-SlothPy's-Methods">
+<h2>Utilizing SlothPy’s Methods<a class="headerlink" href="#Utilizing-SlothPy's-Methods" title="Link to this heading">#</a></h2>
+<p>All available methods are accessed through an instance of the Compound class that constitutes the user interface and API documented in the <a class="reference external" href="https://slothpy.org/reference_manual">Reference Manual</a>. Let us start by computing molar powder-averaged magnetisation as a function of temperature and magnetic field strength <code class="docutils literal notranslate"><span class="pre">M(T,H)</span></code> for our Nd-based compound. We must create one-dimensional lists or arrays of temperature and field values at which the magnetization will be computed. It’s convenient to
+use the numpy linspace method here for fields between 0 and 7 T (50 points) and temperatures from 1 to 10 K with 1 K step.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">linspace</span>
-
-<span class="n">fields_mth</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
-<span class="n">temperatures_mth</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fields_mth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">temperatures_mth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>The method for computing magnetisation as a function of field and temperature is called calculate_mth().</p>
+<p>After that, we should reference the NdCo object. Use <code class="docutils literal notranslate"><span class="pre">NdCo.</span> <span class="pre">+</span> <span class="pre">Tab</span></code> here in the notebook or autocompletion in our IDE to see the list of all available functions. The method for computing magnetisation as a function of field and temperature is called <code class="docutils literal notranslate"><span class="pre">`calculate_magnetisation()</span></code> &lt;<a class="reference external" href="https://slothpy.org/compound#slothpy.Compound.calculate_magnetisation">https://slothpy.org/compound#slothpy.Compound.calculate_magnetisation</a>&gt;`__. We need to provide the name of a group from which magnetisation will be calculated along with fields, option for integration grid,
+temperatures and states cutoff for Zeeman Hamiltonian diagonalization.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>Here, we calculate powder-averaged (using Lebedev-Laikov integration grid) magnetisation for the Nd-based compound in the magnetic field range from 1 Oe to 7 T (50 points) and for 10 temperature values from 1 K to 10 K. We include in the Zeeman Hamiltonian only 10 Spin-Orbit states from the ground multiplet $ ^{4}I_{9/2} $ of Nd(III). The calculation should finish immediately due to the very low amount of SO states included.</p>
-<p>The result is a numpy NdArray (10, 50) with the structure [temperatures, fields] returned from the function call to the mth variable. It is ready for you to process it using Python as you want. Remember to always check the output format in the Reference Manual (or using your editor/IDE) - Returns section of each method.</p>
+<p>Here, we calculate powder-averaged (using Lebedev-Laikov integration grid on the hemisphere) magnetisation for the Nd-based compound in the magnetic field range from 1 Oe to 7 T (50 points) and for ten temperature values from 1 K to 10 K. We include in the Zeeman Hamiltonian only 10 Spin-Orbit states from the ground multiplet $ ^{4}I_{9/2} $ of Nd(III). The calculation should finish immediately due to the very low amount of SO states included.</p>
+<p>The result is a numpy NdArray (10, 50) with the structure [temperatures, fields] returned from the function call to the mth variable. It is ready for you to process it using Python as you want. Remember to always check the output format of methods in the <a class="reference external" href="https://slothpy.org/reference_manual">Reference Manual</a> (or using your editor/IDE) - <code class="docutils literal notranslate"><span class="pre">Returns</span></code> section of each function in the documentation.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
@@ -643,40 +660,66 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 </pre></div>
 </div>
 </div>
-<p>We can, for example, plot it as a magnetic field function M(H) iterating over different temperatures:</p>
+</section>
+</section>
+<section id="Data-Manipulation-and-Visualisation">
+<h1>Data Manipulation and Visualisation<a class="headerlink" href="#Data-Manipulation-and-Visualisation" title="Link to this heading">#</a></h1>
+<p>SlothPy seamlessly interfaces with the broader toolchain and Python scientific ecosystem by returning data in numpy array format. This compatibility allows you to leverage the full range of Python’s data manipulation, exporting, and visualization tools in your scripts using your favorite libraries. As an illustrative example, let’s plot the data contained in mth variable as a magnetic field function M(H) iterating over different temperatures using matplotlib:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="n">plot</span><span class="p">,</span> <span class="n">show</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">mh</span> <span class="ow">in</span> <span class="n">mth</span><span class="p">:</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fields_mth</span><span class="p">,</span> <span class="n">mh</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>If you need to export the data to use it elsewhere we can simply save it to a .csv file on the disk to be accessible for you or your other programs directly:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;my_mth_array.csv&#39;</span><span class="p">,</span> <span class="n">mth</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+<span class="c1"># Here we transpose to have the data for each temperature value in columns</span>
+</pre></div>
+</div>
+</div>
+<p>We can make it even better and create a well-formated data frame using pandas library for the data exporting:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fields_oe</span> <span class="o">=</span> <span class="n">fields_mth</span> <span class="o">*</span> <span class="mi">10000</span>
+<span class="n">magnetisation_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;Fields (Oe)&#39;</span><span class="p">:</span> <span class="n">fields_oe</span><span class="p">})</span>
 
-<span class="k">for</span> <span class="n">mh</span> <span class="ow">in</span> <span class="n">mth</span><span class="p">:</span>
-    <span class="n">plot</span><span class="p">(</span><span class="n">fields_mth</span><span class="p">,</span> <span class="n">mh</span><span class="p">)</span>
-<span class="n">show</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mh</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mth</span><span class="p">):</span>
+    <span class="n">magnetisation_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">temperatures_mth</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mh</span>
+
+<span class="n">magnetisation_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;magnetisation.csv&quot;</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
-<p>or save it to a .csv file on the disk to be accessible for your other programs:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">savetxt</span>
-<span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;my_mth_array.csv&#39;</span><span class="p">,</span> <span class="n">mth</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span> <span class="c1"># Here we transpose to have data for each temperature in columns</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">As</span> <span class="n">you</span> <span class="n">can</span> <span class="n">see</span><span class="p">,</span> <span class="n">the</span> <span class="n">possibilities</span> <span class="n">are</span> <span class="n">endless</span><span class="o">.</span>
 </pre></div>
 </div>
 </div>
-<p>Now, let us run the above calculation once again, but this time we will use a better, denser grid and include more SO-states. It will take a little more time. Additionally, we will save the results to our Nd_tutorial.slt file using slt keyword. (confront the documentation for the comprehensive description of all the options)</p>
+<p>Nevertheless, SlothPy offers you its own organized data storage inside the core .slt files along with a series of built-in methods to visualize it and proceed with multi-step complex computations. To demonstrate it, we will now run the above calculation once again, but this time we will use a better, denser grid and include more SO-states. It will take a little more time. Additionally, we will save the results to our Nd_tutorial.slt file using <code class="docutils literal notranslate"><span class="pre">slt</span></code> keyword. (confront the
+<a class="reference external" href="https://slothpy.org/compound#slothpy.Compound.calculate_magnetisation">documentation</a> for the comprehensive description of all the options).</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>If you invoke the representation of the Nd_tutorial.slt file once again you can see that a new group “bas3_magnetisation” was created which contains datasets for magnetisation (bas3_mth), magnetic fields (bas3_fields), and temperatures (bas3_temperatures). (all with Description attributes)</p>
+<p>If you invoke the representation of the Nd_tutorial.slt file once again, you can see that a new group “bas3_magnetisation” was created which contains datasets for magnetisation (bas3_mth), magnetic fields (bas3_fields), and temperatures (bas3_temperatures). (all with description attributes)</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
@@ -685,28 +728,28 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 </pre></div>
 </div>
 </div>
-<p>SlothPy provides an array-like interface for reading and writing data from and to .slt files. As an example, let us read the magnetisation to another variable mth_custom_read together with field values:</p>
+<p>SlothPy provides an array-like interface for reading and writing data from and to .slt files. To access a particular dataset and read it in as a numpy array, you need to provide the name of a group followed by the dataset’s name. As an example, let us read the magnetisation to another variable mth_custom_read together with field values:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mth_custom_read</span> <span class="o">=</span> <span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;bas3_magnetisation&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3_mth&quot;</span><span class="p">]</span>
-<span class="n">field_values</span> <span class="o">=</span> <span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;bas3_magnetisation&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3_fields&quot;</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mth_read</span> <span class="o">=</span> <span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;bas3_magnetisation&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3_mth&quot;</span><span class="p">]</span>
+<span class="n">field_values_read</span> <span class="o">=</span> <span class="n">NdCo</span><span class="p">[</span><span class="s2">&quot;bas3_magnetisation&quot;</span><span class="p">,</span> <span class="s2">&quot;bas3_fields&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
-<p>Here, we provide a full group and dataset name to access the data. Now we can do what we want with the arrays. Let us confirm that they indeed represent magnetisation once again by plotting them:</p>
+<p>Here, we provide a full group and dataset name (with suffixes) to access the data! Now, once again, we can do whatever we want with the arrays. Let us confirm that they indeed represent the same magnetisation as before by plotting them:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">mh</span> <span class="ow">in</span> <span class="n">mth_custom_read</span><span class="p">:</span>
-    <span class="n">plot</span><span class="p">(</span><span class="n">field_values</span><span class="p">,</span> <span class="n">mh</span><span class="p">)</span>
-<span class="n">show</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">mh</span> <span class="ow">in</span> <span class="n">mth_read</span><span class="p">:</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">field_values_read</span><span class="p">,</span> <span class="n">mh</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
-<p>Since we have our data saved in the .slt file we can actually plot it using the build-in function (available for various methods - see documentation, all starting with “plot” and having plenty of customization parameters).</p>
+<p>Since we have our data saved in the .slt file, we can plot it using the build-in function (available for various methods and having plenty of customizable parameters - see all the methods starting with “plot” in the <a class="reference external" href="https://slothpy.org/reference_manual">documentation</a>).</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
@@ -715,8 +758,8 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 </pre></div>
 </div>
 </div>
-<p>When you invoke plotting functions for specific methods you do not need to provide a suffix, like “_magnetisation”, the program will handle it for you.</p>
-<p>If you need you can even create your own custom groups with datasets (in the form of numpy NdArrays) in the file and use them in your scripts.</p>
+<p>As you noticed, when using the built-in functions, you do not need to (actually, you can’t) provide a name of the group with a suffix, like “_magnetisation”; just use the name you gave for the <code class="docutils literal notranslate"><span class="pre">slt</span></code> parameter of the method and the program will handle the rest for you.</p>
+<p>If you want to integrate the .slt file in your workflow, you can even create your custom groups with datasets (in the form of numpy NdArrays) in the file and use them in your programs and scripts.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
@@ -728,7 +771,7 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 </pre></div>
 </div>
 </div>
-<p>The last two strings giving a description of the group and data set are optional. Later you can add to the existing group more data sets or create datasets without a group (they have to be at least 1-dimensional ArrayLike):</p>
+<p>The last two strings giving a description of the dataset and group set are optional. Later you can add to the existing group more data sets or create datasets without a group (they have to be at least 1-dimensional ArrayLike):</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>

@@ -383,7 +383,6 @@ def _calculate_internal_energy(
     z = sum(exp_diff)
 
     e = vdot((energies * H_CM_1), exp_diff)
-    # e = sum((energies * H_CM_1) * exp_diff)
 
     return e / z
 

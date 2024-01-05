@@ -71,8 +71,7 @@ def _calculate_magnetization(
     z = sum(exp_diff)
 
     # Weighted magnetic moments of microstates
-    m = sum(states_momenta * exp_diff)
-    # m = vdot(states_momenta, exp_diff)
+    m = vdot(states_momenta, exp_diff)
 
     return m / z
 

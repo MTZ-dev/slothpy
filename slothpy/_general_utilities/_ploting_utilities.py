@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from sys import argv
 from typing import Union
+from multiprocessing import current_process
 from pkg_resources import resource_filename
 from numpy import linspace
 from matplotlib.colors import LinearSegmentedColormap
@@ -112,21 +113,23 @@ class SlothGui(QApplication):
 
 
 # If we are in Jupyter notebook prepare blank gui page
-if _is_notebook():
-    app = SlothGui(sys_argv=argv)
-    app.setFont(QFont("Helvetica", 12))
+if current_process().name == "MainProcess":
+    if _is_notebook():
+        app = SlothGui(sys_argv=argv)
+        app.setFont(QFont("Helvetica", 12))
 
 
 def _display_plot(fig: Figure = None, onClose: callable = None):
-    global app
-    if _is_notebook():
-        app.show(fig)
-    else:
-        tmp_app = SlothGui(sys_argv=argv)
-        tmp_app.setFont(QFont("Helvetica", 12))
-        tmp_app.main_view.set_fig(fig)
-        tmp_app.main_view.show()
-        tmp_app.exec_()
+    if current_process().name == "MainProcess":
+        global app
+        if _is_notebook():
+            app.show(fig)
+        else:
+            tmp_app = SlothGui(sys_argv=argv)
+            tmp_app.setFont(QFont("Helvetica", 12))
+            tmp_app.main_view.set_fig(fig)
+            tmp_app.main_view.show()
+            tmp_app.exec_()
 
 
 def color_map(name: Union[str, list[str]]):

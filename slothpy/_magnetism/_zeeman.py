@@ -55,22 +55,23 @@ from slothpy._general_utilities._grids_over_sphere import (
     nogil=True,
     cache=True,
     fastmath=True,
+    inline="always",
 )
 def _calculate_zeeman_matrix(
     magnetic_momenta, soc_energies, field, orientation
 ):
     orientation = -field * MU_B * orientation
-    zeeman_matrix = ascontiguousarray(
+    magnetic_momenta = ascontiguousarray(
         magnetic_momenta[0] * orientation[0]
         + magnetic_momenta[1] * orientation[1]
         + magnetic_momenta[2] * orientation[2]
     )
 
     # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
-    for k in range(zeeman_matrix.shape[0]):
-        zeeman_matrix[k, k] += soc_energies[k]
+    for k in range(magnetic_momenta.shape[0]):
+        magnetic_momenta[k, k] += soc_energies[k]
 
-    return zeeman_matrix
+    return magnetic_momenta
 
 
 @jit(

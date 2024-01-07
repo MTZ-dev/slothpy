@@ -58,6 +58,7 @@ from slothpy._general_utilities._grids_over_sphere import (
     nogil=True,
     cache=True,
     fastmath=True,
+    inline="always",
 )
 def _calculate_magnetization(
     energies: ndarray, states_momenta: ndarray, temperature: float64
@@ -65,13 +66,13 @@ def _calculate_magnetization(
     energies = ascontiguousarray(energies)
     states_momenta = ascontiguousarray(states_momenta)
     # Boltzman weights
-    exp_diff = exp(-(energies - energies[0]) / (KB * temperature))
+    energies = exp(-(energies - energies[0]) / (KB * temperature))
 
     # Partition function
-    z = sum(exp_diff)
+    z = sum(energies)
 
     # Weighted magnetic moments of microstates
-    m = vdot(states_momenta, exp_diff)
+    m = vdot(states_momenta, energies)
 
     return m / z
 
@@ -82,49 +83,38 @@ def _calculate_magnetization(
     nopython=True,
     nogil=True,
     cache=True,
+    fastmath=True,
+    inline="always",
 )
 def _mt_over_fields_grid(
     magnetic_momenta, soc_energies, fields, grid, temperatures
 ):
-    fields_shape_0 = fields.shape[0]
-    temperatures_shape_0 = temperatures.shape[0]
-    grid_shape_0 = grid.shape[0]
+    magnetic_momenta = ascontiguousarray(magnetic_momenta)
+    mht_array = zeros((fields.shape[0], temperatures.shape[0]), dtype=float64)
 
-    mht_array = zeros((fields_shape_0, temperatures_shape_0), dtype=float64)
-
-    for i in range(fields_shape_0):
-        mt_array = zeros(temperatures_shape_0, dtype=float64)
-
-        for j in range(grid_shape_0):
-            orientation = grid[j, :3]
+    for i in range(fields.shape[0]):
+        for j in range(grid.shape[0]):
             zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, fields[i], orientation
+                magnetic_momenta, soc_energies, fields[i], grid[j, :3]
             )
-
-            magnetic_momenta_cont = ascontiguousarray(magnetic_momenta)
-            eigenvalues, eigenvectors = eigh(zeeman_matrix)
-
-            states_momenta = (
-                eigenvectors.conj().T
+            energies, zeeman_matrix = eigh(zeeman_matrix)
+            zeeman_matrix = (
+                zeeman_matrix.conj().T
                 @ (
-                    grid[j, 0] * magnetic_momenta_cont[0]
-                    + grid[j, 1] * magnetic_momenta_cont[1]
-                    + grid[j, 2] * magnetic_momenta_cont[2]
+                    grid[j, 0] * magnetic_momenta[0]
+                    + grid[j, 1] * magnetic_momenta[1]
+                    + grid[j, 2] * magnetic_momenta[2]
                 )
-                @ eigenvectors
+                @ zeeman_matrix
             )
-
-            states_momenta_diag = diag(states_momenta).real.astype(float64)
-
-            for t in range(temperatures_shape_0):
-                mt_array[t] += (
+            zeeman_matrix = diag(zeeman_matrix).real.astype(float64)
+            for t in range(temperatures.shape[0]):
+                mht_array[i, t] += (
                     _calculate_magnetization(
-                        eigenvalues, states_momenta_diag, temperatures[t]
+                        energies, zeeman_matrix, temperatures[t]
                     )
                     * grid[j, 3]
                 )
-
-        mht_array[i, :] = mt_array[:]
 
     return mht_array
 

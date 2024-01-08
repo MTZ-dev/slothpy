@@ -55,7 +55,6 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'installation';</script>
     <script src="_static/custom-icon.js?v=e5a97373"></script>
     <script src="_static/collapsible_toc.js?v=ba4cfb00"></script>
-    <link rel="icon" href="_static/slothpy_3.png"/>
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -130,14 +129,6 @@
   
   
   
-  
-    
-    
-      
-    
-    
-    <img src="_static/slothpy_3.png" class="logo__image only-light" alt="SlothPy"/>
-    <script>document.write(`<img src="_static/slothpy_3.png" class="logo__image only-dark" alt="SlothPy"/>`);</script>
   
   
     <p class="title logo__title">SlothPy</p>
@@ -638,15 +629,22 @@ document.write(`
 </pre></div>
 </div>
 </li>
-<li><p>Install using the requirements file:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+<li><p>Now you can install the package in editable mode:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 </pre></div>
 </div>
 </li>
 </ol>
+<p>or just set up the environment by installing the requirements file:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>slothpy
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</div></blockquote>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>When installing SlothPy from the GitHub repository, ensure your scripts are in the same directory as SlothPy to enable proper importing of the SlothPy modules.</p>
+<p>When installing SlothPy from the GitHub repository this way, ensure your scripts are in the same directory as SlothPy to enable proper importing of the SlothPy modules.</p>
 </div>
 <p>You’re all set! SlothPy is now installed and ready for use.</p>
 </section>

@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>slothpy.exporting &#8212; SlothPy 0.1.0 documentation</title>
+    <title>slothpy.exporting &#8212; SlothPy 0.1.14 documentation</title>
   
   
   
@@ -32,32 +32,28 @@
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css?v=7f9a90b1" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=13237357" />
-    <link rel="stylesheet" type="text/css" href="../../_static/jupyter-sphinx.css?v=572af1d6" />
-    <link rel="stylesheet" type="text/css" href="../../_static/thebelab.css" />
-    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=dd5636d6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=b9cefd7c" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=ac02cc09edc035673794" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
   <script src="../../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
 
-    <script src="../../_static/documentation_options.js?v=38b66d78"></script>
+    <script src="../../_static/documentation_options.js?v=f2ffa296"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../_static/thebelab-helper.js"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
     <script src="../../_static/togglebutton.js?v=4a39c7ea"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/slothpy/exporting';</script>
     <script src="../../_static/custom-icon.js?v=e5a97373"></script>
-    <link rel="icon" href="../../_static/slothpy_3.png"/>
+    <script src="../../_static/collapsible_toc.js?v=ba4cfb00"></script>
     <link rel="author" title="About these documents" href="../../about.html" />
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -131,14 +127,6 @@
   
   
   
-    
-    
-      
-    
-    
-    <img src="../../_static/slothpy_3.png" class="logo__image only-light" alt="SlothPy"/>
-    <script>document.write(`<img src="../../_static/slothpy_3.png" class="logo__image only-dark" alt="SlothPy"/>`);</script>
-  
   
     <p class="title logo__title">SlothPy</p>
   
@@ -149,21 +137,6 @@
   <div class="col-lg-9 navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
-      
-        <div class="navbar-item">
-<script>
-document.write(`
-  <div class="version-switcher__container dropdown">
-    <button id="versionswitcherbutton" type="button" role="button" class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="listbox" aria-controls="versionswitcherlist" aria-label="Version switcher list">
-      Choose version  <!-- this text may get changed later by javascript -->
-      <span class="caret"></span>
-    </button>
-    <div id="versionswitcherlist" class="version-switcher__menu dropdown-menu list-group-flush py-0" role="listbox" aria-labelledby="versionswitcherbutton">
-    <!-- dropdown will be populated by javascript on page load -->
-    </div>
-  </div>
-`);
-</script></div>
       
         <div class="navbar-item"><nav class="navbar-nav">
   <p class="sidebar-header-items__title"
@@ -183,7 +156,7 @@ document.write(`
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="../../installation.html">
-                        Installation
+                        Installation Guide
                       </a>
                     </li>
                 
@@ -196,8 +169,15 @@ document.write(`
                 
 
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../slothpy.html">
+                      <a class="nav-link nav-internal" href="../../reference_manual.html">
                         Reference Manual
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../theory.html">
+                        Theory
                       </a>
                     </li>
                 
@@ -229,6 +209,23 @@ document.write(`
  </script>
         </div>
       
+      
+        <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
+<div class="custom-version-indicator">
+    <span class="version-text">SlothPy Version: 0.1.14</span>
+</div>
+
+<style>
+.custom-version-indicator {
+    padding: 0.5em;
+    margin-left: auto;
+    font-size: 1em;
+    color: #138496
+}
+.version-text {
+    font-weight: 600;
+}
+</style></div>
       
         <div class="navbar-item">
 <script>
@@ -329,21 +326,6 @@ document.write(`
     
       <div class="sidebar-header-items__center">
         
-          <div class="navbar-item">
-<script>
-document.write(`
-  <div class="version-switcher__container dropdown">
-    <button id="versionswitcherbutton" type="button" role="button" class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="listbox" aria-controls="versionswitcherlist" aria-label="Version switcher list">
-      Choose version  <!-- this text may get changed later by javascript -->
-      <span class="caret"></span>
-    </button>
-    <div id="versionswitcherlist" class="version-switcher__menu dropdown-menu list-group-flush py-0" role="listbox" aria-labelledby="versionswitcherbutton">
-    <!-- dropdown will be populated by javascript on page load -->
-    </div>
-  </div>
-`);
-</script></div>
-        
           <div class="navbar-item"><nav class="navbar-nav">
   <p class="sidebar-header-items__title"
      role="heading"
@@ -362,7 +344,7 @@ document.write(`
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="../../installation.html">
-                        Installation
+                        Installation Guide
                       </a>
                     </li>
                 
@@ -375,8 +357,15 @@ document.write(`
                 
 
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../slothpy.html">
+                      <a class="nav-link nav-internal" href="../../reference_manual.html">
                         Reference Manual
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../theory.html">
+                        Theory
                       </a>
                     </li>
                 
@@ -395,6 +384,23 @@ document.write(`
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
+<div class="custom-version-indicator">
+    <span class="version-text">SlothPy Version: 0.1.14</span>
+</div>
+
+<style>
+.custom-version-indicator {
+    padding: 0.5em;
+    margin-left: auto;
+    font-size: 1em;
+    color: #138496
+}
+.version-text {
+    font-weight: 600;
+}
+</style></div>
         
           <div class="navbar-item">
 <script>
@@ -487,9 +493,10 @@ document.write(`
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explore SlothPy</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../how_to_start.html">How to Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../slothpy.html">Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference_manual.html">Reference Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../theory.html">Theory</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../how_to_cite.html">How to Cite</a></li>
 </ul>
 </div>
@@ -582,7 +589,7 @@ document.write(`
     <span class="n">SltSaveError</span><span class="p">,</span>
     <span class="n">SltInputError</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">slothpy._general_utilities._constants</span> <span class="kn">import</span> <span class="n">BLUE</span><span class="p">,</span> <span class="n">YELLOW</span><span class="p">,</span> <span class="n">RESET</span>
+<span class="kn">from</span> <span class="nn">slothpy._general_utilities._constants</span> <span class="kn">import</span> <span class="n">BLUE</span><span class="p">,</span> <span class="n">YELLOW</span><span class="p">,</span> <span class="n">RED</span><span class="p">,</span> <span class="n">RESET</span>
 
 
 <div class="viewcode-block" id="table_energy_and_g">
@@ -712,7 +719,7 @@ document.write(`
         <span class="k">raise</span> <span class="n">SltFileError</span><span class="p">(</span>
             <span class="n">slt_file</span><span class="o">.</span><span class="n">_hdf5</span><span class="p">,</span>
             <span class="n">exc</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;Failed to load data required by table&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to load data required by the table &quot;</span>
             <span class="o">+</span> <span class="n">BLUE</span>
             <span class="o">+</span> <span class="s2">&quot;Group &quot;</span>
             <span class="o">+</span> <span class="n">RESET</span>

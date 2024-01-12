@@ -331,7 +331,7 @@ def table_energy_and_g(
         subscript = table2.cell(0, 0).paragraphs[0].add_run("J")
         subscript.font.subscript = True
         table2.cell(0, 0).paragraphs[0].add_run(
-            "⟩ basis on the quantization axes within"
+            "⟩ basis on the given quantization axis within"
         )
         table2.cell(0, 0).paragraphs[0].add_run(" J ").italic = True
         if krames:

@@ -116,7 +116,7 @@ html_sidebars = {
     ],
 }
 
-html_logo = "_static/slothpy_3.png"
-html_favicon = "_static/slothpy_3.png"
+html_logo = "_static/slothpy_2.png"
+html_favicon = "_static/slothpy_2.png"
 
 nbsphinx_execute = "never"

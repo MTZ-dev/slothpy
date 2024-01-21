@@ -247,6 +247,7 @@ def _calculate_mht(
     temperatures_shape: tuple,
     field_chunk: tuple,
     flag_name,
+    index,
 ) -> ndarray:
     magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
     magnetic_momenta_array = ndarray(
@@ -268,9 +269,7 @@ def _calculate_mht(
     )
     flag_shared = SharedMemory(flag_name)
     flag_array = ndarray(
-        (1,),
-        int64,
-        flag_shared.buf,
+        (1,), int64, flag_shared.buf, index * dtype(int64).itemsize
     )
 
     offset = dtype(float64).itemsize * field_chunk[0]
@@ -334,7 +333,7 @@ def _arg_iter_mht(
 ):
     # Iterator generator for arguments with different field values to be
     # distributed along num_process processes
-    for field_chunk in fields_chunks:
+    for index, field_chunk in enumerate(fields_chunks):
         yield (
             mht_name,
             magnetic_momenta_name,
@@ -349,6 +348,7 @@ def _arg_iter_mht(
             temperatures_shape,
             field_chunk,
             flag_name,
+            index,
         )
 
 
@@ -383,7 +383,7 @@ def _mth(
     temperatures = ascontiguousarray(temperatures, dtype=float64)
     grid = ascontiguousarray(grid, dtype=float64)
     mht_array = zeros((fields.shape[0], temperatures.shape[0]), dtype=float64)
-    flag = array([0], dtype=int64)
+    flag = zeros((num_process,), dtype=int64)
 
     if array_equal(grid, array([1.0])):
         tensor_calc = True
@@ -398,7 +398,7 @@ def _mth(
         grid_shared = smm.SharedMemory(size=grid.nbytes)
         temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
         mht_array_shared = smm.SharedMemory(size=mht_array.nbytes)
-        flag_shared = smm.SharedMemory(size=8)
+        flag_shared = smm.SharedMemory(size=flag.nbytes)
 
         # Copy data to shared memory
         magnetic_momenta_shared_arr = ndarray(
@@ -428,7 +428,7 @@ def _mth(
             buffer=mht_array_shared.buf,
         )
         flag_shared_arr = ndarray(
-            (1,),
+            flag.shape,
             dtype=int64,
             buffer=flag_shared.buf,
         )
@@ -523,7 +523,7 @@ def _monitor_progress(shared_counter, N, num_processes, num_threads):
     print(f"Calculate Magnetisation started: {current_time}")
     start_time = time.perf_counter()
     while True:
-        current_value = shared_counter[0]
+        current_value = sum(shared_counter)
         _update_progress_bar(
             current_value, N, start_time, num_processes, num_threads
         )

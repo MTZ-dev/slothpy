@@ -22,9 +22,22 @@ from .creation_functions import (
 
 from .compound_object import Compound
 
+from ._config import (
+    settings,
+    turn_on_monitor,
+    turn_off_monitor,
+    set_default_error_reporting_mode,
+    set_plain_error_reporting_mode,
+)
+
 __all__ = [
     "compound_from_slt",
     "compound_from_molcas",
     "compound_from_orca",
     "Compound",
+    "settings",
+    "turn_on_monitor",
+    "turn_off_monitor",
+    "set_default_error_reporting_mode",
+    "set_plain_error_reporting_mode",
 ]

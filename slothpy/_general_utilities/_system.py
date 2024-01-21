@@ -16,7 +16,6 @@
 
 import sys
 from os import cpu_count
-from IPython import get_ipython
 
 
 def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
@@ -34,9 +33,8 @@ def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
 
     if num_cpu > total_num_of_cpu:
         raise ValueError(
-            f"Insufficient number of logical CPUs ({total_num_of_cpu}), to"
-            f" accomodate {num_cpu} desired cores, was detected on the"
-            " machine."
+            f"Insufficient number of logical CPUs ({total_num_of_cpu}) was"
+            f" detected on the machine, to accomodate {num_cpu} desired cores."
         )
 
     if num_cpu == 0:
@@ -77,27 +75,3 @@ def _is_notebook():
     # Check if the get_ipython function is defined (typically only defined
     # in Jupyter environments).
     return "ipykernel" in sys.modules
-
-
-# Set a custom traceback limit for printing the SltErrors
-# for system and Jupyter Notebook. Edit it for debugging.
-def set_plain_error_reporting_mode():
-    """
-    Run this after set_default_error_reporting_mode to return to the custom
-    SlothPy-style error printing without tracebacks.
-    """
-    if _is_notebook():
-        get_ipython().run_line_magic("xmode", "Plain")
-    else:
-        sys.tracebacklimit = 0
-
-
-def set_default_error_reporting_mode():
-    """
-    Run this after the module import to return to the default full error
-    tracebacks.
-    """
-    if _is_notebook():
-        get_ipython().run_line_magic("xmode", "Context")
-    else:
-        sys.tracebacklimit = None

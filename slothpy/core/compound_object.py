@@ -64,6 +64,7 @@ from slothpy._general_utilities._constants import (
     YELLOW,
     RESET,
 )
+from slothpy.core._config import settings
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
 
 from slothpy._magnetism._magnetisation import _mth, _mag_3d
@@ -379,7 +380,7 @@ class Compound:
                 exc,
                 message=(
                     f'Failed to get a Dataset: "{names[0]}/{names[1]}" from'
-                    " the .slt file"
+                    " the .slt file."
                 ),
             ) from None
 
@@ -416,7 +417,7 @@ class Compound:
                 message=(
                     f'Failed to delete  "{first}"'
                     + (f"/{second}" if second is not None else "")
-                    + " from the .slt file"
+                    + " from the .slt file."
                 ),
             ) from None
 
@@ -652,7 +653,8 @@ class Compound:
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
         """
-
+        if settings.monitor:
+            print("Initialization...")
         if slt is not None:
             slt_group_name = f"{slt}_magnetisation"
             if _group_exists(self._hdf5, slt_group_name):
@@ -4556,7 +4558,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                "Failed to load magnetisation file"
+                "Failed to load magnetisation data. "
                 + BLUE
                 + "Group "
                 + RESET
@@ -4739,7 +4741,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                "Failed to load susceptibility file"
+                "Failed to load susceptibility data. "
                 + BLUE
                 + "Group "
                 + RESET
@@ -4940,7 +4942,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                "Failed to load Helmholtz energy file"
+                "Failed to load energy data. "
                 + BLUE
                 + "Group "
                 + RESET
@@ -5130,7 +5132,7 @@ class Compound:
             raise SltFileError(
                 self._hdf5,
                 exc,
-                f"Failed to load Zeeman splitting file"
+                f"Failed to load Zeeman splitting data. "
                 + BLUE
                 + "Group "
                 + RESET

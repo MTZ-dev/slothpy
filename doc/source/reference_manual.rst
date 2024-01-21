@@ -9,5 +9,6 @@ Reference Manual
 
    creation_methods
    compound
+   settings
    general_utilities
    exporting_module

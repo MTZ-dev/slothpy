@@ -17,7 +17,7 @@
 from typing import Literal
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
-from multiprocessing import Pool
+from multiprocessing import Pool, Process
 from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
@@ -32,6 +32,7 @@ from numpy import (
     exp,
     float64,
     complex128,
+    int64,
     array_equal,
     concatenate,
 )
@@ -50,6 +51,10 @@ from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
     _meshgrid_over_sphere_flatten,
 )
+import time
+from datetime import datetime
+import psutil
+from slothpy.core._config import settings
 
 
 @jit(
@@ -78,8 +83,8 @@ def _calculate_magnetization(
 
 
 @jit(
-    "float64[:,:](complex128[:,:,:], float64[:], float64[:], float64[:,:],"
-    " float64[:])",
+    "(float64[:,:], complex128[:,:,:], float64[:], float64[:], float64[:,:],"
+    " float64[:], int64[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -87,18 +92,18 @@ def _calculate_magnetization(
     inline="always",
 )
 def _mt_over_fields_grid(
-    magnetic_momenta, soc_energies, fields, grid, temperatures
+    mht_array, magnetic_momenta, soc_energies, fields, grid, temperatures, flag
 ):
     magnetic_momenta = ascontiguousarray(magnetic_momenta)
-    mht_array = zeros((fields.shape[0], temperatures.shape[0]), dtype=float64)
 
     for i in range(fields.shape[0]):
         for j in range(grid.shape[0]):
-            zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, fields[i], grid[j, :3]
+            energies, zeeman_matrix = eigh(
+                _calculate_zeeman_matrix(
+                    magnetic_momenta, soc_energies, fields[i], grid[j, :3]
+                )
             )
-            energies, zeeman_matrix = eigh(zeeman_matrix)
-            zeeman_matrix = (
+            zeeman_matrix = diag(
                 zeeman_matrix.conj().T
                 @ (
                     grid[j, 0] * magnetic_momenta[0]
@@ -106,8 +111,7 @@ def _mt_over_fields_grid(
                     + grid[j, 2] * magnetic_momenta[2]
                 )
                 @ zeeman_matrix
-            )
-            zeeman_matrix = diag(zeeman_matrix).real.astype(float64)
+            ).real.astype(float64)
             for t in range(temperatures.shape[0]):
                 mht_array[i, t] += (
                     _calculate_magnetization(
@@ -115,8 +119,7 @@ def _mt_over_fields_grid(
                     )
                     * grid[j, 3]
                 )
-
-    return mht_array
+            flag += 1
 
 
 @jit(
@@ -231,16 +234,19 @@ def _mt_over_grid_fields(
 
 
 def _calculate_mht(
+    mht_array_name: str,
     magnetic_momenta_name: str,
     soc_energies_name: str,
     fields_name: str,
     grid_name: str,
     temperatures_name: str,
+    mht_array_shape: str,
     magnetic_momenta_shape: tuple,
     soc_energies_shape: tuple,
     grid_shape: tuple,
     temperatures_shape: tuple,
     field_chunk: tuple,
+    flag_name,
 ) -> ndarray:
     magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
     magnetic_momenta_array = ndarray(
@@ -260,6 +266,12 @@ def _calculate_mht(
         float64,
         temperatures_shared.buf,
     )
+    flag_shared = SharedMemory(flag_name)
+    flag_array = ndarray(
+        (1,),
+        int64,
+        flag_shared.buf,
+    )
 
     offset = dtype(float64).itemsize * field_chunk[0]
     chunk_length = field_chunk[1] - field_chunk[0]
@@ -267,21 +279,34 @@ def _calculate_mht(
     fields_shared = SharedMemory(fields_name)
     fields_array = ndarray((chunk_length,), float64, fields_shared.buf, offset)
 
+    offset = dtype(float64).itemsize * field_chunk[0] * temperatures_shape[0]
+    chunk_length = field_chunk[1] - field_chunk[0]
+
+    mht_array_shared = SharedMemory(mht_array_name)
+    mht_array_array = ndarray(
+        (chunk_length, temperatures_shape[0]),
+        float64,
+        mht_array_shared.buf,
+        offset,
+    )
+
     # Switch to tensor calculation
-    if array_equal(grid_array, array([1.0])):
-        return _mt_over_fields_tensor(
-            magnetic_momenta_array,
-            soc_energies_array,
-            fields_array,
-            temperatures_array,
-        )
+    # if array_equal(grid_array, array([1.0])):
+    #     return _mt_over_fields_tensor(
+    #         magnetic_momenta_array,
+    #         soc_energies_array,
+    #         fields_array,
+    #         temperatures_array,
+    #     )
 
     return _mt_over_fields_grid(
+        mht_array_array,
         magnetic_momenta_array,
         soc_energies_array,
         fields_array,
         grid_array,
         temperatures_array,
+        flag_array,
     )
 
 
@@ -293,31 +318,37 @@ def _calculate_mht_wrapper(args):
 
 
 def _arg_iter_mht(
+    mht_name,
     magnetic_momenta_name,
     soc_energies_name,
     fields_name,
     grid_name,
     temperatures_name,
+    mht_shape,
     magnetic_momenta_shape,
     soc_energies_shape,
     grid_shape,
     temperatures_shape,
     fields_chunks,
+    flag_name,
 ):
     # Iterator generator for arguments with different field values to be
     # distributed along num_process processes
     for field_chunk in fields_chunks:
         yield (
+            mht_name,
             magnetic_momenta_name,
             soc_energies_name,
             fields_name,
             grid_name,
             temperatures_name,
+            mht_shape,
             magnetic_momenta_shape,
             soc_energies_shape,
             grid_shape,
             temperatures_shape,
             field_chunk,
+            flag_name,
         )
 
 
@@ -351,6 +382,8 @@ def _mth(
     fields = ascontiguousarray(fields, dtype=float64)
     temperatures = ascontiguousarray(temperatures, dtype=float64)
     grid = ascontiguousarray(grid, dtype=float64)
+    mht_array = zeros((fields.shape[0], temperatures.shape[0]), dtype=float64)
+    flag = array([0], dtype=int64)
 
     if array_equal(grid, array([1.0])):
         tensor_calc = True
@@ -364,6 +397,8 @@ def _mth(
         fields_shared = smm.SharedMemory(size=fields.nbytes)
         grid_shared = smm.SharedMemory(size=grid.nbytes)
         temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
+        mht_array_shared = smm.SharedMemory(size=mht_array.nbytes)
+        flag_shared = smm.SharedMemory(size=8)
 
         # Copy data to shared memory
         magnetic_momenta_shared_arr = ndarray(
@@ -387,31 +422,59 @@ def _mth(
             dtype=temperatures.dtype,
             buffer=temperatures_shared.buf,
         )
+        mht_array_shared_arr = ndarray(
+            mht_array.shape,
+            dtype=mht_array.dtype,
+            buffer=mht_array_shared.buf,
+        )
+        flag_shared_arr = ndarray(
+            (1,),
+            dtype=int64,
+            buffer=flag_shared.buf,
+        )
 
         magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
         soc_energies_shared_arr[:] = soc_energies[:]
         fields_shared_arr[:] = fields[:]
         grid_shared_arr[:] = grid[:]
         temperatures_shared_arr[:] = temperatures[:]
+        mht_array_shared_arr[:] = mht_array[:]
+        flag_shared_arr[:] = flag[:]
 
         del magnetic_momenta
         del soc_energies
         del fields
         del grid
         del temperatures
+        del mht_array
+        del flag
 
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 set_num_threads(num_threads)
+                if settings.monitor:
+                    monitor = Process(
+                        target=_monitor_progress,
+                        args=(
+                            flag_shared_arr,
+                            fields_shared_arr.shape[0]
+                            * grid_shared_arr.shape[0],
+                            num_process,
+                            num_threads,
+                        ),
+                    )
+                    monitor.start()
                 with Pool(num_process) as p:
-                    mht = p.map(
+                    p.map(
                         _calculate_mht_wrapper,
                         _arg_iter_mht(
+                            mht_array_shared.name,
                             magnetic_momenta_shared.name,
                             soc_energies_shared.name,
                             fields_shared.name,
                             grid_shared.name,
                             temperatures_shared.name,
+                            mht_array_shared_arr.shape,
                             magnetic_momenta_shared_arr.shape,
                             soc_energies_shared_arr.shape,
                             grid_shared_arr.shape,
@@ -419,17 +482,56 @@ def _mth(
                             _distribute_chunks(
                                 fields_shared_arr.shape[0], num_process
                             ),
+                            flag_shared.name,
                         ),
                     )
+                if settings.monitor:
+                    monitor.join()
+                    monitor.close()
+        mht_array_shared_arr = array(mht_array_shared_arr).T
 
-    # Hidden option for susceptibility tensor calculation.
-    if tensor_calc:
-        return concatenate(mht)
+    # # Hidden option for susceptibility tensor calculation.
+    # if tensor_calc:
+    #     return concatenate(mht)
 
-    # Collecting results in plotting-friendly convention for M(H)
-    mth_array = concatenate(mht).T
+    # # Collecting results in plotting-friendly convention for M(H)
+    # mth_array = concatenate(mht).T
 
-    return mth_array  # Returning values in Bohr magnetons
+    return mht_array_shared_arr  # Returning values in Bohr magnetons
+
+
+def _update_progress_bar(
+    current, total, start_time, num_processes, num_threads
+):
+    percentage = 100 * (current / total)
+    bar_length = 50
+    filled_length = int(bar_length * current // total)
+    bar = "#" * filled_length + "-" * (bar_length - filled_length)
+    current_time = time.perf_counter() - start_time
+    memory_usage = psutil.virtual_memory().percent
+    cpu_usage = psutil.cpu_percent()
+    print(
+        f"\rProgress: |{bar}| {percentage:.2f}% | Time: {current_time:.1f} s |"
+        f" CPU Usage: {cpu_usage:.1f}% | Memory Usage: {memory_usage}% |"
+        f" Processes: {num_processes} | Threads per Process: {num_threads} ",
+        end="\r",
+    )
+
+
+def _monitor_progress(shared_counter, N, num_processes, num_threads):
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"Calculate Magnetisation started: {current_time}")
+    start_time = time.perf_counter()
+    while True:
+        current_value = shared_counter[0]
+        _update_progress_bar(
+            current_value, N, start_time, num_processes, num_threads
+        )
+        if current_value >= N:
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"\nCompleated: {current_time}")
+            break
+        time.sleep(0.19)
 
 
 def _arg_iter_mght(

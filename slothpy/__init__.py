@@ -16,12 +16,19 @@
 
 from multiprocessing import current_process
 
-from .core import compound_from_orca, compound_from_slt, compound_from_molcas
+from .core import (
+    compound_from_orca,
+    compound_from_slt,
+    compound_from_molcas,
+    settings,
+    turn_on_monitor,
+    turn_off_monitor,
+    set_plain_error_reporting_mode,
+    set_default_error_reporting_mode,
+)
 from ._general_utilities import (
     lebedev_laikov_grid,
     color_map,
-    set_default_error_reporting_mode,
-    set_plain_error_reporting_mode,
 )
 from .core import Compound
 from . import exporting
@@ -31,10 +38,13 @@ __all__ = [
     "compound_from_molcas",
     "compound_from_orca",
     "Compound",
-    "lebedev_laikov_grid",
-    "colour_map",
+    "settings",
+    "turn_on_monitor",
+    "turn_off_monitor",
     "set_default_error_reporting_mode",
     "set_plain_error_reporting_mode",
+    "lebedev_laikov_grid",
+    "colour_map",
     "exporting",
 ]
 

@@ -98,8 +98,9 @@ if current_process().name == "MainProcess":
         " program comes with ABSOLUTELY NO WARRANTY.\nThis is free software,"
         " and you are welcome to redistribute it.\nThe default is chosen to"
         " omit the tracebacks completely. To change it use"
-        " slt.set_default_error_reporting_mode method for the printing of"
-        " tracebacks."
+        " slt.set_default_error_reporting_mode() method for the printing of"
+        " tracebacks.\nTurn on the SlothPy Monitor utility using"
+        " slt.turn_on_monitor()."
     )
 
 set_plain_error_reporting_mode()

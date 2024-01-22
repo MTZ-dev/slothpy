@@ -103,4 +103,4 @@ if current_process().name == "MainProcess":
         " slt.turn_on_monitor()."
     )
 
-# set_plain_error_reporting_mode()
+set_plain_error_reporting_mode()

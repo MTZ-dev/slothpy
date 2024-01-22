@@ -23,10 +23,7 @@ from numpy import (
     ndarray,
     dtype,
     array,
-    reshape,
-    transpose,
     vdot,
-    dot,
     sum,
     zeros,
     ascontiguousarray,
@@ -116,20 +113,14 @@ def _mt_over_fields_grid(
                 )
             )
             orientation *= grid[j, 3]
-            moments_tmp = zeros(
-                (zeeman_matrix.shape[0] ** 2,), dtype=complex128
-            )
-            dot(
-                reshape(
-                    ascontiguousarray(transpose(magnetic_momenta, (1, 2, 0))),
-                    (zeeman_matrix.shape[0] ** 2, 3),
-                ),
-                orientation,
-                out=moments_tmp,
-            )
-            moments_tmp = reshape(moments_tmp, zeeman_matrix.shape)
             zeeman_matrix = diag(
-                zeeman_matrix.conj().T @ (moments_tmp) @ zeeman_matrix
+                zeeman_matrix.conj().T
+                @ (
+                    orientation[0] * magnetic_momenta[0]
+                    + orientation[1] * magnetic_momenta[1]
+                    + orientation[2] * magnetic_momenta[2]
+                )
+                @ zeeman_matrix
             ).real.astype(float64)
             for t in range(temperatures.shape[0]):
                 mht_array[i, t] += _calculate_magnetization(
@@ -229,10 +220,7 @@ def _mt_over_grid_fields(
 
         for f in range(fields_shape_0):
             zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta,
-                soc_energies,
-                fields[f],
-                grid[g].astype(complex128),
+                magnetic_momenta, soc_energies, fields[f], grid[g]
             )
             eigenvalues, eigenvectors = eigh(zeeman_matrix)
 

@@ -22,7 +22,10 @@ from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
     dtype,
+    reshape,
+    transpose,
     sum,
+    dot,
     vdot,
     zeros,
     ascontiguousarray,
@@ -50,7 +53,7 @@ from slothpy._general_utilities._grids_over_sphere import (
 
 
 @jit(
-    "complex128[:,:](complex128[:,:,:], float64[:], float64, float64[:])",
+    "complex128[:,:](complex128[:,:,:], float64[:], float64, complex128[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -60,18 +63,23 @@ from slothpy._general_utilities._grids_over_sphere import (
 def _calculate_zeeman_matrix(
     magnetic_momenta, soc_energies, field, orientation
 ):
-    orientation = -field * MU_B * orientation
-    magnetic_momenta = ascontiguousarray(
-        magnetic_momenta[0] * orientation[0]
-        + magnetic_momenta[1] * orientation[1]
-        + magnetic_momenta[2] * orientation[2]
+    shape = magnetic_momenta.shape[1]
+    orientation = ascontiguousarray(-field * MU_B * orientation)
+    magnetic_momenta_tmp = zeros((shape**2), dtype=complex128)
+    dot(
+        reshape(
+            ascontiguousarray(transpose(magnetic_momenta, (1, 2, 0))),
+            (shape**2, 3),
+        ),
+        orientation,
+        out=magnetic_momenta_tmp,
     )
-
+    magnetic_momenta_tmp = reshape(magnetic_momenta_tmp, (shape, shape))
     # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
-    for k in range(magnetic_momenta.shape[0]):
-        magnetic_momenta[k, k] += soc_energies[k]
+    for k in range(shape):
+        magnetic_momenta_tmp[k, k] += soc_energies[k]
 
-    return magnetic_momenta
+    return ascontiguousarray(magnetic_momenta_tmp)
 
 
 @jit(
@@ -111,7 +119,7 @@ def _zeeman_over_fields_grid(
 
         # Perform calculations for each magnetic field orientation
         for j in range(grid_shape_0):
-            orientation = grid[j, :3]
+            orientation = grid[j, :3].astype(complex128)
 
             zeeman_matrix = _calculate_zeeman_matrix(
                 magnetic_momenta, soc_energies, fields[i], orientation
@@ -342,7 +350,10 @@ def _get_zeeman_matrix(
     for f, field in enumerate(fields):
         for o, orientation in enumerate(orientations):
             zeeman_matrix[f, o, :, :] = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, field, orientation
+                magnetic_momenta,
+                soc_energies,
+                field,
+                orientation.astype(complex128),
             )
 
     return zeeman_matrix
@@ -417,7 +428,7 @@ def _helmholtz_energyt_over_fields_grid(
         # Perform calculations for each magnetic field orientation
         for j in range(grid_shape_0):
             # Construct Zeeman matrix
-            orientation = grid[j, :3]
+            orientation = grid[j, :3].astype(complex128)
 
             zeeman_matrix = _calculate_zeeman_matrix(
                 magnetic_momenta, soc_energies, fields[i], orientation
@@ -468,7 +479,7 @@ def _internal_energyt_over_fields_grid(
         # Perform calculations for each magnetic field orientation
         for j in range(grid_shape_0):
             # Construct Zeeman matrix
-            orientation = grid[j, :3]
+            orientation = grid[j, :3].astype(complex128)
 
             zeeman_matrix = _calculate_zeeman_matrix(
                 magnetic_momenta, soc_energies, fields[i], orientation
@@ -523,7 +534,10 @@ def _helmholtz_energyt_over_grid_fields(
             # Construct Zeeman matrix
 
             zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, fields[f], grid[g]
+                magnetic_momenta,
+                soc_energies,
+                fields[f],
+                grid[g].astype(complex128),
             )
 
             # Diagonalize full Hamiltonian matrix
@@ -574,7 +588,10 @@ def _internal_energyt_over_grid_fields(
             # Construct Zeeman matrix
 
             zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, fields[f], grid[g]
+                magnetic_momenta,
+                soc_energies,
+                fields[f],
+                grid[g].astype(complex128),
             )
 
             # Diagonalize full Hamiltonian matrix

@@ -23,7 +23,10 @@ from numpy import (
     ndarray,
     dtype,
     array,
+    reshape,
+    transpose,
     vdot,
+    dot,
     sum,
     zeros,
     ascontiguousarray,
@@ -92,34 +95,47 @@ def _calculate_magnetization(
     inline="always",
 )
 def _mt_over_fields_grid(
-    mht_array, magnetic_momenta, soc_energies, fields, grid, temperatures, flag
+    mht_array,
+    magnetic_momenta,
+    soc_energies,
+    fields,
+    grid,
+    temperatures,
+    progress,
 ):
     magnetic_momenta = ascontiguousarray(magnetic_momenta)
 
     for i in range(fields.shape[0]):
         for j in range(grid.shape[0]):
+            orientation = ascontiguousarray(
+                grid[j, :3].copy().astype(complex128)
+            )
             energies, zeeman_matrix = eigh(
                 _calculate_zeeman_matrix(
-                    magnetic_momenta, soc_energies, fields[i], grid[j, :3]
+                    magnetic_momenta, soc_energies, fields[i], orientation
                 )
             )
+            orientation *= grid[j, 3]
+            moments_tmp = zeros(
+                (zeeman_matrix.shape[0] ** 2,), dtype=complex128
+            )
+            dot(
+                reshape(
+                    ascontiguousarray(transpose(magnetic_momenta, (1, 2, 0))),
+                    (zeeman_matrix.shape[0] ** 2, 3),
+                ),
+                orientation,
+                out=moments_tmp,
+            )
+            moments_tmp = reshape(moments_tmp, zeeman_matrix.shape)
             zeeman_matrix = diag(
-                zeeman_matrix.conj().T
-                @ (
-                    grid[j, 0] * magnetic_momenta[0]
-                    + grid[j, 1] * magnetic_momenta[1]
-                    + grid[j, 2] * magnetic_momenta[2]
-                )
-                @ zeeman_matrix
+                zeeman_matrix.conj().T @ (moments_tmp) @ zeeman_matrix
             ).real.astype(float64)
             for t in range(temperatures.shape[0]):
-                mht_array[i, t] += (
-                    _calculate_magnetization(
-                        energies, zeeman_matrix, temperatures[t]
-                    )
-                    * grid[j, 3]
+                mht_array[i, t] += _calculate_magnetization(
+                    energies, zeeman_matrix, temperatures[t]
                 )
-            flag += 1
+            progress += 1
 
 
 @jit(
@@ -213,7 +229,10 @@ def _mt_over_grid_fields(
 
         for f in range(fields_shape_0):
             zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, fields[f], grid[g]
+                magnetic_momenta,
+                soc_energies,
+                fields[f],
+                grid[g].astype(complex128),
             )
             eigenvalues, eigenvectors = eigh(zeeman_matrix)
 
@@ -246,7 +265,7 @@ def _calculate_mht(
     grid_shape: tuple,
     temperatures_shape: tuple,
     field_chunk: tuple,
-    flag_name,
+    progress_name,
     index,
 ) -> ndarray:
     magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
@@ -267,9 +286,9 @@ def _calculate_mht(
         float64,
         temperatures_shared.buf,
     )
-    flag_shared = SharedMemory(flag_name)
-    flag_array = ndarray(
-        (1,), int64, flag_shared.buf, index * dtype(int64).itemsize
+    progress_shared = SharedMemory(progress_name)
+    progress_array = ndarray(
+        (1,), int64, progress_shared.buf, index * dtype(int64).itemsize
     )
 
     offset = dtype(float64).itemsize * field_chunk[0]
@@ -305,7 +324,7 @@ def _calculate_mht(
         fields_array,
         grid_array,
         temperatures_array,
-        flag_array,
+        progress_array,
     )
 
 
@@ -329,7 +348,7 @@ def _arg_iter_mht(
     grid_shape,
     temperatures_shape,
     fields_chunks,
-    flag_name,
+    progress_name,
 ):
     # Iterator generator for arguments with different field values to be
     # distributed along num_process processes
@@ -347,7 +366,7 @@ def _arg_iter_mht(
             grid_shape,
             temperatures_shape,
             field_chunk,
-            flag_name,
+            progress_name,
             index,
         )
 
@@ -383,7 +402,7 @@ def _mth(
     temperatures = ascontiguousarray(temperatures, dtype=float64)
     grid = ascontiguousarray(grid, dtype=float64)
     mht_array = zeros((fields.shape[0], temperatures.shape[0]), dtype=float64)
-    flag = zeros((num_process,), dtype=int64)
+    progress = zeros((num_process,), dtype=int64)
 
     if array_equal(grid, array([1.0])):
         tensor_calc = True
@@ -398,7 +417,7 @@ def _mth(
         grid_shared = smm.SharedMemory(size=grid.nbytes)
         temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
         mht_array_shared = smm.SharedMemory(size=mht_array.nbytes)
-        flag_shared = smm.SharedMemory(size=flag.nbytes)
+        progress_shared = smm.SharedMemory(size=progress.nbytes)
 
         # Copy data to shared memory
         magnetic_momenta_shared_arr = ndarray(
@@ -427,10 +446,10 @@ def _mth(
             dtype=mht_array.dtype,
             buffer=mht_array_shared.buf,
         )
-        flag_shared_arr = ndarray(
-            flag.shape,
+        progress_shared_arr = ndarray(
+            progress.shape,
             dtype=int64,
-            buffer=flag_shared.buf,
+            buffer=progress_shared.buf,
         )
 
         magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
@@ -439,7 +458,7 @@ def _mth(
         grid_shared_arr[:] = grid[:]
         temperatures_shared_arr[:] = temperatures[:]
         mht_array_shared_arr[:] = mht_array[:]
-        flag_shared_arr[:] = flag[:]
+        progress_shared_arr[:] = progress[:]
 
         del magnetic_momenta
         del soc_energies
@@ -447,7 +466,7 @@ def _mth(
         del grid
         del temperatures
         del mht_array
-        del flag
+        del progress
 
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
@@ -456,7 +475,7 @@ def _mth(
                     monitor = Process(
                         target=_monitor_progress,
                         args=(
-                            flag_shared_arr,
+                            progress_shared_arr,
                             fields_shared_arr.shape[0]
                             * grid_shared_arr.shape[0],
                             num_process,
@@ -482,7 +501,7 @@ def _mth(
                             _distribute_chunks(
                                 fields_shared_arr.shape[0], num_process
                             ),
-                            flag_shared.name,
+                            progress_shared.name,
                         ),
                     )
                 if settings.monitor:

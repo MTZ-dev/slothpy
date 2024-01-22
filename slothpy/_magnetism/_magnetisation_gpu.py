@@ -14,8 +14,8 @@ from numpy import (
     diag,
     newaxis,
     exp,
-    float64,
-    complex128,
+    float32,
+    complex64,
     array_equal,
     concatenate,
 )
@@ -40,13 +40,13 @@ import cupy as cp
 # def _mth(
 #     filename: str,
 #     group: str,
-#     fields: ndarray[float64],
-#     grid: ndarray[float64],
-#     temperatures: ndarray[float64],
+#     fields: ndarray[float32],
+#     grid: ndarray[float32],
+#     temperatures: ndarray[float32],
 #     states_cutoff: int,
 #     num_cpu: int,
 #     num_threads: int,
-#     rotation: ndarray[float64] = None,
+#     rotation: ndarray[float32] = None,
 # ) -> ndarray:
 #     # Read data from HDF5 file
 #     (
@@ -57,20 +57,20 @@ import cupy as cp
 #     )
 
 #     #  Allocate GPU arrays as contiguous
-#     magnetic_momenta_cp = cp.array(magnetic_momenta, dtype=cp.complex128)
-#     soc_energies_cp = cp.array(soc_energies, dtype=cp.float64)
-#     fields_cp = cp.array(fields, dtype=cp.float64)
-#     temperatures_cp = cp.array(temperatures, dtype=cp.float64)
-#     grid_cp = cp.array(grid, dtype=cp.float64)
+#     magnetic_momenta_cp = cp.array(magnetic_momenta, dtype=cp.complex64)
+#     soc_energies_cp = cp.array(soc_energies, dtype=cp.float32)
+#     fields_cp = cp.array(fields, dtype=cp.float32)
+#     temperatures_cp = cp.array(temperatures, dtype=cp.float32)
+#     grid_cp = cp.array(grid, dtype=cp.float32)
 #     magnetic_momenta_cp = cp.ascontiguousarray(
-#         magnetic_momenta_cp, dtype=cp.complex128
+#         magnetic_momenta_cp, dtype=cp.complex64
 #     )
-#     soc_energies_cp = cp.ascontiguousarray(soc_energies_cp, dtype=cp.float64)
-#     fields_cp = cp.ascontiguousarray(fields_cp, dtype=cp.float64)
-#     temperatures_cp = cp.ascontiguousarray(temperatures_cp, dtype=cp.float64)
-#     grid_cp = cp.ascontiguousarray(grid_cp, dtype=cp.float64)
+#     soc_energies_cp = cp.ascontiguousarray(soc_energies_cp, dtype=cp.float32)
+#     fields_cp = cp.ascontiguousarray(fields_cp, dtype=cp.float32)
+#     temperatures_cp = cp.ascontiguousarray(temperatures_cp, dtype=cp.float32)
+#     grid_cp = cp.ascontiguousarray(grid_cp, dtype=cp.float32)
 #     mth_array = cp.zeros(
-#         (temperatures.shape[0], fields.shape[0]), dtype=cp.float64
+#         (temperatures.shape[0], fields.shape[0]), dtype=cp.float32
 #     )
 
 #     del magnetic_momenta
@@ -125,7 +125,7 @@ import cupy as cp
 #         -(zeeman_energies[:, cp.newaxis] - zeeman_energies[0]) / KB_temps
 #     )
 #     mth_array[:, field_i] += cp.dot(
-#         cp.diag(zeeman_matrix).real.astype(cp.float64), zeeman_expanded
+#         cp.diag(zeeman_matrix).real.astype(cp.float32), zeeman_expanded
 #     ) / cp.sum(zeeman_expanded, axis=0)
 #     print(f"{field_i}, {grid_j}")
 
@@ -199,11 +199,11 @@ import cupy as cp
 #     )
 
 #     # Convert to CuPy arrays
-#     magnetic_momenta_cp = cp.array(magnetic_momenta, dtype=cp.complex128)
-#     soc_energies_cp = cp.array(soc_energies, dtype=cp.float64)
-#     fields_cp = cp.array(fields, dtype=cp.float64)
-#     temperatures_cp = cp.array(temperatures, dtype=cp.float64)
-#     grid_cp = cp.array(grid, dtype=cp.float64)
+#     magnetic_momenta_cp = cp.array(magnetic_momenta, dtype=cp.complex64)
+#     soc_energies_cp = cp.array(soc_energies, dtype=cp.float32)
+#     fields_cp = cp.array(fields, dtype=cp.float32)
+#     temperatures_cp = cp.array(temperatures, dtype=cp.float32)
+#     grid_cp = cp.array(grid, dtype=cp.float32)
 
 #     # Call the magnetisation function
 #     mth_array = _magnetisation(

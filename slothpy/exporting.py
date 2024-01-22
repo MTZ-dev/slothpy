@@ -24,7 +24,7 @@ from docx import Document as Doc
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
-from numpy import array, float64
+from numpy import array, float32
 
 from slothpy.core.compound_object import Compound
 from slothpy.core._slothpy_exceptions import (
@@ -416,7 +416,7 @@ def axes_in_xyz(
     xyz_path: str,
     xyz_file_name: str,
     doublet_number: int = 0,
-    scale_factor: float64 = 1,
+    scale_factor: float32 = 1,
     output_path: str = "./",
 ):
     """
@@ -439,7 +439,7 @@ def axes_in_xyz(
         Symbol of a unique central atom from which axes will begin.
     doublet_number : int, optional
         Number of the doublet whose magnetic axes will be added., by default 0
-    scale_factor : float64, optional
+    scale_factor : float32, optional
         Factor by which the lengths of the axes will be scaled., by default 1
     output_path : str, optional
         Path to which .xyz output file with the suffix _axes will be saved.,
@@ -603,7 +603,7 @@ def axes_in_mol2(
         Name of a central atom from which axes will begin.
     doublet_number : int = 0
         Number of the doublet whose magnetic axes will be added., by default 0
-    scale_factor : float64 = 1
+    scale_factor : float32 = 1
         Factor by which the lengths of the axes will be scaled., by default 1
     output_path : str = "./"
         Path to which .mol2 output file with the suffix _axes will be saved.,

@@ -28,9 +28,9 @@ from numpy import (
     min,
     max,
     power,
-    float64,
+    float32,
     int64,
-    complex128,
+    complex64,
 )
 from numpy.linalg import eigh, inv
 from numba import jit
@@ -38,7 +38,7 @@ from slothpy._general_utilities._constants import GE
 from slothpy.core._slothpy_exceptions import SltInputError
 
 
-@jit("float64(float64, float64)", nopython=True, cache=True, nogil=True)
+@jit("float32(float32, float32)", nopython=True, cache=True, nogil=True)
 def _binom(n, k):
     if k > n - k:
         k = n - k
@@ -50,7 +50,7 @@ def _binom(n, k):
 
 
 @jit(
-    "float64(float64, float64, float64, float64, float64, float64)",
+    "float32(float32, float32, float32, float32, float32, float32)",
     nopython=True,
     cache=True,
     nogil=True,
@@ -103,7 +103,7 @@ def Clebsh_Gordan(j1, m1, j2, m2, j3, m3):
 
 
 @jit(
-    "float64(float64, float64, float64, float64, float64, float64)",
+    "float32(float32, float32, float32, float32, float32, float32)",
     nopython=True,
     cache=True,
     nogil=True,
@@ -116,7 +116,7 @@ def _Wigner_3j(j1, j2, j3, m1, m2, m3):
     )
 
 
-def _finite_diff_stencil(diff_order: int, num_of_points: int, step: float64):
+def _finite_diff_stencil(diff_order: int, num_of_points: int, step: float32):
     stencil_len = 2 * num_of_points + 1
 
     if diff_order >= stencil_len:
@@ -143,7 +143,7 @@ def _finite_diff_stencil(diff_order: int, num_of_points: int, step: float64):
 
 
 @jit(
-    "complex128[:,:](complex128[:,:], complex128[:,:])",
+    "complex64[:,:](complex64[:,:], complex64[:,:])",
     nopython=True,
     cache=True,
     nogil=True,
@@ -157,7 +157,7 @@ def _hermitian_x_in_basis_of_hermitian_y(x_matrix, y_matrix):
 
 
 @jit(
-    "float64[:,:](complex128[:,:])",
+    "float32[:,:](complex64[:,:])",
     nopython=True,
     cache=True,
     nogil=True,
@@ -171,7 +171,7 @@ def _decomposition_of_hermitian_matrix(matrix):
 
 def _normalize_grid_vectors(grid):
     try:
-        grid = array(grid, dtype=float64)
+        grid = array(grid, dtype=float32)
     except Exception as exc:
         raise SltInputError(exc) from None
 
@@ -206,7 +206,7 @@ def _normalize_grid_vectors(grid):
 
 def _normalize_orientations(orientations):
     try:
-        orientations = array(orientations, dtype=float64)
+        orientations = array(orientations, dtype=float32)
     except Exception as exc:
         raise SltInputError(exc) from None
 
@@ -237,7 +237,7 @@ def _normalize_orientations(orientations):
 
 def _normalize_orientation(orientation):
     try:
-        orientation = array(orientation, dtype=float64)
+        orientation = array(orientation, dtype=float32)
     except Exception as exc:
         raise SltInputError(exc) from None
 
@@ -264,19 +264,19 @@ def _normalize_orientation(orientation):
 
 
 @jit(
-    "complex128[:,:,:](complex128[:,:,:], int64, int64)",
+    "complex64[:,:,:](complex64[:,:,:], int64, int64)",
     nopython=True,
     cache=True,
     nogil=True,
     fastmath=True,
 )
 def _magnetic_momenta_from_angular_momenta(
-    angular_momenta: ndarray[complex128], start: int = 0, stop: int = 0
+    angular_momenta: ndarray[complex64], start: int = 0, stop: int = 0
 ):
     if stop == 0:
         stop = angular_momenta.shape[0]
     size = stop - start
-    magnetic_momenta = zeros((3, size, size), dtype=complex128)
+    magnetic_momenta = zeros((3, size, size), dtype=complex64)
 
     # Compute and save magnetic momenta in a.u.
     magnetic_momenta[0] = -(
@@ -297,19 +297,19 @@ def _magnetic_momenta_from_angular_momenta(
 
 
 @jit(
-    "complex128[:,:,:](complex128[:,:,:], int64, int64)",
+    "complex64[:,:,:](complex64[:,:,:], int64, int64)",
     nopython=True,
     cache=True,
     nogil=True,
     fastmath=True,
 )
 def _total_angular_momenta_from_angular_momenta(
-    angular_momenta: ndarray[complex128], start: int = 0, stop: int = 0
+    angular_momenta: ndarray[complex64], start: int = 0, stop: int = 0
 ):
     if stop == 0:
         stop = angular_momenta.shape[0]
     size = stop - start
-    total_angular_momenta = zeros((3, size, size), dtype=complex128)
+    total_angular_momenta = zeros((3, size, size), dtype=complex64)
 
     # Compute and save magnetic momenta in a.u.
     total_angular_momenta[0] = (

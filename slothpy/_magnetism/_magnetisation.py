@@ -30,8 +30,8 @@ from numpy import (
     diag,
     newaxis,
     exp,
-    float64,
-    complex128,
+    float32,
+    complex64,
     int64,
     array_equal,
     concatenate,
@@ -58,7 +58,7 @@ from slothpy.core._config import settings
 
 
 @jit(
-    "float64(float64[:], float64[:], float64)",
+    "float32(float32[:], float32[:], float32)",
     nopython=True,
     nogil=True,
     cache=True,
@@ -66,8 +66,8 @@ from slothpy.core._config import settings
     inline="always",
 )
 def _calculate_magnetization(
-    energies: ndarray, states_momenta: ndarray, temperature: float64
-) -> float64:
+    energies: ndarray, states_momenta: ndarray, temperature: float32
+) -> float32:
     energies = ascontiguousarray(energies)
     states_momenta = ascontiguousarray(states_momenta)
     # Boltzman weights
@@ -77,14 +77,14 @@ def _calculate_magnetization(
     z = sum(energies)
 
     # Weighted magnetic moments of microstates
-    m = vdot(states_momenta, energies)
+    m = vdot(states_momenta, energies.astype(float32))
 
     return m / z
 
 
 @jit(
-    "(float64[:,:], complex128[:,:,:], float64[:], float64[:], float64[:,:],"
-    " float64[:], int64[:])",
+    "(float32[:,:], complex64[:,:,:], float32[:], float32[:], float32[:,:],"
+    " float32[:], int64[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -105,13 +105,15 @@ def _mt_over_fields_grid(
     for i in range(fields.shape[0]):
         for j in range(grid.shape[0]):
             orientation = ascontiguousarray(
-                grid[j, :3].copy().astype(complex128)
+                grid[j, :3].copy().astype(complex64)
             )
             energies, zeeman_matrix = eigh(
                 _calculate_zeeman_matrix(
                     magnetic_momenta, soc_energies, fields[i], orientation
                 )
             )
+            energies = energies.astype(float32)
+            zeeman_matrix = zeeman_matrix.astype(complex64)
             orientation *= grid[j, 3]
             zeeman_matrix = diag(
                 zeeman_matrix.conj().T
@@ -121,7 +123,7 @@ def _mt_over_fields_grid(
                     + orientation[2] * magnetic_momenta[2]
                 )
                 @ zeeman_matrix
-            ).real.astype(float64)
+            ).real.astype(float32)
             for t in range(temperatures.shape[0]):
                 mht_array[i, t] += _calculate_magnetization(
                     energies, zeeman_matrix, temperatures[t]
@@ -130,7 +132,7 @@ def _mt_over_fields_grid(
 
 
 @jit(
-    "float64[:,:,:,:](complex128[:,:,:], float64[:], float64[:], float64[:])",
+    "float32[:,:,:,:](complex64[:,:,:], float32[:], float32[:], float32[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -146,13 +148,13 @@ def _mt_over_fields_tensor(
     temperatures_shape_0 = temperatures.shape[0]
 
     mht_tensor_array = ascontiguousarray(
-        zeros((fields_shape_0, temperatures_shape_0, 3, 3), dtype=float64)
+        zeros((fields_shape_0, temperatures_shape_0, 3, 3), dtype=float32)
     )
 
     for f in range(fields_shape_0):
         # Initialize arrays
         mt_tensor_array = ascontiguousarray(
-            zeros((temperatures_shape_0, 3, 3), dtype=float64)
+            zeros((temperatures_shape_0, 3, 3), dtype=float32)
         )
 
         # Perform calculations for each tensor component
@@ -165,6 +167,8 @@ def _mt_over_fields_tensor(
 
                 # Diagonalize full Hamiltonian matrix
                 eigenvalues, eigenvectors = eigh(zeeman_matrix)
+                eigenvalues = eigenvalues.astype(float32)
+                eigenvectors = eigenvectors.astype(complex64)
                 magnetic_momenta = ascontiguousarray(magnetic_momenta)
 
                 # Transform momentum according to the new eigenvectors
@@ -173,7 +177,7 @@ def _mt_over_fields_tensor(
                 )
 
                 # Get diagonal momenta of the new states
-                states_momenta = diag(states_momenta).real.astype(float64)
+                states_momenta = diag(states_momenta).real.astype(float32)
 
                 # Compute partition function and magnetization for each T
                 for t in range(temperatures.shape[0]):
@@ -186,8 +190,8 @@ def _mt_over_fields_tensor(
 
 
 @jit(
-    "float64[:,:,:](complex128[:,:,:], float64[:], float64[:], float64[:,:],"
-    " float64[:])",
+    "float32[:,:,:](complex64[:,:,:], float32[:], float32[:], float32[:,:],"
+    " float32[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -205,12 +209,12 @@ def _mt_over_grid_fields(
     grid_shape_0 = grid.shape[0]
 
     mght_array = zeros(
-        (grid_shape_0, fields_shape_0, temperatures_shape_0), dtype=float64
+        (grid_shape_0, fields_shape_0, temperatures_shape_0), dtype=float32
     )
 
     for g in range(grid_shape_0):
         mht_array = zeros(
-            (fields_shape_0, temperatures_shape_0), dtype=float64
+            (fields_shape_0, temperatures_shape_0), dtype=float32
         )
         grid_momenta = (
             grid[g, 0] * magnetic_momenta[0]
@@ -223,12 +227,14 @@ def _mt_over_grid_fields(
                 magnetic_momenta, soc_energies, fields[f], grid[g]
             )
             eigenvalues, eigenvectors = eigh(zeeman_matrix)
+            eigenvalues = eigenvalues.astype(float32)
+            eigenvectors = eigenvectors.astype(complex64)
 
             states_momenta = (
                 eigenvectors.conj().T @ grid_momenta @ eigenvectors
             )
 
-            states_momenta_diag = diag(states_momenta).real.astype(float64)
+            states_momenta_diag = diag(states_momenta).real.astype(float32)
 
             for t in range(temperatures_shape_0):
                 mht_array[f, t] = _calculate_magnetization(
@@ -259,19 +265,19 @@ def _calculate_mht(
     magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
     magnetic_momenta_array = ndarray(
         magnetic_momenta_shape,
-        complex128,
+        complex64,
         magnetic_momenta_shared.buf,
     )
     soc_energies_shared = SharedMemory(soc_energies_name)
     soc_energies_array = ndarray(
-        soc_energies_shape, float64, soc_energies_shared.buf
+        soc_energies_shape, float32, soc_energies_shared.buf
     )
     grid_shared = SharedMemory(grid_name)
-    grid_array = ndarray(grid_shape, float64, grid_shared.buf)
+    grid_array = ndarray(grid_shape, float32, grid_shared.buf)
     temperatures_shared = SharedMemory(temperatures_name)
     temperatures_array = ndarray(
         temperatures_shape,
-        float64,
+        float32,
         temperatures_shared.buf,
     )
     progress_shared = SharedMemory(progress_name)
@@ -279,19 +285,19 @@ def _calculate_mht(
         (1,), int64, progress_shared.buf, index * dtype(int64).itemsize
     )
 
-    offset = dtype(float64).itemsize * field_chunk[0]
+    offset = dtype(float32).itemsize * field_chunk[0]
     chunk_length = field_chunk[1] - field_chunk[0]
 
     fields_shared = SharedMemory(fields_name)
-    fields_array = ndarray((chunk_length,), float64, fields_shared.buf, offset)
+    fields_array = ndarray((chunk_length,), float32, fields_shared.buf, offset)
 
-    offset = dtype(float64).itemsize * field_chunk[0] * temperatures_shape[0]
+    offset = dtype(float32).itemsize * field_chunk[0] * temperatures_shape[0]
     chunk_length = field_chunk[1] - field_chunk[0]
 
     mht_array_shared = SharedMemory(mht_array_name)
     mht_array_array = ndarray(
         (chunk_length, temperatures_shape[0]),
-        float64,
+        float32,
         mht_array_shared.buf,
         offset,
     )
@@ -362,13 +368,13 @@ def _arg_iter_mht(
 def _mth(
     filename: str,
     group: str,
-    fields: ndarray[float64],
-    grid: ndarray[float64],
-    temperatures: ndarray[float64],
+    fields: ndarray[float32],
+    grid: ndarray[float32],
+    temperatures: ndarray[float32],
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
-    rotation: ndarray[float64] = None,
+    rotation: ndarray[float32] = None,
 ) -> ndarray:
     # Flag for tensor calculation
     tensor_calc = False
@@ -386,10 +392,10 @@ def _mth(
     )
 
     #  Allocate arrays as contiguous
-    fields = ascontiguousarray(fields, dtype=float64)
-    temperatures = ascontiguousarray(temperatures, dtype=float64)
-    grid = ascontiguousarray(grid, dtype=float64)
-    mht_array = zeros((fields.shape[0], temperatures.shape[0]), dtype=float64)
+    fields = ascontiguousarray(fields, dtype=float32)
+    temperatures = ascontiguousarray(temperatures, dtype=float32)
+    grid = ascontiguousarray(grid, dtype=float32)
+    mht_array = zeros((fields.shape[0], temperatures.shape[0]), dtype=float32)
     progress = zeros((num_process,), dtype=int64)
 
     if array_equal(grid, array([1.0])):
@@ -585,27 +591,27 @@ def _calculate_mght(
     magnetic_momenta_shared = SharedMemory(magnetic_momenta_name)
     magnetic_momenta_array = ndarray(
         magnetic_momenta_shape,
-        complex128,
+        complex64,
         magnetic_momenta_shared.buf,
     )
     soc_energies_shared = SharedMemory(soc_energies_name)
     soc_energies_array = ndarray(
-        soc_energies_shape, float64, soc_energies_shared.buf
+        soc_energies_shape, float32, soc_energies_shared.buf
     )
     fields_shared = SharedMemory(fields_name)
-    fields_array = ndarray(fields_shape, float64, fields_shared.buf)
+    fields_array = ndarray(fields_shape, float32, fields_shared.buf)
     temperatures_shared = SharedMemory(temperatures_name)
     temperatures_array = ndarray(
         temperatures_shape,
-        float64,
+        float32,
         temperatures_shared.buf,
     )
 
-    offset = dtype(float64).itemsize * grid_chunk[0] * 3
+    offset = dtype(float32).itemsize * grid_chunk[0] * 3
     chunk_length = grid_chunk[1] - grid_chunk[0]
 
     grid_shared = SharedMemory(grid_name)
-    grid_array = ndarray((chunk_length, 3), float64, grid_shared.buf, offset)
+    grid_array = ndarray((chunk_length, 3), float32, grid_shared.buf, offset)
 
     return _mt_over_grid_fields(
         magnetic_momenta_array,
@@ -664,9 +670,9 @@ def _mag_3d(
     )
 
     #  Allocate arrays as contiguous
-    fields = ascontiguousarray(fields, dtype=float64)
-    temperatures = ascontiguousarray(temperatures, dtype=float64)
-    grid = ascontiguousarray(grid, dtype=float64)
+    fields = ascontiguousarray(fields, dtype=float32)
+    temperatures = ascontiguousarray(temperatures, dtype=float32)
+    grid = ascontiguousarray(grid, dtype=float32)
 
     with SharedMemoryManager() as smm:
         # Create shared memory for arrays

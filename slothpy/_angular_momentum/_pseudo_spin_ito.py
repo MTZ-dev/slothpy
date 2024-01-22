@@ -28,8 +28,8 @@ from numpy import (
     sqrt,
     int32,
     int64,
-    float64,
-    complex128,
+    float32,
+    complex64,
     mean,
 )
 from numba import jit
@@ -45,7 +45,7 @@ from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
 
 
 @jit(
-    "complex128[:,:](complex128[:,:,:], complex128[:,:])",
+    "complex64[:,:](complex64[:,:,:], complex64[:,:])",
     nopython=True,
     cache=True,
     nogil=True,
@@ -72,7 +72,7 @@ def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
     )
 
     # Initialize phases of vectors with the first one = 1
-    c = zeros(momenta_matrix.shape[1], dtype=complex128)
+    c = zeros(momenta_matrix.shape[1], dtype=complex64)
     c[0] = 1.0
 
     # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
@@ -130,7 +130,7 @@ def _get_soc_matrix_in_z_pseudo_spin_basis(
     # soc_energies = soc_energies - mean(
     #     soc_energies
     # )  ############################## WHYY?
-    soc_matrix = diag(soc_energies).astype(complex128)
+    soc_matrix = diag(soc_energies).astype(complex64)
     soc_matrix = _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
         momenta, soc_matrix
     )
@@ -193,7 +193,7 @@ def _get_decomposition_in_z_pseudo_spin_basis(
     stop_state,
     rotation=None,
     field=None,
-    orientation: ndarray[float64] = None,
+    orientation: ndarray[float32] = None,
 ):
     if matrix == "soc":
         soc_matrix = _get_soc_matrix_in_z_pseudo_spin_basis(
@@ -228,7 +228,7 @@ def _get_decomposition_in_z_pseudo_spin_basis(
 def _ito_matrix(J, k, q):
     dim = int64(2 * J + 1)
 
-    matrix = zeros((dim, dim), dtype=float64)
+    matrix = zeros((dim, dim), dtype=float32)
 
     for i in range(dim):
         mj1 = i - J
@@ -238,7 +238,7 @@ def _ito_matrix(J, k, q):
                 J, k, J, -mj1, q, mj2
             )
 
-    coeff = float64(1.0)
+    coeff = float32(1.0)
 
     for i in range(int(-k), int(k + 1)):
         coeff *= 2 * J + 1 + i
@@ -257,9 +257,9 @@ def _calculate_b_k_q(matrix: ndarray, k: int32, q: int32):
 
     matrix = ascontiguousarray(matrix)
     ITO_plus = _ito_matrix(J, k, q)
-    ITO_plus = ascontiguousarray(ITO_plus).astype(complex128)
+    ITO_plus = ascontiguousarray(ITO_plus).astype(complex64)
     ITO_minus = _ito_matrix(J, k, -q)
-    ITO_minus = ascontiguousarray(ITO_minus).astype(complex128)
+    ITO_minus = ascontiguousarray(ITO_minus).astype(complex64)
 
     numerator = trace(matrix @ ITO_minus)
     denominator = trace(ITO_plus @ ITO_minus)
@@ -288,7 +288,7 @@ def _ito_complex_decomp_matrix(
 def _matrix_from_ito_complex(J, coefficients):
     dim = int64(2 * J + 1)
 
-    matrix = zeros((dim, dim), dtype=complex128)
+    matrix = zeros((dim, dim), dtype=complex64)
 
     for i in coefficients:
         matrix += _ito_matrix(J, int(i[0].real), int(i[1].real)) * i[2]
@@ -312,9 +312,9 @@ def _ito_real_decomp_matrix(
     for k in range(0, order + 1, step):
         for q in range(k, 0, -1):
             ITO_plus = _ito_matrix(J, k, q)
-            ITO_plus = ascontiguousarray(ITO_plus).astype(complex128)
+            ITO_plus = ascontiguousarray(ITO_plus).astype(complex64)
             ITO_minus = _ito_matrix(J, k, -q)
-            ITO_minus = ascontiguousarray(ITO_minus).astype(complex128)
+            ITO_minus = ascontiguousarray(ITO_minus).astype(complex64)
             B_k_q = (
                 -1j
                 * (
@@ -331,9 +331,9 @@ def _ito_real_decomp_matrix(
 
         for q in range(1, k + 1):
             ITO_plus = _ito_matrix(J, k, q)
-            ITO_plus = ascontiguousarray(ITO_plus).astype(complex128)
+            ITO_plus = ascontiguousarray(ITO_plus).astype(complex64)
             ITO_minus = _ito_matrix(J, k, -q)
-            ITO_minus = ascontiguousarray(ITO_minus).astype(complex128)
+            ITO_minus = ascontiguousarray(ITO_minus).astype(complex64)
             B_k_q = (
                 trace(matrix @ ITO_plus)
                 + ((-1) ** (-q)) * trace(matrix @ ITO_minus)
@@ -347,7 +347,7 @@ def _ito_real_decomp_matrix(
 def _matrix_from_ito_real(J, coefficients):
     dim = int64(2 * J + 1)
 
-    matrix = zeros((dim, dim), dtype=complex128)
+    matrix = zeros((dim, dim), dtype=complex64)
 
     for i in coefficients:
         k = int64(i[0])

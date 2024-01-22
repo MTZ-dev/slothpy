@@ -24,25 +24,25 @@ from numpy import (
     sqrt,
     cos,
     sin,
-    float64,
+    float32,
     abs,
 )
 from numba import jit
 
 
 @jit(
-    "float64[:,:](int64)",
+    "float32[:,:](int64)",
     nopython=True,
     nogil=True,
     cache=True,
     fastmath=True,
 )
 def _fibonacci_over_sphere(num_points):
-    indices = arange(0, num_points, dtype=float64)
+    indices = arange(0, num_points, dtype=float32)
     phi = pi * (3.0 - sqrt(5.0))  # golden angle in radians
-    xyz_trans = zeros((3, num_points))
+    xyz_trans = zeros((3, num_points), dtype=float32)
 
-    y = 1 - (indices / float64(num_points - 1)) * 2  # y goes from 1 to -1
+    y = 1 - (indices / float32(num_points - 1)) * 2  # y goes from 1 to -1
     radius = sqrt(abs(1.0 - y * y))  # radius at y
 
     theta = phi * indices  # golden angle increment
@@ -58,11 +58,11 @@ def _fibonacci_over_sphere(num_points):
 
 
 def _meshgrid_over_sphere_flatten(grid_number):
-    theta = linspace(0, 2 * pi, 2 * grid_number, dtype=float64)
-    phi = linspace(0, pi, grid_number, dtype=float64)
+    theta = linspace(0, 2 * pi, 2 * grid_number, dtype=float32)
+    phi = linspace(0, pi, grid_number, dtype=float32)
     theta, phi = meshgrid(theta, phi)
 
-    xyz_mesh = zeros((phi.shape[0], phi.shape[1], 3), dtype=float64)
+    xyz_mesh = zeros((phi.shape[0], phi.shape[1], 3), dtype=float32)
 
     xyz_mesh[:, :, 0] = sin(phi) * cos(theta)
     xyz_mesh[:, :, 1] = sin(phi) * sin(theta)

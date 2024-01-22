@@ -21,7 +21,7 @@ from numpy import (
     trace,
     ascontiguousarray,
     sqrt,
-    float64,
+    float32,
     int64,
 )
 from numpy.linalg import eigh, det
@@ -35,15 +35,15 @@ from slothpy._general_utilities._math_expresions import (
 
 
 @jit(
-    "Tuple((float64[:,:],float64[:,:,:]))(complex128[:,:,:], int64[:])",
+    "Tuple((float32[:,:],float32[:,:,:]))(complex64[:,:,:], int64[:])",
     nopython=True,
     cache=True,
     nogil=True,
     fastmath=True,
 )
 def _calculate_g_tensor_and_axes_doublet(angular_momenta, doublets):
-    g_tensor_list = zeros((doublets.size, 4), dtype=float64)
-    magnetic_axes_list = zeros((doublets.size, 3, 3), dtype=float64)
+    g_tensor_list = zeros((doublets.size, 4), dtype=float32)
+    magnetic_axes_list = zeros((doublets.size, 3, 3), dtype=float32)
 
     for index, doublet in enumerate(doublets):
         magnetic_momenta = ascontiguousarray(
@@ -52,7 +52,7 @@ def _calculate_g_tensor_and_axes_doublet(angular_momenta, doublets):
             )
         )
 
-        a_tensor = zeros((3, 3), dtype=float64)
+        a_tensor = zeros((3, 3), dtype=float32)
 
         for i in range(3):
             for j in range(3):

@@ -21,9 +21,9 @@ from h5py import File, Group, Dataset
 from numpy import (
     ndarray,
     array,
-    float64,
+    float32,
     int64,
-    complex128,
+    complex64,
     linspace,
     arange,
     max,
@@ -425,7 +425,7 @@ class Compound:
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None
-    ) -> Tuple[ndarray[float64], ndarray[float64]]:
+    ) -> Tuple[ndarray[float32], ndarray[float32]]:
         """
         Calculates pseudo-g-tensor components (for S = 1/2) and
         main magnetic axes for a given list of doublet states.
@@ -444,7 +444,7 @@ class Compound:
 
         Returns
         -------
-        Tuple[ndarray[float64], ndarray[float64]]
+        Tuple[ndarray[float32], ndarray[float32]]
             The first array (g_tensor_list) contains a list g-tensors in
             a format [doublet_number, gx, gy, gz], the second one
             (magnetic_axes_list) contains respective rotation matrices.
@@ -560,15 +560,15 @@ class Compound:
     def calculate_magnetisation(
         self,
         group: str,
-        fields: ndarray[float64],
-        grid: Union[int, ndarray[float64]],
-        temperatures: ndarray[float64],
+        fields: ndarray[float32],
+        grid: Union[int, ndarray[float32]],
+        temperatures: ndarray[float32],
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates powder-averaged or directional molar magnetisation M(T,H)
         for a given list of temperature and field values.
@@ -578,10 +578,10 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the magnetisation.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which magnetisation will be computed.
-        grid : Union[int, ndarray[float64]]
+        grid : Union[int, ndarray[float32]]
             If the grid is set to an integer from 0-11 then the prescribed
             Lebedev-Laikov grids over hemisphere will be used (see
             grids_over_hemisphere documentation), otherwise, user can provide
@@ -591,7 +591,7 @@ class Compound:
             particular direction the list has to contain one entry like this:
             [[direction_x, direction_y, direction_z, 1.]]. Custom grids will be
             automatically normalized.
-        temperatures : ndarray[float64]
+        temperatures : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temeperature values (K) at which magnetisation will be computed.
         states_cutoff : int, optional
@@ -620,7 +620,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting mth_array gives magnetisation in Bohr magnetons and
             is in the form [temperatures, fields] - the first dimension runs
             over temperature values, and the second over fields.
@@ -673,8 +673,8 @@ class Compound:
                     + "already exists. Delete it manually.",
                 ) from None
         try:
-            fields = array(fields, dtype=float64)
-            temperatures = array(temperatures, dtype=float64)
+            fields = array(fields, dtype=float32)
+            temperatures = array(temperatures, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -791,17 +791,17 @@ class Compound:
     def calculate_magnetisation_3d(
         self,
         group: str,
-        fields: ndarray[float64],
+        fields: ndarray[float32],
         grid_type: Literal["mesh", "fibonacci"],
         grid_number: int,
-        temperatures: ndarray[float64],
+        temperatures: ndarray[float32],
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates 3D magnetisation over a spherical grid for a given list of
         temperature and field values.
@@ -811,7 +811,7 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the 3D magnetisation.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which 3D magnetisation will be computed.
         grid_type: Literal["mesh", "fibonacci"]
@@ -826,7 +826,7 @@ class Compound:
             2*spherical_grid) for spherical angles, phi [0, pi] and theta
             [0, 2*pi] will be used for meshgrid or when Fibonacci sphere is
             chosen grid_number points will be distributed on the sphere.
-        temperatures : ndarray[float64]
+        temperatures : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temperature values (K) at which 3D magnetisation will be computed.
         states_cutoff : int, optional
@@ -841,7 +841,7 @@ class Compound:
             algebra libraries used during the calculation. Higher values
             benefit from the increasing size of matrices (states_cutoff) over
             the parallelization over CPUs., by default 1
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead. It is useful here to orient your 3D plots
@@ -860,7 +860,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             For the meshgrid the resulting mag_3d_array gives magnetisation in
             Bohr magnetons and is in the form [coordinates, fields,
             temperatures, mesh, mesh] - the first dimension runs over
@@ -926,8 +926,8 @@ class Compound:
                     + "already exists. Delete it manually.",
                 ) from None
         try:
-            temperatures = array(temperatures, dtype=float64)
-            fields = array(fields, dtype=float64)
+            temperatures = array(temperatures, dtype=float32)
+            fields = array(fields, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -1072,8 +1072,8 @@ class Compound:
     def calculate_susceptibility(
         self,
         group: str,
-        temperatures: ndarray[float64],
-        fields: ndarray[float64],
+        temperatures: ndarray[float32],
+        fields: ndarray[float32],
         number_of_points: int = 1,
         delta_h: float = 0.0001,
         states_cutoff: int = 0,
@@ -1081,10 +1081,10 @@ class Compound:
         number_threads: int = 1,
         exp: bool = False,
         T: bool = True,
-        grid: Union[int, ndarray[float64]] = None,
+        grid: Union[int, ndarray[float32]] = None,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates powder-averaged or directional molar magnetic susceptibility
         chi(T)(H,T) for a given list of field and temperatures values.
@@ -1094,11 +1094,11 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the magnetisation.
-        temperatures : ndarray[float64]
+        temperatures : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temeperature values (K) at which magnetic susceptibility will
             be computed.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which magnetic susceptibility will be computed.
         number_of_points : int, optional
@@ -1110,7 +1110,7 @@ class Compound:
             point at which the derivative is taken. In this regard, the value 0
             triggers the experimentalist model for susceptibility.,
             by default 1
-        delta_h : float64, optional
+        delta_h : float32, optional
             Value of field step used for numerical differentiation using finite
             difference method. 0.0001 (T) = 1 Oe is recommended as a starting
             point., by default 0.0001
@@ -1132,7 +1132,7 @@ class Compound:
         T : bool, optional
             Results are returned as a product with temperature chiT(H,T).,
             by default True
-        grid : Union[int, ndarray[float64]], optional
+        grid : Union[int, ndarray[float32]], optional
             If the grid is set to an integer from 0-11 then the prescribed
             Lebedev-Laikov grids over the hemisphere will be used (see
             grids_over_hemisphere documentation), otherwise, the user can
@@ -1158,7 +1158,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting chitht_array gives magnetic susceptibility (or
             product with temperature) in cm^3 (or * K) and is in the form
             [fields, temperatures] - the first dimension runs over field
@@ -1214,8 +1214,8 @@ class Compound:
                     + "already exists. Delete it manually.",
                 ) from None
         try:
-            fields = array(fields, dtype=float64)
-            temperatures = array(temperatures, dtype=float64)
+            fields = array(fields, dtype=float32)
+            temperatures = array(temperatures, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -1265,7 +1265,7 @@ class Compound:
                             [0.0, 1.0, 0.0, 0.3333333333333333],
                             [0.0, 0.0, 1.0, 0.3333333333333333],
                         ],
-                        dtype=float64,
+                        dtype=float32,
                     )
                     grid_shape = 3  # xyz grid in the inner loop
                 else:
@@ -1277,7 +1277,7 @@ class Compound:
                         )
                         * delta_h
                     )[:, newaxis] + fields
-                    fields_autotune = fields_autotune.T.astype(float64)
+                    fields_autotune = fields_autotune.T.astype(float32)
                     fields_autotune = fields_autotune.flatten()
                 number_threads = _auto_tune(
                     self._hdf5,
@@ -1388,8 +1388,8 @@ class Compound:
     def calculate_susceptibility_tensor(
         self,
         group: str,
-        temperatures: ndarray[float64],
-        fields: ndarray[float64],
+        temperatures: ndarray[float32],
+        fields: ndarray[float32],
         number_of_points: int = 1,
         delta_h: float = 0.0001,
         states_cutoff: int = 0,
@@ -1397,10 +1397,10 @@ class Compound:
         number_threads: int = 1,
         exp: bool = False,
         T: bool = True,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates magnetic susceptibility chi(H,T) (Van Vleck) tensor for
         a given list of field and temperature values.
@@ -1410,11 +1410,11 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the magnetisation.
-        temperatures : ndarray[float64]
+        temperatures : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temeperature values (K) at which magnetic susceptibility tensor
             will be computed.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which magnetic susceptibility tensor will be
             computed.
@@ -1427,7 +1427,7 @@ class Compound:
             point at which the derivative is taken. In this regard, the value 0
             triggers the experimentalist model for susceptibility.,
             by default 1
-        delta_h : float64, optional
+        delta_h : float32, optional
             Value of field step used for numerical differentiation using finite
             difference method. 0.0001 (T) = 1 Oe is recommended as a starting
             point., by default 0.0001,
@@ -1449,7 +1449,7 @@ class Compound:
         T : bool, optional
             Results are returned as a product with temperature chiT(H,T).,
             by default True
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
@@ -1467,7 +1467,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting array gives magnetic susceptibility (Van Vleck)
             tensors (or products with temperature) in cm^3 (or * K) and is in
             the form [fields, temperatures, 3x3 tensor] - the first dimension
@@ -1522,8 +1522,8 @@ class Compound:
                 ) from None
 
         try:
-            fields = array(fields, dtype=float64)
-            temperatures = array(temperatures, dtype=float64)
+            fields = array(fields, dtype=float32)
+            temperatures = array(temperatures, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -1569,7 +1569,7 @@ class Compound:
                         )
                         * delta_h
                     )[:, newaxis] + fields
-                    fields_autotune = fields_autotune.T.astype(float64)
+                    fields_autotune = fields_autotune.T.astype(float32)
                     fields_autotune = fields_autotune.flatten()
                 number_threads = _auto_tune(
                     self._hdf5,
@@ -1682,8 +1682,8 @@ class Compound:
     def calculate_susceptibility_3d(
         self,
         group: str,
-        temperatures: ndarray[float64],
-        fields: ndarray[float64],
+        temperatures: ndarray[float32],
+        fields: ndarray[float32],
         grid_type: Literal["mesh", "fibonacci"],
         grid_number: int,
         number_of_points: int = 1,
@@ -1693,10 +1693,10 @@ class Compound:
         number_threads: int = 1,
         exp: bool = False,
         T: bool = True,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates 3D magnetic susceptibility over a spherical grid for a given
         list of temperature and field values.
@@ -1707,11 +1707,11 @@ class Compound:
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the 3D magnetic
             susceptibility.
-        temperatures : ndarray[float64]
+        temperatures : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temperature values (K) at which 3D magnetic susceptibility will be
             computed.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which 3D magnetic susceptibility will be computed.
         grid_type: Literal["mesh", "fibonacci"]
@@ -1735,7 +1735,7 @@ class Compound:
             point at which the derivative is taken. In this regard, the value 0
             triggers the experimentalist model for susceptibility.,
             by default 1
-        delta_h : float64, optional
+        delta_h : float32, optional
             Value of field step used for numerical differentiation using finite
             difference method. 0.0001 (T) = 1 Oe is recommended as a starting
             point., by default 0.0001
@@ -1757,7 +1757,7 @@ class Compound:
         T : bool, optional
             Results are returned as a product with temperature chiT(H,T).,
             by default True
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead. It is useful here to orient your 3D plots
@@ -1776,7 +1776,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             For the meshgrid the resulting chi(t)_3d_array gives susceptibility
             in cm^3 (or * K) and is in the form [coordinates, fields,
             temperatures, mesh, mesh] - the first dimension runs over
@@ -1849,8 +1849,8 @@ class Compound:
                     + "already exists. Delete it manually.",
                 ) from None
         try:
-            fields = array(fields, dtype=float64)
-            temperatures = array(temperatures, dtype=float64)
+            fields = array(fields, dtype=float32)
+            temperatures = array(temperatures, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -1911,7 +1911,7 @@ class Compound:
                         )
                         * delta_h
                     )[:, newaxis] + fields
-                    fields_autotune = fields_autotune.T.astype(float64)
+                    fields_autotune = fields_autotune.T.astype(float32)
                     fields_autotune = fields_autotune.flatten()
                 number_threads = _auto_tune(
                     self._hdf5,
@@ -2038,16 +2038,16 @@ class Compound:
     def calculate_energy(
         self,
         group: str,
-        fields: ndarray[float64],
-        grid: Union[int, ndarray[float64]],
-        temperatures: ndarray[float64],
+        fields: ndarray[float32],
+        grid: Union[int, ndarray[float32]],
+        temperatures: ndarray[float32],
         energy_type: Literal["helmholtz", "internal"],
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates powder-averaged or directional Helmholtz or internal
         energy for a given list of temperature and field values.
@@ -2057,10 +2057,10 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the energy.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which energy will be computed.
-        grid : ndarray[float64]
+        grid : ndarray[float32]
             If the grid is set to an integer from 0-11 then the prescribed
             Lebedev-Laikov grids over hemisphere will be used (see
             grids_over_hemisphere documentation), otherwise, user can provide
@@ -2070,7 +2070,7 @@ class Compound:
             particular direction the list has to contain one entry like this:
             [[direction_x, direction_y, direction_z, 1.]]. Custom grids will be
             automatically normalized.
-        temperatures : ndarray[float64]
+        temperatures : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temeperature values (K) at which energy will be computed
         energy_type: Literal["helmholtz", "internal"]
@@ -2103,7 +2103,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting eth_array gives energy in cm-1 and is in the form
             [temperatures, fields] - the first dimension runs over temperature
             values, and the second over fields.
@@ -2170,8 +2170,8 @@ class Compound:
                 ) from None
 
         try:
-            fields = array(fields, dtype=float64)
-            temperatures = array(temperatures, dtype=float64)
+            fields = array(fields, dtype=float32)
+            temperatures = array(temperatures, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -2292,18 +2292,18 @@ class Compound:
     def calculate_energy_3d(
         self,
         group: str,
-        fields: ndarray[float64],
+        fields: ndarray[float32],
         grid_type: Literal["mesh", "fibonacci"],
         grid_number: int,
-        temperatures: ndarray[float64],
+        temperatures: ndarray[float32],
         energy_type: Literal["helmholtz", "internal"],
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates 3D Helmholtz or internal energy over a spherical grid for
         a given list of temperature and field values.
@@ -2313,7 +2313,7 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the 3D energy.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which 3D energy will be computed.
         grid_type: Literal["mesh", "fibonacci"]
@@ -2328,7 +2328,7 @@ class Compound:
             2*spherical_grid) for spherical angles, phi [0, pi] and theta
             [0, 2*pi] will be used for meshgrid or when Fibonacci sphere is
             chosen grid_number points will be distributed on the sphere.
-        temperatures : ndarray[float64]
+        temperatures : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of
             temperature values (K) at which 3D energy will be computed.
         energy_type: Literal["helmholtz", "internal"]
@@ -2348,7 +2348,7 @@ class Compound:
             the parallelization over CPUs., by default 1
         internal_energy : bool, optional
             Turns on the calculation of internal energy., by default False
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead. It is useful here to orient your 3D plots
@@ -2368,7 +2368,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             For the meshgrid the resulting energy_3d_array gives energy in cm-1
             and is in the form [coordinates, fields, temperatures, mesh, mesh]
             - the first dimension runs over coordinates (0-x, 1-y, 2-z), the
@@ -2447,8 +2447,8 @@ class Compound:
                     + "already exists. Delete it manually.",
                 ) from None
         try:
-            temperatures = array(temperatures, dtype=float64)
-            fields = array(fields, dtype=float64)
+            temperatures = array(temperatures, dtype=float32)
+            fields = array(fields, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -2598,15 +2598,15 @@ class Compound:
         self,
         group: str,
         number_of_states: int,
-        fields: ndarray[float64],
-        grid: ndarray[float64],
+        fields: ndarray[float32],
+        grid: ndarray[float32],
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
         average: bool = False,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates directional or powder-averaged Zeeman splitting for a given
         number of states and list of field values.
@@ -2619,10 +2619,10 @@ class Compound:
         number_of_states : int
             Number of states whose energy splitting will be given in the
             result array.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) at which Zeeman splitting will be computed.
-        grid : ndarray[float64]
+        grid : ndarray[float32]
             If the grid is set to an integer from 0-11 then the prescribed
             Lebedev-Laikov grids over hemisphere will be used (see
             grids_over_hemisphere documentation) and powder-averaging will be
@@ -2663,7 +2663,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting array gives Zeeman splitting of number_of_states
             energy levels in cm-1 for each direction (or average) in the form
             [orientations, fields, energies] - the first dimension
@@ -2718,7 +2718,7 @@ class Compound:
                 ) from None
 
         try:
-            fields = array(fields, dtype=float64)
+            fields = array(fields, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -2890,12 +2890,12 @@ class Compound:
     def zeeman_matrix(
         self,
         group: str,
-        fields: ndarray[float64],
-        orientations: ndarray[float64],
+        fields: ndarray[float32],
+        orientations: ndarray[float32],
         states_cutoff: int = 0,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
-    ) -> ndarray[complex128]:
+    ) -> ndarray[complex64]:
         """
         Calculates Zeeman matrices for a given list of magnetic fields and
         their orientations.
@@ -2905,10 +2905,10 @@ class Compound:
         group : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the Zeeman matrices.
-        fields : ndarray[float64]
+        fields : ndarray[float32]
             ArrayLike structure (can be converted to numpy.NDArray) of field
             values (T) for which Zeeman matrices will be computed.
-        orientations : ndarray[float64]
+        orientations : ndarray[float32]
             List (ArrayLike structure) of particular magnetic field directions
             for which Zeeman matrices will be constructed. The list has to
             follow the format: [[direction_x, direction_y, direction_z],...].
@@ -2917,7 +2917,7 @@ class Compound:
             Number of states that will be taken into account for construction
             of Zeeman Hamiltonian. If set to zero, all available states from
             the file will be used., by default 0
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead. It is useful here to orient your 3D plots
@@ -2928,7 +2928,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[complex128]
+        ndarray[complex64]
             The resulting array gives Zeeman matrices for each field value and
             orientation in the form [fields, orientations, matrix, matrix] in
             atomic units a.u. (Hartree).
@@ -2965,7 +2965,7 @@ class Compound:
                 ) from None
 
         try:
-            fields = array(fields, dtype=float64)
+            fields = array(fields, dtype=float32)
         except Exception as exc:
             raise SltInputError(exc) from None
 
@@ -3040,7 +3040,7 @@ class Compound:
 
     def soc_energies_cm_1(
         self, group: str, number_of_states: int = 0, slt: str = None
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Returns energies for the given number of first spin-orbit
         states in cm-1.
@@ -3059,7 +3059,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting array is one-dimensional and contains the energy of
             first number_of_states states in cm-1.
 
@@ -3144,9 +3144,9 @@ class Compound:
         self,
         group: str,
         states: Union[int, ndarray[int]] = 0,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates magnetic momenta of a given list (or number) of SOC states.
 
@@ -3160,7 +3160,7 @@ class Compound:
             states indexes for which magnetic momenta will be calculated. If
             set to an integer it acts as a states cutoff (first n states will
             be given). For all available states set it to zero., by default 0
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
@@ -3170,7 +3170,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting array is one-dimensional and contains the magnetic
             momenta corresponding to the given states indexes in atomic units.
 
@@ -3267,9 +3267,9 @@ class Compound:
         self,
         group: str,
         states: Union[int, ndarray[int]] = 0,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates total angular momenta of a given list (or number) of SOC
         states.
@@ -3285,7 +3285,7 @@ class Compound:
             If set to an integer it acts as a states cutoff (first n states
             will be given). For all available states set it to zero.
             , by default 0
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
@@ -3295,7 +3295,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting array is one-dimensional and contains the total
             angular momenta corresponding to the given states indexes in atomic
             units.
@@ -3393,9 +3393,9 @@ class Compound:
         self,
         group: str,
         states_cutoff: ndarray = 0,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
-    ) -> ndarray[complex128]:
+    ) -> ndarray[complex64]:
         """
         Calculates magnetic momenta matrix for a given number of SOC states.
 
@@ -3409,7 +3409,7 @@ class Compound:
             Number of states that will be taken into account for construction
             of the magnetic momenta matrix. If set to zero, all available
             states from the file will be included., by default 0
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
@@ -3419,7 +3419,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[complex128]
+        ndarray[complex64]
             The resulting magnetic_momenta_matrix_array gives magnetic momenta
             in atomic units and is in the form [coordinates, matrix, matrix]
             - the first dimension runs over coordinates (0-x, 1-y, 2-z).
@@ -3501,9 +3501,9 @@ class Compound:
         self,
         group: str,
         states_cutoff: int = 0,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
-    ) -> ndarray[complex128]:
+    ) -> ndarray[complex64]:
         """
         Calculates total angular momenta matrix for a given number of SOC
         states.
@@ -3518,7 +3518,7 @@ class Compound:
             Number of states that will be taken into account for construction
             of the total angular momenta matrix. If set to zero, all available
             states from the file will be included., by default 0
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
@@ -3528,7 +3528,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[complex128]
+        ndarray[complex64]
             The resulting total_angular_momenta_matrix_array gives total
             angular momenta in atomic units and is in the form [coordinates,
             matrix, matrix] - the first dimension runs over coordinates
@@ -3616,11 +3616,11 @@ class Compound:
         pseudo_kind: Literal["magnetic", "total_angular"],
         start_state: int = 0,
         stop_state: int = 0,
-        rotation: ndarray[float64] = None,
-        field: float64 = None,
-        orientation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
+        field: float32 = None,
+        orientation: ndarray[float32] = None,
         slt: str = None,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float32]:
         """
         Calculates decomposition of a given matrix in "z" pseudo-spin basis.
 
@@ -3641,14 +3641,14 @@ class Compound:
             Number of the last SOC state to be included. If both start and stop
             are set to zero all available states from the file will be used.
             , by default 0
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
-        field : float64, optional
+        field : float32, optional
             If matrix type = "zeeman" it controls a magnetic field value at
             which Zeeman matrix will be computed., by default None
-        orientation : ndarray[float64], optional
+        orientation : ndarray[float32], optional
             If matrix type = "zeeman" it controls the orientation of the
             magnetic field and has to be in the form [direction_x, direction_y,
             direction_z] and be an ArrayLike structure (can be converted to
@@ -3660,7 +3660,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[float32]
             The resulting array gives decomposition in % where rows are
             SOC/Zeeman states and columns are associated with pseudo spin basis
             (from -Sz to Sz).
@@ -3740,7 +3740,7 @@ class Compound:
                     "Dataset containing Sz pseudo-spin states"
                     " corresponding to the decomposition of"
                     f" {matrix} matrix from group: {group}.",
-                ] = arange(-dim, dim + 1, step=1, dtype=float64)
+                ] = arange(-dim, dim + 1, step=1, dtype=float32)
             except Exception as exc:
                 raise SltFileError(
                     self._hdf5,
@@ -3768,7 +3768,7 @@ class Compound:
         pseudo_kind: Literal["magnetic", "total_angular"],
         even_order: bool = True,
         complex: bool = False,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
     ) -> list:
         """
@@ -3795,7 +3795,7 @@ class Compound:
         complex : bool, optional
             If True, instead of real ITOs (CFPs) complex ones will be given.,
             by default False
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
@@ -3956,12 +3956,12 @@ class Compound:
         group: str,
         start_state: int,
         stop_state: int,
-        field: float64,
-        orientation: ndarray[float64],
+        field: float32,
+        orientation: ndarray[float32],
         order: int,
         pseudo_kind: Literal["magnetic", "total_angular"],
         complex: bool = False,
-        rotation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
         slt: str = None,
     ) -> list:
         """
@@ -3978,9 +3978,9 @@ class Compound:
             Number of the last Zeeman state to be included. If both start and
             stop are set to zero all available states from the file will be
             used.
-        field : float64
+        field : float32
             Magnetic field value at which Zeeman matrix will be computed.
-        orientation : ndarray[float64]
+        orientation : ndarray[float32]
             Orientation of the magnetic field in the form of an ArrayLike
             structure (can be converted to numpy.NDArray) [direction_x,
             direction_y, direction_z].
@@ -3992,7 +3992,7 @@ class Compound:
         complex : bool, optional
             If True, instead of real ITOs (CFPs) complex ones will be given.,
             by default False
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
@@ -4157,9 +4157,9 @@ class Compound:
         full_group_name: str,
         complex: bool,
         dataset_name: str = None,
-        pseudo_spin: float64 = None,
+        pseudo_spin: float32 = None,
         slt: str = None,
-    ) -> ndarray[complex128]:
+    ) -> ndarray[complex64]:
         """
         Calculates matrix from a given ITO decomposition.
 
@@ -4174,7 +4174,7 @@ class Compound:
             A custom name for a user-created dataset within the group that
             contains list of B_k_q parameters in the form [k,q,B_k_q].,
             by default None
-        pseudo_spin : float64, optional
+        pseudo_spin : float32, optional
             Pseudo spin S value for the user-defined dataset., by default None
         slt : str, optional
             If given the results will be saved in a group of this name to .slt
@@ -4182,7 +4182,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[complex128]
+        ndarray[complex64]
             Matrix reconstructed from a given ITO list.
 
         Raises
@@ -4314,11 +4314,11 @@ class Compound:
         stop_state: int,
         matrix_type: Literal["soc", "zeeman"],
         basis_kind: Literal["magnetic", "total_angular"],
-        rotation: ndarray[float64] = None,
-        field: float64 = None,
-        orientation: ndarray[float64] = None,
+        rotation: ndarray[float32] = None,
+        field: float32 = None,
+        orientation: ndarray[float32] = None,
         slt: str = None,
-    ) -> ndarray[complex128]:
+    ) -> ndarray[complex64]:
         """
         Calculates SOC or Zeeman matrix in "z" magnetic or total angular
         momentum basis.
@@ -4339,13 +4339,13 @@ class Compound:
         basis_kind : Literal["magnetic", "total_angular"]
             Kind of a basis. Two options available: "magnetic" or
             "total_angular" for the decomposition in a particular basis
-        rotation : ndarray[float64], optional
+        rotation : ndarray[float32], optional
             A (3,3) orthogonal rotation matrix used to rotate momenta matrices.
             Note that the inverse matrix has to be given to rotate the
             reference frame instead., by default None
-        field : float64, optional
+        field : float32, optional
             _description_, by default None
-        orientation : ndarray[float64], optional
+        orientation : ndarray[float32], optional
             Orientation of the magnetic field in the form of an ArrayLike
             structure (can be converted to numpy.NDArray) [direction_x,
             direction_y, direction_z]., by default None
@@ -4356,7 +4356,7 @@ class Compound:
 
         Returns
         -------
-        ndarray[complex128]
+        ndarray[complex64]
             Matrix in a given kind of basis.
 
         Raises
@@ -5482,8 +5482,8 @@ class Compound:
         axes_group: str = "",
         axes_colors: list[str] = ["r", "g", "b"],
         doublet_number: int = None,
-        axes_scale_factor: float64 = 1.0,
-        rotation: ndarray[float64] = None,
+        axes_scale_factor: float32 = 1.0,
+        rotation: ndarray[float32] = None,
     ):
         """
         Creates 3d plots of data dependent on field B[T] and temperature T[K].
@@ -5554,13 +5554,13 @@ class Compound:
             Accepts matplotlib colors inputs, for example HTML color codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
-        axes_scale_factor: float64 = 1.0
+        axes_scale_factor: float32 = 1.0
             Scale factor determining the length of the longest (main) magnetic
             axis concerning the maximal value of the loaded data and setting
             a maximal limit of the plot's xyz axes. It should be set > 1
             otherwise, some data will end up missing from the plot! The limit
             is max(loaded_data) * axes_scale_factor.
-        rotation: ndarray[float64] = None
+        rotation: ndarray[float32] = None
             Has to be given if 3d data was calculated with optional rotation of
             the coordinate frame and add_g_tensor_axes option is turned on.
             One must provide the same rotation as that used for the simulation
@@ -5864,8 +5864,8 @@ class Compound:
         axes_group: str = "",
         axes_colors: list[str] = ["r", "g", "b"],
         doublet_number: int = None,
-        axes_scale_factor: float64 = 1.0,
-        rotation: ndarray[float64] = None,
+        axes_scale_factor: float32 = 1.0,
+        rotation: ndarray[float32] = None,
     ):
         """
         Creates animations of 3d plots dependent on field B[T]
@@ -5942,13 +5942,13 @@ class Compound:
             Accepts matplotlib colors inputs, for example HTML color codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
-        axes_scale_factor: float64 = 1.0
+        axes_scale_factor: float32 = 1.0
             Scale factor determining the length of the longest (main) magnetic
             axis concerning the maximal value of the loaded data and setting
             a maximal limit of the plot's xyz axes. It should be set > 1
             otherwise, some data will end up missing from the plot! The limit
             is max(loaded_data) * axes_scale_factor.
-        rotation: ndarray[float64] = None
+        rotation: ndarray[float32] = None
             Has to be given if 3d data was calculated with optional rotation of
             the coordinate frame and add_g_tensor_axes option is turned on.
             One must provide the same rotation as that used for the simulation
@@ -6483,8 +6483,8 @@ class Compound:
         axes_group: str = "",
         axes_colors: list[str] = ["r", "g", "b"],
         doublet_number: int = None,
-        axes_scale_factor: float64 = 1.0,
-        rotation: ndarray[float64] = None,
+        axes_scale_factor: float32 = 1.0,
+        rotation: ndarray[float32] = None,
     ):
         """
         Creates interactive widget plot dependent on field and temperature
@@ -6546,13 +6546,13 @@ class Compound:
             Accepts matplotlib colors inputs, for example HTML color codes.
         doublet_number: int = None
             Number of a doublet for which axes will be added to the plot.
-        axes_scale_factor: float64 = 1.0
+        axes_scale_factor: float32 = 1.0
             Scale factor determining the length of the longest (main) magnetic
             axis concerning the maximal value of the loaded data and setting
             a maximal limit of the plot's xyz axes. It should be set > 1
             otherwise, some data will end up missing from the plot! The limit is
             max(loaded_data) * axes_scale_factor.
-        rotation: ndarray[float64] = None
+        rotation: ndarray[float32] = None
             Has to be given if 3d data was calculated with optional rotation of
             the coordinate frame and add_g_tensor_axes option is turned on.
             One must provide the same rotation as that used for the simulation

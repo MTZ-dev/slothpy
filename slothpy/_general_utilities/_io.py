@@ -26,8 +26,8 @@ from numpy import (
     any,
     diagonal,
     int64,
-    float64,
-    complex128,
+    float32,
+    complex64,
 )
 from numpy.linalg import eigh, eigvalsh
 from h5py import File
@@ -220,14 +220,14 @@ def _orca_spin_orbit_to_slt(
                     file.readline()  # Skip non-pt2 block
             for _ in range(4):
                 file.readline()  # Skip the first 4 lines
-            matrix = empty((so_dim, so_dim), dtype=float64)
+            matrix = empty((so_dim, so_dim), dtype=float32)
             l = 0
             for _ in range(num_of_whole_blocks):
                 file.readline()  # Skip a line before each block of 6 columns
                 for i in range(so_dim):
                     line = file.readline().split()
                     for j in range(6):
-                        matrix[i, l + j] = float64(line[j + 1])
+                        matrix[i, l + j] = float32(line[j + 1])
                 l += 6
 
             if remaining_columns > 0:
@@ -235,11 +235,11 @@ def _orca_spin_orbit_to_slt(
                 for i in range(so_dim):
                     line = file.readline().split()
                     for j in range(remaining_columns):
-                        matrix[i, l + j] = float64(line[j + 1])
+                        matrix[i, l + j] = float32(line[j + 1])
 
             # Create dataset in HDF5 file and assign the matrix
             dataset = orca.create_dataset(
-                f"SF_{matrix_name}", shape=(so_dim, so_dim), dtype=float64
+                f"SF_{matrix_name}", shape=(so_dim, so_dim), dtype=float32
             )
             dataset[:, :] = matrix[:, :]
             dataset.attrs["Description"] = (
@@ -278,14 +278,14 @@ def _orca_spin_orbit_to_slt(
                 file.readline()  # Skip non-pt2 block
         for _ in range(4):
             file.readline()  # Skip the first 4 lines
-        matrix_real = empty((so_dim, so_dim), dtype=float64)
+        matrix_real = empty((so_dim, so_dim), dtype=float32)
         l = 0
         for _ in range(num_of_whole_blocks):
             file.readline()  # Skip a line before each block of 6 columns
             for i in range(so_dim):
                 line = file.readline().split()
                 for j in range(6):
-                    matrix_real[i, l + j] = float64(line[j + 1])
+                    matrix_real[i, l + j] = float32(line[j + 1])
             l += 6
 
         if remaining_columns > 0:
@@ -293,19 +293,19 @@ def _orca_spin_orbit_to_slt(
             for i in range(so_dim):
                 line = file.readline().split()
                 for j in range(remaining_columns):
-                    matrix_real[i, l + j] = float64(line[j + 1])
+                    matrix_real[i, l + j] = float32(line[j + 1])
 
         for _ in range(2):
             file.readline()  # Skip 2 lines separating real and imaginary part
 
-        matrix_imag = empty((so_dim, so_dim), dtype=float64)
+        matrix_imag = empty((so_dim, so_dim), dtype=float32)
         l = 0
         for _ in range(num_of_whole_blocks):
             file.readline()  # Skip a line before each block of 6 columns
             for i in range(so_dim):
                 line = file.readline().split()
                 for j in range(6):
-                    matrix_imag[i, l + j] = float64(line[j + 1])
+                    matrix_imag[i, l + j] = float32(line[j + 1])
             l += 6
 
         if remaining_columns > 0:
@@ -313,13 +313,13 @@ def _orca_spin_orbit_to_slt(
             for i in range(so_dim):
                 line = file.readline().split()
                 for j in range(remaining_columns):
-                    matrix_imag[i, l + j] = float64(line[j + 1])
+                    matrix_imag[i, l + j] = float32(line[j + 1])
 
     # Create a dataset in HDF5 file for SOC matrix
     dataset = orca.create_dataset(
-        "SOC", shape=(so_dim, so_dim), dtype=complex128
+        "SOC", shape=(so_dim, so_dim), dtype=complex64
     )
-    complex_matrix = array(matrix_real + 1j * matrix_imag, dtype=complex128)
+    complex_matrix = array(matrix_real + 1j * matrix_imag, dtype=complex64)
     dataset[:, :] = complex_matrix[:, :]
     dataset.attrs[
         "Description"
@@ -379,49 +379,49 @@ def _molcas_spin_orbit_to_slt(
         )
 
         rassi_soc = molcas.create_dataset(
-            "SOC_energies", shape=(soc_energies.shape[0],), dtype=float64
+            "SOC_energies", shape=(soc_energies.shape[0],), dtype=float32
         )
         rassi_soc[:] = soc_energies[:]
         rassi_soc.attrs[
             "Description"
         ] = "Dataset containing SOC energies from MOLCAS RASSI calculation"
         rassi_sx = molcas.create_dataset(
-            "SOC_SX", shape=sx.shape, dtype=complex128
+            "SOC_SX", shape=sx.shape, dtype=complex64
         )
         rassi_sx[:] = sx[:]
         rassi_sx.attrs[
             "Description"
         ] = "Dataset containing Sx matrix in SOC basis"
         rassi_sy = molcas.create_dataset(
-            "SOC_SY", shape=sy.shape, dtype=complex128
+            "SOC_SY", shape=sy.shape, dtype=complex64
         )
         rassi_sy[:] = sy[:]
         rassi_sy.attrs[
             "Description"
         ] = "Dataset containing Sy matrix in SOC basis"
         rassi_sz = molcas.create_dataset(
-            "SOC_SZ", shape=sz.shape, dtype=complex128
+            "SOC_SZ", shape=sz.shape, dtype=complex64
         )
         rassi_sz[:] = sz[:]
         rassi_sz.attrs[
             "Description"
         ] = "Dataset containing Sz matrix in SOC basis"
         rassi_lx = molcas.create_dataset(
-            "SOC_LX", shape=lx.shape, dtype=complex128
+            "SOC_LX", shape=lx.shape, dtype=complex64
         )
         rassi_lx[:] = lx[:]
         rassi_lx.attrs[
             "Description"
         ] = "Dataset containing Lx matrix in SOC basis"
         rassi_ly = molcas.create_dataset(
-            "SOC_LY", shape=ly.shape, dtype=complex128
+            "SOC_LY", shape=ly.shape, dtype=complex64
         )
         rassi_ly[:] = ly[:]
         rassi_ly.attrs[
             "Description"
         ] = "Dataset containing Ly matrix in SOC basis"
         rassi_lz = molcas.create_dataset(
-            "SOC_LZ", shape=lz.shape, dtype=complex128
+            "SOC_LZ", shape=lz.shape, dtype=complex64
         )
         rassi_lz[:] = lz[:]
         rassi_lz.attrs[
@@ -434,7 +434,7 @@ def _load_orca_hdf5(filename, group, rotation):
         # Read data from HDF5 file
         with File(filename, "r") as file:
             shape = file[str(group)]["SOC"][:].shape[0]
-            angular_momenta = zeros((6, shape, shape), dtype=complex128)
+            angular_momenta = zeros((6, shape, shape), dtype=complex64)
             soc_mat = file[str(group)]["SOC"][:]
             angular_momenta[0][:] = 0.5 * file[str(group)]["SF_SX"][:]
             angular_momenta[1][:] = 0.5j * file[str(group)]["SF_SY"][:]
@@ -447,8 +447,8 @@ def _load_orca_hdf5(filename, group, rotation):
         soc_energies, eigenvectors = eigh(soc_mat)
 
         angular_momenta = ascontiguousarray(angular_momenta)
-        soc_energies = ascontiguousarray(soc_energies.astype(float64))
-        eigenvectors = ascontiguousarray(eigenvectors.astype(complex128))
+        soc_energies = ascontiguousarray(soc_energies.astype(float32))
+        eigenvectors = ascontiguousarray(eigenvectors.astype(complex64))
 
         # Apply transformations to spin and orbital operators
         angular_momenta = (
@@ -481,7 +481,7 @@ def _load_molcas_hdf5(filename, group, rotation):
     try:
         with File(filename, "r") as file:
             shape = file[str(group)]["SOC_energies"][:].shape[0]
-            angular_momenta = zeros((6, shape, shape), dtype=complex128)
+            angular_momenta = zeros((6, shape, shape), dtype=complex64)
             soc_energies = file[str(group)]["SOC_energies"][:]
             angular_momenta[0][:] = file[str(group)]["SOC_SX"][:]
             angular_momenta[1][:] = file[str(group)]["SOC_SY"][:]
@@ -491,7 +491,7 @@ def _load_molcas_hdf5(filename, group, rotation):
             angular_momenta[5][:] = file[str(group)]["SOC_LZ"][:]
 
         angular_momenta = ascontiguousarray(angular_momenta)
-        soc_energies = ascontiguousarray(soc_energies.astype(float64))
+        soc_energies = ascontiguousarray(soc_energies.astype(float32))
 
         if (rotation is not None) or (rotation != None):
             angular_momenta[0:3, :, :] = _rotate_vector_operator(

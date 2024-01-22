@@ -23,7 +23,7 @@ from numpy import (
     meshgrid,
     zeros,
     newaxis,
-    float64,
+    float32,
     int64,
     sin,
     cos,
@@ -37,17 +37,17 @@ from slothpy._general_utilities._constants import MU_B_CM_3
 def _chitht(
     filename: str,
     group: str,
-    temperatures: ndarray[float64],
-    fields: ndarray[float64],
+    temperatures: ndarray[float32],
+    fields: ndarray[float32],
     num_of_points: int,
-    delta_h: float64,
+    delta_h: float32,
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
     exp: bool = False,
     T: bool = True,
-    grid: ndarray[float64] = None,
-) -> ndarray[float64]:
+    grid: ndarray[float32] = None,
+) -> ndarray[float32]:
     # Default XYZ grid
     if grid is None or grid == None:
         grid = array(
@@ -56,7 +56,7 @@ def _chitht(
                 [0.0, 1.0, 0.0, 0.3333333333333333],
                 [0.0, 0.0, 1.0, 0.3333333333333333],
             ],
-            dtype=float64,
+            dtype=float32,
         )
 
     # Experimentalist model
@@ -81,7 +81,7 @@ def _chitht(
         fields_diffs = (
             arange(-num_of_points, num_of_points + 1).astype(int64) * delta_h
         )[:, newaxis] + fields
-        fields_diffs = fields_diffs.T.astype(float64)
+        fields_diffs = fields_diffs.T.astype(float32)
         fields_diffs = fields_diffs.flatten()
 
         # Get M(T,H) for adjacent values of field
@@ -118,14 +118,14 @@ def _chitht_tensor(
     temperatures: ndarray,
     fields: ndarray,
     num_of_points: int,
-    delta_h: float64,
+    delta_h: float32,
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
     exp: bool = False,
     T: bool = True,
-    rotation: ndarray[float64] = None,
-) -> ndarray[float64]:
+    rotation: ndarray[float32] = None,
+) -> ndarray[float32]:
     # When passed to _mth activates tensor calculation and _mth actually
     # returns mht[3,3]-tensor format
     grid = array([1.0])
@@ -158,7 +158,7 @@ def _chitht_tensor(
         fields_diffs = (
             arange(-num_of_points, num_of_points + 1).astype(int64) * delta_h
         )[:, newaxis] + fields
-        fields_diffs = fields_diffs.T.astype(float64)
+        fields_diffs = fields_diffs.T.astype(float32)
         fields_diffs = fields_diffs.flatten()
 
         # Get M(T,H) for adjacent values of field
@@ -203,14 +203,14 @@ def _chit_3d(
     grid_type: Literal["mesh", "fibonacci"],
     grid_number: int,
     num_of_points: int,
-    delta_h: float64,
+    delta_h: float32,
     states_cutoff: int,
     num_cpu: int,
     num_threads: int,
     exp: bool = False,
     T: bool = True,
     rotation: ndarray = None,
-) -> ndarray[float64]:
+) -> ndarray[float32]:
     if grid_type != "mesh" and grid_type != "fibonacci":
         raise ValueError(
             'The only allowed grid types are "mesh" or "fibonacci".'
@@ -249,7 +249,7 @@ def _chit_3d(
         fields_diffs = (
             arange(-num_of_points, num_of_points + 1).astype(int64) * delta_h
         )[:, newaxis] + fields
-        fields_diffs = fields_diffs.T.astype(float64)
+        fields_diffs = fields_diffs.T.astype(float32)
         fields_diffs = fields_diffs.flatten()
 
         # Get M(T,H) for adjacent values of field

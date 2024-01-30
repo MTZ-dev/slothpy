@@ -519,15 +519,24 @@ def axes_in_xyz(
 
         # Create a DataFrame with the new atoms with Element names
         for new_atom in new_atom_names:
-            new_atom_plus = DataFrame({"Element": [new_atom]})
-            new_atom_plus[["X", "Y", "Z"]] = (
-                central_atom_coord + atom_dict[new_atom]
+            modified_coords = central_atom_coord + atom_dict[new_atom]
+            new_atom_plus = DataFrame(
+                {
+                    "Element": [new_atom],
+                    "X": [modified_coords.iloc[0]["X"]],
+                    "Y": [modified_coords.iloc[0]["Y"]],
+                    "Z": [modified_coords.iloc[0]["Z"]],
+                }
             )
             atoms_df = concat([atoms_df, new_atom_plus], ignore_index=True)
-
-            new_atom_minus = DataFrame({"Element": [new_atom]})
-            new_atom_minus[["X", "Y", "Z"]] = (
-                central_atom_coord - atom_dict[new_atom]
+            modified_coords = central_atom_coord - atom_dict[new_atom]
+            new_atom_minus = DataFrame(
+                {
+                    "Element": [new_atom],
+                    "X": [modified_coords.iloc[0]["X"]],
+                    "Y": [modified_coords.iloc[0]["Y"]],
+                    "Z": [modified_coords.iloc[0]["Z"]],
+                }
             )
             atoms_df = concat([atoms_df, new_atom_minus], ignore_index=True)
 

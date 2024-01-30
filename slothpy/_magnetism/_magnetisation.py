@@ -37,7 +37,7 @@ from numpy import (
     concatenate,
 )
 from numpy.linalg import eigh
-from numba import jit, set_num_threads
+from numba import jit, set_num_threads, prange
 from slothpy._general_utilities._constants import KB, MU_B
 from slothpy._general_utilities._system import (
     _get_num_of_processes,
@@ -64,22 +64,45 @@ from slothpy.core._config import settings
     cache=True,
     fastmath=True,
     inline="always",
+    parallel=True,
 )
 def _calculate_magnetization(
     energies: ndarray, states_momenta: ndarray, temperature: float64
 ) -> float64:
-    energies = ascontiguousarray(energies)
-    states_momenta = ascontiguousarray(states_momenta)
-    # Boltzman weights
-    energies = exp(-(energies - energies[0]) / (KB * temperature))
-
-    # Partition function
-    z = sum(energies)
-
-    # Weighted magnetic moments of microstates
-    m = vdot(states_momenta, energies)
+    z = 0
+    m = 0
+    factor = KB * temperature
+    for i in prange(energies.shape[0]):
+        e = exp(energies[0] - energies[i] / factor)
+        z += e
+        m += e * states_momenta[i]
 
     return m / z
+
+
+# @jit(
+#     "float64(float64[:], float64[:], float64)",
+#     nopython=True,
+#     nogil=True,
+#     cache=True,
+#     fastmath=True,
+#     inline="always",
+# )
+# def _calculate_magnetization(
+#     energies: ndarray, states_momenta: ndarray, temperature: float64
+# ) -> float64:
+#     energies = ascontiguousarray(energies)
+#     states_momenta = ascontiguousarray(states_momenta)
+#     # Boltzman weights
+#     energies = exp(-(energies - energies[0]) / (KB * temperature))
+
+#     # Partition function
+#     z = sum(energies)
+
+#     # Weighted magnetic moments of microstates
+#     m = vdot(states_momenta, energies)
+
+#     return m / z
 
 
 @jit(
@@ -507,9 +530,7 @@ def _mth(
     return mht_array_shared_arr  # Returning values in Bohr magnetons
 
 
-def _update_progress_bar(
-    current, total, start_time, num_processes, num_threads
-):
+def _update_progress_bar(current, total, start_time):
     percentage = 100 * (current / total)
     bar_length = 50
     filled_length = int(bar_length * current // total)
@@ -519,24 +540,29 @@ def _update_progress_bar(
     cpu_usage = psutil.cpu_percent()
     print(
         f"\rProgress: |{bar}| {percentage:.2f}% | Time: {current_time:.1f} s |"
-        f" CPU Usage: {cpu_usage:.1f}% | Memory Usage: {memory_usage}% |"
-        f" Processes: {num_processes} | Threads per Process: {num_threads} ",
+        f" CPU Usage: {cpu_usage:.1f}% | Memory Usage: {memory_usage}% |",
         end="\r",
     )
 
 
 def _monitor_progress(shared_counter, N, num_processes, num_threads):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Calculate Magnetisation started: {current_time}")
+    print(
+        f"Calculate Magnetisation started: {current_time} | Processes:"
+        f" {num_processes} | Threads per Process: {num_threads} |"
+    )
     start_time = time.perf_counter()
     while True:
         current_value = sum(shared_counter)
         _update_progress_bar(
-            current_value, N, start_time, num_processes, num_threads
+            current_value,
+            N,
+            start_time,
         )
         if current_value >= N:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"\nCompleated: {current_time}")
+            print("Collecting and processing results...")
             break
         time.sleep(0.19)
 

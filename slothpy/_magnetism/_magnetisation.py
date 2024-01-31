@@ -37,7 +37,8 @@ from numpy import (
     concatenate,
 )
 from numpy.linalg import eigh
-from numba import jit, set_num_threads
+from numba import jit, set_num_threads, prange
+from numba import types
 from slothpy._general_utilities._constants import KB, MU_B
 from slothpy._general_utilities._system import (
     _get_num_of_processes,
@@ -46,7 +47,7 @@ from slothpy._general_utilities._system import (
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
-from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
+# from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
 from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
     _meshgrid_over_sphere_flatten,
@@ -57,6 +58,64 @@ import psutil
 from slothpy.core._config import settings
 
 
+
+@jit(
+    "float64[:](complex128[:,:], complex128[:,:])",
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _diag_utmu(m, u):
+    u = ascontiguousarray(u)
+    m = ascontiguousarray(m)
+    res = zeros((u.shape[0],), dtype=complex128)
+    m = u.T.conjugate() @ m
+    for i in prange(u.shape[0]):
+        for k in range(u.shape[0]):
+                res[i] += m[i,k] * u[k,i]
+                
+    return res.real
+
+
+@jit(
+    "complex128[:,:](complex128[:,:,:], complex128[:])",
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _3d_dot(u, m):
+                
+    return u[0] * m[0] + u[1] * m[1] + u[2] * m[2]
+
+
+@jit(
+    "complex128[:,:](complex128[:,:,:], float64[:], float64, complex128[:])",
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _calculate_zeeman_matrix(
+    magnetic_momenta, soc_energies, field, orientation
+):
+    orientation = -field * MU_B * orientation
+    magnetic_momenta = _3d_dot(magnetic_momenta, orientation)
+
+    # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
+    for k in prange(magnetic_momenta.shape[0]):
+        magnetic_momenta[k, k] += soc_energies[k]
+
+    return magnetic_momenta
+
+
 @jit(
     "float64(float64[:], float64[:], float64)",
     nopython=True,
@@ -64,22 +123,44 @@ from slothpy.core._config import settings
     cache=True,
     fastmath=True,
     inline="always",
+    parallel = True,
 )
 def _calculate_magnetization(
     energies: ndarray, states_momenta: ndarray, temperature: float64
 ) -> float64:
-    energies = ascontiguousarray(energies)
-    states_momenta = ascontiguousarray(states_momenta)
-    # Boltzman weights
-    energies = exp(-(energies - energies[0]) / (KB * temperature))
-
-    # Partition function
-    z = sum(energies)
-
-    # Weighted magnetic moments of microstates
-    m = vdot(states_momenta, energies)
+    factor = KB * temperature
+    z = 0
+    m = 0
+    for i in prange(energies.shape[0]):
+        e = exp(-energies[i]/factor)
+        z += e
+        m += e * states_momenta[i]
 
     return m / z
+
+# @jit(
+#     "float64(float64[:], float64[:], float64)",
+#     nopython=True,
+#     nogil=True,
+#     cache=True,
+#     fastmath=True,
+#     inline="always",
+# )
+# def _calculate_magnetization(
+#     energies: ndarray, states_momenta: ndarray, temperature: float64
+# ) -> float64:
+#     energies = ascontiguousarray(energies)
+#     states_momenta = ascontiguousarray(states_momenta)
+#     # Boltzman weights
+#     energies = exp(-(energies - energies[0]) / (KB * temperature))
+
+#     # Partition function
+#     z = sum(energies)
+
+#     # Weighted magnetic moments of microstates
+#     m = vdot(states_momenta, energies)
+
+#     return m / z
 
 
 @jit(
@@ -107,25 +188,13 @@ def _mt_over_fields_grid(
             orientation = ascontiguousarray(
                 grid[j, :3].copy().astype(complex128)
             )
-            energies, zeeman_matrix = eigh(
-                _calculate_zeeman_matrix(
-                    magnetic_momenta, soc_energies, fields[i], orientation
-                )
-            )
-            orientation *= grid[j, 3]
-            zeeman_matrix = diag(
-                zeeman_matrix.conj().T
-                @ (
-                    orientation[0] * magnetic_momenta[0]
-                    + orientation[1] * magnetic_momenta[1]
-                    + orientation[2] * magnetic_momenta[2]
-                )
-                @ zeeman_matrix
-            ).real.astype(float64)
+            zeeman_matrix = _calculate_zeeman_matrix(magnetic_momenta, soc_energies, fields[i], orientation)
+            energies, zeeman_matrix = eigh(zeeman_matrix)
+            oriented_momenta = _3d_dot(magnetic_momenta, orientation)
+            states_momenta = _diag_utmu(oriented_momenta, zeeman_matrix)
+            energies = energies - energies[0]
             for t in range(temperatures.shape[0]):
-                mht_array[i, t] += _calculate_magnetization(
-                    energies, zeeman_matrix, temperatures[t]
-                )
+                mht_array[i, t] += _calculate_magnetization(energies, states_momenta, temperatures[t]) * grid[j, 3]
             progress += 1
 
 

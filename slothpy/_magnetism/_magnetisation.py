@@ -37,7 +37,7 @@ from numpy import (
     concatenate,
 )
 from numpy.linalg import eigh
-from numba import jit, set_num_threads, prange
+from numba import jit, set_num_threads
 from slothpy._general_utilities._constants import KB, MU_B
 from slothpy._general_utilities._system import (
     _get_num_of_processes,
@@ -64,45 +64,22 @@ from slothpy.core._config import settings
     cache=True,
     fastmath=True,
     inline="always",
-    parallel=True,
 )
 def _calculate_magnetization(
     energies: ndarray, states_momenta: ndarray, temperature: float64
 ) -> float64:
-    z = 0
-    m = 0
-    factor = KB * temperature
-    for i in prange(energies.shape[0]):
-        e = exp(energies[0] - energies[i] / factor)
-        z += e
-        m += e * states_momenta[i]
+    energies = ascontiguousarray(energies)
+    states_momenta = ascontiguousarray(states_momenta)
+    # Boltzman weights
+    energies = exp(-(energies - energies[0]) / (KB * temperature))
+
+    # Partition function
+    z = sum(energies)
+
+    # Weighted magnetic moments of microstates
+    m = vdot(states_momenta, energies)
 
     return m / z
-
-
-# @jit(
-#     "float64(float64[:], float64[:], float64)",
-#     nopython=True,
-#     nogil=True,
-#     cache=True,
-#     fastmath=True,
-#     inline="always",
-# )
-# def _calculate_magnetization(
-#     energies: ndarray, states_momenta: ndarray, temperature: float64
-# ) -> float64:
-#     energies = ascontiguousarray(energies)
-#     states_momenta = ascontiguousarray(states_momenta)
-#     # Boltzman weights
-#     energies = exp(-(energies - energies[0]) / (KB * temperature))
-
-#     # Partition function
-#     z = sum(energies)
-
-#     # Weighted magnetic moments of microstates
-#     m = vdot(states_momenta, energies)
-
-#     return m / z
 
 
 @jit(

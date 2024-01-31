@@ -34,7 +34,7 @@ from numpy import (
     complex128,
 )
 from numpy.linalg import eigvalsh
-from numba import jit, set_num_threads
+from numba import jit, set_num_threads, prange
 from slothpy._general_utilities._constants import KB, MU_B, H_CM_1
 from slothpy._general_utilities._system import (
     _get_num_of_processes,
@@ -56,6 +56,7 @@ from slothpy._general_utilities._grids_over_sphere import (
     cache=True,
     fastmath=True,
     inline="always",
+    parallel=True,
 )
 def _calculate_zeeman_matrix(
     magnetic_momenta, soc_energies, field, orientation
@@ -68,7 +69,7 @@ def _calculate_zeeman_matrix(
     )
 
     # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
-    for k in range(magnetic_momenta.shape[0]):
+    for k in prange(magnetic_momenta.shape[0]):
         magnetic_momenta[k, k] += soc_energies[k]
 
     return magnetic_momenta

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>SlothPy Tutorial &#8212; SlothPy 0.2.0 documentation</title>
+    <title>&lt;no title&gt; &#8212; SlothPy 0.2.0 documentation</title>
   
   
   
@@ -551,7 +551,7 @@ document.write(`
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page">SlothPy Tutorial</li>
+    <li class="breadcrumb-item active" aria-current="page">&lt;no title&gt;</li>
   </ul>
 </nav>
 </div>
@@ -568,8 +568,7 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="SlothPy-Tutorial">
-<h1>SlothPy Tutorial<a class="headerlink" href="#SlothPy-Tutorial" title="Link to this heading">#</a></h1>
+  <p><strong>Note:</strong> This tutorial will be depreciated and entirely replaced upon the release of the 0.3 version.</p>
 <p>SlothPy makes extensive use of the HDF5 file format (powerful and portable binary format for fast I/O and big data) to store all the data related to the software. The core file format .slt is in fact .hdf5/h5 file in disguise, so it can be additionally opened and modified with programs such as HDFView and HDFCompas programs or directly accessed through the h5py Python wrapper. Firstly, let us import the pacgake</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
@@ -626,7 +625,7 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -669,7 +668,7 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -708,7 +707,7 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -742,7 +741,7 @@ GitHub. We will use it as an example in this tutorial. To create a Compound from
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_mth</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;bas3&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -776,7 +775,7 @@ advised to use it for jobs that will take hours. To demonstrate it with very sma
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_process</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">autotune</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_process</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">autotune</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -785,7 +784,7 @@ advised to use it for jobs that will take hours. To demonstrate it with very sma
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_threads</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">autotune</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_threads</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">autotune</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -805,7 +804,7 @@ estimate. Can you choose better settings by yourself?</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_process</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">num_of_cpu</span><span class="p">,</span> <span class="n">num_of_threads</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_process</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">num_of_cpu</span><span class="p">,</span> <span class="n">num_of_threads</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -814,7 +813,7 @@ estimate. Can you choose better settings by yourself?</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_threads</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">num_of_cpu</span><span class="p">,</span> <span class="n">num_of_threads</span><span class="p">)</span>
+<span class="n">mth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields_threads</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">temperatures_mth</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">num_of_cpu</span><span class="p">,</span> <span class="n">num_of_threads</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -835,7 +834,7 @@ harder and also more time-consuming for the module, but still better than trying
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">chitht</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_chitht</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">number_of_points</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">delta_h</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span>
+<span class="n">chitht</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_susceptibility</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">number_of_points</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">delta_h</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span>
                                <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">number_cpu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">number_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -844,7 +843,7 @@ harder and also more time-consuming for the module, but still better than trying
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_chitht</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_susceptibility</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -853,8 +852,9 @@ harder and also more time-consuming for the module, but still better than trying
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">temperatures</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
-<span class="n">fields</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">linspace</span>
+<span class="n">temperatures</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">fields</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -863,8 +863,8 @@ harder and also more time-consuming for the module, but still better than trying
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">eth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_helmholtz_energyth</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="p">[[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]],</span> <span class="n">temperatures</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                                  <span class="n">number_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">internal_energy</span><span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+<span class="n">eth</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_energy</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="p">[[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]],</span> <span class="n">temperatures</span><span class="p">,</span> <span class="s2">&quot;helmholtz&quot;</span><span class="p">,</span> <span class="mi">364</span><span class="p">,</span> <span class="n">number_cpu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                  <span class="n">number_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -872,7 +872,7 @@ harder and also more time-consuming for the module, but still better than trying
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_helmholtz_energyth</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">plot_energy</span><span class="p">(</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -902,8 +902,7 @@ harder and also more time-consuming for the module, but still better than trying
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_helmholtz_energy_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">internal_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                                        <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_energy_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="s2">&quot;mesh&quot;</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="s2">&quot;helmholtz&quot;</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_namez&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -912,7 +911,7 @@ harder and also more time-consuming for the module, but still better than trying
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_mag_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_magnetisation_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="s2">&quot;mesh&quot;</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -921,7 +920,7 @@ harder and also more time-consuming for the module, but still better than trying
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_chit_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_susceptibility_3d</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="s2">&quot;mesh&quot;</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">slt</span><span class="o">=</span><span class="s2">&quot;your_name&quot;</span><span class="p">)</span>
 <span class="c1"># Carefull! This is the most demanding calculation it has to perform (2*number_of_points+1) times the</span>
 <span class="c1"># magnetisation calculation for numerical differentiation using finite difference method with the custom stencil.</span>
 </pre></div>
@@ -1002,7 +1001,7 @@ need to use the inverse rotation (transpose of an orthogonal matrix) to express 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_chit_tensorht</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">number_of_points</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">delta_h</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">364</span><span class="p">,</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">NdCo</span><span class="o">.</span><span class="n">calculate_susceptibility_tensor</span><span class="p">(</span><span class="s2">&quot;bas3&quot;</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">number_of_points</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">delta_h</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">states_cutoff</span><span class="o">=</span><span class="mi">364</span><span class="p">,</span>
                              <span class="n">number_cpu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">number_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="n">your_rotation</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1168,7 +1167,6 @@ need to use the inverse rotation (transpose of an orthogonal matrix) to express 
 <p>Here, the resulting matrix contains % weights of pseudo-spin states (columns - from -S to S) in each state from the list (rows - here 10 states from 0 to 9) where pseudo-spin number S = number_of_states / 2 - 1/2 = 10/2 - 1/2 = 9/2.</p>
 <p>To explore more methods check the Reference Manual and more specialized, upcoming tutorials.</p>
 <p>MTZ</p>
-</section>
 
 
                 </article>

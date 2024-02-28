@@ -2,17 +2,11 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "6eb06f63",
-   "metadata": {},
-   "source": [
-    "# SlothPy Tutorial"
-   ]
-  },
-  {
-   "cell_type": "markdown",
    "id": "6871555c",
    "metadata": {},
    "source": [
+    "**Note:** This tutorial will be depreciated and entirely replaced upon the release of the 0.3 version.\n",
+    "\n",
     "SlothPy makes extensive use of the HDF5 file format (powerful and portable binary format for fast I/O and big data) to store all the data related to the software. The core file format .slt is in fact .hdf5/h5 file in disguise, so it can be additionally opened and modified with programs such as HDFView and HDFCompas programs or directly accessed through the h5py Python wrapper. Firstly, let us import the pacgake"
    ]
   },
@@ -120,7 +114,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_mth, 4, temperatures_mth, 10)"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_mth, 4, temperatures_mth, 10)"
    ]
   },
   {
@@ -202,7 +196,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_mth, 6, temperatures_mth, 32, slt=\"bas3\")"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_mth, 6, temperatures_mth, 32, slt=\"bas3\")"
    ]
   },
   {
@@ -279,7 +273,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "NdCo.plot_mth(\"bas3\")"
+    "NdCo.plot_magnetisation(\"bas3\")"
    ]
   },
   {
@@ -343,7 +337,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_mth, 6, temperatures_mth, 32, slt=\"bas3\")"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_mth, 6, temperatures_mth, 32, slt=\"bas3\")"
    ]
   },
   {
@@ -396,7 +390,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_process, 6, temperatures_mth, 364, number_cpu = 0, autotune=True)"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_process, 6, temperatures_mth, 364, number_cpu = 0, autotune=True)"
    ]
   },
   {
@@ -407,7 +401,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_threads, 6, temperatures_mth, 364, number_cpu = 0, autotune=True)"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_threads, 6, temperatures_mth, 364, number_cpu = 0, autotune=True)"
    ]
   },
   {
@@ -437,7 +431,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_process, 6, temperatures_mth, 364, num_of_cpu, num_of_threads)"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_process, 6, temperatures_mth, 364, num_of_cpu, num_of_threads)"
    ]
   },
   {
@@ -448,7 +442,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "mth = NdCo.calculate_mth(\"bas3\", fields_threads, 6, temperatures_mth, 364, num_of_cpu, num_of_threads)"
+    "mth = NdCo.calculate_magnetisation(\"bas3\", fields_threads, 6, temperatures_mth, 364, num_of_cpu, num_of_threads)"
    ]
   },
   {
@@ -486,7 +480,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "chitht = NdCo.calculate_chitht(\"bas3\", temperatures, fields, number_of_points=2, delta_h=0.0001,\n",
+    "chitht = NdCo.calculate_susceptibility(\"bas3\", temperatures, fields, number_of_points=2, delta_h=0.0001,\n",
     "                               states_cutoff=256, number_cpu=0, number_threads=1, T=True, slt=\"your_name\")"
    ]
   },
@@ -497,7 +491,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "NdCo.plot_chitht(\"your_name\")"
+    "NdCo.plot_susceptibility(\"your_name\")"
    ]
   },
   {
@@ -515,8 +509,9 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "temperatures = linspace(1, 300, 300)\n",
-    "fields = linspace(0.0001, 10, 100)"
+    "from numpy import linspace\n",
+    "temperatures = linspace(1, 300, 10)\n",
+    "fields = linspace(0.1, 1, 5)"
    ]
   },
   {
@@ -527,8 +522,8 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "eth = NdCo.calculate_helmholtz_energyth(\"bas3\", fields, [[0., 0., 1., 1.]], temperatures, 364, number_cpu=0, \n",
-    "                                  number_threads=1, internal_energy= False, slt=\"your_name\")"
+    "eth = NdCo.calculate_energy(\"bas3\", fields, [[0., 0., 1., 1.]], temperatures, \"helmholtz\", 364, number_cpu=0, \n",
+    "                                  number_threads=1, slt=\"your_name\")"
    ]
   },
   {
@@ -540,7 +535,7 @@
    },
    "outputs": [],
    "source": [
-    "NdCo.plot_helmholtz_energyth(\"your_name\")"
+    "NdCo.plot_energy(\"your_name\")"
    ]
   },
   {
@@ -590,8 +585,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "r = NdCo.calculate_helmholtz_energy_3d(\"bas3\", fields, 35, temperatures, 128, internal_energy=False,\n",
-    "                                        slt=\"your_name\")"
+    "r = NdCo.calculate_energy_3d(\"bas3\", fields, \"mesh\", 35, temperatures, \"helmholtz\", 128, slt=\"your_namez\")"
    ]
   },
   {
@@ -602,7 +596,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "r = NdCo.calculate_mag_3d(\"bas3\", fields, 35, temperatures, 128, slt=\"your_name\")"
+    "r = NdCo.calculate_magnetisation_3d(\"bas3\", fields, \"mesh\", 35, temperatures, 128, slt=\"your_name\")"
    ]
   },
   {
@@ -613,7 +607,7 @@
    "outputs": [],
    "source": [
     "%%time\n",
-    "r = NdCo.calculate_chit_3d(\"bas3\", temperatures, fields, 35, 2, states_cutoff=128, slt=\"your_name\")\n",
+    "r = NdCo.calculate_susceptibility_3d(\"bas3\", temperatures, fields, \"mesh\", 35, 2, states_cutoff=128, slt=\"your_name\")\n",
     "# Carefull! This is the most demanding calculation it has to perform (2*number_of_points+1) times the \n",
     "# magnetisation calculation for numerical differentiation using finite difference method with the custom stencil."
    ]
@@ -776,7 +770,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "NdCo.calculate_chit_tensorht(\"bas3\", temperatures, fields, number_of_points=3, delta_h=0.0001, states_cutoff=364,\n",
+    "NdCo.calculate_susceptibility_tensor(\"bas3\", temperatures, fields, number_of_points=3, delta_h=0.0001, states_cutoff=364,\n",
     "                             number_cpu=0, number_threads=1, rotation=your_rotation)"
    ]
   },

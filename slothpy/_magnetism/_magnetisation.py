@@ -18,6 +18,7 @@ from typing import Literal
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
 from multiprocessing import Pool, Process
+from threading import Thread
 from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
@@ -47,7 +48,7 @@ from slothpy._general_utilities._system import (
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
-# from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
+from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
 from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
     _meshgrid_over_sphere_flatten,
@@ -56,8 +57,9 @@ import time
 from datetime import datetime
 import psutil
 from slothpy.core._config import settings
-
-
+from slothpy._gui._terminal_gui import WorkerMonitorApp, run_gui
+from PyQt6.QtWidgets import QApplication
+import sys
 
 @jit(
     "float64[:](complex128[:,:], complex128[:,:])",
@@ -73,10 +75,10 @@ def _diag_utmu(m, u):
     m = ascontiguousarray(m)
     res = zeros((u.shape[0],), dtype=complex128)
     m = u.T.conjugate() @ m
-    for i in prange(u.shape[0]):
+    for i in prange(u.shape[0]): ######## tutaj sprawdz racing conditions anulując prange i parallel
         for k in range(u.shape[0]):
-                res[i] += m[i,k] * u[k,i]
-                
+            res[i] += m[i, k] * u[k, i]
+
     return res.real
 
 
@@ -90,12 +92,12 @@ def _diag_utmu(m, u):
     parallel=True,
 )
 def _3d_dot(u, m):
-                
     return u[0] * m[0] + u[1] * m[1] + u[2] * m[2]
 
 
 @jit(
-    "complex128[:,:](complex128[:,:,:], float64[:], float64, complex128[:])",
+    "types.UniTuple(complex128[:,:],2)(complex128[:,:,:], float64[:], float64,"
+    " complex128[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -103,17 +105,17 @@ def _3d_dot(u, m):
     inline="always",
     parallel=True,
 )
-def _calculate_zeeman_matrix(
+def _calculate_zeeman_matrix2(
     magnetic_momenta, soc_energies, field, orientation
 ):
-    orientation = -field * MU_B * orientation
-    magnetic_momenta = _3d_dot(magnetic_momenta, orientation)
+    magnetic_momenta_orient = _3d_dot(magnetic_momenta, orientation)
+    magnetic_momenta = -field * MU_B * magnetic_momenta_orient
 
     # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
     for k in prange(magnetic_momenta.shape[0]):
         magnetic_momenta[k, k] += soc_energies[k]
 
-    return magnetic_momenta
+    return magnetic_momenta_orient, magnetic_momenta
 
 
 @jit(
@@ -123,7 +125,7 @@ def _calculate_zeeman_matrix(
     cache=True,
     fastmath=True,
     inline="always",
-    parallel = True,
+    parallel=True,
 )
 def _calculate_magnetization(
     energies: ndarray, states_momenta: ndarray, temperature: float64
@@ -132,11 +134,12 @@ def _calculate_magnetization(
     z = 0
     m = 0
     for i in prange(energies.shape[0]):
-        e = exp(-energies[i]/factor)
+        e = exp(-energies[i] / factor)
         z += e
         m += e * states_momenta[i]
 
     return m / z
+
 
 # @jit(
 #     "float64(float64[:], float64[:], float64)",
@@ -188,13 +191,19 @@ def _mt_over_fields_grid(
             orientation = ascontiguousarray(
                 grid[j, :3].copy().astype(complex128)
             )
-            zeeman_matrix = _calculate_zeeman_matrix(magnetic_momenta, soc_energies, fields[i], orientation)
+            oriented_momenta, zeeman_matrix = _calculate_zeeman_matrix2(
+                magnetic_momenta, soc_energies, fields[i], orientation
+            )
             energies, zeeman_matrix = eigh(zeeman_matrix)
-            oriented_momenta = _3d_dot(magnetic_momenta, orientation)
             states_momenta = _diag_utmu(oriented_momenta, zeeman_matrix)
             energies = energies - energies[0]
             for t in range(temperatures.shape[0]):
-                mht_array[i, t] += _calculate_magnetization(energies, states_momenta, temperatures[t]) * grid[j, 3]
+                mht_array[i, t] += (
+                    _calculate_magnetization(
+                        energies, states_momenta, temperatures[t]
+                    )
+                    * grid[j, 3]
+                )
             progress += 1
 
 
@@ -450,7 +459,7 @@ def _mth(
     )
 
     # Get number of parallel proceses to be used
-    num_process, num_threads = _get_num_of_processes(
+    num_processes, num_threads = _get_num_of_processes(
         num_cpu, num_threads, fields.shape[0]
     )
 
@@ -459,7 +468,7 @@ def _mth(
     temperatures = ascontiguousarray(temperatures, dtype=float64)
     grid = ascontiguousarray(grid, dtype=float64)
     mht_array = zeros((fields.shape[0], temperatures.shape[0]), dtype=float64)
-    progress = zeros((num_process,), dtype=int64)
+    progress = zeros((num_processes,), dtype=int64)
 
     if array_equal(grid, array([1.0])):
         tensor_calc = True
@@ -529,18 +538,15 @@ def _mth(
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 set_num_threads(num_threads)
                 if settings.monitor:
+                    chunk_size = fields_shared_arr.shape[0] // num_processes
+                    remainder = fields_shared_arr.shape[0] % num_processes
+                    num_tasks = [((chunk_size + (1 if i < remainder else 0))*grid_shared_arr.shape[0]) for i in range(progress_shared_arr.shape[0])]
+
                     monitor = Process(
-                        target=_monitor_progress,
-                        args=(
-                            progress_shared_arr,
-                            fields_shared_arr.shape[0]
-                            * grid_shared_arr.shape[0],
-                            num_process,
-                            num_threads,
-                        ),
+                        target=run_gui, args=(progress_shared.name, progress_shared_arr.shape, num_tasks, "calculate_magnetisation")
                     )
                     monitor.start()
-                with Pool(num_process) as p:
+                with Pool(num_processes) as p:
                     p.map(
                         _calculate_mht_wrapper,
                         _arg_iter_mht(
@@ -556,7 +562,7 @@ def _mth(
                             grid_shared_arr.shape,
                             temperatures_shared_arr.shape,
                             _distribute_chunks(
-                                fields_shared_arr.shape[0], num_process
+                                fields_shared_arr.shape[0], num_processes
                             ),
                             progress_shared.name,
                         ),

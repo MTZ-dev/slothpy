@@ -55,7 +55,7 @@ class SltFileError(Exception):
             + YELLOW
             + f"{self.error_type}"
             + RESET
-            + f": {self.error_message} \n"
+            + f": {self.error_message} "
         )
         self.final_message = self.slt_message + message
         super().__init__(self.final_message)
@@ -111,7 +111,7 @@ class SltCompError(Exception):
             + YELLOW
             + f"{self.error_type}"
             + RESET
-            + f": {self.error_message} \n"
+            + f": {self.error_message} "
         )
         self.final_message = self.slt_message + message
         super().__init__(self.final_message)
@@ -167,7 +167,7 @@ class SltSaveError(Exception):
             + YELLOW
             + f"{self.error_type}"
             + RESET
-            + f": {self.error_message} \n"
+            + f": {self.error_message} "
         )
         self.final_message = self.slt_message + message
         super().__init__(self.final_message)
@@ -223,7 +223,7 @@ class SltReadError(Exception):
             + YELLOW
             + f"{self.error_type}"
             + RESET
-            + f": {self.error_message} \n"
+            + f": {self.error_message} "
         )
         self.final_message = self.slt_message + message
         super().__init__(self.final_message)
@@ -273,7 +273,7 @@ class SltInputError(Exception):
             + YELLOW
             + f"{self.error_type}"
             + RESET
-            + f": {self.error_message} \n"
+            + f": {self.error_message} "
         )
         self.final_message = self.slt_message + message
         super().__init__(self.final_message)
@@ -329,7 +329,7 @@ class SltPlotError(Exception):
             + YELLOW
             + f"{self.error_type}"
             + RESET
-            + f": {self.error_message} \n"
+            + f": {self.error_message} "
         )
         self.final_message = self.slt_message + message
         super().__init__(self.final_message)

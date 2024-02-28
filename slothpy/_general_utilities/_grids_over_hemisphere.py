@@ -38022,4 +38022,4 @@ def lebedev_laikov_grid(grid: int) -> ndarray:
         )
         return grid_array
 
-    raise ValueError(f"Grid number has to lay between 0-11")
+    raise ValueError(f"The grid number has to be an integer between 0 and 11.")

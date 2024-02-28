@@ -114,9 +114,12 @@ from slothpy._general_utilities._grids_over_sphere import (
     _meshgrid_over_sphere_flatten,
     _fibonacci_over_sphere,
 )
+from slothpy.core._input_parser import validate_input
+from functools import wraps
+import inspect
 
 
-class Compound:
+class Compound():
     """
     The core object constituting the API and access to all the methods.
     """
@@ -385,6 +388,7 @@ class Compound:
             ) from None
 
         return value
+    
 
     def delete_group_dataset(self, first: str, second: str = None) -> None:
         """
@@ -422,6 +426,7 @@ class Compound:
             ) from None
 
         self._get_hdf5_groups_datasets_and_attributes()
+
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None
@@ -557,7 +562,8 @@ class Compound:
 
         return g_tensor_list, magnetic_axes_list
 
-    def calculate_magnetisation(
+    @validate_input
+    def magnetisation(
         self,
         group: str,
         fields: ndarray[float64],
@@ -566,7 +572,7 @@ class Compound:
         states_cutoff: int = 0,
         number_cpu: int = 0,
         number_threads: int = 1,
-        slt: str = None,
+        slt_save: str = None,
         autotune: bool = False,
     ) -> ndarray[float64]:
         """
@@ -606,7 +612,7 @@ class Compound:
             algebra libraries used during the calculation. Higher values
             benefit from the increasing size of matrices (states_cutoff) over
             the parallelization over CPUs., by default 1
-        slt : str, optional
+        slt_save : str, optional
             If given the results will be saved in a group of this name to .slt
             file with suffix: _magnetisation., by default None
         autotune : bool, optional
@@ -655,43 +661,43 @@ class Compound:
         """
         if settings.monitor:
             print("Initialization...")
-        if slt is not None:
-            slt_group_name = f"{slt}_magnetisation"
-            if _group_exists(self._hdf5, slt_group_name):
-                raise SltSaveError(
-                    self._hdf5,
-                    NameError(""),
-                    message="Unable to save the results. "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + slt_group_name
-                    + RESET
-                    + '" '
-                    + "already exists. Delete it manually.",
-                ) from None
-        try:
-            fields = array(fields, dtype=float64)
-            temperatures = array(temperatures, dtype=float64)
-        except Exception as exc:
-            raise SltInputError(exc) from None
+        # if slt is not None:
+        #     slt_group_name = f"{slt}_magnetisation"
+        #     if _group_exists(self._hdf5, slt_group_name):
+        #         raise SltSaveError(
+        #             self._hdf5,
+        #             NameError(""),
+        #             message="Unable to save the results. "
+        #             + BLUE
+        #             + "Group "
+        #             + RESET
+        #             + '"'
+        #             + BLUE
+        #             + slt_group_name
+        #             + RESET
+        #             + '" '
+        #             + "already exists. Delete it manually.",
+        #         ) from None
+        # try:
+        #     fields = array(fields, dtype=float64)
+        #     temperatures = array(temperatures, dtype=float64)
+        # except Exception as exc:
+        #     raise SltInputError(exc) from None
 
-        if fields.ndim != 1:
-            raise SltInputError(
-                ValueError("The list of fields has to be a 1D array.")
-            ) from None
+        # if fields.ndim != 1:
+        #     raise SltInputError(
+        #         ValueError("The list of fields has to be a 1D array.")
+        #     ) from None
 
-        if temperatures.ndim != 1:
-            raise SltInputError(
-                ValueError("The list of temperatures has to be a 1D array.")
-            ) from None
+        # if temperatures.ndim != 1:
+        #     raise SltInputError(
+        #         ValueError("The list of temperatures has to be a 1D array.")
+        #     ) from None
 
-        if isinstance(grid, int):
-            grid = lebedev_laikov_grid(grid)
-        else:
-            grid = _normalize_grid_vectors(grid)
+        # if isinstance(grid, int):
+        #     grid = lebedev_laikov_grid(grid)
+        # else:
+        #     grid = _normalize_grid_vectors(grid)
 
         if autotune:
             try:
@@ -749,25 +755,28 @@ class Compound:
                 + '".',
             ) from None
 
-        if slt is not None:
+        if slt_save is not None:
             try:
+                with File(self._hdf5, "r+") as file:
+                    group = file.create_group(slt_save)
+                    group.attrs["Type"] = "magnetisation"
                 self[
-                    slt_group_name,
-                    f"{slt}_mth",
+                    slt_save,
+                    f"mth",
                     "Dataset containing M(T,H) magnetisation (T - rows, H"
                     f" - columns) calculated from group: {group}.",
-                    f"Group({slt}) containing M(T,H) magnetisation"
+                    f"Group({slt_save}) containing M(T,H) magnetisation"
                     f" calculated from group: {group}.",
                 ] = mth_array[:, :]
                 self[
-                    slt_group_name,
-                    f"{slt}_fields",
+                    slt_save,
+                    f"fields",
                     "Dataset containing magnetic field H values used in"
                     f" simulation of M(T,H) from group: {group}.",
                 ] = fields[:]
                 self[
-                    slt_group_name,
-                    f"{slt}_temperatures",
+                    slt_save,
+                    f"temperatures",
                     "Dataset containing temperature T values used in"
                     f" simulation of M(T,H) from group: {group}.",
                 ] = temperatures[:]
@@ -781,7 +790,7 @@ class Compound:
                     + RESET
                     + '"'
                     + BLUE
-                    + slt_group_name
+                    + slt_save
                     + RESET
                     + '".',
                 ) from None
@@ -2606,7 +2615,7 @@ class Compound:
         average: bool = False,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float64]:      ######## Sprawdzaj czy number_of_states jest mniejszy lub = od states_cutoff
         """
         Calculates directional or powder-averaged Zeeman splitting for a given
         number of states and list of field values.

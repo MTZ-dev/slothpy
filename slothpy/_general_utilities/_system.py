@@ -26,7 +26,7 @@ def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
         or (num_threads < 0)
     ):
         raise ValueError(
-            "Numbers of CPUs and Threads have to be positive integers."
+            "Numbers of CPUs and Threads have to be nonnegative integers."
         )
 
     total_num_of_cpu = int(cpu_count())

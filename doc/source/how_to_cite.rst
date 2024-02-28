@@ -36,11 +36,13 @@ For those who use BibTeX for managing bibliography, here's the BibTeX entry:
 
 Acknowledgements
 ----------------
-Funding organizations
-
 .. raw:: html
     
     <img src="https://raw.githubusercontent.com/MTZ-dev/slothpy/main/doc/source/_static/grateful_slothpy.png" width="400" alt="Image not found" onerror="this.onerror=null;this.src='_images/error_slothpy.png';">
+Funding organizations
+
+.. raw:: html
+
     <img src="https://raw.githubusercontent.com/MTZ-dev/slothpy/main/doc/source/_static/MEiN.png" width="400" alt="Image not found" onerror="this.onerror=null;this.src='_images/error_slothpy.png';">
     <img src="https://raw.githubusercontent.com/MTZ-dev/slothpy/main/doc/source/_static/diamentowy.webp" width="400" alt="Image not found" onerror="this.onerror=null;this.src='_images/error_slothpy.png';">
     <img src="https://raw.githubusercontent.com/MTZ-dev/slothpy/main/doc/source/_static/LOGO_ERC-FLAG_EU_.png" width="400" alt="Image not found" onerror="this.onerror=null;this.src='_images/error_slothpy.png';">

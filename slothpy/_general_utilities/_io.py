@@ -17,6 +17,7 @@
 from os import remove
 from os.path import join
 from re import compile, search
+from h5py import File
 from numpy import (
     ndarray,
     array,
@@ -30,7 +31,6 @@ from numpy import (
     complex128,
 )
 from numpy.linalg import eigh, eigvalsh
-from h5py import File
 from typing import Tuple
 from slothpy._general_utilities._constants import YELLOW, RESET, H_CM_1
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError

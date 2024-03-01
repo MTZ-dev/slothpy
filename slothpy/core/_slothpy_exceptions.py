@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """Module for storing custom exception classes with error reporting modes."""
-
+from functools import wraps
+from typing import Literal
 from slothpy._general_utilities._constants import RED, GREEN, YELLOW, RESET
 
 
@@ -347,3 +348,44 @@ class SltPlotError(Exception):
             Custom error message.
         """
         return str(self.final_message)
+    
+
+def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError"]) -> callable:
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            match slt_exception:
+                case "SltFileError":
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as exc:
+                        raise SltFileError(args[0]._hdf5, exc) from None
+                case "SltCompError":
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as exc:
+                        raise SltCompError(args[0]._hdf5, exc) from None
+                case "SltSaveError":
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as exc:
+                        raise SltSaveError(args[0]._hdf5, exc) from None
+                case "SltReadError":
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as exc:
+                        raise SltReadError(args[0]._hdf5, exc) from None
+                case "SltInputError":
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as exc:
+                        raise SltInputError(args[0]._hdf5, exc) from None
+                case "SltPlotError":
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as exc:
+                        raise SltPlotError(args[0]._hdf5, exc) from None
+                case _:
+                    raise ValueError("Unsupported SltException provided.")
+        return wrapper
+    return decorator

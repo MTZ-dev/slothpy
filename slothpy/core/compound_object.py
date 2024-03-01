@@ -115,9 +115,7 @@ from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
 )
 from slothpy.core._input_parser import validate_input
-from functools import wraps
-import inspect
-
+from slothpy.core._slt_file import SltGroup, SltDataset, SltAttributes
 
 class Compound():
     """
@@ -169,7 +167,36 @@ class Compound():
             "directly. Use a Compound creation function instead."
         )
 
-    def __repr__(self) -> str:
+    def __setitem__(self, key, value) -> None:
+        """
+        Performs the operation __setitem__.
+
+        Provides a convenient method for setting groups and datasets in the
+        .slt file associated with a Compund instance in an array-like manner.
+        """
+        with File(self._hdf5, 'a') as file:
+            if key in file:
+                raise SltFileError(self._hdf5, KeyError(f"Dataset '{key}' already exists. Delete it manually to ensure data safety."))
+            file.create_dataset(key, data=value)
+
+    def __getitem__(self, key):
+        """
+        Performs the operation __getitem__.
+
+        Provides a convenient method for getting datasets from the .slt file
+        associated with a Compund instance in an array-like manner.
+        """
+        with File(self._hdf5, 'r') as file:
+            if key in file:
+                item = file[key]
+                if isinstance(item, Dataset):
+                    return SltDataset(self._hdf5, key)
+                elif isinstance(item, Group):
+                    return SltGroup(self._hdf5, key)
+            else:
+                return SltGroup(self._hdf5, key)
+
+    def __str__(self) -> str:
         """
         Performs the operation __repr__.
 
@@ -182,214 +209,74 @@ class Compound():
             A representation in terms of the contents of the .slt file.
         """
 
+        self._get_hdf5_groups_datasets_and_attributes()
+        
         representation = (
             RED
             + "Compound "
             + RESET
-            + "from "
+            + "from File: "
             + GREEN
-            + "File "
+            + f"{self._hdf5}"
             + RESET
-            + f'"{self._hdf5}" with the following '
+            + " with the following "
             + BLUE
-            + "Groups "
+            + "Groups"
             + RESET
-            + "of data:\n"
+            +"/"
+            + PURPLE
+            + "Datasets"
+            + RESET
+            +".\n"
         )
-        for group, attributes in self._groups.items():
-            representation += BLUE + f"{group}" + RESET + f": {attributes}\n"
+        for group, attributes_group in self._groups.items():
+            representation += "Group: " + BLUE + f"{group}" + RESET + " |"
+            for attribute_name, attribute_text in attributes_group.items():
+                representation += f" {attribute_name}: {attribute_text} |"
+            representation += "\n"
 
-        if self._datasets:
-            representation += "and " + PURPLE + "Datasets" + RESET + ":\n"
-            for dataset in self._datasets:
-                representation += PURPLE + f"{dataset}\n" + RESET
+            if group in self._groups_and_datasets.keys():
+                for dataset, attributes_dataset in self._groups_and_datasets[group].items():
+                    representation += PURPLE + f"{dataset}" + RESET + " |"
+                    for attribute_name, attribute_text in attributes_dataset.items():
+                        representation += f" {attribute_name}: {attribute_text} |"
+                    representation += "\n"
+        
+        for lone_dataset, attributes_lone_dataset in self._datasets.items():
+            representation += "Dataset: " + PURPLE + f"{lone_dataset}" + RESET + " |"
+            for attribute_name, attribute_text in attributes_lone_dataset.items():
+                representation += f" {attribute_name}: {attribute_text} |"
+            representation += "\n"
 
         return representation
 
-    # Set __str__ the same as an object representation using __repr__.
-    __str__ = __repr__
-
-    def __setitem__(
-        self,
-        key: Union[
-            str,
-            Tuple[str, str],
-            Tuple[str, str, str],
-            Tuple[str, str, str, str],
-        ],
-        value: ndarray,
-    ) -> None:
-        """
-        Performs the operation __setitem__.
-
-        Provides a convenient method for setting groups and datasets in the
-        .slt file associated with a Compund instance in an array-like manner.
-
-        Parameters
-        ----------
-        key : Union[str, Tuple[str, str], Tuple[str, str, str],
-          Tuple[str, str, str, str]]
-            A string or a 2/3/4-tuple of strings representing a dataset or
-            group/dataset/dataset atribute/group atribute (Description),
-            respectively, to be created or added (to the existing group).
-        value : ndarray
-            An ArrayLike structure (can be converted to ndarray) that will
-            be stored in the dataset or group/dataset provided by the key.
-
-        Raises
-        ------
-        SltSaveError
-            If setting the data set was unsuccessful.
-        KeyError
-            If the key is not a string or 2-tuple of strings.
-        """
-        value = array(value)
-
-        if isinstance(key, str):
-            self._set_single_dataset(key, value)
-        elif (
-            isinstance(key, tuple)
-            and (len(key) in [2, 3, 4])
-            and all(isinstance(k, str) for k in key)
-        ):
-            self._set_group_and_dataset(key, value)
-        else:
-            raise KeyError(
-                "Invalid key type. It has to be str or a 2/3/4-tuple of str."
-            )
-
-    def __getitem__(self, key: Union[str, Tuple[str, str]]) -> ndarray:
-        """
-        Performs the operation __getitem__.
-
-        Provides a convenient method for getting datasets from the .slt file
-        associated with a Compund instance in an array-like manner.
-
-        Parameters
-        ----------
-        key : Union[str, Tuple[str, str], Tuple[str, str, str]]
-            A string or a 2-tuple of strings representing a dataset or
-            group/dataset, respectively, to be read from the .slt file.
-
-        Returns
-        -------
-        ndarray
-            An array contained in the dataset associated with the provided key.
-
-        Raises
-        ------
-        SltReadError
-            If reading the data from dataset set was unsuccessful.
-        KeyError
-            If the key is not a string or 2-tuple of strings.
-        """
-        if isinstance(key, str):
-            return self._get_data_from_dataset(key)
-
-        if (
-            isinstance(key, tuple)
-            and len(key) >= 2
-            and all(isinstance(k, str) for k in key)
-        ):
-            return self._get_data_from_group_dataset(key)
-
-        else:
-            raise KeyError(
-                "Invalid key type. It has to be str or 2-tuple of str."
-            )
+    def __repr__(self) -> str:
+        return f"<SltCompound object for {self._hdf5} file.>"
 
     def _get_hdf5_groups_datasets_and_attributes(self):
         self._groups = {}
-        self._datasets = []
+        self._datasets = {}
+        self._groups_and_datasets = {}
 
-        def collect_objects(name, obj):
+        def collect_groups(name, obj):
             if isinstance(obj, Group):
                 self._groups[name] = dict(obj.attrs)
-            elif isinstance(obj, Dataset):
-                self._datasets.append(name)
+
+        def collect_groups_datasets_atributes(name, obj):
+            if isinstance(obj, Dataset):
+                parts = name.split('/')
+                if parts[0] in self._groups.keys():
+                    if parts[0] not in self._groups_and_datasets.keys():
+                        self._groups_and_datasets[parts[0]] = {parts[1]: dict(obj.attrs)}
+                    else:
+                        self._groups_and_datasets[parts[0]][parts[1]] = dict(obj.attrs)
+                else:
+                    self._datasets[parts[0]] = dict(obj.attrs)
 
         with File(self._hdf5, "r") as file:
-            file.visititems(collect_objects)
-
-    def _set_single_dataset(self, name: str, value: ndarray):
-        try:
-            with File(self._hdf5, "r+") as file:
-                new_dataset = file.create_dataset(
-                    name, shape=value.shape, dtype=value.dtype
-                )
-                new_dataset[:] = value[:]
-            self._get_hdf5_groups_datasets_and_attributes()
-        except Exception as exc:
-            raise SltSaveError(
-                self._hdf5,
-                exc,
-                message=f'Failed to set a Dataset: "{name}" in the .slt file',
-            ) from None
-
-    def _set_group_and_dataset(
-        self,
-        names: Union[
-            Tuple[str, str], Tuple[str, str, str], Tuple[str, str, str, str]
-        ],
-        value: ndarray,
-    ):
-        try:
-            with File(self._hdf5, "r+") as file:
-                if names[0] in file and isinstance(file[names[0]], Group):
-                    group = file[names[0]]
-                else:
-                    group = file.create_group(names[0])
-                if len(names) == 4:
-                    group.attrs["Description"] = names[3]
-                new_dataset = group.create_dataset(
-                    names[1], shape=value.shape, dtype=value.dtype
-                )
-                new_dataset[:] = value[:]
-                if len(names) >= 3:
-                    new_dataset.attrs["Description"] = names[2]
-            self._get_hdf5_groups_datasets_and_attributes()
-        except Exception as exc:
-            raise SltSaveError(
-                self._hdf5,
-                exc,
-                message=(
-                    f'Failed to set a Dataset: "{names[1]}" within the Group:'
-                    f' "{names[0]}" in the .slt file'
-                ),
-            ) from None
-
-    def _get_data_from_dataset(self, name: str) -> ndarray:
-        try:
-            with File(self._hdf5, "r") as file:
-                value = file[name][:]
-        except Exception as exc:
-            raise SltReadError(
-                self._hdf5,
-                exc,
-                message=(
-                    f'Failed to get a Dataset: "{name}" from the .slt file'
-                ),
-            ) from None
-
-        return value
-
-    def _get_data_from_group_dataset(self, names: Tuple[str, str]) -> ndarray:
-        try:
-            with File(self._hdf5, "r") as file:
-                value = file[names[0]][names[1]][:]
-        except Exception as exc:
-            raise SltReadError(
-                self._hdf5,
-                exc,
-                message=(
-                    f'Failed to get a Dataset: "{names[0]}/{names[1]}" from'
-                    " the .slt file."
-                ),
-            ) from None
-
-        return value
+            file.visititems(collect_groups)
+            file.visititems(collect_groups_datasets_atributes)
     
-
     def delete_group_dataset(self, first: str, second: str = None) -> None:
         """
         Deletes a group/dataset provided its full name/path from the .slt file.
@@ -424,8 +311,6 @@ class Compound():
                     + " from the .slt file."
                 ),
             ) from None
-
-        self._get_hdf5_groups_datasets_and_attributes()
 
 
     def calculate_g_tensor_and_axes_doublet(

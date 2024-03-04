@@ -25,6 +25,9 @@ from .core import (
     turn_off_monitor,
     set_plain_error_reporting_mode,
     set_default_error_reporting_mode,
+    set_double_precision,
+    set_single_precision,
+    set_log_level,
 )
 from ._general_utilities import (
     lebedev_laikov_grid,
@@ -43,6 +46,9 @@ __all__ = [
     "turn_off_monitor",
     "set_default_error_reporting_mode",
     "set_plain_error_reporting_mode",
+    "set_double_precision",
+    "set_single_precision",
+    "set_log_level",
     "lebedev_laikov_grid",
     "colour_map",
     "exporting",
@@ -103,4 +109,5 @@ if current_process().name == "MainProcess":
         " slt.turn_on_monitor()."
     )
 
-set_plain_error_reporting_mode()
+if settings.traceback == False:
+    set_plain_error_reporting_mode()

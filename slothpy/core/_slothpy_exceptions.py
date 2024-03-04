@@ -350,7 +350,7 @@ class SltPlotError(Exception):
         return str(self.final_message)
     
 
-def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError"]) -> callable:
+def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError"], slt_message: str = "") -> callable:
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -359,32 +359,32 @@ def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveE
                     try:
                         return func(*args, **kwargs)
                     except Exception as exc:
-                        raise SltFileError(args[0]._hdf5, exc) from None
+                        raise SltFileError(args[0]._hdf5, exc, slt_message) from None
                 case "SltCompError":
                     try:
                         return func(*args, **kwargs)
                     except Exception as exc:
-                        raise SltCompError(args[0]._hdf5, exc) from None
+                        raise SltCompError(args[0]._hdf5, exc, slt_message) from None
                 case "SltSaveError":
                     try:
                         return func(*args, **kwargs)
                     except Exception as exc:
-                        raise SltSaveError(args[0]._hdf5, exc) from None
+                        raise SltSaveError(args[0]._hdf5, exc, slt_message) from None
                 case "SltReadError":
                     try:
                         return func(*args, **kwargs)
                     except Exception as exc:
-                        raise SltReadError(args[0]._hdf5, exc) from None
+                        raise SltReadError(args[0]._hdf5, exc, slt_message) from None
                 case "SltInputError":
                     try:
                         return func(*args, **kwargs)
                     except Exception as exc:
-                        raise SltInputError(args[0]._hdf5, exc) from None
+                        raise SltInputError(exc, slt_message) from None
                 case "SltPlotError":
                     try:
                         return func(*args, **kwargs)
                     except Exception as exc:
-                        raise SltPlotError(args[0]._hdf5, exc) from None
+                        raise SltPlotError(args[0]._hdf5, exc, slt_message) from None
                 case _:
                     raise ValueError("Unsupported SltException provided.")
         return wrapper

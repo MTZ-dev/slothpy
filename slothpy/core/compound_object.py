@@ -55,6 +55,7 @@ from slothpy.core._slothpy_exceptions import (
     SltReadError,
     SltInputError,
     SltPlotError,
+    slothpy_exc,
 )
 from slothpy._general_utilities._constants import (
     RED,
@@ -230,25 +231,25 @@ class Compound():
             +".\n"
         )
         for group, attributes_group in self._groups.items():
-            representation += "Group: " + BLUE + f"{group}" + RESET + " |"
+            representation += "Group: " + BLUE + f"{group}" + RESET
             for attribute_name, attribute_text in attributes_group.items():
-                representation += f" {attribute_name}: {attribute_text} |"
+                representation += f" | {attribute_name}: {attribute_text} "
             representation += "\n"
 
             if group in self._groups_and_datasets.keys():
                 for dataset, attributes_dataset in self._groups_and_datasets[group].items():
-                    representation += PURPLE + f"{dataset}" + RESET + " |"
+                    representation += PURPLE + f"{dataset}" + RESET
                     for attribute_name, attribute_text in attributes_dataset.items():
-                        representation += f" {attribute_name}: {attribute_text} |"
+                        representation += f" | {attribute_name}: {attribute_text} "
                     representation += "\n"
         
         for lone_dataset, attributes_lone_dataset in self._datasets.items():
-            representation += "Dataset: " + PURPLE + f"{lone_dataset}" + RESET + " |"
+            representation += "Dataset: " + PURPLE + f"{lone_dataset}" + RESET
             for attribute_name, attribute_text in attributes_lone_dataset.items():
-                representation += f" {attribute_name}: {attribute_text} |"
+                representation += f"| {attribute_name}: {attribute_text} "
             representation += "\n"
 
-        return representation
+        return representation.rstrip()
 
     def __repr__(self) -> str:
         return f"<SltCompound object for {self._hdf5} file.>"
@@ -277,41 +278,12 @@ class Compound():
             file.visititems(collect_groups)
             file.visititems(collect_groups_datasets_atributes)
     
-    def delete_group_dataset(self, first: str, second: str = None) -> None:
-        """
-        Deletes a group/dataset provided its full name/path from the .slt file.
-
-        Parameters
-        ----------
-        first : str
-            A name of the group or dataset to be deleted.
-        second : str, optional
-            A name of the particular dataset inside the group from the first
-            argument to be deleted.
-
-        Raises
-        ------
-        SltFileError
-            If the deletion is unsuccessful.
-        """
-
-        try:
-            with File(self._hdf5, "r+") as file:
-                if second is None:
-                    del file[first]
-                else:
-                    del file[first][second]
-        except Exception as exc:
-            raise SltFileError(
-                self._hdf5,
-                exc,
-                message=(
-                    f'Failed to delete  "{first}"'
-                    + (f"/{second}" if second is not None else "")
-                    + " from the .slt file."
-                ),
-            ) from None
-
+    @slothpy_exc("SltFileError")
+    def __delitem__(self, key):
+        with File(self._hdf5, 'a') as file:
+            if key not in file:
+                raise KeyError(f"'{key}' does not exist in the .slt file.")
+            del file[key] 
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None

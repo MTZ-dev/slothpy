@@ -34,7 +34,7 @@ class SltAttributes:
     def __str__(self):
         with File(self._hdf5, 'a') as file:
             item = file[self._item_path]
-            return str(dict(item.attrs))
+            return str(dict(item.attrs)).rstrip()
 
 
 class SltGroup:
@@ -71,15 +71,31 @@ class SltGroup:
     def __str__(self):
         with File(self._hdf5, 'a') as file:
             item = file[self._group_path]
-            representation = "Group: " + BLUE + f"{self._group_path}" + RESET + " from File: " + GREEN + f"{self._hdf5}" + RESET + "\n|"
+            representation = "Group: " + BLUE + f"{self._group_path}" + RESET + " from File: " + GREEN + f"{self._hdf5}" + RESET
             for attribute_name, attribute_text in item.attrs.items():
-                representation += f" {attribute_name}: {attribute_text} |"
+                representation += f"| {attribute_name}: {attribute_text} "
             representation += "\nDatasets: \n"
             for dataset_name, dataset in item.items():
-                representation += PURPLE + f"{dataset_name}" + RESET + " |"
+                representation += PURPLE + f"{dataset_name}" + RESET
                 for attribute_name, attribute_text in dataset.attrs.items():
-                    representation += f" {attribute_name}: {attribute_text} |\n"
-            return representation
+                    representation += f" | {attribute_name}: {attribute_text} "
+                representation += "\n"
+            return representation.rstrip()
+
+    @slothpy_exc("SltFileError")
+    def __delitem__(self, key):
+        with File(self._hdf5, 'a') as file:
+            group = file[self._group_path]
+            if key not in group:
+                raise KeyError(f"Dataset '{key}' does not exist in the group '{self._group_path}'.")
+            del group[key]
+        
+    @property
+    def attr(self):
+        """
+        Property to mimic h5py's attribute access convention.
+        """
+        return self.attributes
 
 
 class SltDataset:
@@ -100,7 +116,14 @@ class SltDataset:
     def __str__(self):
         with File(self._hdf5, 'a') as file:
             item = file[self._dataset_path]
-            representation = "Dataset: " + PURPLE + f"{self._dataset_path}" + RESET + " from File: " + GREEN + f"{self._hdf5}" + RESET + "\n|"
+            representation = "Dataset: " + PURPLE + f"{self._dataset_path}" + RESET + " from File: " + GREEN + f"{self._hdf5}" + RESET
             for attribute_name, attribute_text in item.attrs.items():
-                representation += f" {attribute_name}: {attribute_text} |"
-            return representation
+                representation += f" | {attribute_name}: {attribute_text}"
+            return representation.rstrip()
+        
+    @property
+    def attr(self):
+        """
+        Property to mimic h5py's attribute access convention.
+        """
+        return self.attributes

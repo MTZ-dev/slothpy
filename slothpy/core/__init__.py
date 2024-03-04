@@ -28,6 +28,9 @@ from ._config import (
     turn_off_monitor,
     set_default_error_reporting_mode,
     set_plain_error_reporting_mode,
+    set_double_precision,
+    set_single_precision,
+    set_log_level,
 )
 
 __all__ = [
@@ -40,4 +43,7 @@ __all__ = [
     "turn_off_monitor",
     "set_default_error_reporting_mode",
     "set_plain_error_reporting_mode",
+    "set_double_precision",
+    "set_single_precision",
+    "set_log_level",
 ]

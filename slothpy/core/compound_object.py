@@ -167,7 +167,8 @@ class Compound():
             "The Compound object should not be instantiated "
             "directly. Use a Compound creation function instead."
         )
-
+    
+    @slothpy_exc("SltFileError")
     def __setitem__(self, key, value) -> None:
         """
         Performs the operation __setitem__.
@@ -175,11 +176,18 @@ class Compound():
         Provides a convenient method for setting groups and datasets in the
         .slt file associated with a Compund instance in an array-like manner.
         """
-        with File(self._hdf5, 'a') as file:
-            if key in file:
-                raise SltFileError(self._hdf5, KeyError(f"Dataset '{key}' already exists. Delete it manually to ensure data safety."))
-            file.create_dataset(key, data=value)
+        with File(self._hdf5, 'r+') as file:
+            if isinstance(key, tuple) and len(key) == 2:
+                group = file.require_group(key[0])
+                if key[1] in group:
+                    raise KeyError(f"Dataset '{key[1]}' already exists within the group '{key[0]}'. Delete it manually to ensure your data safety.")
+                group.create_dataset(key[1], data=array(value))
+            else:
+                if key in file:
+                    raise KeyError(f"Dataset '{key}' already exists. Delete it manually to ensure data safety.")
+                file.create_dataset(key, data=array(value))
 
+    @slothpy_exc("SltFileError")
     def __getitem__(self, key):
         """
         Performs the operation __getitem__.
@@ -187,7 +195,13 @@ class Compound():
         Provides a convenient method for getting datasets from the .slt file
         associated with a Compund instance in an array-like manner.
         """
-        with File(self._hdf5, 'r') as file:
+        with File(self._hdf5, 'r+') as file:
+            if isinstance(key, tuple) and len(key) == 2:
+                dataset_path = f"{key[0]}/{key[1]}"
+                if isinstance(file[dataset_path], Dataset):
+                    return SltDataset(self._hdf5, f"{key[0]}/{key[1]}")
+                else:
+                    raise KeyError(f"Dataset '{dataset_path}' does not exist in the .slt file.")
             if key in file:
                 item = file[key]
                 if isinstance(item, Dataset):
@@ -195,19 +209,20 @@ class Compound():
                 elif isinstance(item, Group):
                     return SltGroup(self._hdf5, key)
             else:
-                return SltGroup(self._hdf5, key)
+                return SltGroup(self._hdf5, key, exists=False)
 
     def __str__(self) -> str:
         """
-        Performs the operation __repr__.
+        Performs the operation __str__.
 
-        Creates a representation of the Compound object using names and
-        attributes of the groups contained in the associated .slt file.
+        Creates a string representation of the Compound object using names and
+        attributes of the groups and datasets contained in the associated
+        .slt file.
 
         Returns
         -------
         str
-            A representation in terms of the contents of the .slt file.
+            A string representation in terms of the contents of the .slt file.
         """
 
         self._get_hdf5_groups_datasets_and_attributes()
@@ -280,7 +295,7 @@ class Compound():
     
     @slothpy_exc("SltFileError")
     def __delitem__(self, key):
-        with File(self._hdf5, 'a') as file:
+        with File(self._hdf5, 'r+') as file:
             if key not in file:
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
             del file[key]

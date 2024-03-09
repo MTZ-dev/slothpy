@@ -40,7 +40,6 @@ from slothpy._general_utilities._math_expresions import (
     _total_angular_momenta_from_angular_momenta,
 )
 
-
 def _grep_to_file(
     path_inp: str,
     inp_file: str,

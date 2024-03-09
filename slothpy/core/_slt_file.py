@@ -1,6 +1,6 @@
 from h5py import File, Group, Dataset
 from numpy import array
-from slothpy.core._slothpy_exceptions import slothpy_exc, SltFileError
+from slothpy.core._slothpy_exceptions import slothpy_exc
 from slothpy._general_utilities._constants import (
     GREEN,
     BLUE,

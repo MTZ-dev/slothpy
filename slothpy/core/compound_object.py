@@ -283,7 +283,297 @@ class Compound():
         with File(self._hdf5, 'a') as file:
             if key not in file:
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
-            del file[key] 
+            del file[key]
+    
+    def zeeman_splitting(
+        self,
+        group: str,
+        number_of_states: int,
+        fields: ndarray[float64],
+        orientations: ndarray[float64],
+        states_cutoff: int = 0,
+        number_cpu: int = 0,
+        number_threads: int = 1,
+        average: bool = False,
+        slt_save: str = None,
+        autotune: bool = False,
+    ) -> ndarray[float64]:      ######## Sprawdzaj czy number_of_states jest mniejszy lub = od states_cutoff
+        """
+        Calculates directional or powder-averaged Zeeman splitting for a given
+        number of states and a list of magnetic field orientations and values.
+
+        Parameters
+        ----------
+        group : str
+            Name of a group containing results of relativistic ab initio
+            calculations used for the computation of the Zeeman splitting.
+        number_of_states : int
+            Number of states whose energy splitting will be given in the
+            result array.
+        fields : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of field
+            values (T) at which Zeeman splitting will be computed.
+        orientations : ndarray[float64]
+            ArrayLike structure (can be converted to numpy.NDArray) of
+            orientations in the list format: [[direction_x, direction_y,
+            direction_z],...]. If the orientations are set to an integer from
+            0-11, then the prescribed Lebedev-Laikov grids over the hemisphere
+            will be used (see slothpy.lebedev_laikov_grid documentation) and
+            powder-averaging will be performed. Otherwise, the user can provide
+            an ArrayLike structure with the convention: [[direction_x,
+            direction_y, direction_z, weight],...] for powder-averaging over
+            the chosen directions using the provided weights. Custom grids
+            and orientations will be automatically normalized to the unit
+            directional vectors.
+        states_cutoff : int, optional
+            Number of states that will be taken into account for construction
+            of Zeeman Hamiltonian. If set to zero, all available states from
+            the file will be used., by default 0
+        number_cpu : int, optional
+            Number of logical CPUs to be assigned to perform the calculation.
+            If set to zero, all available CPUs will be used., by default 0
+        number_threads : int, optional
+            Number of threads used in a multithreaded implementation of linear
+            algebra libraries used during the calculation. Higher values
+            benefit from the increasing size of matrices (states_cutoff) over
+            the parallelization over CPUs., by default 1
+        slt_save : str, optional
+            If given, the results will be saved in a group of this name to
+            .slt., by default None
+        autotune : bool, optional
+            If True the program will automatically try to choose the best
+            number of threads (and therefore parallel processes), for the given
+            number of CPUs, to be used during the calculation. Note that this
+            process can take a significant amount of time, so start to use it
+            with medium-sized calculations (e.g. for states_cutoff > 300 with
+            dense grids or a higher number of field values) where it becomes
+            a necessity., by default Falsee
+
+        Returns
+        -------
+        ndarray[float64]
+            The resulting array gives Zeeman splitting of number_of_states
+            energy levels in cm-1 for each orientation in the form
+            [orientations, fields, [energies]] - the first dimension
+            runs over different orientations, the second over field values, and
+            the last gives energies of number_of_states states as an array.
+
+        Raises
+        ------
+        SltSaveError
+            If the name of the group already exists in the .slt file.
+        SltInputError
+            If input ArrayLike data cannot be converted to numpy.NDArrays.
+        SltInputError
+            If fields are not a one-diemsional array.
+        SltInputError
+            If number of states is not a positive integer less or equal to the
+            states cutoff.
+        SltCompError
+            If autotuning a number of processes and threads is unsuccessful.
+        SltCompError
+            If the calculation of Zeeman splitting is unsuccessful.
+        SltFileError
+            If the program is unable to correctly save results to .slt file.
+
+        See Also
+        --------
+        slothpy.Compound.plot_zeeman,
+        slothpy.lebedev_laikov_grid : For the description of the prescribed
+                                      Lebedev-Laikov grids.
+
+        Note
+        -----
+        Here, (number_cpu // number_threads) parallel processes are used to
+        distribute the workload over the provided field values.
+        """
+        if slt is not None:
+            slt_group_name = f"{slt}_zeeman_splitting"
+            if _group_exists(self._hdf5, slt_group_name):
+                raise SltSaveError(
+                    self._hdf5,
+                    NameError(""),
+                    message="Unable to save the results. "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '" '
+                    + "already exists. Delete it manually.",
+                ) from None
+
+        try:
+            fields = array(fields, dtype=float64)
+        except Exception as exc:
+            raise SltInputError(exc) from None
+
+        if fields.ndim != 1:
+            raise SltInputError(
+                ValueError("The list of fields has to be a 1D array.")
+            ) from None
+
+        try:
+            max_states = self[f"{group}", "SOC"].shape[0]
+        except Exception as exc1:
+            try:
+                max_states = self[f"{group}", "SOC_energies"].shape[0]
+            except Exception as exc2:
+                raise SltFileError(
+                    self._hdf5,
+                    exc2,
+                    YELLOW
+                    + f" {type(exc1).__name__}"
+                    + RESET
+                    + f": {str(exc1)} \nFailed to get SOC states from "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + group
+                    + RESET
+                    + '".',
+                ) from None
+
+        if (
+            not isinstance(number_of_states, int)
+            or number_of_states <= 0
+            or number_of_states > max_states
+        ):
+            raise SltInputError(
+                ValueError(
+                    "The number of states has to be an integer less or equal"
+                    " to the states cutoff."
+                )
+            ) from None
+
+        if isinstance(grid, int):
+            grid = lebedev_laikov_grid(grid)
+            average = True
+        elif average:
+            grid = _normalize_grid_vectors(grid)
+        else:
+            grid = _normalize_orientations(grid)
+
+        if autotune:
+            try:
+                temperatures = array([1])
+                number_threads = _auto_tune(
+                    self._hdf5,
+                    group,
+                    fields,
+                    grid,
+                    temperatures,
+                    states_cutoff,
+                    number_cpu,
+                    fields.shape[0],
+                    grid.shape[0],
+                    "zeeman",
+                    num_of_states=number_of_states,
+                    average=average,
+                )
+            except Exception as exc:
+                raise SltCompError(
+                    self._hdf5,
+                    exc,
+                    "Failed to autotune a number of processes and threads to"
+                    " the data within "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + f"{group}"
+                    + RESET
+                    + '".',
+                ) from None
+
+        try:
+            zeeman_array = _zeeman_splitting(
+                self._hdf5,
+                group,
+                number_of_states,
+                fields,
+                grid,
+                states_cutoff,
+                number_cpu,
+                number_threads,
+                average,
+            )
+        except Exception as exc:
+            raise SltCompError(
+                self._hdf5,
+                exc,
+                "Failed to compute Zeeman splitting from "
+                + BLUE
+                + "Group "
+                + RESET
+                + '"'
+                + BLUE
+                + f"{group}"
+                + RESET
+                + '".',
+            ) from None
+
+        if average:
+            name = "average "
+        else:
+            name = ""
+
+        if slt is not None:
+            try:
+                self[
+                    slt_group_name,
+                    f"{slt}_zeeman",
+                    f"Dataset containing {name}Zeeman splitting over grid"
+                    " of directions with shape: (orientations, field,"
+                    f" energy) calculated from group: {group}.",
+                    f"Group({slt}) containing {name}Zeeman splitting"
+                    f" calculated from group: {group}.",
+                ] = zeeman_array[:, :, :]
+                self[
+                    slt_group_name,
+                    f"{slt}_fields",
+                    "Dataset containing magnetic field H values used in"
+                    f" simulation of {name}Zeeman splitting from group:"
+                    f" {group}.",
+                ] = fields[:]
+                if average:
+                    self[
+                        slt_group_name,
+                        f"{slt}_orientations",
+                        "Dataset containing magnetic field orientation"
+                        " grid with weights used in simulation of"
+                        f" {name}Zeeman splitting from group: {group}.",
+                    ] = grid[:, :]
+                else:
+                    self[
+                        slt_group_name,
+                        f"{slt}_orientations",
+                        "Dataset containing magnetic field orientations"
+                        " used in simulation of"
+                        f" {name}Zeeman splitting from group: {group}.",
+                    ] = grid[:, :3]
+
+            except Exception as exc:
+                raise SltFileError(
+                    self._hdf5,
+                    exc,
+                    "Failed to save Zeeman splitting to "
+                    + BLUE
+                    + "Group "
+                    + RESET
+                    + '"'
+                    + BLUE
+                    + slt_group_name
+                    + RESET
+                    + '".',
+                ) from None
+
+        return zeeman_array
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None
@@ -2459,299 +2749,6 @@ class Compound():
                 ) from None
 
         return energy_3d_array
-
-    def calculate_zeeman_splitting(
-        self,
-        group: str,
-        number_of_states: int,
-        fields: ndarray[float64],
-        grid: ndarray[float64],
-        states_cutoff: int = 0,
-        number_cpu: int = 0,
-        number_threads: int = 1,
-        average: bool = False,
-        slt: str = None,
-        autotune: bool = False,
-    ) -> ndarray[float64]:      ######## Sprawdzaj czy number_of_states jest mniejszy lub = od states_cutoff
-        """
-        Calculates directional or powder-averaged Zeeman splitting for a given
-        number of states and list of field values.
-
-        Parameters
-        ----------
-        group : str
-            Name of a group containing results of relativistic ab initio
-            calculations used for the computation of the Zeeman splitting.
-        number_of_states : int
-            Number of states whose energy splitting will be given in the
-            result array.
-        fields : ndarray[float64]
-            ArrayLike structure (can be converted to numpy.NDArray) of field
-            values (T) at which Zeeman splitting will be computed.
-        grid : ndarray[float64]
-            If the grid is set to an integer from 0-11 then the prescribed
-            Lebedev-Laikov grids over hemisphere will be used (see
-            grids_over_hemisphere documentation) and powder-averaging will be
-            turned on, otherwise, user can provide an ArrayLike structure (can
-            be converted to numpy.NDArray) with the convention: [[direction_x,
-            direction_y, direction_z, weight],...] with average = True for
-            powder-averaging. If one wants a calculation for a list of
-            particular directions the list has to follow the format:
-            [[direction_x, direction_y, direction_z],...]. Custom grids will be
-            automatically normalized.
-        states_cutoff : int, optional
-            Number of states that will be taken into account for construction
-            of Zeeman Hamiltonian. If set to zero, all available states from
-            the file will be used., by default 0
-        number_cpu : int, optional
-            Number of logical CPUs to be assigned to perform the calculation.
-            If set to zero, all available CPUs will be used., by default 0
-        number_threads : int, optional
-            Number of threads used in a multithreaded implementation of linear
-            algebra libraries used during the calculation. Higher values
-            benefit from the increasing size of matrices (states_cutoff) over
-            the parallelization over CPUs., by default 1
-        average : bool, optional
-            Turns on powder-averaging using a list of directions and weights in
-            the form of ArrayLike structure: [[direction_x, direction_y,
-            direction_z, weight],...].
-        slt : str, optional
-            If given the results will be saved in a group of this name to .slt
-            file with suffix: _zeeman_splitting., by default None
-        autotune : bool, optional
-            If True the program will automatically try to choose the best
-            number of threads (and therefore parallel processes), for the given
-            number of CPUs, to be used during the calculation. Note that this
-            process can take a significant amount of time, so start to use it
-            with medium-sized calculations (e.g. for states_cutoff > 300 with
-            dense grids or a higher number of field values) where it becomes
-            a necessity., by default Falsee
-
-        Returns
-        -------
-        ndarray[float64]
-            The resulting array gives Zeeman splitting of number_of_states
-            energy levels in cm-1 for each direction (or average) in the form
-            [orientations, fields, energies] - the first dimension
-            runs over different orientations, the second over field values, and
-            the last gives energy of number_of_states states.
-
-        Raises
-        ------
-        SltSaveError
-            If the name of the group already exists in the .slt file.
-        SltInputError
-            If input ArrayLike data cannot be converted to numpy.NDArrays.
-        SltInputError
-            If fields are not a one-diemsional array.
-        SltInputError
-            If number of states is not a positive integer less or equal to the
-            states cutoff.
-        SltCompError
-            If autotuning a number of processes and threads is unsuccessful.
-        SltCompError
-            If the calculation of Zeeman splitting is unsuccessful.
-        SltFileError
-            If the program is unable to correctly save results to .slt file.
-
-        See Also
-        --------
-        slothpy.Compound.plot_zeeman,
-        slothpy.lebedev_laikov_grid : For the description of the prescribed
-                                      Lebedev-Laikov grids.
-
-        Note
-        -----
-        Here, (number_cpu // number_threads) parallel processes are used to
-        distribute the workload over the provided field values.
-        """
-        if slt is not None:
-            slt_group_name = f"{slt}_zeeman_splitting"
-            if _group_exists(self._hdf5, slt_group_name):
-                raise SltSaveError(
-                    self._hdf5,
-                    NameError(""),
-                    message="Unable to save the results. "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + slt_group_name
-                    + RESET
-                    + '" '
-                    + "already exists. Delete it manually.",
-                ) from None
-
-        try:
-            fields = array(fields, dtype=float64)
-        except Exception as exc:
-            raise SltInputError(exc) from None
-
-        if fields.ndim != 1:
-            raise SltInputError(
-                ValueError("The list of fields has to be a 1D array.")
-            ) from None
-
-        try:
-            max_states = self[f"{group}", "SOC"].shape[0]
-        except Exception as exc1:
-            try:
-                max_states = self[f"{group}", "SOC_energies"].shape[0]
-            except Exception as exc2:
-                raise SltFileError(
-                    self._hdf5,
-                    exc2,
-                    YELLOW
-                    + f" {type(exc1).__name__}"
-                    + RESET
-                    + f": {str(exc1)} \nFailed to get SOC states from "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + group
-                    + RESET
-                    + '".',
-                ) from None
-
-        if (
-            not isinstance(number_of_states, int)
-            or number_of_states <= 0
-            or number_of_states > max_states
-        ):
-            raise SltInputError(
-                ValueError(
-                    "The number of states has to be an integer less or equal"
-                    " to the states cutoff."
-                )
-            ) from None
-
-        if isinstance(grid, int):
-            grid = lebedev_laikov_grid(grid)
-            average = True
-        elif average:
-            grid = _normalize_grid_vectors(grid)
-        else:
-            grid = _normalize_orientations(grid)
-
-        if autotune:
-            try:
-                temperatures = array([1])
-                number_threads = _auto_tune(
-                    self._hdf5,
-                    group,
-                    fields,
-                    grid,
-                    temperatures,
-                    states_cutoff,
-                    number_cpu,
-                    fields.shape[0],
-                    grid.shape[0],
-                    "zeeman",
-                    num_of_states=number_of_states,
-                    average=average,
-                )
-            except Exception as exc:
-                raise SltCompError(
-                    self._hdf5,
-                    exc,
-                    "Failed to autotune a number of processes and threads to"
-                    " the data within "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + f"{group}"
-                    + RESET
-                    + '".',
-                ) from None
-
-        try:
-            zeeman_array = _zeeman_splitting(
-                self._hdf5,
-                group,
-                number_of_states,
-                fields,
-                grid,
-                states_cutoff,
-                number_cpu,
-                number_threads,
-                average,
-            )
-        except Exception as exc:
-            raise SltCompError(
-                self._hdf5,
-                exc,
-                "Failed to compute Zeeman splitting from "
-                + BLUE
-                + "Group "
-                + RESET
-                + '"'
-                + BLUE
-                + f"{group}"
-                + RESET
-                + '".',
-            ) from None
-
-        if average:
-            name = "average "
-        else:
-            name = ""
-
-        if slt is not None:
-            try:
-                self[
-                    slt_group_name,
-                    f"{slt}_zeeman",
-                    f"Dataset containing {name}Zeeman splitting over grid"
-                    " of directions with shape: (orientations, field,"
-                    f" energy) calculated from group: {group}.",
-                    f"Group({slt}) containing {name}Zeeman splitting"
-                    f" calculated from group: {group}.",
-                ] = zeeman_array[:, :, :]
-                self[
-                    slt_group_name,
-                    f"{slt}_fields",
-                    "Dataset containing magnetic field H values used in"
-                    f" simulation of {name}Zeeman splitting from group:"
-                    f" {group}.",
-                ] = fields[:]
-                if average:
-                    self[
-                        slt_group_name,
-                        f"{slt}_orientations",
-                        "Dataset containing magnetic field orientation"
-                        " grid with weights used in simulation of"
-                        f" {name}Zeeman splitting from group: {group}.",
-                    ] = grid[:, :]
-                else:
-                    self[
-                        slt_group_name,
-                        f"{slt}_orientations",
-                        "Dataset containing magnetic field orientations"
-                        " used in simulation of"
-                        f" {name}Zeeman splitting from group: {group}.",
-                    ] = grid[:, :3]
-
-            except Exception as exc:
-                raise SltFileError(
-                    self._hdf5,
-                    exc,
-                    "Failed to save Zeeman splitting to "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + slt_group_name
-                    + RESET
-                    + '".',
-                ) from None
-
-        return zeeman_array
 
     def zeeman_matrix(
         self,

@@ -93,10 +93,11 @@ class WorkerMonitorApp(QMainWindow):
         self.memory_label.setText(f"Memory Usage: {psutil.virtual_memory().percent}%")
 
     def updateElapsedTime(self):
-        elapsed = self.startDateTime.secsTo(QDateTime.currentDateTime())
+        # elapsed = self.startDateTime.secsTo(QDateTime.currentDateTime())
         # Format elapsed time as H:M:S
-        elapsedString = str(int(elapsed / 3600)).zfill(2) + ":" + str(int((elapsed % 3600) / 60)).zfill(2) + ":" + str(elapsed % 60).zfill(2)
-        self.elapsedTimeLabel.setText(f"Elapsed Time: {elapsedString}")
+        # elapsedString = str(int(elapsed / 3600)).zfill(2) + ":" + str(int((elapsed % 3600) / 60)).zfill(2) + ":" + str(elapsed % 60).zfill(2)
+        # self.elapsedTimeLabel.setText(f"Elapsed Time: {elapsedString}")
+        pass
 
 def run_gui(progress_array_name, progress_array_shape, number_tasks, calling_function_name):
     app = QApplication(sys.argv)

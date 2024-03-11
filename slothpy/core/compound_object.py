@@ -164,7 +164,7 @@ class Compound():
         """
 
         raise TypeError(
-            "The Compound object should not be instantiated "
+            f"The {RED}Compound{RESET} object should not be instantiated "
             "directly. Use a Compound creation function instead."
         )
     
@@ -180,11 +180,11 @@ class Compound():
             if isinstance(key, tuple) and len(key) == 2:
                 group = file.require_group(key[0])
                 if key[1] in group:
-                    raise KeyError(f"Dataset '{key[1]}' already exists within the group '{key[0]}'. Delete it manually to ensure your data safety.")
+                    raise KeyError(f"{PURPLE}Dataset{RESET} '{key[1]}' already exists within the {BLUE}Group{RESET} '{key[0]}'. Delete it manually to ensure your data safety.")
                 group.create_dataset(key[1], data=array(value))
             else:
                 if key in file:
-                    raise KeyError(f"Dataset '{key}' already exists. Delete it manually to ensure data safety.")
+                    raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' already exists. Delete it manually to ensure data safety.")
                 file.create_dataset(key, data=array(value))
 
     @slothpy_exc("SltFileError")
@@ -201,7 +201,7 @@ class Compound():
                 if isinstance(file[dataset_path], Dataset):
                     return SltDataset(self._hdf5, f"{key[0]}/{key[1]}")
                 else:
-                    raise KeyError(f"Dataset '{dataset_path}' does not exist in the .slt file.")
+                    raise KeyError(f"{PURPLE}Dataset{RESET} '{dataset_path}' does not exist in the .slt file.")
             if key in file:
                 item = file[key]
                 if isinstance(item, Dataset):
@@ -227,47 +227,30 @@ class Compound():
 
         self._get_hdf5_groups_datasets_and_attributes()
         
-        representation = (
-            RED
-            + "Compound "
-            + RESET
-            + "from File: "
-            + GREEN
-            + f"{self._hdf5}"
-            + RESET
-            + " with the following "
-            + BLUE
-            + "Groups"
-            + RESET
-            +"/"
-            + PURPLE
-            + "Datasets"
-            + RESET
-            +".\n"
-        )
+        representation = f"{RED}Compound{RESET} from File: {GREEN}{self._hdf5}{RESET} with the following {BLUE}Groups{RESET}/{PURPLE}Datasets{RESET}.\n"
         for group, attributes_group in self._groups.items():
-            representation += "Group: " + BLUE + f"{group}" + RESET
+            representation += f"Group: {BLUE}{group}{RESET}"
             for attribute_name, attribute_text in attributes_group.items():
-                representation += f" | {attribute_name}: {attribute_text} "
+                representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text} "
             representation += "\n"
 
             if group in self._groups_and_datasets.keys():
                 for dataset, attributes_dataset in self._groups_and_datasets[group].items():
-                    representation += PURPLE + f"{dataset}" + RESET
+                    representation += f"\t{PURPLE}{dataset}{RESET}"
                     for attribute_name, attribute_text in attributes_dataset.items():
-                        representation += f" | {attribute_name}: {attribute_text} "
+                        representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text} "
                     representation += "\n"
         
         for lone_dataset, attributes_lone_dataset in self._datasets.items():
-            representation += "Dataset: " + PURPLE + f"{lone_dataset}" + RESET
+            representation += f"Dataset: {PURPLE}{lone_dataset}{RESET}"
             for attribute_name, attribute_text in attributes_lone_dataset.items():
-                representation += f"| {attribute_name}: {attribute_text} "
+                representation += f"| {YELLOW}{attribute_name}{RESET}: {attribute_text} "
             representation += "\n"
 
         return representation.rstrip()
 
     def __repr__(self) -> str:
-        return f"<SltCompound object for {self._hdf5} file.>"
+        return f"<{RED}SltCompound{RESET} object for {GREEN}File{RESET} '{self._hdf5}'.>"
 
     def _get_hdf5_groups_datasets_and_attributes(self):
         self._groups = {}
@@ -296,6 +279,8 @@ class Compound():
     @slothpy_exc("SltFileError")
     def __delitem__(self, key):
         with File(self._hdf5, 'r+') as file:
+            if isinstance(key, tuple) and len(key) == 2:
+                key = f"{key[0]}/{key[1]}"
             if key not in file:
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
             del file[key]

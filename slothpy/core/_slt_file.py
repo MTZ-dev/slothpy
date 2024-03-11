@@ -1,12 +1,23 @@
+# SlothPy
+# Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ)
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from h5py import File, Group, Dataset
 from numpy import array
 from slothpy.core._slothpy_exceptions import slothpy_exc
-from slothpy._general_utilities._constants import (
-    GREEN,
-    BLUE,
-    PURPLE,
-    RESET,
-)
+from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 
 class SltAttributes:
     def __init__(self, hdf5_file_path, item_path):
@@ -32,13 +43,15 @@ class SltAttributes:
     def __repr__(self):
         with File(self._hdf5, 'r+') as file:
             file[self._item_path]
-            return f"<SltAttributes for '{self._item_path}' in {self._hdf5} file.>"
+            return f"<{YELLOW}SltAttributes{RESET} for {BLUE}Group{RESET}/{PURPLE}Dataset{RESET} '{self._item_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
 
     @slothpy_exc("SltFileError")
     def __str__(self):
         with File(self._hdf5, 'a') as file:
             item = file[self._item_path]
-            return str(dict(item.attrs)).rstrip()
+            dict_str = f"{RED}Attributes{RESET}: " + ', '.join([f"{YELLOW}{key}{RESET}: {value}" for key, value in item.attrs.items()])
+            formatted_str = f"{{{dict_str}}}".rstrip()
+            return formatted_str
 
 
 class SltGroup:
@@ -57,9 +70,9 @@ class SltGroup:
                 if isinstance(item, Dataset):
                     return SltDataset(self._hdf5, full_path)
                 elif isinstance(item, Group):
-                    raise KeyError("Hierarchy only up to Group/Dataset or standalone Datasets are supported in .slt files.")
+                    raise KeyError(f"Hierarchy only up to {BLUE}Group{RESET}/{PURPLE}Dataset{RESET} or standalone {PURPLE}Datasets{RESET} are supported in .slt files.")
             else:
-                raise KeyError(f"Dataset '{key}' doesn't exist in the group '{self._group_path}'.")
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' doesn't exist in the {BLUE}Group{RESET} '{self._group_path}'.")
 
     @slothpy_exc("SltFileError")        
     def __setitem__(self, key, value):
@@ -67,33 +80,33 @@ class SltGroup:
             group = file.require_group(self._group_path)
             self._exists = True
             if key in group:
-                raise KeyError(f"Dataset '{key}' already exists within the group '{self._group_path}'. Delete it manually to ensure your data safety.")
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' already exists within the {BLUE}Group{RESET} '{self._group_path}'. Delete it manually to ensure your data safety.")
             group.create_dataset(key, data=array(value))
 
     @slothpy_exc("SltFileError")
     def __repr__(self): 
         if self._exists:
-            return f"<SltGroup '{self._group_path}' in {self._hdf5} file.>"
+            return f"<{BLUE}SltGroup{RESET} '{self._group_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
         else:
-            raise RuntimeError("This is a proxy group and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
+            raise RuntimeError(f"This is a {BLUE}Proxy Group{RESET} and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
 
     @slothpy_exc("SltFileError")
     def __str__(self):
         if self._exists:
             with File(self._hdf5, 'r+') as file:
                 item = file[self._group_path]
-                representation = "Group: " + BLUE + f"{self._group_path}" + RESET + " from File: " + GREEN + f"{self._hdf5}" + RESET
+                representation = f"{RED}Group{RESET}: {BLUE}{self._group_path}{RESET} from File: {GREEN}{self._hdf5}{RESET}"
                 for attribute_name, attribute_text in item.attrs.items():
-                    representation += f"| {attribute_name}: {attribute_text} "
+                    representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text} "
                 representation += "\nDatasets: \n"
                 for dataset_name, dataset in item.items():
-                    representation += PURPLE + f"{dataset_name}" + RESET
+                    representation += f"{PURPLE}{dataset_name}{RESET}"
                     for attribute_name, attribute_text in dataset.attrs.items():
-                        representation += f" | {attribute_name}: {attribute_text} "
+                        representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text} "
                     representation += "\n"
                 return representation.rstrip()
         else:
-            raise RuntimeError("This is a proxy group and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
+            raise RuntimeError("This is a {BLUE}Proxy Group{RESET} and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
 
 
     @slothpy_exc("SltFileError")
@@ -101,7 +114,7 @@ class SltGroup:
         with File(self._hdf5, 'r+') as file:
             group = file[self._group_path]
             if key not in group:
-                raise KeyError(f"Dataset '{key}' does not exist in the group '{self._group_path}'.")
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' does not exist in the {BLUE}Group{RESET} '{self._group_path}'.")
             del group[key]
         
     @property
@@ -134,15 +147,15 @@ class SltDataset:
     def __repr__(self):
         with File(self._hdf5, 'r+') as file:
             file[self._dataset_path]
-            return f"<SltDataset '{self._dataset_path}' in {self._hdf5} file.>"
+            return f"<{PURPLE}SltDataset{RESET} '{self._dataset_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
     
     @slothpy_exc("SltFileError")
     def __str__(self):
         with File(self._hdf5, 'r+') as file:
             item = file[self._dataset_path]
-            representation = "Dataset: " + PURPLE + f"{self._dataset_path}" + RESET + " from File: " + GREEN + f"{self._hdf5}" + RESET
+            representation = f"{RED}Dataset{RESET}: {PURPLE}{self._dataset_path}{RESET} from File: {GREEN}{self._hdf5}{RESET}"
             for attribute_name, attribute_text in item.attrs.items():
-                representation += f" | {attribute_name}: {attribute_text}"
+                representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
             return representation.rstrip()
         
     @property

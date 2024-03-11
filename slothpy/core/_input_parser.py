@@ -1,3 +1,19 @@
+# SlothPy
+# Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ)
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import inspect 
 from functools import wraps
 from numpy import array, float64
@@ -20,11 +36,6 @@ from slothpy._general_utilities._constants import (
 )
 from slothpy._general_utilities._io import (
     _group_exists,
-    _get_soc_energies_cm_1,
-    _get_states_magnetic_momenta,
-    _get_states_total_angular_momenta,
-    _get_total_angular_momneta_matrix,
-    _get_magnetic_momenta_matrix,
 )
 
 
@@ -40,16 +51,7 @@ def validate_input(func):
                 raise SltSaveError(
                     bound_args.arguments["self"]._hdf5,
                     NameError(""),
-                    message="Unable to save the results. "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + bound_args.arguments["slt_save"]
-                    + RESET
-                    + '" '
-                    + "already exists. Delete it manually.",
+                    message=f"Unable to save the results. {BLUE}Group{RESET} '{bound_args.arguments['slt_save']}' already exists. Delete it manually.",
                 ) from None
 
         try:

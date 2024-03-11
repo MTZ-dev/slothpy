@@ -20,6 +20,47 @@ from typing import Literal
 from slothpy._general_utilities._constants import RED, GREEN, YELLOW, RESET
 
 
+class SltInputError(Exception):
+    """
+    A custom exception class for errors in input data.
+
+    Parameters
+    ----------
+    None
+    """
+
+    def __init__(self, exception: Exception, message: str = ""):
+        """
+        Initialize for the custom message printing.
+
+        Parameters
+        ----------
+        exception : Exception
+            An exception that initially caused the error.
+        message : str, optional
+            A message to be printed., by default ""
+        """
+        self.error_type = type(exception).__name__
+        self.error_message = str(exception)
+        self.slt_message = f"{RED}\nSlothInputError{RESET}, {YELLOW}{self.error_type}{RESET}: {self.error_message} "
+        self.final_message = f"{self.slt_message} {message}"
+        super().__init__(self.final_message)
+
+    def __str__(self) -> str:
+        """
+        Perform the operation __str__.
+
+        Overwrites the default Exception __str__ method to provide a custom
+        message for printing.
+
+        Returns
+        -------
+        str
+            Custom error message.
+        """
+        return self.final_message
+
+
 class SltFileError(Exception):
     """
     A custom exception class for errors connected to operations on .slt files.
@@ -42,23 +83,11 @@ class SltFileError(Exception):
         message : str, optional
             A message to be printed., by default ""
         """
+
         self.error_type = type(exception).__name__
         self.error_message = str(exception)
-        self.slt_message = (
-            RED
-            + "\nSlothFileError"
-            + RESET
-            + ", "
-            + GREEN
-            + "File "
-            + RESET
-            + f'"{file}", '
-            + YELLOW
-            + f"{self.error_type}"
-            + RESET
-            + f": {self.error_message} "
-        )
-        self.final_message = self.slt_message + message
+        self.slt_message = f"{RED}\nSlothFileError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message} "
+        self.final_message = f"{self.slt_message} {message}"
         super().__init__(self.final_message)
 
     def __str__(self) -> str:
@@ -73,12 +102,13 @@ class SltFileError(Exception):
         str
             Custom error message.
         """
-        return str(self.final_message)
+
+        return self.final_message
 
 
 class SltCompError(Exception):
     """
-    A custom exception class for runtime errors in computations.
+    A custom exception class for runtime errors during computations.
 
     Parameters
     ----------
@@ -100,21 +130,8 @@ class SltCompError(Exception):
         """
         self.error_type = type(exception).__name__
         self.error_message = str(exception)
-        self.slt_message = (
-            RED
-            + "\nSlothComputationError"
-            + RESET
-            + ", "
-            + GREEN
-            + "File "
-            + RESET
-            + f'"{file}", '
-            + YELLOW
-            + f"{self.error_type}"
-            + RESET
-            + f": {self.error_message} "
-        )
-        self.final_message = self.slt_message + message
+        self.slt_message = f"{RED}\nSlothComputationError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message} "
+        self.final_message = f"{self.slt_message} {message}"
         super().__init__(self.final_message)
 
     def __str__(self) -> str:
@@ -129,7 +146,7 @@ class SltCompError(Exception):
         str
             Custom error message.
         """
-        return str(self.final_message)
+        return self.final_message
 
 
 class SltSaveError(Exception):
@@ -156,21 +173,8 @@ class SltSaveError(Exception):
         """
         self.error_type = type(exception).__name__
         self.error_message = str(exception)
-        self.slt_message = (
-            RED
-            + "\nSlothSaveError"
-            + RESET
-            + ", "
-            + GREEN
-            + "File "
-            + RESET
-            + f'"{file}", '
-            + YELLOW
-            + f"{self.error_type}"
-            + RESET
-            + f": {self.error_message} "
-        )
-        self.final_message = self.slt_message + message
+        self.slt_message = f"{RED}\nSlothSaveError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message}"
+        self.final_message = f"{self.slt_message} {message}"
         super().__init__(self.final_message)
 
     def __str__(self) -> str:
@@ -185,7 +189,7 @@ class SltSaveError(Exception):
         str
             Custom error message.
         """
-        return str(self.final_message)
+        return self.final_message
 
 
 class SltReadError(Exception):
@@ -212,21 +216,8 @@ class SltReadError(Exception):
         """
         self.error_type = type(exception).__name__
         self.error_message = str(exception)
-        self.slt_message = (
-            RED
-            + "\nSlothReadError"
-            + RESET
-            + ", "
-            + GREEN
-            + "File "
-            + RESET
-            + f'"{file}", '
-            + YELLOW
-            + f"{self.error_type}"
-            + RESET
-            + f": {self.error_message} "
-        )
-        self.final_message = self.slt_message + message
+        self.slt_message = f"{RED}\nSlothReadError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message} "
+        self.final_message = f"{self.slt_message} {message}"
         super().__init__(self.final_message)
 
     def __str__(self) -> str:
@@ -241,58 +232,8 @@ class SltReadError(Exception):
         str
             Custom error message.
         """
-        return str(self.final_message)
-
-
-class SltInputError(Exception):
-    """
-    A custom exception class for errors in input data.
-
-    Parameters
-    ----------
-    None
-    """
-
-    def __init__(self, exception: Exception, message: str = ""):
-        """
-        Initialize for the custom message printing.
-
-        Parameters
-        ----------
-        exception : Exception
-            An exception that initially caused the error.
-        message : str, optional
-            A message to be printed., by default ""
-        """
-        self.error_type = type(exception).__name__
-        self.error_message = str(exception)
-        self.slt_message = (
-            RED
-            + "\nSlothInputError"
-            + RESET
-            + ", "
-            + YELLOW
-            + f"{self.error_type}"
-            + RESET
-            + f": {self.error_message} "
-        )
-        self.final_message = self.slt_message + message
-        super().__init__(self.final_message)
-
-    def __str__(self) -> str:
-        """
-        Perform the operation __str__.
-
-        Overwrites the default Exception __str__ method to provide a custom
-        message for printing.
-
-        Returns
-        -------
-        str
-            Custom error message.
-        """
-        return str(self.final_message)
-
+        return self.final_message
+    
 
 class SltPlotError(Exception):
     """
@@ -318,21 +259,8 @@ class SltPlotError(Exception):
         """
         self.error_type = type(exception).__name__
         self.error_message = str(exception)
-        self.slt_message = (
-            RED
-            + "\nSlothPlotError"
-            + RESET
-            + ", "
-            + GREEN
-            + "File "
-            + RESET
-            + f'"{file}", '
-            + YELLOW
-            + f"{self.error_type}"
-            + RESET
-            + f": {self.error_message} "
-        )
-        self.final_message = self.slt_message + message
+        self.slt_message = f"{RED}\nSlothPlotError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message} "
+        self.final_message = f"{self.slt_message} {message}"
         super().__init__(self.final_message)
 
     def __str__(self) -> str:
@@ -347,45 +275,31 @@ class SltPlotError(Exception):
         str
             Custom error message.
         """
-        return str(self.final_message)
+        return self.final_message
     
 
 def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError"], slt_message: str = "") -> callable:
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            match slt_exception:
-                case "SltFileError":
-                    try:
-                        return func(*args, **kwargs)
-                    except Exception as exc:
-                        raise SltFileError(args[0]._hdf5, exc, slt_message) from None
-                case "SltCompError":
-                    try:
-                        return func(*args, **kwargs)
-                    except Exception as exc:
-                        raise SltCompError(args[0]._hdf5, exc, slt_message) from None
-                case "SltSaveError":
-                    try:
-                        return func(*args, **kwargs)
-                    except Exception as exc:
-                        raise SltSaveError(args[0]._hdf5, exc, slt_message) from None
-                case "SltReadError":
-                    try:
-                        return func(*args, **kwargs)
-                    except Exception as exc:
-                        raise SltReadError(args[0]._hdf5, exc, slt_message) from None
-                case "SltInputError":
-                    try:
-                        return func(*args, **kwargs)
-                    except Exception as exc:
-                        raise SltInputError(exc, slt_message) from None
-                case "SltPlotError":
-                    try:
-                        return func(*args, **kwargs)
-                    except Exception as exc:
-                        raise SltPlotError(args[0]._hdf5, exc, slt_message) from None
-                case _:
-                    raise ValueError("Unsupported SltException provided.")
+            try:
+                return func(*args, **kwargs)
+            except Exception as exc:
+                exception_mapping = {
+                    "SltInputError": SltInputError,
+                    "SltFileError": SltFileError,
+                    "SltCompError": SltCompError,
+                    "SltSaveError": SltSaveError,
+                    "SltReadError": SltReadError,
+                    "SltPlotError": SltPlotError,
+                }
+                if slt_exception in exception_mapping:
+                    if slt_exception == "SltInputError":
+                        raise exception_mapping[slt_exception](exc, slt_message) from None
+                    else:
+                        raise exception_mapping[slt_exception](args[0]._hdf5, exc, slt_message) from None
+                else:
+                    raise ValueError(f"Unsupported {RED}SltException{RESET} provided.") from None
         return wrapper
     return decorator
+

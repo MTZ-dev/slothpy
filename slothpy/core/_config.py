@@ -1,3 +1,19 @@
+# SlothPy
+# Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ)
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import sys
 from importlib import resources, resources as pkg_resources
 from configparser import ConfigParser
@@ -6,7 +22,7 @@ from typing import Literal
 from IPython import get_ipython
 from slothpy.core._slothpy_exceptions import SltInputError
 from slothpy._general_utilities._system import _is_notebook
-from slothpy._general_utilities._constants import YELLOW, BLUE, GREEN, RESET
+from slothpy._general_utilities._constants import RED, YELLOW, BLUE, GREEN, RESET
 
 
 class SltSettings:
@@ -18,7 +34,6 @@ class SltSettings:
             "log_level": 0,
             "precision": "double",
         }
-        # settings_path = join("static", "settings.ini")
         config = ConfigParser()
         with resources.open_text("slothpy", "settings.ini") as file:
             config.read_file(file)
@@ -37,12 +52,12 @@ class SltSettings:
             self._settings["log_level"] = config['DEFAULT'].getint("log_level")
 
     def __repr__(self):
-        return f"<SltSettings object.>"
+        return f"<{RED}SltSettings{RESET} object.>"
 
     def __str__(self):
-        representation = BLUE + "Sloth" + YELLOW + "Py" + RESET + " Settings:\n"
+        representation = f"{BLUE}Sloth{YELLOW}Py{RESET} Settings:\n"
         for name, value in self._settings.items():
-            representation += GREEN + f"{name}" + RESET + f": {value}\n"
+            representation += f"{GREEN}{name}{RESET}: {value}\n"
         return representation.strip()
 
     @property

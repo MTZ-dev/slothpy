@@ -24,11 +24,11 @@ from slothpy.core._slothpy_exceptions import SltFileError
 
 
 def compound_from_orca(
-    slt_filepath: str,
-    slt_filename: str,
-    name: str,
     orca_filepath: str,
     orca_filename: str,
+    slt_filepath: str,
+    slt_filename: str,
+    group_name: str,
     pt2: bool = False,
 ) -> Compound:
     """
@@ -36,18 +36,18 @@ def compound_from_orca(
 
     Parameters
     ----------
+    orca_filepath : str
+        Path to the ORCA output file.
+    orca_filename : str
+        Name of the ORCA output file.
     slt_filepath : str
         Path of the existing or new .slt file to which the results will
         be saved.
     slt_filename : str
         Name of the .slt file to be created/accessed.
-    name : str
+    group_name : str
         Name of a group to which results of relativistic ab initio calculations
         will be saved.
-    orca_filepath : str
-        Path to the ORCA output file.
-    orca_filename : str
-        Name of the ORCA output file.
     pt2 : bool, optional
         If True the results of CASPT2/NEVPT2 second-order perturbative
         corrections will be loaded to the file., by default False
@@ -68,13 +68,16 @@ def compound_from_orca(
     ORCA calculations have to be done with the "printlevel 3" keyword for
     outputs to be readable by SlothPy.
     """
+
+    if slt_filename.endswith(".slt"):
+        slt_filename = slt_filename[:-4]
     try:
         _orca_spin_orbit_to_slt(
             orca_filepath,
             orca_filename,
             slt_filepath,
             slt_filename,
-            name,
+            group_name,
             pt2,
         )
     except Exception as exc:
@@ -85,23 +88,25 @@ def compound_from_orca(
             message="Failed to create a .slt file from the ORCA output file",
         ) from None
 
-    obj = Compound._new(slt_filepath, slt_filename)
-
-    return obj
+    return Compound._new(slt_filepath, slt_filename)
 
 
 def compound_from_molcas(
+    molcas_filepath: str,
+    molcas_filename: str,
     slt_filepath: str,
     slt_filename: str,
     name: str,
-    molcas_filepath: str,
-    molcas_filename: str,
 ) -> Compound:
     """
     Create a Compound from MOLCAS rassi.h5 file.
 
     Parameters
     ----------
+    molcas_filepath : str
+        Path to the MOLCAS .rassi.h5 file.
+    molcas_filename : str
+        Name of the MOLCAS .rassi.h5 file (without the suffix).
     slt_filepath : str
         Path of the existing or new .slt file to which the results will
         be saved.
@@ -110,10 +115,6 @@ def compound_from_molcas(
     name : str
         Name of a group to which results of relativistic ab initio calculations
         will be saved.
-    molcas_filepath : str
-        Path to the MOLCAS .rassi.h5 file.
-    molcas_filename : str
-        Name of the MOLCAS .rassi.h5 file (without the suffix).
 
     Returns
     -------
@@ -132,6 +133,9 @@ def compound_from_molcas(
     RASSI section and the installation has to support HDF5 files for .rassi.h5
     files to be readable by SlothPy.
     """
+
+    if slt_filename.endswith(".slt"):
+        slt_filename = slt_filename[:-4]
     try:
         _molcas_spin_orbit_to_slt(
             molcas_filepath,
@@ -150,9 +154,7 @@ def compound_from_molcas(
             ),
         ) from None
 
-    obj = Compound._new(slt_filepath, slt_filename)
-
-    return obj
+    return Compound._new(slt_filepath, slt_filename)
 
 
 def compound_from_slt(slt_filepath: str, slt_filename: str) -> Compound:
@@ -177,8 +179,11 @@ def compound_from_slt(slt_filepath: str, slt_filename: str) -> Compound:
     SltFileError
         If the program is unable to create a Compound from a given file.
     """
+
+    if slt_filename.endswith(".slt"):
+        slt_filename = slt_filename[:-4]
     try:
-        obj = Compound._new(slt_filepath, slt_filename)
+        return Compound._new(slt_filepath, slt_filename)
     except Exception as exc:
         file = join(slt_filepath, slt_filename)
         raise SltFileError(
@@ -186,5 +191,3 @@ def compound_from_slt(slt_filepath: str, slt_filename: str) -> Compound:
             exc,
             message="Failed to load Compound from the .slt file.",
         ) from None
-
-    return obj

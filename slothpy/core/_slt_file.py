@@ -58,8 +58,8 @@ class SltGroup:
     def __init__(self, hdf5_file_path, group_path, exists=True):
         self._hdf5 = hdf5_file_path
         self._group_path = group_path
-        self.attributes = SltAttributes(hdf5_file_path, group_path)
         self._exists = exists
+        self.attributes = SltAttributes(hdf5_file_path, group_path)
 
     @slothpy_exc("SltFileError")
     def __getitem__(self, key):
@@ -97,12 +97,12 @@ class SltGroup:
                 item = file[self._group_path]
                 representation = f"{RED}Group{RESET}: {BLUE}{self._group_path}{RESET} from File: {GREEN}{self._hdf5}{RESET}"
                 for attribute_name, attribute_text in item.attrs.items():
-                    representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text} "
+                    representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
                 representation += "\nDatasets: \n"
                 for dataset_name, dataset in item.items():
                     representation += f"{PURPLE}{dataset_name}{RESET}"
                     for attribute_name, attribute_text in dataset.attrs.items():
-                        representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text} "
+                        representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
                     representation += "\n"
                 return representation.rstrip()
         else:
@@ -164,3 +164,21 @@ class SltDataset:
         Property to mimic h5py's attribute access convention.
         """
         return self.attributes
+    
+    @property
+    def shape(self):
+        """
+        Property to mimic h5py's shape access convention.
+        """
+        with File(self._hdf5, 'r') as file:
+            dataset = file[self._dataset_path]
+            return dataset.shape
+        
+    @property
+    def dtype(self):
+        """
+        Property to mimic h5py's shape access convention.
+        """
+        with File(self._hdf5, 'r') as file:
+            dataset = file[self._dataset_path]
+            return dataset.dtype

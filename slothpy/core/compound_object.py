@@ -21,6 +21,7 @@ from h5py import File, Group, Dataset
 from numpy import (
     ndarray,
     array,
+    float32,
     float64,
     int64,
     complex128,
@@ -231,20 +232,20 @@ class Compound():
         for group, attributes_group in self._groups.items():
             representation += f"Group: {BLUE}{group}{RESET}"
             for attribute_name, attribute_text in attributes_group.items():
-                representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text} "
+                representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
             representation += "\n"
 
             if group in self._groups_and_datasets.keys():
                 for dataset, attributes_dataset in self._groups_and_datasets[group].items():
                     representation += f"\t{PURPLE}{dataset}{RESET}"
                     for attribute_name, attribute_text in attributes_dataset.items():
-                        representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text} "
+                        representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
                     representation += "\n"
         
         for lone_dataset, attributes_lone_dataset in self._datasets.items():
             representation += f"Dataset: {PURPLE}{lone_dataset}{RESET}"
             for attribute_name, attribute_text in attributes_lone_dataset.items():
-                representation += f"| {YELLOW}{attribute_name}{RESET}: {attribute_text} "
+                representation += f"| {YELLOW}{attribute_name}{RESET}: {attribute_text}"
             representation += "\n"
 
         return representation.rstrip()
@@ -285,19 +286,19 @@ class Compound():
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
             del file[key]
     
+    @validate_input("Hamiltonian")
     def zeeman_splitting(
         self,
         group: str,
         number_of_states: int,
-        fields: ndarray[float64],
-        orientations: ndarray[float64],
+        fields: ndarray[Union[float32, float64]],
+        orientations: ndarray[Union[float32, float64]],
         states_cutoff: int = 0,
-        number_cpu: int = 0,
-        number_threads: int = 1,
-        average: bool = False,
+        number_cpu: int = None,
+        number_threads: int = None,
         slt_save: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:      ######## Sprawdzaj czy number_of_states jest mniejszy lub = od states_cutoff
+    ) -> ndarray[Union[float32, float64]]:
         """
         Calculates directional or powder-averaged Zeeman splitting for a given
         number of states and a list of magnetic field orientations and values.
@@ -331,12 +332,18 @@ class Compound():
             the file will be used., by default 0
         number_cpu : int, optional
             Number of logical CPUs to be assigned to perform the calculation.
-            If set to zero, all available CPUs will be used., by default 0
+            If set to zero, all available CPUs will be used. If None, the 
+            default number from the SlothPy settings is used. See:
+            slothpy.set_number_cpu(), slothpy.settings.number_cpu.,
+            by default None
         number_threads : int, optional
             Number of threads used in a multithreaded implementation of linear
-            algebra libraries used during the calculation. Higher values
-            benefit from the increasing size of matrices (states_cutoff) over
-            the parallelization over CPUs., by default 1
+            algebra libraries during the calculation. Higher values benefit
+            from the increasing size of matrices (states_cutoff) over the
+            parallelization over CPUs. If set to zero, a number of all
+            available logical CPUs will be used. If None, the default number
+            from the SlothPy settings is used. See: slothpy.set_number_threads,
+            slothpy.settings.number_threads., by default None
         slt_save : str, optional
             If given, the results will be saved in a group of this name to
             .slt., by default None
@@ -351,30 +358,14 @@ class Compound():
 
         Returns
         -------
-        ndarray[float64]
+        ndarray[Union[float32, float64]]
             The resulting array gives Zeeman splitting of number_of_states
             energy levels in cm-1 for each orientation in the form
             [orientations, fields, [energies]] - the first dimension
             runs over different orientations, the second over field values, and
-            the last gives energies of number_of_states states as an array.
-
-        Raises
-        ------
-        SltSaveError
-            If the name of the group already exists in the .slt file.
-        SltInputError
-            If input ArrayLike data cannot be converted to numpy.NDArrays.
-        SltInputError
-            If fields are not a one-diemsional array.
-        SltInputError
-            If number of states is not a positive integer less or equal to the
-            states cutoff.
-        SltCompError
-            If autotuning a number of processes and threads is unsuccessful.
-        SltCompError
-            If the calculation of Zeeman splitting is unsuccessful.
-        SltFileError
-            If the program is unable to correctly save results to .slt file.
+            the last gives energies of number_of_states states. When the
+            powder-average calculation is performed, the array is returned in
+            the form: [fields, [energies]].
 
         See Also
         --------
@@ -387,109 +378,39 @@ class Compound():
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.
         """
-        if slt is not None:
-            slt_group_name = f"{slt}_zeeman_splitting"
-            if _group_exists(self._hdf5, slt_group_name):
-                raise SltSaveError(
-                    self._hdf5,
-                    NameError(""),
-                    message="Unable to save the results. "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + slt_group_name
-                    + RESET
-                    + '" '
-                    + "already exists. Delete it manually.",
-                ) from None
 
-        try:
-            fields = array(fields, dtype=float64)
-        except Exception as exc:
-            raise SltInputError(exc) from None
-
-        if fields.ndim != 1:
-            raise SltInputError(
-                ValueError("The list of fields has to be a 1D array.")
-            ) from None
-
-        try:
-            max_states = self[f"{group}", "SOC"].shape[0]
-        except Exception as exc1:
-            try:
-                max_states = self[f"{group}", "SOC_energies"].shape[0]
-            except Exception as exc2:
-                raise SltFileError(
-                    self._hdf5,
-                    exc2,
-                    YELLOW
-                    + f" {type(exc1).__name__}"
-                    + RESET
-                    + f": {str(exc1)} \nFailed to get SOC states from "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + group
-                    + RESET
-                    + '".',
-                ) from None
-
-        if (
-            not isinstance(number_of_states, int)
-            or number_of_states <= 0
-            or number_of_states > max_states
-        ):
-            raise SltInputError(
-                ValueError(
-                    "The number of states has to be an integer less or equal"
-                    " to the states cutoff."
-                )
-            ) from None
-
-        if isinstance(grid, int):
-            grid = lebedev_laikov_grid(grid)
-            average = True
-        elif average:
-            grid = _normalize_grid_vectors(grid)
-        else:
-            grid = _normalize_orientations(grid)
-
-        if autotune:
-            try:
-                temperatures = array([1])
-                number_threads = _auto_tune(
-                    self._hdf5,
-                    group,
-                    fields,
-                    grid,
-                    temperatures,
-                    states_cutoff,
-                    number_cpu,
-                    fields.shape[0],
-                    grid.shape[0],
-                    "zeeman",
-                    num_of_states=number_of_states,
-                    average=average,
-                )
-            except Exception as exc:
-                raise SltCompError(
-                    self._hdf5,
-                    exc,
-                    "Failed to autotune a number of processes and threads to"
-                    " the data within "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + f"{group}"
-                    + RESET
-                    + '".',
-                ) from None
+        # if autotune:
+        #     try:
+        #         temperatures = array([1])
+        #         number_threads = _auto_tune(
+        #             self._hdf5,
+        #             group,
+        #             fields,
+        #             grid,
+        #             temperatures,
+        #             states_cutoff,
+        #             number_cpu,
+        #             fields.shape[0],
+        #             grid.shape[0],
+        #             "zeeman",
+        #             num_of_states=number_of_states,
+        #             average=average,
+        #         )
+        #     except Exception as exc:
+        #         raise SltCompError(
+        #             self._hdf5,
+        #             exc,
+        #             "Failed to autotune a number of processes and threads to"
+        #             " the data within "
+        #             + BLUE
+        #             + "Group "
+        #             + RESET
+        #             + '"'
+        #             + BLUE
+        #             + f"{group}"
+        #             + RESET
+        #             + '".',
+        #         ) from None
 
         try:
             zeeman_array = _zeeman_splitting(
@@ -497,11 +418,10 @@ class Compound():
                 group,
                 number_of_states,
                 fields,
-                grid,
+                orientations,
                 states_cutoff,
                 number_cpu,
                 number_threads,
-                average,
             )
         except Exception as exc:
             raise SltCompError(
@@ -524,7 +444,7 @@ class Compound():
             name = ""
 
         if slt is not None:
-            try:
+            # try:
                 self[
                     slt_group_name,
                     f"{slt}_zeeman",
@@ -558,20 +478,20 @@ class Compound():
                         f" {name}Zeeman splitting from group: {group}.",
                     ] = grid[:, :3]
 
-            except Exception as exc:
-                raise SltFileError(
-                    self._hdf5,
-                    exc,
-                    "Failed to save Zeeman splitting to "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + slt_group_name
-                    + RESET
-                    + '".',
-                ) from None
+            # except Exception as exc:
+            #     raise SltFileError(
+            #         self._hdf5,
+            #         exc,
+            #         "Failed to save Zeeman splitting to "
+            #         + BLUE
+            #         + "Group "
+            #         + RESET
+            #         + '"'
+            #         + BLUE
+            #         + slt_group_name
+            #         + RESET
+            #         + '".',
+            #     ) from None
 
         return zeeman_array
 
@@ -1240,7 +1160,7 @@ class Compound():
         grid: Union[int, ndarray[float64]] = None,
         slt: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ) -> ndarray[float64]: ###################### Check for negative fields during the differentation!!!
         """
         Calculates powder-averaged or directional molar magnetic susceptibility
         chi(T)(H,T) for a given list of field and temperatures values.

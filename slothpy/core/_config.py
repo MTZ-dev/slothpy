@@ -15,11 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
+from os import cpu_count
 from importlib import resources, resources as pkg_resources
 from configparser import ConfigParser
 from importlib import resources
 from typing import Literal
 from IPython import get_ipython
+from numpy import int32, float32, complex64, int64, float64, complex128
 from slothpy.core._slothpy_exceptions import SltInputError
 from slothpy._general_utilities._system import _is_notebook
 from slothpy._general_utilities._constants import RED, YELLOW, BLUE, GREEN, RESET
@@ -29,14 +31,21 @@ class SltSettings:
 
     def __init__(self):
         self._settings = {
+            "number_cpu": 0,
+            "number_threads": 1,
+            "precision": "double",
             "monitor": False,
             "traceback": False,
             "log_level": 0,
-            "precision": "double",
         }
         config = ConfigParser()
         with resources.open_text("slothpy", "settings.ini") as file:
             config.read_file(file)
+
+        # Update integer setting
+        for key in ["number_cpu", "number_threads", "log_level"]:
+            if key in config['DEFAULT']:
+                self._settings[key] = config['DEFAULT'].getint(key)
 
         # Update boolean settings
         for key in ["monitor", "traceback"]:
@@ -46,10 +55,6 @@ class SltSettings:
         # Update string setting
         if "precision" in config['DEFAULT']:
             self._settings["precision"] = config['DEFAULT'].get("precision")
-        
-        # Update integer setting
-        if "log_level" in config['DEFAULT']:
-            self._settings["log_level"] = config['DEFAULT'].getint("log_level")
 
     def __repr__(self):
         return f"<{RED}SltSettings{RESET} object.>"
@@ -59,6 +64,32 @@ class SltSettings:
         for name, value in self._settings.items():
             representation += f"{GREEN}{name}{RESET}: {value}\n"
         return representation.strip()
+    
+    @property
+    def number_cpu(self):
+        return self._settings["number_cpu"]
+
+    @number_cpu.setter
+    def number_cpu(self, value):
+        if isinstance(value, int) and value >= 0 and value <= int(cpu_count()):
+            self._settings["monitor"] = value
+        else:
+            raise SltInputError(
+                ValueError(f"The number of CPUs has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
+            )
+        
+    @property
+    def number_threads(self):
+        return self._settings["number_threads"]
+
+    @number_threads.setter
+    def number_threads(self, value):
+        if isinstance(value, int) and value >= 0 and value <= int(cpu_count()):
+            self._settings["monitor"] = value
+        else:
+            raise SltInputError(
+                ValueError(f"The number of Threads has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
+            )
 
     @property
     def monitor(self):
@@ -115,6 +146,27 @@ class SltSettings:
             raise SltInputError(
                 ValueError("Log level setter accepts only integers.")
             )
+        
+    @property
+    def int(self):
+        if self._settings["precision"] == "single":
+            return int32
+        elif self._settings["precision"] == "double":
+            return int64
+    
+    @property
+    def float(self):
+        if self._settings["precision"] == "single":
+            return float32
+        elif self._settings["precision"] == "double":
+            return float64
+        
+    @property
+    def complex(self):
+        if self._settings["precision"] == "single":
+            return complex64
+        elif self._settings["precision"] == "double":
+            return complex128
 
     def save_settings(self):
         """Write the current settings back to the configuration file."""
@@ -131,6 +183,7 @@ class SltSettings:
         print(self.__str__())
 
 
+# Settings init
 settings = SltSettings()
 
 
@@ -148,21 +201,43 @@ def _set_default_error_reporting_mode():
         sys.tracebacklimit = None
 
 
+def set_number_cpu(value: int = 0, permanent: bool = False) -> None:
+    """
+    Run this to set the number of CPUs used by SlotphPy caluclations.
+    Set permanent = True to save the settings permanently in the ini file.
+    """
+
+    settings.number_cpu = value
+    if permanent:
+        settings.save_settings()
+
+
+def set_number_threads(value: int = 1, permanent: bool = False) -> None:
+    """
+    Run this to set the number of Threads in linear algebra libraries used by
+    SlotphPy caluclations. Set permanent = True to save the settings
+    permanently in the ini file.
+    """
+
+    settings.number_threads = value
+    if permanent:
+        settings.save_settings()
+
+
 def turn_on_monitor(permanent: bool = False) -> None:
     """
     Run this to turn on the SlothPy Monitor utility.
-    Set permamnet = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the ini file.
     """
     settings.monitor = True
     if permanent:
         settings.save_settings()
 
 
-
 def turn_off_monitor(permanent: bool = False) -> None:
     """
     Run this to turn off the SlothPy Monitor utility.
-    Set permamnet = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the ini file.
     """
     settings.monitor = False
     if permanent:
@@ -172,17 +247,18 @@ def turn_off_monitor(permanent: bool = False) -> None:
 def set_plain_error_reporting_mode(permanent: bool = False) -> None:
     """
     Run this to set the custom SlothPy-style error printing without tracebacks.
-    Set permamnet = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the ini file.
     """
 
     settings.traceback = False
     if permanent:
         settings.save_settings()
 
+
 def set_default_error_reporting_mode(permanent: bool = False) -> None:
     """
     Run this to set the default full error tracebacks.
-    Set permamnet = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the ini file.
     """
 
     settings.traceback = True
@@ -193,7 +269,7 @@ def set_default_error_reporting_mode(permanent: bool = False) -> None:
 def set_double_precision(permanent: bool = False) -> None:
     """
     Run this to set the double precision (float64, complex128) in computations.
-    Set permamnet = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the ini file.
     """
 
     settings.precision = "double"
@@ -204,7 +280,7 @@ def set_double_precision(permanent: bool = False) -> None:
 def set_single_precision(permanent: bool = False) -> None:
     """
     Run this to set the single precision (float64, complex128) in computations.
-    Set permamnet = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the ini file.
     """
 
     settings.precision = "single"
@@ -215,7 +291,7 @@ def set_single_precision(permanent: bool = False) -> None:
 def set_log_level(value: int = 0, permanent: bool = False) -> None:
     """
     Run this to set the logging level (float64, complex128) in SlotphPy.
-    Set permamnet = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the ini file.
     """
 
     settings.log_level = value

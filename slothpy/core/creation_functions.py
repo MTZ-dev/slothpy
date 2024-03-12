@@ -20,7 +20,7 @@ from slothpy._general_utilities._io import (
     _orca_spin_orbit_to_slt,
     _molcas_spin_orbit_to_slt,
 )
-from slothpy.core._slothpy_exceptions import SltFileError
+from slothpy.core._slothpy_exceptions import SltFileError, SltInputError
 
 
 def compound_from_orca(
@@ -71,6 +71,8 @@ def compound_from_orca(
 
     if slt_filename.endswith(".slt"):
         slt_filename = slt_filename[:-4]
+    if not isinstance(group_name, str):
+        raise SltInputError(f"The group name has to be a string not {type(group_name)}.")
     try:
         _orca_spin_orbit_to_slt(
             orca_filepath,
@@ -96,7 +98,8 @@ def compound_from_molcas(
     molcas_filename: str,
     slt_filepath: str,
     slt_filename: str,
-    name: str,
+    group_name: str,
+    edipmom: bool = False,
 ) -> Compound:
     """
     Create a Compound from MOLCAS rassi.h5 file.
@@ -106,15 +109,18 @@ def compound_from_molcas(
     molcas_filepath : str
         Path to the MOLCAS .rassi.h5 file.
     molcas_filename : str
-        Name of the MOLCAS .rassi.h5 file (without the suffix).
+        Name of the MOLCAS .rassi.h5 file.
     slt_filepath : str
         Path of the existing or new .slt file to which the results will
         be saved.
     slt_filename : str
         Name of the .slt file to be created/accessed.
-    name : str
+    group_name : str
         Name of a group to which results of relativistic ab initio calculations
         will be saved.
+    edipmom : bool
+        If set to True, electric dipole moment integrals will be read from
+        the MOLCAS .rassi.h5 file for simulations of spectroscopic properties.
 
     Returns
     -------
@@ -136,13 +142,18 @@ def compound_from_molcas(
 
     if slt_filename.endswith(".slt"):
         slt_filename = slt_filename[:-4]
+    if molcas_filename.endswith(".rassi.h5"):
+        molcas_filename = molcas_filename[:-9]
+    if not isinstance(group_name, str):
+        raise SltInputError(f"The group name has to be a string not {type(group_name)}.")
     try:
         _molcas_spin_orbit_to_slt(
             molcas_filepath,
             molcas_filename,
             slt_filepath,
             slt_filename,
-            name,
+            group_name,
+            edipmom,
         )
     except Exception as exc:
         file = join(slt_filepath, slt_filename)

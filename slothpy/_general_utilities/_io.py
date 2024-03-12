@@ -39,6 +39,7 @@ from slothpy._general_utilities._math_expresions import (
     _magnetic_momenta_from_angular_momenta,
     _total_angular_momenta_from_angular_momenta,
 )
+from slothpy.core._config import settings
 
 def _grep_to_file(
     path_inp: str,
@@ -336,96 +337,57 @@ def _molcas_spin_orbit_to_slt(
     inp_molcas: str,
     path_out: str,
     hdf5_output: str,
-    name: str,
+    group_name: str,
+    edipmom: bool = False,
 ) -> None:
     rassi_path_name = join(path_molcas, inp_molcas)
-
-    with File(f"{rassi_path_name}.rassi.h5", "r") as rassi:
-        soc_energies = rassi["SOS_ENERGIES"][:]
-        sx = (
-            rassi["SOS_SPIN_REAL"][0, :, :]
-            + 1j * rassi["SOS_SPIN_IMAG"][0, :, :]
-        )
-        sy = (
-            rassi["SOS_SPIN_REAL"][1, :, :]
-            + 1j * rassi["SOS_SPIN_IMAG"][1, :, :]
-        )
-        sz = (
-            rassi["SOS_SPIN_REAL"][2, :, :]
-            + 1j * rassi["SOS_SPIN_IMAG"][2, :, :]
-        )
-        lx = (
-            1j * rassi["SOS_ANGMOM_REAL"][0, :, :]
-            - rassi["SOS_ANGMOM_IMAG"][0, :, :]
-        )
-        ly = (
-            1j * rassi["SOS_ANGMOM_REAL"][1, :, :]
-            - rassi["SOS_ANGMOM_IMAG"][1, :, :]
-        )
-        lz = (
-            1j * rassi["SOS_ANGMOM_REAL"][2, :, :]
-            - rassi["SOS_ANGMOM_IMAG"][2, :, :]
-        )
-
     hdf5_file = join(path_out, hdf5_output)
 
-    with File(f"{hdf5_file}.slt", "a") as output:
-        molcas = output.create_group(str(name))
-        molcas.attrs["Description"] = (
-            f"Group({name}) containing results of relativistic SOC MOLCAS"
-            " calculations - angular momenta, spin in SOC basis and SOC"
-            " energies"
-        )
+    with File(f"{rassi_path_name}.rassi.h5", "r") as rassi:
+        with File(f"{hdf5_file}.slt", "a") as output:
+            group = output.create_group(group_name)
+            group.attrs["Type"] = "Hamiltonian"
+            group.attrs["Kind"] = "MOLCAS"
+            group.attrs["Precision"] = settings.precision
+            if edipmom:
+                group.attrs["Additional"] = "Edipmom"
+            group.attrs["Description"] = "Group containing relativistic SOC MOLCAS results."
 
-        rassi_soc = molcas.create_dataset(
-            "SOC_energies", shape=(soc_energies.shape[0],), dtype=float64
-        )
-        rassi_soc[:] = soc_energies[:]
-        rassi_soc.attrs[
-            "Description"
-        ] = "Dataset containing SOC energies from MOLCAS RASSI calculation"
-        rassi_sx = molcas.create_dataset(
-            "SOC_SX", shape=sx.shape, dtype=complex128
-        )
-        rassi_sx[:] = sx[:]
-        rassi_sx.attrs[
-            "Description"
-        ] = "Dataset containing Sx matrix in SOC basis"
-        rassi_sy = molcas.create_dataset(
-            "SOC_SY", shape=sy.shape, dtype=complex128
-        )
-        rassi_sy[:] = sy[:]
-        rassi_sy.attrs[
-            "Description"
-        ] = "Dataset containing Sy matrix in SOC basis"
-        rassi_sz = molcas.create_dataset(
-            "SOC_SZ", shape=sz.shape, dtype=complex128
-        )
-        rassi_sz[:] = sz[:]
-        rassi_sz.attrs[
-            "Description"
-        ] = "Dataset containing Sz matrix in SOC basis"
-        rassi_lx = molcas.create_dataset(
-            "SOC_LX", shape=lx.shape, dtype=complex128
-        )
-        rassi_lx[:] = lx[:]
-        rassi_lx.attrs[
-            "Description"
-        ] = "Dataset containing Lx matrix in SOC basis"
-        rassi_ly = molcas.create_dataset(
-            "SOC_LY", shape=ly.shape, dtype=complex128
-        )
-        rassi_ly[:] = ly[:]
-        rassi_ly.attrs[
-            "Description"
-        ] = "Dataset containing Ly matrix in SOC basis"
-        rassi_lz = molcas.create_dataset(
-            "SOC_LZ", shape=lz.shape, dtype=complex128
-        )
-        rassi_lz[:] = lz[:]
-        rassi_lz.attrs[
-            "Description"
-        ] = "Dataset containing Lz matrix in SOC basis"
+            dataset_rassi = rassi["SOS_ENERGIES"][:]
+            group.attrs["States"] = dataset_rassi.shape[0]
+            dataset_out = group.create_dataset("SOC_ENERGIES", shape=dataset_rassi.shape, dtype=settings.float, data=dataset_rassi.astype(settings.float), chunks=True)
+            dataset_out.attrs["Description"] = "Dataset containing SOC energies."
+
+            dataset_rassi = rassi["SOS_SPIN_REAL"][0, :, :] + 1j * rassi["SOS_SPIN_IMAG"][0, :, :]
+            dataset_out = group.create_dataset("SOC_SX", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out.attrs["Description"] = "Dataset containing the Sx matrix in the SOC basis."
+            dataset_rassi = rassi["SOS_SPIN_REAL"][1, :, :] + 1j * rassi["SOS_SPIN_IMAG"][1, :, :]
+            dataset_out = group.create_dataset("SOC_SY", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out.attrs["Description"] = "Dataset containing the Sy matrix in the SOC basis."
+            dataset_rassi = rassi["SOS_SPIN_REAL"][2, :, :] + 1j * rassi["SOS_SPIN_IMAG"][2, :, :]
+            dataset_out = group.create_dataset("SOC_SZ", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out.attrs["Description"] = "Dataset containing the Sz matrix in the SOC basis."
+
+            dataset_rassi = 1j * rassi["SOS_ANGMOM_REAL"][0, :, :] - rassi["SOS_ANGMOM_IMAG"][0, :, :]
+            dataset_out = group.create_dataset("SOC_LX", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out.attrs["Description"] = "Dataset containing the Lx matrix in the SOC basis."
+            dataset_rassi = rassi["SOS_ANGMOM_REAL"][1, :, :] - rassi["SOS_ANGMOM_IMAG"][1, :, :]
+            dataset_out = group.create_dataset("SOC_LY", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out.attrs["Description"] = "Dataset containing the Ly matrix in the SOC basis."
+            dataset_rassi = rassi["SOS_ANGMOM_REAL"][2, :, :] - rassi["SOS_ANGMOM_IMAG"][2, :, :]
+            dataset_out = group.create_dataset("SOC_LZ", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out.attrs["Description"] = "Dataset containing the Lz matrix in the SOC basis."
+
+            if edipmom:
+                dataset_rassi = rassi["SOS_EDIPMOM_REAL"][0, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][0, :, :]
+                dataset_out = group.create_dataset("SOC_EDIPMOMX", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+                dataset_out.attrs["Description"] = "Dataset containing the Px electric dipole moment matrix in the SOC basis."
+                dataset_rassi = rassi["SOS_EDIPMOM_REAL"][1, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][1, :, :]
+                dataset_out = group.create_dataset("SOC_EDIPMOMY", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+                dataset_out.attrs["Description"] = "Dataset containing the Py electric dipole moment matrix in the SOC basis."
+                dataset_rassi = rassi["SOS_EDIPMOM_REAL"][2, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][2, :, :]
+                dataset_out = group.create_dataset("SOC_EDIPMOMZ", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+                dataset_out.attrs["Description"] = "Dataset containing the Pz electric dipole moment matrix in the SOC basis."
 
 
 def _load_orca_hdf5(filename, group, rotation):
@@ -476,38 +438,58 @@ def _load_orca_hdf5(filename, group, rotation):
         ) from None
 
 
-def _load_molcas_hdf5(filename, group, rotation):
+def _load_molcas_hdf5(filename, group, rotation, edipmom = False):
     try:
         with File(filename, "r") as file:
-            shape = file[str(group)]["SOC_energies"][:].shape[0]
-            angular_momenta = zeros((6, shape, shape), dtype=complex128)
-            soc_energies = file[str(group)]["SOC_energies"][:]
-            angular_momenta[0][:] = file[str(group)]["SOC_SX"][:]
-            angular_momenta[1][:] = file[str(group)]["SOC_SY"][:]
-            angular_momenta[2][:] = file[str(group)]["SOC_SZ"][:]
-            angular_momenta[3][:] = file[str(group)]["SOC_LX"][:]
-            angular_momenta[4][:] = file[str(group)]["SOC_LY"][:]
-            angular_momenta[5][:] = file[str(group)]["SOC_LZ"][:]
+            shape = file[group]["SOC_ENERGIES"][:].shape[0]
+            angular_momenta = zeros((6, shape, shape), dtype=settings.complex)
+            soc_energies = file[group]["SOC_ENERGIES"][:]
+            angular_momenta[0][:] = file[group]["SOC_SX"][:]
+            angular_momenta[1][:] = file[group]["SOC_SY"][:]
+            angular_momenta[2][:] = file[group]["SOC_SZ"][:]
+            angular_momenta[3][:] = file[group]["SOC_LX"][:]
+            angular_momenta[4][:] = file[group]["SOC_LY"][:]
+            angular_momenta[5][:] = file[group]["SOC_LZ"][:]
 
-        angular_momenta = ascontiguousarray(angular_momenta)
-        soc_energies = ascontiguousarray(soc_energies.astype(float64))
+            angular_momenta = ascontiguousarray(angular_momenta)
+            soc_energies = ascontiguousarray(soc_energies.astype(settings.float))
 
-        if (rotation is not None) or (rotation != None):
-            angular_momenta[0:3, :, :] = _rotate_vector_operator(
-                angular_momenta[0:3, :, :], rotation
-            )
-            angular_momenta[3:6, :, :] = _rotate_vector_operator(
-                angular_momenta[3:6, :, :], rotation
-            )
+            if (rotation is not None) or (rotation != None):
+                angular_momenta[0:3, :, :] = _rotate_vector_operator(
+                    angular_momenta[0:3, :, :], rotation
+                )
+                angular_momenta[3:6, :, :] = _rotate_vector_operator(
+                    angular_momenta[3:6, :, :], rotation
+                )
+            
+            if edipmom:
+                if file[group].attrs["Additional"] == "Edipmom":
+                    shape = file[group]["SOC_EDIPMOMX"][:].shape[0]
+                    electric_dipolar_momenta = zeros((3, shape, shape), dtype=settings.complex)
+                    electric_dipolar_momenta[0][:] = file[group]["SOC_EDIPMOMX"][:]
+                    electric_dipolar_momenta[1][:] = file[group]["SOC_EDIPMOMY"][:]
+                    electric_dipolar_momenta[2][:] = file[group]["SOC_EDIPMOMZ"][:]
 
-        return soc_energies, angular_momenta
+                    if (rotation is not None) or (rotation != None):
+                        electric_dipolar_momenta = _rotate_vector_operator(
+                            electric_dipolar_momenta, rotation
+                        )
+
+                    electric_dipolar_momenta = ascontiguousarray(electric_dipolar_momenta)
+
+                    return soc_energies, angular_momenta, electric_dipolar_momenta
+
+                else:
+                    raise KeyError(f"Group '{group}' does not contain electric dipolar momenta in a valid format.")
+
+            return soc_energies, angular_momenta
 
     except Exception as exc:
         raise SltFileError(
             filename,
             exc,
             message=(
-                "Failed to load SOC, spin, and angular momenta data in"
+                "Failed to load SOC, spin, angular momenta or electric dipole momenta data in"
                 " the MOLCAS format from the .slt file."
             ),
         ) from None
@@ -543,23 +525,6 @@ def _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, rotation
     )
 
-    shape = soc_energies.size
-
-    if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
-        raise ValueError(
-            "Invalid states cutoff. Set it to a positive integer less or equal"
-            f" to the number of SO-states: {shape} (or zero for all states)."
-        )
-
-    if states_cutoff > shape:
-        raise ValueError(
-            f"States cutoff is larger than the number of SO-states ({shape})."
-            " Please set it less or equal (or zero for all states)."
-        )
-
-    if states_cutoff == 0:
-        states_cutoff = shape
-
     soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
     magnetic_momenta = _magnetic_momenta_from_angular_momenta(
         angular_momenta, 0, states_cutoff
@@ -577,23 +542,6 @@ def _get_soc_total_angular_momenta_and_energies_from_hdf5(
     ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
         filename, group, rotation
     )
-
-    shape = soc_energies.size
-
-    if (not isinstance(states_cutoff, int)) or (states_cutoff < 0):
-        raise ValueError(
-            "Invalid states cutoff. Set it to a positive integer less or equal"
-            " to the number of SO-states (or zero for all states)."
-        )
-
-    if states_cutoff > shape:
-        raise ValueError(
-            f"States cutoff is larger than the number of SO-states ({shape})."
-            " Please set it less or equal (or zero for all states)."
-        )
-
-    if states_cutoff == 0:
-        states_cutoff = shape
 
     soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
     total_angular_momenta = _total_angular_momenta_from_angular_momenta(

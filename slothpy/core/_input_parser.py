@@ -16,8 +16,10 @@
 
 import inspect 
 from functools import wraps
-from numpy import array, float64
-from slothpy.core._slothpy_exceptions import (SltInputError, SltSaveError)
+from typing import Literal
+from os import cpu_count
+from numpy import array
+from slothpy.core._slothpy_exceptions import SltInputError, SltSaveError, SltReadError
 from slothpy._general_utilities._grids_over_hemisphere import (
     lebedev_laikov_grid,
 )
@@ -27,54 +29,107 @@ from slothpy._general_utilities._math_expresions import (
     _normalize_orientation,
 )
 from slothpy._general_utilities._constants import (
-    RED,
-    GREEN,
     BLUE,
-    PURPLE,
-    YELLOW,
     RESET,
 )
 from slothpy._general_utilities._io import (
     _group_exists,
 )
+from slothpy.core._config import settings
+
+def validate_input(slt_type: Literal["Hamiltonian"]):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            signature = inspect.signature(func)
+            bound_args = signature.bind_partial(*args, **kwargs)
+            bound_args.apply_defaults()
+
+            if bound_args.arguments["self"][bound_args.arguments["group"]].attributes["Type"] != slt_type:
+                raise SltReadError(f"Invalid type or non-existent {BLUE}Group{RESET}: '{bound_args.arguments['group']}' from the .slt file.") from None
+
+            if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:
+                if _group_exists(bound_args.arguments["self"]._hdf5, bound_args.arguments["slt_save"]):
+                    raise SltSaveError(
+                        bound_args.arguments["self"]._hdf5,
+                        NameError(""),
+                        message=f"Unable to save the results. {BLUE}Group{RESET} '{bound_args.arguments['slt_save']}' already exists. Delete it manually.",
+                    ) from None
+
+            try:
+                for name, value in bound_args.arguments.items():
+                    match name:
+                        case "number_cpu":
+                            if value is None:
+                                value = settings.number_cpu
+                            if value == 0:
+                                value = int(cpu_count())    
+                            elif not (isinstance(value, int) and value > 0 and value <= int(cpu_count())):
+                                raise ValueError(f"The number of CPUs has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
+                        case "number_threads":
+                            if value is None:
+                                value = settings.number_cpu
+                            if value == 0:
+                                value = int(cpu_count())
+                            elif not (isinstance(value, int) and value > 0 and value <= int(cpu_count())):
+                                raise ValueError(f"The number of CPUs has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
+                        case "fields":
+                            value = array(value, copy=False, order='C', dtype=settings.float)
+                            if value.ndim != 1:
+                                raise ValueError("The list of fields has to be a 1D array.")
+                        case "temperatures":
+                            value = array(value, copy=False, order='C', dtype=settings.float)
+                            if value.ndim != 1:
+                                raise ValueError("The list of temperatures has to be a 1D array.")
+                            if (value <= 0).any():
+                                raise ValueError("Zero or negative temperatures were detected in the input.")
+                        case "grid":
+                            if isinstance(value, int):
+                                value = lebedev_laikov_grid(value)
+                            else:
+                                value = array(value, copy=False, order='C', dtype=settings.float)
+                                if value.shape[1] == 3:
+                                    value = _normalize_grid_vectors(value)
+                                else:
+                                    raise ValueError("The grid has to be set to an integer from 0-11, or a custom one has to be in the form [[direction_x, direction_y, direction_z, weight],...].")
+                        case "orientations":
+                            if isinstance(value, int):
+                                value = lebedev_laikov_grid(value)
+                            else:
+                                value = array(value, copy=False, order='C', dtype=settings.float)
+                                if value.shape[1] == 4:
+                                    value = _normalize_grid_vectors(value)
+                                elif value.shape[1] == 3:
+                                    value = _normalize_orientations(value)
+                                else:
+                                    raise ValueError("The orientations' array has to be (n,3) in the format: [[direction_x, direction_y, direction_z],...] or (n,4) array in the format: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
+                        case "states_cutoff":
+                            if value == 0:
+                                value = bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]
+                            elif not isinstance(value, int) or value < 0:
+                                raise ValueError(f"The states' cutoff has to be a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group']].attributes['States']} (or 0 for all the states).")
+                            elif value > int(bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]):
+                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group']].attributes['States']} (or 0 for all the states).")
+                        case "number_of_states":
+                            if not isinstance(value, int) or value <= 0:
+                                raise ValueError("The number of states has to be a positive integer.")
+                            if "states_cutoff" in bound_args.arguments.keys():
+                                if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0):
+                                    max_states = bound_args.arguments["states_cutoff"]
+                            else:
+                                max_states = int(bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"])
+                            if value > max_states:
+                                raise ValueError("The number of states has to be less or equal to the states' cutoff or overall number of states.")
+                            
+                    bound_args.arguments[name] = value
+                    
+            except Exception as exc:
+                raise SltInputError(exc) from None
+
+            return func(**bound_args.arguments)
+        
+        return wrapper
+    return decorator
 
 
-def validate_input(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        signature = inspect.signature(func)
-        bound_args = signature.bind_partial(*args, **kwargs)
-        bound_args.apply_defaults()
-
-        if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:
-            if _group_exists(bound_args.arguments["self"]._hdf5, bound_args.arguments["slt_save"]):
-                raise SltSaveError(
-                    bound_args.arguments["self"]._hdf5,
-                    NameError(""),
-                    message=f"Unable to save the results. {BLUE}Group{RESET} '{bound_args.arguments['slt_save']}' already exists. Delete it manually.",
-                ) from None
-
-        try:
-            for name, value in bound_args.arguments.items():
-                match name:
-                    case "fields":
-                        value = array(value, copy=False, order='C', dtype=float64)
-                        if value.ndim != 1:
-                            raise ValueError("The list of fields has to be a 1D array.")
-                    case "temperatures":
-                        value = array(value, copy=False, order='C', dtype=float64)
-                        if value.ndim != 1:
-                            raise ValueError("The list of temperatures has to be a 1D array.")
-                    case "grid":
-                        if isinstance(value, int):
-                            value = lebedev_laikov_grid(value)
-                        else:
-                            value = _normalize_grid_vectors(value)
-                bound_args.arguments[name] = value                    
-        except Exception as exc:
-            raise SltInputError(exc) from None
-
-        return func(**bound_args.arguments)
-    
-    return wrapper
 

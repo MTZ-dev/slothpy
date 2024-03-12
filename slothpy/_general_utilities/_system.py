@@ -19,29 +19,14 @@ from os import cpu_count
 
 
 def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
-    if (
-        (not isinstance(num_cpu, int))
-        or (not isinstance(num_threads, int))
-        or (num_cpu < 0)
-        or (num_threads < 0)
-    ):
-        raise ValueError(
-            "Numbers of CPUs and Threads have to be nonnegative integers."
-        )
-
+    # Check available CPU count
     total_num_of_cpu = int(cpu_count())
 
     if num_cpu > total_num_of_cpu:
         raise ValueError(
-            f"Insufficient number of logical CPUs ({total_num_of_cpu}) was"
-            f" detected on the machine, to accomodate {num_cpu} desired cores."
+            f"Insufficient number of logical cores ({total_num_of_cpu}) was"
+            f" detected on the machine, to accomodate {num_cpu} desired CPUs."
         )
-
-    if num_cpu == 0:
-        num_cpu = total_num_of_cpu
-
-    if num_threads == 0:
-        num_threads = 1
 
     # Check CPUs number considering the desired number of threads and assign
     # number of processes
@@ -55,7 +40,8 @@ def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
     num_process = num_cpu // num_threads
     if num_process >= num_to_parallelize:
         num_process = num_to_parallelize
-        num_threads = num_cpu // num_process
+    
+    num_threads = num_cpu // num_process
 
     return num_process, num_threads
 

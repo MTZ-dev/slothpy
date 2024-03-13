@@ -39,6 +39,18 @@ from slothpy.core._slothpy_exceptions import SltInputError
 from slothpy.core._config import settings
 
 
+@jit(
+    f"{settings.numba_complex}[:, :]({settings.numba_complex}[:, :, :], {settings.numba_complex}[:])",
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    parallel=True,
+)
+def _3d_dot(u, m):
+    return u[0] * m[0] + u[1] * m[1] + u[2] * m[2]
+
+
 @jit("float64(float64, float64)", nopython=True, cache=True, nogil=True)
 def _binom(n, k):
     if k > n - k:

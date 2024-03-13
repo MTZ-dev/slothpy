@@ -164,9 +164,30 @@ class SltSettings:
     @property
     def complex(self):
         if self._settings["precision"] == "single":
-            return complex64
+            return "complex64"
         elif self._settings["precision"] == "double":
-            return complex128
+            return "complex128"
+        
+    @property
+    def numba_int(self):
+        if self._settings["precision"] == "single":
+            return "int32"
+        elif self._settings["precision"] == "double":
+            return "int64"
+    
+    @property
+    def numba_float(self):
+        if self._settings["precision"] == "single":
+            return "float32"
+        elif self._settings["precision"] == "double":
+            return "float64"
+        
+    @property
+    def numba_complex(self):
+        if self._settings["precision"] == "single":
+            return "complex64"
+        elif self._settings["precision"] == "double":
+            return "complex128"
 
     def save_settings(self):
         """Write the current settings back to the configuration file."""

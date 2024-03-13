@@ -68,12 +68,12 @@ def validate_input(slt_type: Literal["Hamiltonian"]):
                                 raise ValueError(f"The number of CPUs has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
                         case "number_threads":
                             if value is None:
-                                value = settings.number_cpu
+                                value = settings.number_threads
                             if value == 0:
                                 value = int(cpu_count())
                             elif not (isinstance(value, int) and value > 0 and value <= int(cpu_count())):
                                 raise ValueError(f"The number of CPUs has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
-                        case "fields":
+                        case "magnetic_fields":
                             value = array(value, copy=False, order='C', dtype=settings.float)
                             if value.ndim != 1:
                                 raise ValueError("The list of fields has to be a 1D array.")
@@ -88,6 +88,8 @@ def validate_input(slt_type: Literal["Hamiltonian"]):
                                 value = lebedev_laikov_grid(value)
                             else:
                                 value = array(value, copy=False, order='C', dtype=settings.float)
+                                if value.ndim != 2:
+                                    raise ValueError("The grid array has to be a 2D array in the form [[direction_x, direction_y, direction_z, weight],...].")
                                 if value.shape[1] == 3:
                                     value = _normalize_grid_vectors(value)
                                 else:
@@ -97,27 +99,28 @@ def validate_input(slt_type: Literal["Hamiltonian"]):
                                 value = lebedev_laikov_grid(value)
                             else:
                                 value = array(value, copy=False, order='C', dtype=settings.float)
+                                if value.ndim != 2:
+                                    raise ValueError("The array of orientations has to be a 2D array in the form: [[direction_x, direction_y, direction_z],...] or [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
                                 if value.shape[1] == 4:
                                     value = _normalize_grid_vectors(value)
                                 elif value.shape[1] == 3:
                                     value = _normalize_orientations(value)
                                 else:
-                                    raise ValueError("The orientations' array has to be (n,3) in the format: [[direction_x, direction_y, direction_z],...] or (n,4) array in the format: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
+                                    raise ValueError("The orientations' array has to be (n,3) in the form: [[direction_x, direction_y, direction_z],...] or (n,4) array in the form: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
                         case "states_cutoff":
                             if value == 0:
                                 value = bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]
                             elif not isinstance(value, int) or value < 0:
                                 raise ValueError(f"The states' cutoff has to be a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group']].attributes['States']} (or 0 for all the states).")
-                            elif value > int(bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]):
+                            elif value > bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]:
                                 raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group']].attributes['States']} (or 0 for all the states).")
                         case "number_of_states":
                             if not isinstance(value, int) or value <= 0:
                                 raise ValueError("The number of states has to be a positive integer.")
+                            max_states = bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]
                             if "states_cutoff" in bound_args.arguments.keys():
-                                if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0):
-                                    max_states = bound_args.arguments["states_cutoff"]
-                            else:
-                                max_states = int(bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"])
+                                if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0) and bound_args.arguments["states_cutoff"] < bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]:
+                                    max_states = bound_args.arguments["states_cutoff"] 
                             if value > max_states:
                                 raise ValueError("The number of states has to be less or equal to the states' cutoff or overall number of states.")
                             

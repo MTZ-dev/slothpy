@@ -501,7 +501,7 @@ def _get_soc_energies_and_soc_angular_momenta_from_hdf5(
     if _dataset_exists(filename, group, "SOC"):
         return _load_orca_hdf5(filename, group, rotation)
 
-    if _dataset_exists(filename, group, "SOC_energies"):
+    if _dataset_exists(filename, group, "SOC_ENERGIES"):
         return _load_molcas_hdf5(filename, group, rotation)
 
     else:

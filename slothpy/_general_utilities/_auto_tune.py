@@ -37,13 +37,13 @@ from slothpy._magnetism._magnetisation import (
     _arg_iter_mght,
 )
 from slothpy._magnetism._zeeman import (
-    _zeeman_over_fields_grid,
+    # _zeeman_over_fields_grid,
     _helmholtz_energyt_over_fields_grid,
     _internal_energyt_over_fields_grid,
     _helmholtz_energyt_over_grid_fields,
     _internal_energyt_over_grid_fields,
     _arg_iter_eht,
-    _arg_iter_zeeman,
+    # _arg_iter_zeeman,
     _arg_iter_eght,
 )
 from slothpy._general_utilities._system import _get_num_of_processes
@@ -102,14 +102,14 @@ def _calculate_zeeman_splitting(
 
     exec_time_start = perf_counter_ns()
 
-    _zeeman_over_fields_grid(
-        magnetic_momenta_array,
-        soc_energies_array,
-        fields_array,
-        grid_array,
-        num_of_states,
-        average,
-    )
+    # _zeeman_over_fields_grid(
+    #     magnetic_momenta_array,
+    #     soc_energies_array,
+    #     fields_array,
+    #     grid_array,
+    #     num_of_states,
+    #     average,
+    # )
 
     exec_time_end = perf_counter_ns()
 
@@ -491,24 +491,25 @@ def _benchmark(
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 set_num_threads(num_threads)
                 if benchamark_type == "zeeman":
-                    with Pool(num_process) as p:
-                        timings = p.map(
-                            _caculate_zeeman_splitting_wrapper,
-                            _arg_iter_zeeman(
-                                magnetic_momenta_shared.name,
-                                soc_energies_shared.name,
-                                fields_shared.name,
-                                grid_shared.name,
-                                magnetic_momenta_shared_arr.shape,
-                                soc_energies_shared_arr.shape,
-                                grid_shared_arr.shape,
-                                _distribute_chunks(
-                                    fields_shared_arr.shape[0], num_process
-                                ),
-                                num_of_states,
-                                average,
-                            ),
-                        )
+                    pass
+                    # with Pool(num_process) as p:
+                    #     timings = p.map(
+                    #         _caculate_zeeman_splitting_wrapper,
+                    #         _arg_iter_zeeman(
+                    #             magnetic_momenta_shared.name,
+                    #             soc_energies_shared.name,
+                    #             fields_shared.name,
+                    #             grid_shared.name,
+                    #             magnetic_momenta_shared_arr.shape,
+                    #             soc_energies_shared_arr.shape,
+                    #             grid_shared_arr.shape,
+                    #             _distribute_chunks(
+                    #                 fields_shared_arr.shape[0], num_process
+                    #             ),
+                    #             num_of_states,
+                    #             average,
+                    #         ),
+                    #     )
                 elif benchamark_type == "energy":
                     with Pool(num_process) as p:
                         timings = p.map(

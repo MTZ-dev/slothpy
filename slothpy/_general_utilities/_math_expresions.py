@@ -40,7 +40,7 @@ from slothpy.core._config import settings
 
 
 @jit(
-    f"{settings.numba_complex}[:, :]({settings.numba_complex}[:, :, :], {settings.numba_complex}[:])",
+    f"{settings.numba_complex}[:, :]({settings.numba_complex}[:, :, :], {settings.numba_float}[:])",
     nopython=True,
     nogil=True,
     cache=True,

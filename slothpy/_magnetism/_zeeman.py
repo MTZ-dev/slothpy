@@ -69,7 +69,7 @@ from slothpy._gui._monitor_gui import _run_monitor_gui
 def _calculate_zeeman_matrix(
     magnetic_momenta, soc_energies, field, orientation
 ):
-    orientation = (-field * MU_B * orientation).astype(magnetic_momenta.dtype)
+    orientation = (-field * MU_B * orientation)
     magnetic_momenta = _3d_dot(magnetic_momenta, orientation)
     soc_energies = soc_energies.astype(magnetic_momenta.dtype)
 
@@ -150,7 +150,7 @@ def _zeeman_splitting_process(
 
     with threadpool_limits(limits=number_threads):
         set_num_threads(number_threads)
-        return _zeeman_over_fields_orientations(soc_energies, magnetic_momenta, magnetic_fields, orientations, number_of_states, progress, zeeman_array)
+        _zeeman_over_fields_orientations(soc_energies, magnetic_momenta, magnetic_fields, orientations, number_of_states, progress, zeeman_array)
 
 
 def _zeeman_splitting_process_wrapper(args):

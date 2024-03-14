@@ -45,6 +45,7 @@ from slothpy.core._config import settings
     nogil=True,
     cache=True,
     fastmath=True,
+    inline="always",
     parallel=True,
 )
 def _3d_dot(u, m):

@@ -17,7 +17,7 @@
 from typing import Literal
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
-from multiprocessing import Pool
+from multiprocessing import Process, Pool
 from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
@@ -54,10 +54,11 @@ from slothpy._general_utilities._grids_over_sphere import (
 )
 from slothpy._general_utilities._math_expresions import _3d_dot
 from slothpy.core._config import settings
+from slothpy._gui._monitor_gui import _run_monitor_gui
 
 
 @jit(
-    f"{settings.numba_complex}[:,:]({settings.numba_complex}[:,:,:], {settings.numba_float}[:], {settings.numba_float}, {settings.numba_complex}[:])",
+    f"{settings.numba_complex}[:,:]({settings.numba_complex}[:,:,:], {settings.numba_float}[:], {settings.numba_float}, {settings.numba_float}[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -68,8 +69,9 @@ from slothpy.core._config import settings
 def _calculate_zeeman_matrix(
     magnetic_momenta, soc_energies, field, orientation
 ):
-    orientation = -field * MU_B * orientation
-    magnetic_momenta = ascontiguousarray(magnetic_momenta[0]*orientation[0] + magnetic_momenta[1]*orientation[1] + magnetic_momenta[2]*orientation[2])
+    orientation = (-field * MU_B * orientation).astype(magnetic_momenta.dtype)
+    magnetic_momenta = _3d_dot(magnetic_momenta, orientation)
+    soc_energies = soc_energies.astype(magnetic_momenta.dtype)
 
     for k in prange(magnetic_momenta.shape[0]):
         magnetic_momenta[k, k] += soc_energies[k]
@@ -102,7 +104,7 @@ def _zeeman_over_fields_orientations(
 
     for i in range(magnetic_fields_shape_0):
         for j in range(grid_shape_0):
-            orientation = orientations[j, :3].astype(magnetic_momenta.dtype)
+            orientation = orientations[j, :3]
             zeeman_matrix = _calculate_zeeman_matrix(magnetic_momenta, soc_energies, magnetic_fields[i], orientation)
             energies = eigvalsh(zeeman_matrix).astype(soc_energies.dtype)
             energies = energies[:num_of_states] * H_CM_1
@@ -118,28 +120,33 @@ def _zeeman_splitting_process(
     magnetic_momenta_info: tuple,
     magnetic_fields_info: tuple,
     orientations_info: tuple,
-    progress_info: tuple,
+    progress_array_info: tuple,
     zeeman_array_info: tuple,
     magnetic_fields_chunk: tuple,
     process_index: int,
     number_of_states: int,
     average: bool,
     number_threads: int,
-):
-    soc_energies = _from_shared_memory(soc_energies_info)
-    magnetic_momenta = _from_shared_memory(magnetic_momenta_info)
-    orientations = _from_shared_memory(orientations_info)
-    magnetic_fields = _chunk_from_shared_memory(magnetic_fields_info, magnetic_fields_chunk)
-    progress = _chunk_from_shared_memory(progress_info, (process_index, process_index+1))
+):  
+    sm_soc_energies = SharedMemory(soc_energies_info[0])
+    soc_energies = _from_shared_memory(sm_soc_energies, soc_energies_info)
+    sm_magnetic_momenta = SharedMemory(magnetic_momenta_info[0])
+    magnetic_momenta = _from_shared_memory(sm_magnetic_momenta, magnetic_momenta_info)
+    sm_orientations = SharedMemory(orientations_info[0])
+    orientations = _from_shared_memory(sm_orientations, orientations_info)
+    sm_magnetic_fields = SharedMemory(magnetic_fields_info[0])
+    magnetic_fields = _chunk_from_shared_memory(sm_magnetic_fields, magnetic_fields_info, magnetic_fields_chunk)
+    sm_progress = SharedMemory(progress_array_info[0])
+    progress = _chunk_from_shared_memory(sm_progress, progress_array_info, (process_index, process_index+1))
 
-    zeeman_shared_memory = SharedMemory(zeeman_array_info[0])
+    sm_zeeman= SharedMemory(zeeman_array_info[0])
 
     if average:
         offset = magnetic_fields_chunk[0] * number_of_states * dtype(zeeman_array_info[2]).itemsize
-        zeeman_array = ndarray((magnetic_fields_chunk[1] - magnetic_fields_chunk[0], number_of_states), zeeman_array_info[2], zeeman_shared_memory.buf, offset)
+        zeeman_array = ndarray((magnetic_fields_chunk[1] - magnetic_fields_chunk[0], number_of_states), zeeman_array_info[2], sm_zeeman.buf, offset)
     else:
         offset = magnetic_fields_chunk[0] * orientations_info[1][0] * number_of_states * dtype(zeeman_array_info[2]).itemsize
-        zeeman_array = ndarray((magnetic_fields_chunk[1] - magnetic_fields_chunk[0], orientations_info[1][0], number_of_states), zeeman_array_info[2], zeeman_shared_memory.buf, offset)
+        zeeman_array = ndarray((magnetic_fields_chunk[1] - magnetic_fields_chunk[0], orientations_info[1][0], number_of_states), zeeman_array_info[2], sm_zeeman.buf, offset)
 
     with threadpool_limits(limits=number_threads):
         set_num_threads(number_threads)
@@ -195,14 +202,23 @@ def _zeeman_splitting(
         magnetic_fields_info = _to_shared_memory(smm, magnetic_fields)
         orientations_info = _to_shared_memory(smm, orientations)
         zeeman_array_info = _to_shared_memory(smm, zeeman_array)
-        progress_info = _to_shared_memory(smm, progress_array)
+        progress_array_info = _to_shared_memory(smm, progress_array)
+
+        if settings.monitor:
+            monitor = Process(target=_run_monitor_gui, args=(progress_array_info, magnetic_fields_chunks, orientations_info[1][0], "zeeman_splitting"))
+            monitor.start()
 
         with Pool(number_processes) as p:
-            p.map(_zeeman_splitting_process_wrapper,[(soc_energies_info, magnetic_momenta_info, magnetic_fields_info, orientations_info, progress_info, zeeman_array_info, chunk, process_index, number_of_states, average, number_threads) for process_index, chunk in enumerate(magnetic_fields_chunks)])
+            p.map(_zeeman_splitting_process_wrapper,[(soc_energies_info, magnetic_momenta_info, magnetic_fields_info, orientations_info, progress_array_info, zeeman_array_info, chunk, process_index, number_of_states, average, number_threads) for process_index, chunk in enumerate(magnetic_fields_chunks)])
 
-        zeeman_array = array(_from_shared_memory(zeeman_array_info))
+        sm_zeeman_array = SharedMemory(zeeman_array_info[0])
+        zeeman_array = array(_from_shared_memory(sm_zeeman_array, zeeman_array_info), copy=True, order="C")
         if not average:
             zeeman_array = zeeman_array.transpose((1,0,2))
+
+        if settings.monitor:
+            monitor.join()
+            monitor.close()
 
     return zeeman_array
 

@@ -58,18 +58,14 @@ def _to_shared_memory(smm: SharedMemoryManager, array: ndarray):
     return shm.name, shared_array.shape, shared_array.dtype
 
 
-def _from_shared_memory(array_info: tuple):
-    shared_memory = SharedMemory(array_info[0])
-    array = np_array(ndarray(array_info[1], array_info[2], shared_memory.buf), copy=True, order="C")
-    return array
+def _from_shared_memory(sm: SharedMemory, array_info: tuple):
+    return ndarray(array_info[1], array_info[2], sm.buf)
 
 
-def _chunk_from_shared_memory(array_info: tuple, chunk: tuple):
+def _chunk_from_shared_memory(sm: SharedMemory, array_info: tuple, chunk: tuple):
     offset = dtype(array_info[2]).itemsize * chunk[0]
     chunk_length = chunk[1] - chunk[0]
-    smm = SharedMemory(array_info[0])
-    array_chunk = np_array(ndarray((chunk_length,), array_info[2], smm.buf, offset), copy=True, order="C")
-    return array_chunk
+    return ndarray((chunk_length,), array_info[2], sm.buf, offset)
 
 
 def _distribute_chunks(data_len, num_process):

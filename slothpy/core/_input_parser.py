@@ -45,8 +45,8 @@ def validate_input(slt_type: Literal["Hamiltonian"]):
             bound_args = signature.bind_partial(*args, **kwargs)
             bound_args.apply_defaults()
 
-            if bound_args.arguments["self"][bound_args.arguments["group"]].attributes["Type"] != slt_type:
-                raise SltReadError(f"Invalid type or non-existent {BLUE}Group{RESET}: '{bound_args.arguments['group']}' from the .slt file.") from None
+            if bound_args.arguments["self"][bound_args.arguments["group_name"]].attributes["Type"] != slt_type:
+                raise SltReadError(f"Invalid type or non-existent {BLUE}Group{RESET}: '{bound_args.arguments['group_name']}' from the .slt file.") from None
 
             if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:
                 if _group_exists(bound_args.arguments["self"]._hdf5, bound_args.arguments["slt_save"]):
@@ -109,17 +109,17 @@ def validate_input(slt_type: Literal["Hamiltonian"]):
                                     raise ValueError("The orientations' array has to be (n,3) in the form: [[direction_x, direction_y, direction_z],...] or (n,4) array in the form: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
                         case "states_cutoff":
                             if value == 0:
-                                value = bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]
+                                value = bound_args.arguments["self"][bound_args.arguments["group_name"]].attributes["States"]
                             elif not isinstance(value, int) or value < 0:
-                                raise ValueError(f"The states' cutoff has to be a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group']].attributes['States']} (or 0 for all the states).")
-                            elif value > bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]:
-                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group']].attributes['States']} (or 0 for all the states).")
+                                raise ValueError(f"The states' cutoff has to be a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
+                            elif value > bound_args.arguments["self"][bound_args.arguments["group_name"]].attributes["States"]:
+                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
                         case "number_of_states":
                             if not isinstance(value, int) or value <= 0:
                                 raise ValueError("The number of states has to be a positive integer.")
-                            max_states = bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]
+                            max_states = bound_args.arguments["self"][bound_args.arguments["group_name"]].attributes["States"]
                             if "states_cutoff" in bound_args.arguments.keys():
-                                if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0) and bound_args.arguments["states_cutoff"] < bound_args.arguments["self"][bound_args.arguments["group"]].attributes["States"]:
+                                if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0) and bound_args.arguments["states_cutoff"] < bound_args.arguments["self"][bound_args.arguments["group_name"]].attributes["States"]:
                                     max_states = bound_args.arguments["states_cutoff"] 
                             if value > max_states:
                                 raise ValueError("The number of states has to be less or equal to the states' cutoff or overall number of states.")

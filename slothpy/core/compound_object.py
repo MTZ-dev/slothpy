@@ -289,7 +289,7 @@ class Compound():
     @validate_input("Hamiltonian")
     def zeeman_splitting(
         self,
-        group: str,
+        group_name: str,
         number_of_states: int,
         magnetic_fields: ndarray[Union[float32, float64]],
         orientations: ndarray[Union[float32, float64]],
@@ -412,86 +412,34 @@ class Compound():
         #             + '".',
         #         ) from None
 
-        # try:
-        zeeman_array = _zeeman_splitting(
-            self._hdf5,
-            group,
-            number_of_states,
-            magnetic_fields,
-            orientations,
-            states_cutoff,
-            number_cpu,
-            number_threads,
-        )
-        # except Exception as exc:
-        #     raise SltCompError(
-        #         self._hdf5,
-        #         exc,
-        #         "Failed to compute Zeeman splitting from "
-        #         + BLUE
-        #         + "Group "
-        #         + RESET
-        #         + '"'
-        #         + BLUE
-        #         + f"{group}"
-        #         + RESET
-        #         + '".',
-        #     ) from None
+        try:
+            zeeman_array = _zeeman_splitting(self._hdf5, group_name, number_of_states, magnetic_fields, orientations, states_cutoff, number_cpu, number_threads)
+        except Exception as exc:
+            raise SltCompError(self._hdf5, exc, f"Failed to compute Zeeman splitting from {BLUE}Group{RESET} '{group_name}'.") from None
 
-        # if average:
-        #     name = "average "
-        # else:
-        #     name = ""
 
-        # if slt is not None:
-        #     # try:
-        #         self[
-        #             slt_group_name,
-        #             f"{slt}_zeeman",
-        #             f"Dataset containing {name}Zeeman splitting over grid"
-        #             " of directions with shape: (orientations, field,"
-        #             f" energy) calculated from group: {group}.",
-        #             f"Group({slt}) containing {name}Zeeman splitting"
-        #             f" calculated from group: {group}.",
-        #         ] = zeeman_array[:, :, :]
-        #         self[
-        #             slt_group_name,
-        #             f"{slt}_fields",
-        #             "Dataset containing magnetic field H values used in"
-        #             f" simulation of {name}Zeeman splitting from group:"
-        #             f" {group}.",
-        #         ] = fields[:]
-        #         if average:
-        #             self[
-        #                 slt_group_name,
-        #                 f"{slt}_orientations",
-        #                 "Dataset containing magnetic field orientation"
-        #                 " grid with weights used in simulation of"
-        #                 f" {name}Zeeman splitting from group: {group}.",
-        #             ] = grid[:, :]
-        #         else:
-        #             self[
-        #                 slt_group_name,
-        #                 f"{slt}_orientations",
-        #                 "Dataset containing magnetic field orientations"
-        #                 " used in simulation of"
-        #                 f" {name}Zeeman splitting from group: {group}.",
-        #             ] = grid[:, :3]
+        if slt_save is not None:
+            try:
+                if orientations.shape[1] == 4 and zeeman_array.ndim == 2:
+                    average = True
+                else:
+                    average = False
 
-            # except Exception as exc:
-            #     raise SltFileError(
-            #         self._hdf5,
-            #         exc,
-            #         "Failed to save Zeeman splitting to "
-            #         + BLUE
-            #         + "Group "
-            #         + RESET
-            #         + '"'
-            #         + BLUE
-            #         + slt_group_name
-            #         + RESET
-            #         + '".',
-            #     ) from None
+                self[slt_save]["zeeman_splitting"] = zeeman_array
+                self[slt_save]["magnetic_fields"] = magnetic_fields
+                self[slt_save]["orientations"] = orientations
+
+                self[slt_save].attributes["Type"] = "Zeeman_splitting"
+                self[slt_save].attributes["Kind"] = "average" if average else "directional"
+                self[slt_save].attributes["Precision"] = settings.precision
+                self[slt_save].attributes["Description"] = f"Group containing Zeeman splitting calculated from group: {group_name}."
+
+                self[slt_save]["zeeman_splitting"].attributes["Description"] = f"Dataset containing Zeeman splitting in the form {'[fields, energies]' if average else '[orientations, fields, energies]'}."
+                self[slt_save]["magnetic_fields"].attributes["Description"] = "Dataset containing magnetic field (T) values used in the simulation."
+                self[slt_save]["orientations"].attributes["Description"] = "Dataset containing magnetic fields' orientation grid used in the simulation."
+
+            except Exception as exc:
+                raise SltSaveError(self._hdf5, exc, f"Failed to save Zeeman splitting to {BLUE}Group{RESET} '{group_name}'.") from None
 
         return zeeman_array
 
@@ -4902,14 +4850,14 @@ class Compound():
         """
         try:
             # Getting data from .slt
-            zeeman = self[f"{group}_zeeman_splitting", f"{group}_zeeman"]
-            fields = self[f"{group}_zeeman_splitting", f"{group}_fields"]
+            zeeman = self[f"{group}", "zeeman_splitting"][:]
+            fields = self[f"{group}", "magnetic_fields"][:]
             if field == "H":
                 fields *= 10
                 xticks *= 10
             orientations = self[
-                f"{group}_zeeman_splitting", f"{group}_orientations"
-            ]
+                f"{group}", f"orientations"
+            ][:]
 
         except Exception as exc:
             raise SltFileError(

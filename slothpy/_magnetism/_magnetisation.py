@@ -57,9 +57,6 @@ import time
 from datetime import datetime
 import psutil
 from slothpy.core._config import settings
-from slothpy._gui._terminal_gui import WorkerMonitorApp, run_gui
-from PyQt6.QtWidgets import QApplication
-import sys
 
 @jit(
     "float64[:](complex128[:,:], complex128[:,:])",
@@ -96,6 +93,18 @@ def _3d_dot(u, m):
 
 
 @jit(
+    "complex128[:,:](complex128[:,:,:], complex128[:,:])",
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _3d_dot_nie_czaje(u, m):
+    return u[0] * m[0] + u[1] * m[1] + u[2] * m[2]
+
+@jit(
     "types.UniTuple(complex128[:,:],2)(complex128[:,:,:], float64[:], float64,"
     " complex128[:])",
     nopython=True,
@@ -108,7 +117,7 @@ def _3d_dot(u, m):
 def _calculate_zeeman_matrix2(
     magnetic_momenta, soc_energies, field, orientation
 ):
-    magnetic_momenta_orient = _3d_dot(magnetic_momenta, orientation)
+    magnetic_momenta_orient = _3d_dot_nie_czaje(magnetic_momenta, orientation) #################################### Wrong signature after modifications
     magnetic_momenta = -field * MU_B * magnetic_momenta_orient
 
     # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
@@ -537,15 +546,6 @@ def _mth(
         with threadpool_limits(limits=num_threads, user_api="blas"):
             with threadpool_limits(limits=num_threads, user_api="openmp"):
                 set_num_threads(num_threads)
-                if settings.monitor:
-                    chunk_size = fields_shared_arr.shape[0] // num_processes
-                    remainder = fields_shared_arr.shape[0] % num_processes
-                    num_tasks = [((chunk_size + (1 if i < remainder else 0))*grid_shared_arr.shape[0]) for i in range(progress_shared_arr.shape[0])]
-
-                    monitor = Process(
-                        target=run_gui, args=(progress_shared.name, progress_shared_arr.shape, num_tasks, "calculate_magnetisation")
-                    )
-                    monitor.start()
                 with Pool(num_processes) as p:
                     p.map(
                         _calculate_mht_wrapper,
@@ -567,9 +567,6 @@ def _mth(
                             progress_shared.name,
                         ),
                     )
-                if settings.monitor:
-                    monitor.join()
-                    monitor.close()
         mht_array_shared_arr = array(mht_array_shared_arr).T
 
     # # Hidden option for susceptibility tensor calculation.

@@ -1,1 +1,0 @@
-from .tomek import compound_from_molcas

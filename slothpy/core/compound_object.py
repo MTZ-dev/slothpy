@@ -5031,7 +5031,7 @@ class Compound():
                             multiple_plots.yaxis.set_minor_locator(
                                 AutoMinorLocator(2)
                             )
-                            if orientations.shape[1] == 3:
+                            if orientations.shape[1] != 3:
                                 title("Averaged Splitting")
                             else:
                                 title(

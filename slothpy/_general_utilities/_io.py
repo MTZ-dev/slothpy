@@ -35,10 +35,9 @@ from typing import Tuple
 from slothpy._general_utilities._constants import YELLOW, RESET, H_CM_1
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
 from slothpy._angular_momentum._rotation import _rotate_vector_operator
-from slothpy._general_utilities._math_expresions import (
-    _magnetic_momenta_from_angular_momenta,
-    _total_angular_momenta_from_angular_momenta,
-)
+# from slothpy._general_utilities._math_expresions import (
+#     _total_angular_momenta_from_angular_momenta,
+# )
 from slothpy.core._config import settings
 
 def _grep_to_file(
@@ -351,43 +350,25 @@ def _molcas_spin_orbit_to_slt(
             group.attrs["Precision"] = settings.precision
             if edipmom:
                 group.attrs["Additional"] = "Edipmom"
-            group.attrs["Description"] = "Group containing relativistic SOC MOLCAS results."
+            group.attrs["Description"] = "Relativistic SOC MOLCAS results."
 
             dataset_rassi = rassi["SOS_ENERGIES"][:]
             group.attrs["States"] = dataset_rassi.shape[0]
             dataset_out = group.create_dataset("SOC_ENERGIES", shape=dataset_rassi.shape, dtype=settings.float, data=dataset_rassi.astype(settings.float), chunks=True)
-            dataset_out.attrs["Description"] = "Dataset containing SOC energies."
+            dataset_out.attrs["Description"] = "SOC energies."
 
-            dataset_rassi = rassi["SOS_SPIN_REAL"][0, :, :] + 1j * rassi["SOS_SPIN_IMAG"][0, :, :]
-            dataset_out = group.create_dataset("SOC_SX", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Dataset containing the Sx matrix in the SOC basis."
-            dataset_rassi = rassi["SOS_SPIN_REAL"][1, :, :] + 1j * rassi["SOS_SPIN_IMAG"][1, :, :]
-            dataset_out = group.create_dataset("SOC_SY", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Dataset containing the Sy matrix in the SOC basis."
-            dataset_rassi = rassi["SOS_SPIN_REAL"][2, :, :] + 1j * rassi["SOS_SPIN_IMAG"][2, :, :]
-            dataset_out = group.create_dataset("SOC_SZ", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Dataset containing the Sz matrix in the SOC basis."
+            dataset_rassi = rassi["SOS_SPIN_REAL"][:, :, :] + 1j * rassi["SOS_SPIN_IMAG"][:, :, :]
+            dataset_out = group.create_dataset("SOC_SPIN", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out.attrs["Description"] = "Sx, Sy, and Sz matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
-            dataset_rassi = 1j * rassi["SOS_ANGMOM_REAL"][0, :, :] - rassi["SOS_ANGMOM_IMAG"][0, :, :]
-            dataset_out = group.create_dataset("SOC_LX", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Dataset containing the Lx matrix in the SOC basis."
-            dataset_rassi = rassi["SOS_ANGMOM_REAL"][1, :, :] - rassi["SOS_ANGMOM_IMAG"][1, :, :]
-            dataset_out = group.create_dataset("SOC_LY", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Dataset containing the Ly matrix in the SOC basis."
-            dataset_rassi = rassi["SOS_ANGMOM_REAL"][2, :, :] - rassi["SOS_ANGMOM_IMAG"][2, :, :]
-            dataset_out = group.create_dataset("SOC_LZ", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Dataset containing the Lz matrix in the SOC basis."
+            dataset_rassi = 1j * rassi["SOS_ANGMOM_REAL"][:, :, :] - rassi["SOS_ANGMOM_IMAG"][:, :, :]
+            dataset_out = group.create_dataset("SOC_ANGULAR_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out.attrs["Description"] = "Lx, Ly, and, Lz matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
             if edipmom:
-                dataset_rassi = rassi["SOS_EDIPMOM_REAL"][0, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][0, :, :]
-                dataset_out = group.create_dataset("SOC_EDIPMOMX", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-                dataset_out.attrs["Description"] = "Dataset containing the Px electric dipole moment matrix in the SOC basis."
-                dataset_rassi = rassi["SOS_EDIPMOM_REAL"][1, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][1, :, :]
-                dataset_out = group.create_dataset("SOC_EDIPMOMY", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-                dataset_out.attrs["Description"] = "Dataset containing the Py electric dipole moment matrix in the SOC basis."
-                dataset_rassi = rassi["SOS_EDIPMOM_REAL"][2, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][2, :, :]
-                dataset_out = group.create_dataset("SOC_EDIPMOMZ", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-                dataset_out.attrs["Description"] = "Dataset containing the Pz electric dipole moment matrix in the SOC basis."
+                dataset_rassi = rassi["SOS_EDIPMOM_REAL"][:, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][:, :, :]
+                dataset_out = group.create_dataset("SOC_ELECTRIC_DIPOLE_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+                dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole moment matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
 
 def _load_orca_hdf5(filename, group, rotation):
@@ -518,37 +499,40 @@ def _get_soc_energies_and_soc_angular_momenta_from_hdf5(
 def _get_soc_magnetic_momenta_and_energies_from_hdf5(
     filename: str, group: str, states_cutoff: int, rotation: ndarray = None
 ) -> Tuple[ndarray, ndarray]:
-    (
-        soc_energies,
-        angular_momenta,
-    ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
-        filename, group, rotation
-    )
+    # (
+    #     soc_energies,
+    #     angular_momenta,
+    # ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
+    #     filename, group, rotation
+    # )
 
-    soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
-    magnetic_momenta = _magnetic_momenta_from_angular_momenta(
-        angular_momenta, 0, states_cutoff
-    )
+    # soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
+    # magnetic_momenta = _magnetic_momenta_from_angular_momenta(
+    #     angular_momenta, 0, states_cutoff
+    # )
 
-    return magnetic_momenta, soc_energies
+    # return magnetic_momenta, soc_energies
+
+    pass
 
 
 def _get_soc_total_angular_momenta_and_energies_from_hdf5(
     filename: str, group: str, states_cutoff: int, rotation=None
 ) -> Tuple[ndarray, ndarray]:
-    (
-        soc_energies,
-        angular_momenta,
-    ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
-        filename, group, rotation
-    )
+    # (
+    #     soc_energies,
+    #     angular_momenta,
+    # ) = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
+    #     filename, group, rotation
+    # )
 
-    soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
-    total_angular_momenta = _total_angular_momenta_from_angular_momenta(
-        angular_momenta, 0, states_cutoff
-    )
+    # soc_energies = soc_energies[:states_cutoff] - soc_energies[0]
+    # total_angular_momenta = _total_angular_momenta_from_angular_momenta(
+    #     angular_momenta, 0, states_cutoff
+    # )
 
-    return total_angular_momenta, soc_energies
+    # return total_angular_momenta, soc_energies
+    pass
 
 
 def _get_soc_energies_cm_1(

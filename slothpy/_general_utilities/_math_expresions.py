@@ -34,13 +34,13 @@ from numpy import (
 )
 from numpy.linalg import eigh, inv
 from numba import jit
-from slothpy._general_utilities._constants import GE
+from slothpy._general_utilities._constants import GE, MU_B
 from slothpy.core._slothpy_exceptions import SltInputError
 from slothpy.core._config import settings
 
 
 @jit(
-    f"{settings.numba_complex}[:, :]({settings.numba_complex}[:, :, :], {settings.numba_float}[:])",
+    f"complex128[:, :](complex128[:, :, :], {settings.numba_float}[:])",
     nopython=True,
     nogil=True,
     cache=True,
@@ -259,65 +259,28 @@ def _normalize_orientation(orientation):
 
 
 @jit(
-    "complex128[:,:,:](complex128[:,:,:], int64, int64)",
+    [f"complex64[:](complex64[:], complex64[:])", f"complex64[:,:](complex64[:,:], complex64[:,:])", f"complex64[:,:,:](complex64[:,:,:], complex64[:,:,:])",
+     f"complex128[:](complex128[:], complex128[:])", f"complex128[:,:](complex128[:,:], complex128[:,:])", f"complex128[:,:,:](complex128[:,:,:], complex128[:,:,:])"],
     nopython=True,
     cache=True,
     nogil=True,
     fastmath=True,
-) ## tutaj parallel prange po 0,1,2
-def _magnetic_momenta_from_angular_momenta(
-    angular_momenta: ndarray[complex128], start: int = 0, stop: int = 0
-):
-    if stop == 0:
-        stop = angular_momenta.shape[0]
-    size = stop - start
-    magnetic_momenta = zeros((3, size, size), dtype=complex128)
-
-    # Compute and save magnetic momenta in a.u.
-    magnetic_momenta[0] = -(
-        GE * angular_momenta[0, start:stop, start:stop]
-        + angular_momenta[3, start:stop, start:stop]
-    )
-    magnetic_momenta[1] = -(
-        GE * angular_momenta[1, start:stop, start:stop]
-        + angular_momenta[4, start:stop, start:stop]
-    )
-    magnetic_momenta[2] = -(
-        GE * angular_momenta[2, start:stop, start:stop]
-        + angular_momenta[5, start:stop, start:stop]
-    )
-    magnetic_momenta = ascontiguousarray(magnetic_momenta)
-
-    return magnetic_momenta
+    parallel=True,
+)
+def _magnetic_momenta_from_spin_angular_momenta(spin: ndarray, angular_momenta: ndarray):
+    mu_b = array(MU_B, dtype=spin.dtype)
+    ge = array(GE, dtype=spin.dtype)
+    return -mu_b*(ge * spin + angular_momenta)
 
 
 @jit(
-    "complex128[:,:,:](complex128[:,:,:], int64, int64)",
+    [f"complex64[:](complex64[:], complex64[:])", f"complex64[:,:](complex64[:,:], complex64[:,:])", f"complex64[:,:,:](complex64[:,:,:], complex64[:,:,:])",
+     f"complex128[:](complex128[:], complex128[:])", f"complex128[:,:](complex128[:,:], complex128[:,:])", f"complex128[:,:,:](complex128[:,:,:], complex128[:,:,:])"],
     nopython=True,
     cache=True,
     nogil=True,
     fastmath=True,
-)## tutaj parallel prange po 0,1,2
-def _total_angular_momenta_from_angular_momenta(
-    angular_momenta: ndarray[complex128], start: int = 0, stop: int = 0
-):
-    if stop == 0:
-        stop = angular_momenta.shape[0]
-    size = stop - start
-    total_angular_momenta = zeros((3, size, size), dtype=complex128)
-
-    # Compute and save magnetic momenta in a.u.
-    total_angular_momenta[0] = (
-        angular_momenta[0, start:stop, start:stop]
-        + angular_momenta[3, start:stop, start:stop]
-    )
-    total_angular_momenta[1] = (
-        angular_momenta[1, start:stop, start:stop]
-        + angular_momenta[4, start:stop, start:stop]
-    )
-    total_angular_momenta[2] = (
-        angular_momenta[2, start:stop, start:stop]
-        + angular_momenta[5, start:stop, start:stop]
-    )
-
-    return total_angular_momenta
+    parallel=True,
+)
+def _total_angular_momenta_from_spin_angular_momenta(spin: ndarray, angular_momenta: ndarray):
+    return spin + angular_momenta

@@ -50,6 +50,7 @@ from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
     cache=True,
     nogil=True,
     fastmath=True,
+    parallel=True,
 )
 def _set_condon_shortley_phases_for_matrix_in_z_pseudo_spin_basis(
     momenta_matrix, matrix

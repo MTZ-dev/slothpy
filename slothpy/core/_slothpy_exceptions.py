@@ -40,10 +40,10 @@ class SltInputError(Exception):
         message : str, optional
             A message to be printed., by default ""
         """
-        self.error_type = type(exception).__name__
-        self.error_message = str(exception)
-        self.slt_message = f"{RED}\nSlothInputError{RESET}, {YELLOW}{self.error_type}{RESET}: {self.error_message} "
-        self.final_message = f"{self.slt_message} {message}"
+        self.error_type = type(exception).__name__ if exception is not None else ""
+        self.error_message = str(exception) if exception is not None else ""
+        self.slt_message = f"{RED}SlothInputError{RESET},{'' if self.error_type == '' else ' '}{YELLOW}{self.error_type}{RESET}{': ' if self.error_type != '' else ''}{self.error_message}"
+        self.final_message = f"{self.slt_message}{'' if self.slt_message.endswith(' ') else ' '}{message}"
         super().__init__(self.final_message)
 
     def __str__(self) -> str:
@@ -84,10 +84,11 @@ class SltFileError(Exception):
             A message to be printed., by default ""
         """
 
-        self.error_type = type(exception).__name__
-        self.error_message = str(exception)
-        self.slt_message = f"{RED}\nSlothFileError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message} "
-        self.final_message = f"{self.slt_message} {message}"
+        self._slt_error_type = "SlothFileError"
+        self.error_type = type(exception).__name__ if exception is not None else ""
+        self.error_message = str(exception) if exception is not None else ""
+        self.slt_message = f"{RED}{self._slt_error_type}{RESET}, {GREEN}File{RESET} '{file}',{'' if self.error_type == '' else ' '}{YELLOW}{self.error_type}{RESET}{': ' if self.error_type != '' else ''}{self.error_message}"
+        self.final_message = f"{self.slt_message}{'' if self.slt_message.endswith(' ') else ' '}{message}"
         super().__init__(self.final_message)
 
     def __str__(self) -> str:
@@ -106,7 +107,7 @@ class SltFileError(Exception):
         return self.final_message
 
 
-class SltCompError(Exception):
+class SltCompError(SltFileError):
     """
     A custom exception class for runtime errors during computations.
 
@@ -116,40 +117,11 @@ class SltCompError(Exception):
     """
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
-        """
-        Initialize for the custom message printing.
-
-        Parameters
-        ----------
-        file : str
-            A file to which the error corresponds.
-        exception : Exception
-            An exception that initially caused the error.
-        message : str, optional
-            A message to be printed., by default ""
-        """
-        self.error_type = type(exception).__name__
-        self.error_message = str(exception)
-        self.slt_message = f"{RED}\nSlothComputationError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message} "
-        self.final_message = f"{self.slt_message} {message}"
-        super().__init__(self.final_message)
-
-    def __str__(self) -> str:
-        """
-        Perform the operation __str__.
-
-        Overwrites the default Exception __str__ method to provide a custom
-        message for printing.
-
-        Returns
-        -------
-        str
-            Custom error message.
-        """
-        return self.final_message
+        super().__init__(file, exception, message)
+        self._slt_error_type = "SlothComputationError"
 
 
-class SltSaveError(Exception):
+class SltSaveError(SltFileError):
     """
     A custom exception class for errors in saving data to .slt files.
 
@@ -159,40 +131,11 @@ class SltSaveError(Exception):
     """
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
-        """
-        Initialize for the custom message printing.
-
-        Parameters
-        ----------
-        file : str
-            A file to which the error corresponds.
-        exception : Exception
-            An exception that initially caused the error.
-        message : str, optional
-            A message to be printed., by default ""
-        """
-        self.error_type = type(exception).__name__
-        self.error_message = str(exception)
-        self.slt_message = f"{RED}\nSlothSaveError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message}"
-        self.final_message = f"{self.slt_message} {message}"
-        super().__init__(self.final_message)
-
-    def __str__(self) -> str:
-        """
-        Perform the operation __str__.
-
-        Overwrites the default Exception __str__ method to provide a custom
-        message for printing.
-
-        Returns
-        -------
-        str
-            Custom error message.
-        """
-        return self.final_message
+        super().__init__(file, exception, message)
+        self._slt_error_type = "SlothSaveError"
 
 
-class SltReadError(Exception):
+class SltReadError(SltFileError):
     """
     A custom exception class for errors in reading data from .slt files.
 
@@ -202,40 +145,11 @@ class SltReadError(Exception):
     """
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
-        """
-        Initialize for the custom message printing.
-
-        Parameters
-        ----------
-        file : str
-            A file to which the error corresponds.
-        exception : Exception
-            An exception that initially caused the error.
-        message : str, optional
-            A message to be printed., by default ""
-        """
-        self.error_type = type(exception).__name__
-        self.error_message = str(exception)
-        self.slt_message = f"{RED}\nSlothReadError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message} "
-        self.final_message = f"{self.slt_message} {message}"
-        super().__init__(self.final_message)
-
-    def __str__(self) -> str:
-        """
-        Perform the operation __str__.
-
-        Overwrites the default Exception __str__ method to provide a custom
-        message for printing.
-
-        Returns
-        -------
-        str
-            Custom error message.
-        """
-        return self.final_message
+        super().__init__(file, exception, message)
+        self._slt_error_type = "SlothReadError"
     
 
-class SltPlotError(Exception):
+class SltPlotError(SltFileError):
     """
     A custom exception class for errors in data plotting from .slt files.
 
@@ -245,37 +159,8 @@ class SltPlotError(Exception):
     """
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
-        """
-        Initialize for the custom message printing.
-
-        Parameters
-        ----------
-        file : str
-            A file to which the error corresponds.
-        exception : Exception
-            An exception that initially caused the error.
-        message : str, optional
-            A message to be printed., by default ""
-        """
-        self.error_type = type(exception).__name__
-        self.error_message = str(exception)
-        self.slt_message = f"{RED}\nSlothPlotError{RESET}, {GREEN}File{RESET} '{file}', {YELLOW}{self.error_type}{RESET}: {self.error_message} "
-        self.final_message = f"{self.slt_message} {message}"
-        super().__init__(self.final_message)
-
-    def __str__(self) -> str:
-        """
-        Perform the operation __str__.
-
-        Overwrites the default Exception __str__ method to provide a custom
-        message for printing.
-
-        Returns
-        -------
-        str
-            Custom error message.
-        """
-        return self.final_message
+        super().__init__(file, exception, message)
+        self._slt_error_type = "SlothPlotError"
     
 
 def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError"], slt_message: str = "") -> callable:

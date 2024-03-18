@@ -286,7 +286,7 @@ class Compound():
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
             del file[key]
     
-    @validate_input("Hamiltonian")
+    @validate_input("HAMILTONIAN")
     def zeeman_splitting(
         self,
         group_name: str,

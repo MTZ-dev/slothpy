@@ -37,7 +37,7 @@ from numpy import (
 )
 from numpy.linalg import eigvalsh
 from numba import jit, set_num_threads, prange
-from slothpy._general_utilities._constants import KB, MU_B, H_CM_1
+from slothpy._general_utilities._constants import KB, MU_B, H_CM_1 ######## MU_B is already included now in mag_mom
 from slothpy._general_utilities._system import (
     _get_num_of_processes,
     _to_shared_memory,
@@ -69,7 +69,7 @@ from slothpy._gui._monitor_gui import _run_monitor_gui
 def _calculate_zeeman_matrix(
     magnetic_momenta, soc_energies, field, orientation
 ):
-    orientation = (-field * MU_B * orientation)
+    orientation = (-field * orientation)
     magnetic_momenta = _3d_dot(magnetic_momenta, orientation)
     soc_energies = soc_energies.astype(magnetic_momenta.dtype)
 

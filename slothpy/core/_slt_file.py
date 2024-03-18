@@ -17,7 +17,7 @@
 from typing import Literal
 from h5py import File, Group, Dataset
 from numpy import array
-from slothpy.core._slothpy_exceptions import slothpy_exc, SltFileError, SltReadError
+from slothpy.core._slothpy_exceptions import slothpy_exc, SltFileError, SltReadError, SltCompError
 from slothpy.core._config import settings
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET, H_CM_1
 from slothpy.core._input_parser import validate_input
@@ -76,7 +76,7 @@ class SltGroup:
             else:
                 raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' doesn't exist in the {BLUE}Group{RESET} '{self._group_path}'.")
 
-    @slothpy_exc("SltFileError")        
+    @slothpy_exc("SltSaveError")        
     def __setitem__(self, key, value):
         with File(self._hdf5, 'r+') as file:
             group = file.require_group(self._group_path)
@@ -128,107 +128,107 @@ class SltGroup:
     
     @property
     def soc_energies(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not SOC energies.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not SOC energies.")
         return self["SOC_ENERGIES"]
     
     @property
     def spin(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin momenta.")
         return self["SOC_SPIN"]
     
     @property
     def sx(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_SPIN", "S", 0)
     
     @property
     def sy(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_SPIN", "S", 1)
     
     @property
     def sz(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_SPIN", "S", 2)
     
     @property
     def angular_momenta(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain angular momenta.")
         return self["SOC_ANGULAR_MOMENTA"]
     
     @property
     def lx(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain angular momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_ANGULAR_MOMENTA", "L", 0)
     
     @property
     def ly(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain angular momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_ANGULAR_MOMENTA", "L", 1)
     
     @property
     def lz(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain angular momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_ANGULAR_MOMENTA", "L", 2)
     
     @property
     def electric_dipole_momenta(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain electric dipole momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain electric dipole momenta.")
         return self["SOC_ELECTRIC_DIPOLE_MOMENTA"]
     
     @property
     def px(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain electric dipole momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain electric dipole momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_ELECTRIC_DIPOLE_MOMENTA", "P", 0)
     
     @property
     def py(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain electric dipole momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain electric dipole momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_ELECTRIC_DIPOLE_MOMENTA", "P", 1)
     
     @property
     def pz(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain electric dipole momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain electric dipole momenta.")
         return SltDatasetSLP(self._hdf5, f"{self._group_path}/SOC_ELECTRIC_DIPOLE_MOMENTA", "P", 2)
     
     @property
     def total_angular_momenta(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin and angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin and angular momenta.")
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "J")
     
     @property
     def jx(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin and angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin and angular momenta.")
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "J", 0)
     
     @property
     def jy(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin and angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin and angular momenta.")
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "J", 1)
     
     @property
     def jz(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin and angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin and angular momenta.")
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "J", 2)
     
     @property
     def magnetic_momenta(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin and angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin and angular momenta.")
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "M")
     
     @property
     def mx(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin and angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin and angular momenta.")
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "M", 0)
     
     @property
     def my(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin and angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin and angular momenta.")
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "M", 1)
     
     @property
     def mz(self):
-        self._check_if_slt_valid_group("Hamiltonian", "which does not contain spin and angular momenta.")
+        self._check_if_slt_valid_group("HAMILTONIAN", "which does not contain spin and angular momenta.")
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "M", 2)
     
     def _check_if_slt_valid_group(self, group_type, error_message):
@@ -239,36 +239,50 @@ class SltGroup:
         if self.attributes["Type"] != group_type:
             raise SltReadError(self._hdf5, KeyError(f"Wrong group type: {self.attributes['Type']} " + error_message + f" Expected '{group_type}' type."))
 
-    @validate_input("Hamiltonian")
-    @slothpy_exc("SltCompError")    
-    def soc_energies_cm_1(self, start, stop):
-        return self.soc_energies[start:stop] * H_CM_1
+    @validate_input("HAMILTONIAN")   
+    def soc_energies_cm_1(self, start_state, stop_state, slt_save=None):
+        try:
+            soc_energies_cm_1 = self.soc_energies[start_state:stop_state] * H_CM_1
+        except Exception as exc:
+            raise SltCompError(self._hdf5, exc, f"Failed to compute SOC energies from {BLUE}Group{RESET}: '{self._hdf5}'.")
+        if slt_save is not None:
+            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group["SOC_ENERGIES_CM_1"] = soc_energies_cm_1
+            new_group["SOC_ENERGIES_CM_1"].attributes["Description"] = "SOC energies in cm-1."
+            new_group.attributes["Type"] = "Soc_energies"
+            new_group.attributes["Kind"] = "CM_1"
+            new_group.attributes["States"] = soc_energies_cm_1.shape[0]
+            new_group.attributes["Precision"] = settings.precision
+            new_group.attributes["Description"] = "SOC energies in cm-1."
+        return soc_energies_cm_1
     
-    def soc_energies_a_u(self, start, stop):
-        return self.soc_energies[start:stop]
+    @validate_input("HAMILTONIAN")
+    def soc_energies_a_u(self, start_state, stop_state, slt_save=None):
+        result = self.soc_energies[start_state:stop_state]
+        return result
     
-    def spin_matrices(self, xyz, start, stop, rotation, slt_save):
+    def spin_matrices(self, xyz, start_state, stop_state, rotation=None, slt_save=None):
         pass
 
-    def states_spin(self, xyz, start, stop, rotation, slt_save):
-        pass
-    
-    def angular_momenta_matrices(self, xyz, start, stop, rotation, slt_save):
-        pass
-
-    def states_angular_momenta(self, xyz, start, stop, rotation, slt_save):
+    def states_spin(self, xyz, start_state, stop_state, rotation=None, slt_save=None):
         pass
     
-    def total_angular_momenta_matrices(self, xyz, start, stop, rotation, slt_save):
+    def angular_momenta_matrices(self, xyz, start_state, stop_state, rotation=None, slt_save=None):
         pass
 
-    def states_total_angular_momenta(self, xyz, start, stop, rotation, slt_save):
+    def states_angular_momenta(self, xyz, start_state, stop_state, rotation=None, slt_save=None):
+        pass
+    
+    def total_angular_momenta_matrices(self, xyz, start_state, stop_state, rotation=None, slt_save=None):
         pass
 
-    def magnetic_momenta_matrices(self, xyz, start, stop, rotation, slt_save):
+    def states_total_angular_momenta(self, xyz, start_state, stop_state, rotation=None, slt_save=None):
         pass
 
-    def states_magnetic_momenta(self, xyz, start, stop, rotation, slt_save):
+    def magnetic_momenta_matrices(self, xyz, start_state, stop_state, rotation=None, slt_save=None):
+        pass
+
+    def states_magnetic_momenta(self, xyz, start_state, stop_state, rotation=None, slt_save=None):
         pass
 
 
@@ -278,7 +292,7 @@ class SltDataset:
         self._dataset_path = dataset_path
         self.attributes = SltAttributes(hdf5_file_path, dataset_path)
 
-    @slothpy_exc("SltFileError")
+    @slothpy_exc("SltReadError")
     def __getitem__(self, slice_):
         with File(self._hdf5, 'r') as file:
             dataset = file[self._dataset_path]
@@ -293,7 +307,7 @@ class SltDataset:
                 case _:
                     return dataset[slice_]
         
-    @slothpy_exc("SltFileError")
+    @slothpy_exc("SltSaveError")
     def __setitem__(self, slice_, value):
         with File(self._hdf5, 'r+') as file:
             dataset = file[self._dataset_path]

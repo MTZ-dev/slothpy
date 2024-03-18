@@ -38,7 +38,7 @@ from slothpy._general_utilities._io import (
 )
 from slothpy.core._config import settings
 
-def validate_input(group_type: Literal["Hamiltonian"]):
+def validate_input(group_type: Literal["HAMILTONIAN"]):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -135,13 +135,17 @@ def validate_input(group_type: Literal["Hamiltonian"]):
                                 raise ValueError("The number of states has to be less or equal to the states' cutoff or overall number of states.")
                         case "start_state":
                             if not (isinstance(value, int) and value >= 0 and value <= bound_args.arguments["self"].attributes["States"]):
-                                raise f"The first state's number has to be a nonnegative integer less than or equal to the overall number of states: {bound_args.arguments['self'].attributes['States']}."
+                                raise ValueError(f"The first (start) state's number has to be a nonnegative integer less than or equal to the overall number of states: {bound_args.arguments['self'].attributes['States']}.")
                         case "stop_state":
                             if not isinstance(value, int) or value < 0 or value > bound_args.arguments["self"].attributes["States"]:
-                                raise ValueError(f"The last state's number has to be a nonnegative integer less than or equal to the overall number of states: {bound_args.arguments['self'].attributes['States']}.")
+                                raise ValueError(f"The last (stop) state's number has to be a nonnegative integer less than or equal to the overall number of states: {bound_args.arguments['self'].attributes['States']}.")
                             if "start_state" in bound_args.arguments.keys():
                                 if isinstance(bound_args.arguments["start_state"], int) and (bound_args.arguments["start_state"] >= 0) and bound_args.arguments["start_state"] <= bound_args.arguments["self"].attributes["States"] and value < bound_args.arguments["start_state"]:
-                                    raise ValueError(f"The last state's number has to be equal or greater than the start (first) state's number: {bound_args.arguments['start_state']}.")
+                                    raise ValueError(f"The last (stop) state's number has to be equal or greater than the first (start) state's number: {bound_args.arguments['start_state']}.")
+                        case "xyz":
+                            pass
+                        case "rotation":
+                            pass
                     bound_args.arguments[name] = value
                     
             except Exception as exc:

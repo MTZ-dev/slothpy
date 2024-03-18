@@ -345,7 +345,7 @@ def _molcas_spin_orbit_to_slt(
     with File(f"{rassi_path_name}.rassi.h5", "r") as rassi:
         with File(f"{hdf5_file}.slt", "a") as output:
             group = output.create_group(group_name)
-            group.attrs["Type"] = "Hamiltonian"
+            group.attrs["Type"] = "HAMILTONIAN"
             group.attrs["Kind"] = "MOLCAS"
             group.attrs["Precision"] = settings.precision
             if edipmom:

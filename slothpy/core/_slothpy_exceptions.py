@@ -70,7 +70,7 @@ class SltFileError(Exception):
     None
     """
 
-    def __init__(self, file: str, exception: Exception, message: str = ""):
+    def __init__(self, file: str, exception: Exception, message: str = "", error_type_override=None):
         """
         Initialize for the custom message printing.
 
@@ -84,7 +84,7 @@ class SltFileError(Exception):
             A message to be printed., by default ""
         """
 
-        self._slt_error_type = "SlothFileError"
+        self._slt_error_type = error_type_override if error_type_override is not None else "SlothFileError"
         self.error_type = type(exception).__name__ if exception is not None else ""
         self.error_message = str(exception) if exception is not None else ""
         self.slt_message = f"{RED}{self._slt_error_type}{RESET}, {GREEN}File{RESET} '{file}',{'' if self.error_type == '' else ' '}{YELLOW}{self.error_type}{RESET}{': ' if self.error_type != '' else ''}{self.error_message}"
@@ -117,8 +117,7 @@ class SltCompError(SltFileError):
     """
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
-        super().__init__(file, exception, message)
-        self._slt_error_type = "SlothComputationError"
+        super().__init__(file, exception, message, "SlothComputationError")
 
 
 class SltSaveError(SltFileError):
@@ -131,8 +130,7 @@ class SltSaveError(SltFileError):
     """
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
-        super().__init__(file, exception, message)
-        self._slt_error_type = "SlothSaveError"
+        super().__init__(file, exception, message, "SlothSaveError")
 
 
 class SltReadError(SltFileError):
@@ -145,8 +143,7 @@ class SltReadError(SltFileError):
     """
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
-        super().__init__(file, exception, message)
-        self._slt_error_type = "SlothReadError"
+        super().__init__(file, exception, message, "SlothReadError")
     
 
 class SltPlotError(SltFileError):
@@ -159,8 +156,7 @@ class SltPlotError(SltFileError):
     """
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
-        super().__init__(file, exception, message)
-        self._slt_error_type = "SlothPlotError"
+        super().__init__(file, exception, message, "SlothPlotError")
     
 
 def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError"], slt_message: str = "") -> callable:

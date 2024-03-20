@@ -267,7 +267,7 @@ def _normalize_orientation(orientation):
     fastmath=True,
     parallel=True,
 )
-def _magnetic_momenta_from_spins_angular_momenta(spins: ndarray, angular_momenta: ndarray):
+def _magnetic_dipole_momenta_from_spins_angular_momenta(spins: ndarray, angular_momenta: ndarray):
     mu_b = array(MU_B, dtype=spins.dtype)
     ge = array(GE, dtype=spins.dtype)
     return -mu_b*(ge * spins + angular_momenta)

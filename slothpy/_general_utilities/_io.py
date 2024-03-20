@@ -337,7 +337,7 @@ def _molcas_spin_orbit_to_slt(
     path_out: str,
     hdf5_output: str,
     group_name: str,
-    edipmom: bool = False,
+    electric_dipole_momenta: bool = False,
 ) -> None:
     rassi_path_name = join(path_molcas, inp_molcas)
     hdf5_file = join(path_out, hdf5_output)
@@ -347,9 +347,9 @@ def _molcas_spin_orbit_to_slt(
             group = output.create_group(group_name)
             group.attrs["Type"] = "HAMILTONIAN"
             group.attrs["Kind"] = "MOLCAS"
-            group.attrs["Precision"] = settings.precision
-            if edipmom:
-                group.attrs["Additional"] = "Edipmom"
+            group.attrs["Precision"] = settings.precision.upper()
+            if electric_dipole_momenta:
+                group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
             group.attrs["Description"] = "Relativistic SOC MOLCAS results."
 
             dataset_rassi = rassi["SOS_ENERGIES"][:]
@@ -359,16 +359,16 @@ def _molcas_spin_orbit_to_slt(
 
             dataset_rassi = rassi["SOS_SPIN_REAL"][:, :, :] + 1j * rassi["SOS_SPIN_IMAG"][:, :, :]
             dataset_out = group.create_dataset("SOC_SPINS", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Sx, Sy, and Sz matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
+            dataset_out.attrs["Description"] = "Sx, Sy, and Sz spin matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
             dataset_rassi = 1j * rassi["SOS_ANGMOM_REAL"][:, :, :] - rassi["SOS_ANGMOM_IMAG"][:, :, :]
             dataset_out = group.create_dataset("SOC_ANGULAR_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Lx, Ly, and, Lz matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
+            dataset_out.attrs["Description"] = "Lx, Ly, and, Lz angular momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
-            if edipmom:
+            if electric_dipole_momenta:
                 dataset_rassi = rassi["SOS_EDIPMOM_REAL"][:, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][:, :, :]
                 dataset_out = group.create_dataset("SOC_ELECTRIC_DIPOLE_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-                dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole moment matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
+                dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
 
 def _load_orca_hdf5(filename, group, rotation):

@@ -18,7 +18,8 @@ from numpy import ndarray, zeros_like
 from numba import jit
 
 # TODO: Eventually incorporate it into class as classmethod probably
-@jit(["complex64[:,:,:](complex64[:,:,:], float32[:,:])", "complex128[:,:,:](complex128[:,:,:], float64[:,:])"],
+@jit(["complex64[:,:,:](complex64[:,:,:], float32[:,:])", "complex128[:,:,:](complex128[:,:,:], float64[:,:])",
+      "complex64[:,:](complex64[:,:], float32[:,:])", "complex128[:,:](complex128[:,:], float64[:,:])"],
     nopython=True,
     nogil=True,
     cache=True,

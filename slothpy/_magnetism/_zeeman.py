@@ -101,13 +101,14 @@ def _zeeman_over_fields_orientations(
     magnetic_fields_shape_0 = magnetic_fields.shape[0]
     grid_shape_0 = orientations.shape[0]
     zeeman_dim = zeeman_array.ndim
+    h_cm_1 = array(H_CM_1, dtype=soc_energies.dtype)
 
     for i in range(magnetic_fields_shape_0):
         for j in range(grid_shape_0):
             orientation = orientations[j, :3]
             zeeman_matrix = _calculate_zeeman_matrix(magnetic_momenta, soc_energies, magnetic_fields[i], orientation)
-            energies = eigvalsh(zeeman_matrix).astype(soc_energies.dtype)
-            energies = energies[:num_of_states] * H_CM_1
+            energies = eigvalsh(zeeman_matrix).astype(soc_energies.dtype, order="C", copy=False)
+            energies = energies[:num_of_states] * h_cm_1
             if zeeman_dim == 2:
                 zeeman_array[i, :] += energies * orientations[j, 3]
             else:

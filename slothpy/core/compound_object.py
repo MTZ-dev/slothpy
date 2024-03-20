@@ -429,8 +429,8 @@ class Compound():
                 self[slt_save]["magnetic_fields"] = magnetic_fields
                 self[slt_save]["orientations"] = orientations
 
-                self[slt_save].attributes["Type"] = "Zeeman_splitting"
-                self[slt_save].attributes["Kind"] = "average" if average else "directional"
+                self[slt_save].attributes["Type"] = "ZEEMAN_SPLITTING"
+                self[slt_save].attributes["Kind"] = "AVERAGE" if average else "DIRECTIONAL"
                 self[slt_save].attributes["Precision"] = settings.precision
                 self[slt_save].attributes["Description"] = f"Group containing Zeeman splitting calculated from group: {group_name}."
 

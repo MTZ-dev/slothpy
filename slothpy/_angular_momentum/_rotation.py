@@ -14,40 +14,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from numpy import ndarray, allclose, identity, zeros_like
-
+from numpy import ndarray, zeros_like
+from numba import jit
 
 # TODO: Eventually incorporate it into class as classmethod probably
+@jit(["complex64[:,:,:](complex64[:,:,:], float32[:,:])", "complex128[:,:,:](complex128[:,:,:], float64[:,:])"],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
 def _rotate_vector_operator(vect_oper: ndarray, rotation: ndarray):
-    # rotation = Rotation.matrix (from class)
 
-    if rotation.shape != (3, 3):
-        raise ValueError("Input rotation matrix must be a 3x3 matrix.")
+    rotated_operator = zeros_like(vect_oper)
 
-    product = rotation.T @ rotation
-
-    if not allclose(product, identity(3), atol=1e-2, rtol=0):
-        raise ValueError("Input rotation matrix must be orthogonal.")
-
-    rotated_oper = zeros_like(vect_oper)
-
-    rotated_oper[0] = (
+    rotated_operator[0] = (
         rotation[0, 0] * vect_oper[0]
         + rotation[0, 1] * vect_oper[1]
         + rotation[0, 2] * vect_oper[2]
     )
-    rotated_oper[1] = (
+    rotated_operator[1] = (
         rotation[1, 0] * vect_oper[0]
         + rotation[1, 1] * vect_oper[1]
         + rotation[1, 2] * vect_oper[2]
     )
-    rotated_oper[2] = (
+    rotated_operator[2] = (
         rotation[2, 0] * vect_oper[0]
         + rotation[2, 1] * vect_oper[1]
         + rotation[2, 2] * vect_oper[2]
     )
 
-    return rotated_oper
+    return rotated_operator
 
 
 class Rotation:

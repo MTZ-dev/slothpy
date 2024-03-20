@@ -358,7 +358,7 @@ def _molcas_spin_orbit_to_slt(
             dataset_out.attrs["Description"] = "SOC energies."
 
             dataset_rassi = rassi["SOS_SPIN_REAL"][:, :, :] + 1j * rassi["SOS_SPIN_IMAG"][:, :, :]
-            dataset_out = group.create_dataset("SOC_SPIN", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out = group.create_dataset("SOC_SPINS", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
             dataset_out.attrs["Description"] = "Sx, Sy, and Sz matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
             dataset_rassi = 1j * rassi["SOS_ANGMOM_REAL"][:, :, :] - rassi["SOS_ANGMOM_IMAG"][:, :, :]
@@ -538,70 +538,72 @@ def _get_soc_total_angular_momenta_and_energies_from_hdf5(
 def _get_soc_energies_cm_1(
     filename: str, group: str, num_of_states: int = 0
 ) -> ndarray:
-    if num_of_states < 0 or (not isinstance(num_of_states, int)):
-        raise ValueError(
-            "Invalid number of states. Set it to positive integer or 0 for"
-            " all states."
-        )
-    with File(filename, "r") as file:
-        try:
-            soc_matrix = file[str(group)]["SOC"][:]
-            soc_energies = eigvalsh(soc_matrix)
-        except Exception as exc1:
-            error_message_1 = str(exc1)
-            try:
-                soc_energies = file[str(group)]["SOC_energies"][:]
-            except Exception as exc2:
-                error_message_2 = str(exc2)
-                if error_message_1 == error_message_2:
-                    error_message_2 = ""
-                raise RuntimeError(
-                    f"{error_message_1}. {error_message_2}."
-                ) from None
+    # if num_of_states < 0 or (not isinstance(num_of_states, int)):
+    #     raise ValueError(
+    #         "Invalid number of states. Set it to positive integer or 0 for"
+    #         " all states."
+    #     )
+    # with File(filename, "r") as file:
+    #     try:
+    #         soc_matrix = file[str(group)]["SOC"][:]
+    #         soc_energies = eigvalsh(soc_matrix)
+    #     except Exception as exc1:
+    #         error_message_1 = str(exc1)
+    #         try:
+    #             soc_energies = file[str(group)]["SOC_energies"][:]
+    #         except Exception as exc2:
+    #             error_message_2 = str(exc2)
+    #             if error_message_1 == error_message_2:
+    #                 error_message_2 = ""
+    #             raise RuntimeError(
+    #                 f"{error_message_1}. {error_message_2}."
+    #             ) from None
 
-        if num_of_states > soc_energies.shape[0]:
-            raise ValueError(
-                "Invalid number of states. Set it less or equal to the overal"
-                f" number of SOC states: {soc_energies.shape[0]}"
-            )
+    #     if num_of_states > soc_energies.shape[0]:
+    #         raise ValueError(
+    #             "Invalid number of states. Set it less or equal to the overal"
+    #             f" number of SOC states: {soc_energies.shape[0]}"
+    #         )
 
-        if num_of_states != 0:
-            soc_energies = soc_energies[:num_of_states]
+    #     if num_of_states != 0:
+    #         soc_energies = soc_energies[:num_of_states]
 
-        # Return operators in SOC basis
-        return (soc_energies - soc_energies[0]) * H_CM_1
+    #     # Return operators in SOC basis
+    #     return (soc_energies - soc_energies[0]) * H_CM_1
+    pass
 
 
 def _get_states_magnetic_momenta(
     filename: str, group: str, states: ndarray = None, rotation: ndarray = None
 ):
-    if any(states < 0):
-        raise ValueError("States list contains negative values.")
+    # if any(states < 0):
+    #     raise ValueError("States list contains negative values.")
 
-    if isinstance(states, int):
-        states_cutoff = states
-        (
-            magnetic_momenta,
-            _,
-        ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-            filename, group, states_cutoff, rotation
-        )
-        magnetic_momenta = diagonal(magnetic_momenta, axis1=1, axis2=2)
-    else:
-        states = array(states, dtype=int64)
-        if states.ndim == 1:
-            states_cutoff = max(states)
-            (
-                magnetic_momenta,
-                _,
-            ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-                filename, group, states_cutoff, rotation
-            )
-            magnetic_momenta = magnetic_momenta[:, states, states]
-        else:
-            raise ValueError("The list of states has to be a 1D array.")
+    # if isinstance(states, int):
+    #     states_cutoff = states
+    #     (
+    #         magnetic_momenta,
+    #         _,
+    #     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+    #         filename, group, states_cutoff, rotation
+    #     )
+    #     magnetic_momenta = diagonal(magnetic_momenta, axis1=1, axis2=2)
+    # else:
+    #     states = array(states, dtype=int64)
+    #     if states.ndim == 1:
+    #         states_cutoff = max(states)
+    #         (
+    #             magnetic_momenta,
+    #             _,
+    #         ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+    #             filename, group, states_cutoff, rotation
+    #         )
+    #         magnetic_momenta = magnetic_momenta[:, states, states]
+    #     else:
+    #         raise ValueError("The list of states has to be a 1D array.")
 
-    return magnetic_momenta.real
+    # return magnetic_momenta.real
+    pass
 
 
 def _get_states_total_angular_momenta(

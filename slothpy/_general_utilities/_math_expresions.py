@@ -267,10 +267,10 @@ def _normalize_orientation(orientation):
     fastmath=True,
     parallel=True,
 )
-def _magnetic_momenta_from_spin_angular_momenta(spin: ndarray, angular_momenta: ndarray):
-    mu_b = array(MU_B, dtype=spin.dtype)
-    ge = array(GE, dtype=spin.dtype)
-    return -mu_b*(ge * spin + angular_momenta)
+def _magnetic_momenta_from_spins_angular_momenta(spins: ndarray, angular_momenta: ndarray):
+    mu_b = array(MU_B, dtype=spins.dtype)
+    ge = array(GE, dtype=spins.dtype)
+    return -mu_b*(ge * spins + angular_momenta)
 
 
 @jit(
@@ -282,5 +282,5 @@ def _magnetic_momenta_from_spin_angular_momenta(spin: ndarray, angular_momenta: 
     fastmath=True,
     parallel=True,
 )
-def _total_angular_momenta_from_spin_angular_momenta(spin: ndarray, angular_momenta: ndarray):
-    return spin + angular_momenta
+def _total_angular_momenta_from_spins_angular_momenta(spins: ndarray, angular_momenta: ndarray):
+    return spins + angular_momenta

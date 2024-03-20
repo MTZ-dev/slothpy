@@ -18,7 +18,7 @@ import inspect
 from functools import wraps
 from typing import Literal
 from os import cpu_count
-from numpy import array
+from numpy import array, allclose, identity
 from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError
 from slothpy._general_utilities._grids_over_hemisphere import (
     lebedev_laikov_grid,
@@ -46,24 +46,26 @@ def validate_input(group_type: Literal["HAMILTONIAN"]):
             bound_args = signature.bind_partial(*args, **kwargs)
             bound_args.apply_defaults()
 
-            if not bound_args.arguments["self"]._exists:
-                raise SltFileError(f"{BLUE}Group{RESET}: '{bound_args.arguments['self']._group_path}' does not exist in the {GREEN}File{RESET}: '{bound_args.arguments['self']._hdf5}'.")
+            self = bound_args.arguments["self"]
+
+            if not self._exists:
+                raise SltFileError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_path}' does not exist in the {GREEN}File{RESET}: '{self._hdf5}'.")
 
             try:
-                bound_args.arguments["self"].attributes["Type"]
-                bound_args.arguments["self"].attributes["States"]
+                self.attributes["Type"]
+                self.attributes["States"]
             except SltFileError as exc:
-                raise SltReadError(bound_args.arguments['self']._hdf5, None, f"{BLUE}Group{RESET}: '{bound_args.arguments['self']._group_path}' is not a valid SlothPy group.") from None
+                raise SltReadError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_path}' is not a valid SlothPy group.") from None
 
-            if bound_args.arguments["self"].attributes["Type"] != group_type:
-                raise SltReadError(f"Wrong group type: {bound_args.arguments['self'].attributes['Type']} of {BLUE}Group{RESET}: '{bound_args.arguments['self']._group_path}' from the {GREEN}File{RESET}: '{bound_args.arguments['self']._hdf5}'. Expected '{group_type}' type.") from None
+            if self.attributes["Type"] != group_type:
+                raise SltReadError(self._hdf5, None, f"Wrong group type: {self.attributes['Type']} of {BLUE}Group{RESET}: '{self._group_path}' from the {GREEN}File{RESET}: '{self._hdf5}'. Expected '{group_type}' type.")
 
             if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:
-                if _group_exists(bound_args.arguments["self"]._hdf5, bound_args.arguments["slt_save"]):
+                if _group_exists(self._hdf5, bound_args.arguments["slt_save"]):
                     raise SltSaveError(
-                        bound_args.arguments["self"]._hdf5,
+                        self._hdf5,
                         NameError(""),
-                        message=f"Unable to save the results. {BLUE}Group{RESET} '{bound_args.arguments['slt_save']}' already exists in the {GREEN}File{RESET}: '{bound_args.arguments['self']._hdf5}'. Delete it manually.",
+                        message=f"Unable to save the results. {BLUE}Group{RESET} '{bound_args.arguments['slt_save']}' already exists in the {GREEN}File{RESET}: '{self._hdf5}'. Delete it manually.",
                     ) from None
 
             try:
@@ -119,33 +121,42 @@ def validate_input(group_type: Literal["HAMILTONIAN"]):
                                     raise ValueError("The orientations' array has to be (n,3) in the form: [[direction_x, direction_y, direction_z],...] or (n,4) array in the form: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
                         case "states_cutoff":
                             if value == 0:
-                                value = bound_args.arguments["self"].attributes["States"]
+                                value = int(self.attributes["States"])
                             elif not isinstance(value, int) or value < 0:
-                                raise ValueError(f"The states' cutoff has to be a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
-                            elif value > bound_args.arguments["self"].attributes["States"]:
-                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available SOC states: {bound_args.arguments['self'][bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
+                                raise ValueError(f"The states' cutoff has to be a nonnegative integer less than or equal to the overall number of available SOC states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
+                            elif value > self.attributes["States"]:
+                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available SOC states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
                         case "number_of_states":
                             if not isinstance(value, int) or value <= 0:
                                 raise ValueError("The number of states has to be a positive integer.")
-                            max_states = bound_args.arguments["self"].attributes["States"]
+                            max_states = int(self.attributes["States"])
                             if "states_cutoff" in bound_args.arguments.keys():
-                                if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0) and bound_args.arguments["states_cutoff"] < bound_args.arguments["self"].attributes["States"]:
+                                if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0) and bound_args.arguments["states_cutoff"] < self.attributes["States"]:
                                     max_states = bound_args.arguments["states_cutoff"] 
                             if value > max_states:
                                 raise ValueError("The number of states has to be less or equal to the states' cutoff or overall number of states.")
                         case "start_state":
-                            if not (isinstance(value, int) and value >= 0 and value <= bound_args.arguments["self"].attributes["States"]):
-                                raise ValueError(f"The first (start) state's number has to be a nonnegative integer less than or equal to the overall number of states: {bound_args.arguments['self'].attributes['States']}.")
+                            if not (isinstance(value, int) and value >= 0 and value < self.attributes["States"]):
+                                raise ValueError(f"The first (start) state's number has to be a nonnegative integer less than or equal to the overall number of states - 1: {self.attributes['States'] - 1}.")
                         case "stop_state":
-                            if not isinstance(value, int) or value < 0 or value > bound_args.arguments["self"].attributes["States"]:
-                                raise ValueError(f"The last (stop) state's number has to be a nonnegative integer less than or equal to the overall number of states: {bound_args.arguments['self'].attributes['States']}.")
+                            if value == 0:
+                                value = int(self.attributes["States"]) - 1
+                            if not isinstance(value, int) or value < 0 or value > self.attributes["States"]:
+                                raise ValueError(f"The last (stop) state's number has to be a nonnegative integer less than or equal to the overall number of states - 1: {self.attributes['States'] - 1}.")
                             if "start_state" in bound_args.arguments.keys():
-                                if isinstance(bound_args.arguments["start_state"], int) and (bound_args.arguments["start_state"] >= 0) and bound_args.arguments["start_state"] <= bound_args.arguments["self"].attributes["States"] and value < bound_args.arguments["start_state"]:
+                                if isinstance(bound_args.arguments["start_state"], int) and (bound_args.arguments["start_state"] >= 0) and bound_args.arguments["start_state"] <= self.attributes["States"] and value < bound_args.arguments["start_state"]:
                                     raise ValueError(f"The last (stop) state's number has to be equal or greater than the first (start) state's number: {bound_args.arguments['start_state']}.")
                         case "xyz":
-                            pass
+                            if value not in ["xyz", "x", "y", "z"]:
+                                raise ValueError(f"The xyz argument has to be one of 'xyz', 'x', 'y', or 'z'.")
                         case "rotation":
-                            pass
+                            if value is not None:
+                                value = array(value, copy=False, order='C', dtype=settings.float)
+                                if value.shape != (3, 3):
+                                    raise ValueError("The rotation matrix must be a 3x3 array.")
+                                product = value.T @ value
+                                if not allclose(product, identity(3), atol=1e-2, rtol=0):
+                                    raise ValueError("Input rotation matrix must be orthogonal.")
                     bound_args.arguments[name] = value
                     
             except Exception as exc:

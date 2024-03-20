@@ -354,20 +354,20 @@ def _molcas_spin_orbit_to_slt(
 
             dataset_rassi = rassi["SOS_ENERGIES"][:]
             group.attrs["States"] = dataset_rassi.shape[0]
-            dataset_out = group.create_dataset("SOC_ENERGIES", shape=dataset_rassi.shape, dtype=settings.float, data=dataset_rassi.astype(settings.float), chunks=True)
+            dataset_out = group.create_dataset("STATES_ENERGIES", shape=dataset_rassi.shape, dtype=settings.float, data=dataset_rassi.astype(settings.float), chunks=True)
             dataset_out.attrs["Description"] = "SOC energies."
 
             dataset_rassi = rassi["SOS_SPIN_REAL"][:, :, :] + 1j * rassi["SOS_SPIN_IMAG"][:, :, :]
-            dataset_out = group.create_dataset("SOC_SPINS", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out = group.create_dataset("SPINS", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
             dataset_out.attrs["Description"] = "Sx, Sy, and Sz spin matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
             dataset_rassi = 1j * rassi["SOS_ANGMOM_REAL"][:, :, :] - rassi["SOS_ANGMOM_IMAG"][:, :, :]
-            dataset_out = group.create_dataset("SOC_ANGULAR_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+            dataset_out = group.create_dataset("ANGULAR_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
             dataset_out.attrs["Description"] = "Lx, Ly, and, Lz angular momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
             if electric_dipole_momenta:
                 dataset_rassi = rassi["SOS_EDIPMOM_REAL"][:, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][:, :, :]
-                dataset_out = group.create_dataset("SOC_ELECTRIC_DIPOLE_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
+                dataset_out = group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
                 dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
 

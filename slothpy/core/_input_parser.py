@@ -123,9 +123,9 @@ def validate_input(group_type: Literal["HAMILTONIAN"]):
                             if value == 0:
                                 value = int(self.attributes["States"])
                             elif not isinstance(value, int) or value < 0:
-                                raise ValueError(f"The states' cutoff has to be a nonnegative integer less than or equal to the overall number of available SOC states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
+                                raise ValueError(f"The states' cutoff has to be a nonnegative integer less than or equal to the overall number of available states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
                             elif value > self.attributes["States"]:
-                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available SOC states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
+                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
                         case "number_of_states":
                             if not isinstance(value, int) or value <= 0:
                                 raise ValueError("The number of states has to be a positive integer.")

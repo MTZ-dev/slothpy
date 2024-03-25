@@ -37,13 +37,14 @@ from numpy import (
 )
 from numpy.linalg import eigvalsh
 from numba import jit, set_num_threads, prange
-from slothpy._general_utilities._constants import KB, MU_B, H_CM_1 ######## MU_B is already included now in mag_mom
+from slothpy._general_utilities._constants import KB, MU_B, H_CM_1
 from slothpy._general_utilities._system import (
     _get_num_of_processes,
     _to_shared_memory,
     _from_shared_memory,
     _chunk_from_shared_memory,
     _distribute_chunks,
+    _manage_processes,
 )
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -57,8 +58,10 @@ from slothpy.core._config import settings
 from slothpy._gui._monitor_gui import _run_monitor_gui
 
 
-@jit(
-    f"{settings.numba_complex}[:,:]({settings.numba_complex}[:,:,:], {settings.numba_float}[:], {settings.numba_float}, {settings.numba_float}[:])",
+@jit([
+        "complex64[:,:](complex64[:,:,:], float32[:], float32, float32[:])",
+        "complex128[:,:](complex128[:,:,:], float64[:], float64, float64[:])"
+    ],
     nopython=True,
     nogil=True,
     cache=True,
@@ -67,21 +70,23 @@ from slothpy._gui._monitor_gui import _run_monitor_gui
     parallel=True,
 )
 def _calculate_zeeman_matrix(
-    magnetic_momenta, soc_energies, field, orientation
+    magnetic_momenta, states_energies, field, orientation
 ):
     orientation = (-field * orientation)
     magnetic_momenta = _3d_dot(magnetic_momenta, orientation)
-    soc_energies = soc_energies.astype(magnetic_momenta.dtype)
+    states_energies = states_energies.astype(magnetic_momenta.dtype)
 
     for k in prange(magnetic_momenta.shape[0]):
-        magnetic_momenta[k, k] += soc_energies[k]
+        magnetic_momenta[k, k] += states_energies[k]
 
     return magnetic_momenta
 
 
 @jit([
-        f"({settings.numba_float}[:], {settings.numba_complex}[:,:,:], {settings.numba_float}[:], {settings.numba_float}[:,:], int64, int64[:], {settings.numba_float}[:,:])",
-        f"({settings.numba_float}[:], {settings.numba_complex}[:,:,:], {settings.numba_float}[:], {settings.numba_float}[:,:], int64, int64[:], {settings.numba_float}[:,:,:])"
+        "(float32[:], complex64[:,:,:], float32[:], float32[:,:], int64, int64[:], float32[:,:])",
+        "(float32[:], complex64[:,:,:], float32[:], float32[:,:], int64, int64[:], float32[:,:,:])",
+        "(float64[:], complex128[:,:,:], float64[:], float64[:,:], int64, int64[:], float64[:,:])",
+        "(float64[:], complex128[:,:,:], float64[:], float64[:,:], int64, int64[:], float64[:,:,:])"
     ],
     nopython=True,
     cache=True,
@@ -90,7 +95,7 @@ def _calculate_zeeman_matrix(
     inline="always",
 )
 def _zeeman_over_fields_orientations(
-    soc_energies: ndarray,
+    states_energies: ndarray,
     magnetic_momenta: ndarray,
     magnetic_fields: ndarray,
     orientations: ndarray,
@@ -101,13 +106,13 @@ def _zeeman_over_fields_orientations(
     magnetic_fields_shape_0 = magnetic_fields.shape[0]
     grid_shape_0 = orientations.shape[0]
     zeeman_dim = zeeman_array.ndim
-    h_cm_1 = array(H_CM_1, dtype=soc_energies.dtype)
+    h_cm_1 = array(H_CM_1, dtype=states_energies.dtype)
 
     for i in range(magnetic_fields_shape_0):
         for j in range(grid_shape_0):
             orientation = orientations[j, :3]
-            zeeman_matrix = _calculate_zeeman_matrix(magnetic_momenta, soc_energies, magnetic_fields[i], orientation)
-            energies = eigvalsh(zeeman_matrix)#.astype(soc_energies.dtype)
+            zeeman_matrix = _calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i], orientation)
+            energies = eigvalsh(zeeman_matrix)
             energies = energies[:num_of_states] * h_cm_1
             if zeeman_dim == 2:
                 zeeman_array[i, :] += energies * orientations[j, 3]
@@ -117,7 +122,7 @@ def _zeeman_over_fields_orientations(
 
 
 def _zeeman_splitting_process(
-    soc_energies_info: tuple,
+    states_energies_info: tuple,
     magnetic_momenta_info: tuple,
     magnetic_fields_info: tuple,
     orientations_info: tuple,
@@ -129,8 +134,8 @@ def _zeeman_splitting_process(
     average: bool,
     number_threads: int,
 ):  
-    sm_soc_energies = SharedMemory(soc_energies_info[0])
-    soc_energies = _from_shared_memory(sm_soc_energies, soc_energies_info)
+    sm_states_energies = SharedMemory(states_energies_info[0])
+    states_energies = _from_shared_memory(sm_states_energies, states_energies_info)
     sm_magnetic_momenta = SharedMemory(magnetic_momenta_info[0])
     magnetic_momenta = _from_shared_memory(sm_magnetic_momenta, magnetic_momenta_info)
     sm_orientations = SharedMemory(orientations_info[0])
@@ -151,7 +156,7 @@ def _zeeman_splitting_process(
 
     with threadpool_limits(limits=number_threads):
         set_num_threads(number_threads)
-        _zeeman_over_fields_orientations(soc_energies, magnetic_momenta, magnetic_fields, orientations, number_of_states, progress, zeeman_array)
+        _zeeman_over_fields_orientations(states_energies, magnetic_momenta, magnetic_fields, orientations, number_of_states, progress, zeeman_array)
 
 
 def _zeeman_splitting_process_wrapper(args):
@@ -159,67 +164,47 @@ def _zeeman_splitting_process_wrapper(args):
 
 
 def _zeeman_splitting(
-    filename: str,
-    group: str,
+    states_energies: ndarray,
+    magnetic_momenta: ndarray,
     number_of_states: int,
     magnetic_fields: ndarray,
     orientations: ndarray,
-    states_cutoff: int,
-    number_cpu: int,
+    number_processes: int,
     number_threads: int,
+    _zeeman_array_info: tuple = None,
+    _progress_array_info: tuple = None,
+    _terminate_event = None,
 ) -> ndarray:
-    # Read data from HDF5 file
-    (
-        magnetic_momenta,
-        soc_energies,
-    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff
-    )
-
-    # Get number of parallel proceses to be used
-    number_processes, number_threads = _get_num_of_processes(number_cpu, number_threads, magnetic_fields.shape[0])
-
-    if orientations.shape[1] == 4:
-        average = True
-        zeeman_array = zeros((magnetic_fields.shape[0], number_of_states), dtype=magnetic_fields.dtype, order="C")
-    elif orientations.shape[1] == 3:
-        average = False
-        zeeman_array = zeros((magnetic_fields.shape[0], orientations.shape[0], number_of_states), dtype=magnetic_fields.dtype, order="C")
-    else:
-        raise ValueError("Wrong orientations' array dimensions.")
-
-    soc_energies = ascontiguousarray(soc_energies)
-    magnetic_momenta = ascontiguousarray(magnetic_momenta)
-    magnetic_fields = ascontiguousarray(magnetic_fields)
-    orientations = ascontiguousarray(orientations)
-    zeeman_array = ascontiguousarray(zeeman_array)
-    progress_array = zeros((number_processes,), dtype=int64)
-
-    magnetic_fields_chunks = _distribute_chunks(magnetic_fields.shape[0], number_processes)
-
     with SharedMemoryManager() as smm:
-        soc_energies_info = _to_shared_memory(smm, soc_energies)
+        if _zeeman_array_info is None: 
+            if orientations.shape[1] == 4:
+                average = True
+                zeeman_array = zeros((magnetic_fields.shape[0], number_of_states), dtype=magnetic_fields.dtype, order="C")
+            elif orientations.shape[1] == 3:
+                average = False
+                zeeman_array = zeros((magnetic_fields.shape[0], orientations.shape[0], number_of_states), dtype=magnetic_fields.dtype, order="C")
+            else:
+                raise ValueError("Wrong orientations' array dimensions.")
+            _zeeman_array_info = _to_shared_memory(smm, zeeman_array)
+
+        if _progress_array_info is None:
+            progress_array = zeros((number_processes,), dtype=int64)
+            _progress_array_info = _to_shared_memory(smm, progress_array)
+
+        magnetic_fields_chunks = _distribute_chunks(magnetic_fields.shape[0], number_processes)
+
+        states_energies_info = _to_shared_memory(smm, states_energies)
         magnetic_momenta_info = _to_shared_memory(smm, magnetic_momenta)
         magnetic_fields_info = _to_shared_memory(smm, magnetic_fields)
         orientations_info = _to_shared_memory(smm, orientations)
-        zeeman_array_info = _to_shared_memory(smm, zeeman_array)
-        progress_array_info = _to_shared_memory(smm, progress_array)
 
-        if settings.monitor:
-            monitor = Process(target=_run_monitor_gui, args=(progress_array_info, magnetic_fields_chunks, orientations_info[1][0], "zeeman_splitting"))
-            monitor.start()
+        tasks = [(states_energies_info, magnetic_momenta_info, magnetic_fields_info, orientations_info, _progress_array_info, _zeeman_array_info, chunk, process_index, number_of_states, average, number_threads) for process_index, chunk in enumerate(magnetic_fields_chunks)]
+        _manage_processes(_zeeman_splitting_process_wrapper, tasks, _terminate_event)
 
-        with Pool(number_processes) as p:
-            p.map(_zeeman_splitting_process_wrapper,[(soc_energies_info, magnetic_momenta_info, magnetic_fields_info, orientations_info, progress_array_info, zeeman_array_info, chunk, process_index, number_of_states, average, number_threads) for process_index, chunk in enumerate(magnetic_fields_chunks)])
-
-        sm_zeeman_array = SharedMemory(zeeman_array_info[0])
-        zeeman_array = array(_from_shared_memory(sm_zeeman_array, zeeman_array_info), copy=True, order="C")
+        sm_zeeman_array = SharedMemory(_zeeman_array_info[0])
+        zeeman_array = array(_from_shared_memory(sm_zeeman_array, _zeeman_array_info), copy=True, order="C")
         if not average:
             zeeman_array = zeeman_array.transpose((1,0,2))
-
-        if settings.monitor:
-            monitor.join()
-            monitor.close()
 
     return zeeman_array
 
@@ -234,7 +219,7 @@ def _get_zeeman_matrix(
 ) -> ndarray:
     (
         magnetic_momenta,
-        soc_energies,
+        states_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff, rotation
     )
@@ -253,7 +238,7 @@ def _get_zeeman_matrix(
         for o, orientation in enumerate(orientations):
             zeeman_matrix[f, o, :, :] = _calculate_zeeman_matrix(
                 magnetic_momenta,
-                soc_energies,
+                states_energies,
                 field,
                 orientation.astype(complex128),
             )
@@ -311,7 +296,7 @@ def _calculate_internal_energy(
 )
 def _helmholtz_energyt_over_fields_grid(
     magnetic_momenta: ndarray,
-    soc_energies: ndarray,
+    states_energies: ndarray,
     fields: ndarray,
     grid: ndarray,
     temperatures: ndarray,
@@ -333,7 +318,7 @@ def _helmholtz_energyt_over_fields_grid(
             orientation = grid[j, :3].astype(complex128)
 
             zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, fields[i], orientation
+                magnetic_momenta, states_energies, fields[i], orientation
             )
 
             # Diagonalize full Hamiltonian matrix
@@ -362,7 +347,7 @@ def _helmholtz_energyt_over_fields_grid(
 )
 def _internal_energyt_over_fields_grid(
     magnetic_momenta: ndarray,
-    soc_energies: ndarray,
+    states_energies: ndarray,
     fields: ndarray,
     grid: ndarray,
     temperatures: ndarray,
@@ -384,7 +369,7 @@ def _internal_energyt_over_fields_grid(
             orientation = grid[j, :3].astype(complex128)
 
             zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, fields[i], orientation
+                magnetic_momenta, states_energies, fields[i], orientation
             )
 
             # Diagonalize full Hamiltonian matrix
@@ -413,7 +398,7 @@ def _internal_energyt_over_fields_grid(
 )
 def _helmholtz_energyt_over_grid_fields(
     magnetic_momenta: ndarray,
-    soc_energies: ndarray,
+    states_energies: ndarray,
     fields: ndarray,
     grid: ndarray,
     temperatures: ndarray,
@@ -437,7 +422,7 @@ def _helmholtz_energyt_over_grid_fields(
 
             zeeman_matrix = _calculate_zeeman_matrix(
                 magnetic_momenta,
-                soc_energies,
+                states_energies,
                 fields[f],
                 grid[g].astype(complex128),
             )
@@ -467,7 +452,7 @@ def _helmholtz_energyt_over_grid_fields(
 )
 def _internal_energyt_over_grid_fields(
     magnetic_momenta: ndarray,
-    soc_energies: ndarray,
+    states_energies: ndarray,
     fields: ndarray,
     grid: ndarray,
     temperatures: ndarray,
@@ -491,7 +476,7 @@ def _internal_energyt_over_grid_fields(
 
             zeeman_matrix = _calculate_zeeman_matrix(
                 magnetic_momenta,
-                soc_energies,
+                states_energies,
                 fields[f],
                 grid[g].astype(complex128),
             )
@@ -513,12 +498,12 @@ def _internal_energyt_over_grid_fields(
 
 def _calculate_eht(
     magnetic_momenta_name: str,
-    soc_energies_name: str,
+    states_energies_name: str,
     fields_name: str,
     grid_name: str,
     temperatures_name: str,
     magnetic_momenta_shape: tuple,
-    soc_energies_shape: tuple,
+    states_energies_shape: tuple,
     grid_shape: tuple,
     temperatures_shape: tuple,
     field_chunk: tuple,
@@ -531,9 +516,9 @@ def _calculate_eht(
         complex128,
         magnetic_momenta_shared.buf,
     )
-    soc_energies_shared = SharedMemory(soc_energies_name)
-    soc_energies_array = ndarray(
-        soc_energies_shape, float64, soc_energies_shared.buf
+    states_energies_shared = SharedMemory(states_energies_name)
+    states_energies_array = ndarray(
+        states_energies_shape, float64, states_energies_shared.buf
     )
     grid_shared = SharedMemory(grid_name)
     grid_array = ndarray(grid_shape, float64, grid_shared.buf)
@@ -553,7 +538,7 @@ def _calculate_eht(
     if energy_type == "helmholtz":
         return _helmholtz_energyt_over_fields_grid(
             magnetic_momenta_array,
-            soc_energies_array,
+            states_energies_array,
             fields_array,
             grid_array,
             temperatures_array,
@@ -561,7 +546,7 @@ def _calculate_eht(
     elif energy_type == "internal":
         return _internal_energyt_over_fields_grid(
             magnetic_momenta_array,
-            soc_energies_array,
+            states_energies_array,
             fields_array,
             grid_array,
             temperatures_array,
@@ -577,12 +562,12 @@ def _calculate_eht_wrapper(args):
 
 def _arg_iter_eht(
     magnetic_momenta_name,
-    soc_energies_name,
+    states_energies_name,
     fields_name,
     grid_name,
     temperatures_name,
     magnetic_momenta_shape,
-    soc_energies_shape,
+    states_energies_shape,
     grid_shape,
     temperatures_shape,
     fields_chunks,
@@ -593,12 +578,12 @@ def _arg_iter_eht(
     for field_chunk in fields_chunks:
         yield (
             magnetic_momenta_name,
-            soc_energies_name,
+            states_energies_name,
             fields_name,
             grid_name,
             temperatures_name,
             magnetic_momenta_shape,
-            soc_energies_shape,
+            states_energies_shape,
             grid_shape,
             temperatures_shape,
             field_chunk,
@@ -620,7 +605,7 @@ def _eth(
     # Read data from HDF5 file
     (
         magnetic_momenta,
-        soc_energies,
+        states_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff
     )
@@ -640,7 +625,7 @@ def _eth(
         magnetic_momenta_shared = smm.SharedMemory(
             size=magnetic_momenta.nbytes
         )
-        soc_energies_shared = smm.SharedMemory(size=soc_energies.nbytes)
+        states_energies_shared = smm.SharedMemory(size=states_energies.nbytes)
         fields_shared = smm.SharedMemory(size=fields.nbytes)
         grid_shared = smm.SharedMemory(size=grid.nbytes)
         temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
@@ -651,10 +636,10 @@ def _eth(
             dtype=magnetic_momenta.dtype,
             buffer=magnetic_momenta_shared.buf,
         )
-        soc_energies_shared_arr = ndarray(
-            soc_energies.shape,
-            dtype=soc_energies.dtype,
-            buffer=soc_energies_shared.buf,
+        states_energies_shared_arr = ndarray(
+            states_energies.shape,
+            dtype=states_energies.dtype,
+            buffer=states_energies_shared.buf,
         )
         fields_shared_arr = ndarray(
             fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
@@ -669,13 +654,13 @@ def _eth(
         )
 
         magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
-        soc_energies_shared_arr[:] = soc_energies[:]
+        states_energies_shared_arr[:] = states_energies[:]
         fields_shared_arr[:] = fields[:]
         grid_shared_arr[:] = grid[:]
         temperatures_shared_arr[:] = temperatures[:]
 
         del magnetic_momenta
-        del soc_energies
+        del states_energies
         del fields
         del grid
         del temperatures
@@ -688,12 +673,12 @@ def _eth(
                         _calculate_eht_wrapper,
                         _arg_iter_eht(
                             magnetic_momenta_shared.name,
-                            soc_energies_shared.name,
+                            states_energies_shared.name,
                             fields_shared.name,
                             grid_shared.name,
                             temperatures_shared.name,
                             magnetic_momenta_shared_arr.shape,
-                            soc_energies_shared_arr.shape,
+                            states_energies_shared_arr.shape,
                             grid_shared_arr.shape,
                             temperatures_shared_arr.shape,
                             _distribute_chunks(
@@ -711,12 +696,12 @@ def _eth(
 
 def _arg_iter_eght(
     magnetic_momenta_name,
-    soc_energies_name,
+    states_energies_name,
     fields_name,
     grid_name,
     temperatures_name,
     magnetic_momenta_shape,
-    soc_energies_shape,
+    states_energies_shape,
     fields_shape,
     temperatures_shape,
     grids_chunks,
@@ -727,12 +712,12 @@ def _arg_iter_eght(
     for grid_chunk in grids_chunks:
         yield (
             magnetic_momenta_name,
-            soc_energies_name,
+            states_energies_name,
             fields_name,
             grid_name,
             temperatures_name,
             magnetic_momenta_shape,
-            soc_energies_shape,
+            states_energies_shape,
             fields_shape,
             temperatures_shape,
             grid_chunk,
@@ -742,12 +727,12 @@ def _arg_iter_eght(
 
 def _calculate_eght(
     magnetic_momenta_name: str,
-    soc_energies_name: str,
+    states_energies_name: str,
     fields_name: str,
     grid_name: str,
     temperatures_name: str,
     magnetic_momenta_shape: tuple,
-    soc_energies_shape: tuple,
+    states_energies_shape: tuple,
     fields_shape: tuple,
     temperatures_shape: tuple,
     grid_chunk: tuple,
@@ -759,9 +744,9 @@ def _calculate_eght(
         complex128,
         magnetic_momenta_shared.buf,
     )
-    soc_energies_shared = SharedMemory(soc_energies_name)
-    soc_energies_array = ndarray(
-        soc_energies_shape, float64, soc_energies_shared.buf
+    states_energies_shared = SharedMemory(states_energies_name)
+    states_energies_array = ndarray(
+        states_energies_shape, float64, states_energies_shared.buf
     )
     fields_shared = SharedMemory(fields_name)
     fields_array = ndarray(fields_shape, float64, fields_shared.buf)
@@ -781,7 +766,7 @@ def _calculate_eght(
     if energy_type == "helmholtz":
         return _helmholtz_energyt_over_grid_fields(
             magnetic_momenta_array,
-            soc_energies_array,
+            states_energies_array,
             fields_array,
             grid_array,
             temperatures_array,
@@ -790,7 +775,7 @@ def _calculate_eght(
     elif energy_type == "internal":
         return _internal_energyt_over_grid_fields(
             magnetic_momenta_array,
-            soc_energies_array,
+            states_energies_array,
             fields_array,
             grid_array,
             temperatures_array,
@@ -839,7 +824,7 @@ def _energy_3d(
     # Read data from HDF5 file
     (
         magnetic_momenta,
-        soc_energies,
+        states_energies,
     ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
         filename, group, states_cutoff, rotation
     )
@@ -853,7 +838,7 @@ def _energy_3d(
         magnetic_momenta_shared = smm.SharedMemory(
             size=magnetic_momenta.nbytes
         )
-        soc_energies_shared = smm.SharedMemory(size=soc_energies.nbytes)
+        states_energies_shared = smm.SharedMemory(size=states_energies.nbytes)
         fields_shared = smm.SharedMemory(size=fields.nbytes)
         grid_shared = smm.SharedMemory(size=grid.nbytes)
         temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
@@ -864,10 +849,10 @@ def _energy_3d(
             dtype=magnetic_momenta.dtype,
             buffer=magnetic_momenta_shared.buf,
         )
-        soc_energies_shared_arr = ndarray(
-            soc_energies.shape,
-            dtype=soc_energies.dtype,
-            buffer=soc_energies_shared.buf,
+        states_energies_shared_arr = ndarray(
+            states_energies.shape,
+            dtype=states_energies.dtype,
+            buffer=states_energies_shared.buf,
         )
         fields_shared_arr = ndarray(
             fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
@@ -882,13 +867,13 @@ def _energy_3d(
         )
 
         magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
-        soc_energies_shared_arr[:] = soc_energies[:]
+        states_energies_shared_arr[:] = states_energies[:]
         fields_shared_arr[:] = fields[:]
         grid_shared_arr[:] = grid[:]
         temperatures_shared_arr[:] = temperatures[:]
 
         del magnetic_momenta
-        del soc_energies
+        del states_energies
         del fields
         del grid
         del temperatures
@@ -902,12 +887,12 @@ def _energy_3d(
                         _calculate_eght_wrapper,
                         _arg_iter_eght(
                             magnetic_momenta_shared.name,
-                            soc_energies_shared.name,
+                            states_energies_shared.name,
                             fields_shared.name,
                             grid_shared.name,
                             temperatures_shared.name,
                             magnetic_momenta_shared_arr.shape,
-                            soc_energies_shared_arr.shape,
+                            states_energies_shared_arr.shape,
                             fields_shared_arr.shape,
                             temperatures_shared_arr.shape,
                             _distribute_chunks(

@@ -286,7 +286,6 @@ class Compound():
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
             del file[key]
     
-    @validate_input("HAMILTONIAN")
     def zeeman_splitting(
         self,
         group_name: str,
@@ -412,36 +411,7 @@ class Compound():
         #             + '".',
         #         ) from None
 
-        try:
-            zeeman_array = _zeeman_splitting(self._hdf5, group_name, number_of_states, magnetic_fields, orientations, states_cutoff, number_cpu, number_threads)
-        except Exception as exc:
-            raise SltCompError(self._hdf5, exc, f"Failed to compute Zeeman splitting from {BLUE}Group{RESET} '{group_name}'.") from None
-
-
-        if slt_save is not None:
-            try:
-                if orientations.shape[1] == 4 and zeeman_array.ndim == 2:
-                    average = True
-                else:
-                    average = False
-
-                self[slt_save]["zeeman_splitting"] = zeeman_array
-                self[slt_save]["magnetic_fields"] = magnetic_fields
-                self[slt_save]["orientations"] = orientations
-
-                self[slt_save].attributes["Type"] = "ZEEMAN_SPLITTING"
-                self[slt_save].attributes["Kind"] = "AVERAGE" if average else "DIRECTIONAL"
-                self[slt_save].attributes["Precision"] = settings.precision
-                self[slt_save].attributes["Description"] = f"Group containing Zeeman splitting calculated from group: {group_name}."
-
-                self[slt_save]["zeeman_splitting"].attributes["Description"] = f"Dataset containing Zeeman splitting in the form {'[fields, energies]' if average else '[orientations, fields, energies]'}."
-                self[slt_save]["magnetic_fields"].attributes["Description"] = "Dataset containing magnetic field (T) values used in the simulation."
-                self[slt_save]["orientations"].attributes["Description"] = "Dataset containing magnetic fields' orientation grid used in the simulation."
-
-            except Exception as exc:
-                raise SltSaveError(self._hdf5, exc, f"Failed to save Zeeman splitting to {BLUE}Group{RESET} '{group_name}'.") from None
-
-        return zeeman_array
+        return self[group_name].zeeman_splitting(group_name, number_of_states, magnetic_fields, orientations, states_cutoff, number_cpu, number_threads, slt_save, autotune)
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None

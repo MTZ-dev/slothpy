@@ -40,7 +40,7 @@ from slothpy.core._config import settings
 
 
 @jit(
-    f"complex128[:, :](complex128[:, :, :], {settings.numba_float}[:])",
+    ["complex64[:, :](complex64[:, :, :], float32[:])", "complex128[:, :](complex128[:, :, :], float64[:])"],
     nopython=True,
     nogil=True,
     cache=True,

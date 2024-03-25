@@ -15,39 +15,44 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
+from time import sleep
 from os import cpu_count
+from multiprocessing import Process
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
 from numpy import ndarray, dtype
 from numpy import array as np_array
 
+def _get_num_of_processes():
+    pass #only for import compatibility
 
-def _get_num_of_processes(num_cpu, num_threads, num_to_parallelize):
+
+def _get_number_of_processes_threads(number_cpu, number_threads, number_to_parallelize):
     # Check available CPU count
-    total_num_of_cpu = int(cpu_count())
+    total_number_of_cpu = int(cpu_count())
 
-    if num_cpu > total_num_of_cpu:
+    if number_cpu > total_number_of_cpu:
         raise ValueError(
-            f"Insufficient number of logical cores ({total_num_of_cpu}) was"
-            f" detected on the machine, to accomodate {num_cpu} desired CPUs."
+            f"Insufficient number of logical cores ({total_number_of_cpu}) was"
+            f" detected on the machine, to accomodate {number_cpu} desired CPUs."
         )
 
     # Check CPUs number considering the desired number of threads and assign
     # number of processes
-    if num_cpu < num_threads:
+    if number_cpu < number_threads:
         raise ValueError(
             "Insufficient number of CPU cores assigned. Desired threads:"
-            f" {num_threads}, Actual available processors: {num_cpu}"
+            f" {number_threads}, Actual available processors: {number_cpu}"
         )
 
     # Check if there is more processes than the things to parallelize over
-    num_process = num_cpu // num_threads
-    if num_process >= num_to_parallelize:
-        num_process = num_to_parallelize
+    number_process = number_cpu // number_threads
+    if number_process >= number_to_parallelize:
+        number_process = number_to_parallelize
     
-    num_threads = num_cpu // num_process
+    number_threads = number_cpu // number_process
 
-    return num_process, num_threads
+    return number_process, number_threads
 
 
 def _to_shared_memory(smm: SharedMemoryManager, array: ndarray):
@@ -68,15 +73,40 @@ def _chunk_from_shared_memory(sm: SharedMemory, array_info: tuple, chunk: tuple)
     return ndarray((chunk_length,), array_info[2], sm.buf, offset)
 
 
-def _distribute_chunks(data_len, num_process):
-    chunk_size = data_len // num_process
-    remainder = data_len % num_process
+def _distribute_chunks(data_len, number_processes):
+    chunk_size = data_len // number_processes
+    remainder = data_len % number_processes
 
-    for i in range(num_process):
+    for i in range(number_processes):
         start = i * chunk_size + min(i, remainder)
         end = start + chunk_size + (1 if i < remainder else 0)
         yield (start, end)
 
+def _manage_processes(worker: callable, tasks, _terminate_event):
+    processes = []
+
+    for task_info in tasks:
+        process = Process(target=worker, args=(task_info,))
+        process.start()
+        processes.append(process)
+
+    if _terminate_event is not None:
+        while True:
+            if _terminate_event.is_set():
+                for process in processes:
+                    process.terminate()
+                for process in processes:
+                    process.join()
+                return
+            else:
+                all_finished = all(not process.is_alive() for process in processes)
+                if all_finished:
+                    break
+            sleep(0.35)
+    
+    for process in processes:
+        process.join()
+        process.close()
 
 # Determine if the module is executed in a Jupyter Notebook
 def _is_notebook():

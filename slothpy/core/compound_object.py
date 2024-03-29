@@ -378,39 +378,6 @@ class Compound():
         distribute the workload over the provided field values.
         """
 
-        # if autotune:
-        #     try:
-        #         temperatures = array([1])
-        #         number_threads = _auto_tune(
-        #             self._hdf5,
-        #             group,
-        #             fields,
-        #             grid,
-        #             temperatures,
-        #             states_cutoff,
-        #             number_cpu,
-        #             fields.shape[0],
-        #             grid.shape[0],
-        #             "zeeman",
-        #             num_of_states=number_of_states,
-        #             average=average,
-        #         )
-        #     except Exception as exc:
-        #         raise SltCompError(
-        #             self._hdf5,
-        #             exc,
-        #             "Failed to autotune a number of processes and threads to"
-        #             " the data within "
-        #             + BLUE
-        #             + "Group "
-        #             + RESET
-        #             + '"'
-        #             + BLUE
-        #             + f"{group}"
-        #             + RESET
-        #             + '".',
-        #         ) from None
-
         return self[group_name].zeeman_splitting(group_name, number_of_states, magnetic_fields, orientations, states_cutoff, number_cpu, number_threads, slt_save, autotune)
 
     def calculate_g_tensor_and_axes_doublet(

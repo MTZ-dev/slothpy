@@ -72,9 +72,8 @@ from slothpy._gui._monitor_gui import _run_monitor_gui
 def _calculate_zeeman_matrix(
     magnetic_momenta, states_energies, field, orientation
 ):
-    orientation = (-field * orientation)
+    orientation = -field * orientation
     magnetic_momenta = _3d_dot(magnetic_momenta, orientation)
-    states_energies = states_energies.astype(magnetic_momenta.dtype)
 
     for k in prange(magnetic_momenta.shape[0]):
         magnetic_momenta[k, k] += states_energies[k]

@@ -112,3 +112,6 @@ def _autotune(number_parallel_jobs: int, number_tasks: int, number_cpu: int):
         
         return wrapper
     return decorator
+
+def _auto_tune(): #compatibility
+    pass

@@ -15,32 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from math import factorial
-from numpy import (
-    ndarray,
-    array,
-    zeros,
-    ascontiguousarray,
-    arange,
-    tile,
-    abs,
-    mod,
-    sqrt,
-    min,
-    max,
-    power,
-    float64,
-    int64,
-    complex128,
-)
-from numpy.linalg import eigh, inv
+from numpy import (ndarray, array, zeros, ascontiguousarray, arange, tile, abs, mod, sqrt, min, max, power, float64, int64)
+from numpy.linalg import eigh, inv, norm
 from numba import jit
 from slothpy._general_utilities._constants import GE, MU_B
 from slothpy.core._slothpy_exceptions import SltInputError
-from slothpy.core._config import settings
 
 
 @jit(
-    ["complex64[:, :](complex64[:, :, :], float32[:])", "complex128[:, :](complex128[:, :, :], float64[:])"],
+    ["complex64[:, :](complex64[:, :, :], float32[:])", "complex128[:, :](complex128[:, :, :], float64[:])",
+     "complex64[:](complex64[:, :], float32[:])", "complex128[:](complex128[:, :], float64[:])",
+     "float32[:](float32[:, :], float32[:])", "float64[:](float64[:, :], float64[:])"],
     nopython=True,
     nogil=True,
     cache=True,
@@ -48,8 +33,8 @@ from slothpy.core._config import settings
     inline="always",
     parallel=True,
 )
-def _3d_dot(u, m):
-    return u[0] * m[0] + u[1] * m[1] + u[2] * m[2]
+def _3d_dot(m, xyz):
+    return m[0] * xyz[0] + m[1] * xyz[1] + m[2] * xyz[2]
 
 
 @jit("float64(float64, float64)", nopython=True, cache=True, nogil=True)
@@ -183,7 +168,7 @@ def _decomposition_of_hermitian_matrix(matrix):
     return (eigenvectors * eigenvectors.conj()).real.T * 100
 
 
-def _normalize_grid_vectors(grid: ndarray):
+def _normalize_grid_vectors(grid: ndarray): ##################### przy mag tutaj jak orientation/s jited itd.
 
     if grid.ndim != 2 or grid.shape[1] != 4:
         raise ValueError(
@@ -211,51 +196,54 @@ def _normalize_grid_vectors(grid: ndarray):
     return grid
 
 
-def _normalize_orientations(orientations: ndarray):
-
-    if orientations.ndim != 2 or orientations.shape[1] != 3:
-        raise ValueError("Orientations has to be (n,3) array in the format: [[direction_x, direction_y, direction_z],...].")
-            
+@jit(
+    ["float32[:,:](float32[:,:])", "float64[:,:](float64[:,:])"],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _normalize_orientations_comp(orientations: ndarray):
     for vector_index in range(orientations.shape[0]):
-        length = sqrt(
-            orientations[vector_index][0] ** 2
-            + orientations[vector_index][1] ** 2
-            + orientations[vector_index][2] ** 2
-        )
+        length = orientations[vector_index][0] ** 2 + orientations[vector_index][1] ** 2 + orientations[vector_index][2] ** 2
         if length == 0:
             raise ValueError("Vector of length zero detected in the input orientations.")
-        
-        orientations[vector_index] = orientations[vector_index] / length
-
+        length = array(1/sqrt(length), dtype=orientations.dtype)
+        orientations[vector_index] = orientations[vector_index] * length
     return orientations
 
 
-def _normalize_orientation(orientation):
-    try:
-        orientation = array(orientation, dtype=settings.float)
-    except Exception as exc:
-        raise SltInputError(exc) from None
+def _normalize_orientations(orientations: ndarray):
+    if orientations.ndim != 2 or orientations.shape[1] != 3:
+        raise ValueError("Orientations has to be (n,3) array in the format: [[direction_x, direction_y, direction_z],...].")      
+    return _normalize_orientations_comp(orientations)
 
-    if orientation.ndim != 1 or orientation.shape[0] != 3:
-        raise SltInputError(
-            ValueError(
-                "Orientation has to be a 1D array in the format:"
-                " [direction_x, direction_y, direction_z]."
-            )
-        )
 
-    length = sqrt(
-        orientation[0] ** 2 + orientation[1] ** 2 + orientation[2] ** 2
-    )
+@jit(
+    ["float32[:](float32[:])", "float64[:](float64[:])"],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _normalize_orientation_comp(orientation: ndarray):
+
+    length = orientation[0] ** 2 + orientation[1] ** 2 + orientation[2] ** 2
     if length == 0:
-        raise SltInputError(
-            ValueError(
-                "Vector of length zero detected in the input orientation."
-            )
-        )
-    orientation = orientation / length
-
+        raise ValueError("Vector of length zero detected in the input orientation.")
+    length = array(1/sqrt(length), dtype=orientation.dtype)
+    orientation = orientation * length
     return orientation
+
+
+def _normalize_orientation(orientation: ndarray):
+    if orientation.ndim != 1 or orientation.shape[0] != 3:
+        raise ValueError("Orientation has to be a 1D array in the format: [direction_x, direction_y, direction_z].")
+    return _normalize_orientation_comp(orientation)
 
 
 @jit(

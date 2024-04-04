@@ -184,3 +184,15 @@ def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveE
         return wrapper
     return decorator
 
+
+class KeyError(Exception):
+    """
+    A custom KeyError to overwrite the standard library to get rid of its weird str processing and quoting.
+
+    Parameters
+    ----------
+    None
+    """
+    def __init__(self, message):
+        super().__init__(message)
+

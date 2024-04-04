@@ -57,6 +57,7 @@ from slothpy.core._slothpy_exceptions import (
     SltInputError,
     SltPlotError,
     slothpy_exc,
+    KeyError,
 )
 from slothpy._general_utilities._constants import (
     RED,

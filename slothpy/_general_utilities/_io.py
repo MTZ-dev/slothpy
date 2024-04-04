@@ -20,6 +20,7 @@ from re import compile, search
 from h5py import File
 from numpy import (
     ndarray,
+    dtype,
     array,
     ascontiguousarray,
     zeros,
@@ -607,7 +608,7 @@ def _get_states_magnetic_momenta(
     pass
 
 
-def _get_states_total_angular_momenta(
+def _get_states_total_angular_momenta(#######################
     filename: str, group: str, states: ndarray = None, rotation: ndarray = None
 ):
     if any(states < 0):
@@ -641,7 +642,7 @@ def _get_states_total_angular_momenta(
     return total_angular_momenta.real
 
 
-def _get_magnetic_momenta_matrix(
+def _get_magnetic_momenta_matrix(#######################
     filename: str, group: str, states_cutoff: int, rotation: ndarray = None
 ):
     magnetic_momenta, _ = _get_soc_magnetic_momenta_and_energies_from_hdf5(
@@ -651,7 +652,7 @@ def _get_magnetic_momenta_matrix(
     return magnetic_momenta
 
 
-def _get_total_angular_momneta_matrix(
+def _get_total_angular_momneta_matrix(##############
     filename: str, group: str, states_cutoff: int, rotation: ndarray = None
 ):
     (
@@ -662,3 +663,18 @@ def _get_total_angular_momneta_matrix(
     )
 
     return total_angular_momenta
+
+
+def _get_dataset_slt_dtype(file_path, dataset_path):
+    with File(file_path, 'r') as file:
+            dataset = file[dataset_path]
+            _dtype = dataset.dtype
+            match str(_dtype)[0]:
+                case "c":
+                    return dtype(settings.complex)
+                case "f":
+                    return dtype(settings.float)
+                case "i":
+                    return dtype(settings.int)
+                case _:
+                    return _dtype

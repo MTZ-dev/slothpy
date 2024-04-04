@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
+
+os.environ['NUMBA_OPT'] = 'max'
+os.environ['NUMBA_LOOP_VECTORIZE'] = '1'
+os.environ['NUMBA_ENABLE_AVX'] = '1'
+
 from multiprocessing import current_process
 
 from .core import (

@@ -19,7 +19,7 @@ from numba import jit
 
 # TODO: Eventually incorporate it into class as classmethod probably
 @jit(["complex64[:,:,:](complex64[:,:,:], float32[:,:])", "complex128[:,:,:](complex128[:,:,:], float64[:,:])",
-      "complex64[:,:](complex64[:,:], float32[:,:])", "complex128[:,:](complex128[:,:], float64[:,:])"],
+      "float32[:,:](float32[:,:], float32[:,:])", "float64[:,:](float64[:,:], float64[:,:])"],
     nopython=True,
     nogil=True,
     cache=True,
@@ -28,26 +28,27 @@ from numba import jit
     parallel=True,
 )
 def _rotate_vector_operator(vect_oper: ndarray, rotation: ndarray):
-
     rotated_operator = zeros_like(vect_oper)
-
-    rotated_operator[0] = (
-        rotation[0, 0] * vect_oper[0]
-        + rotation[0, 1] * vect_oper[1]
-        + rotation[0, 2] * vect_oper[2]
-    )
-    rotated_operator[1] = (
-        rotation[1, 0] * vect_oper[0]
-        + rotation[1, 1] * vect_oper[1]
-        + rotation[1, 2] * vect_oper[2]
-    )
-    rotated_operator[2] = (
-        rotation[2, 0] * vect_oper[0]
-        + rotation[2, 1] * vect_oper[1]
-        + rotation[2, 2] * vect_oper[2]
-    )
+    rotated_operator[0] = rotation[0, 0] * vect_oper[0] + rotation[0, 1] * vect_oper[1] + rotation[0, 2] * vect_oper[2]
+    rotated_operator[1] = rotation[1, 0] * vect_oper[0] + rotation[1, 1] * vect_oper[1] + rotation[1, 2] * vect_oper[2]
+    rotated_operator[2] = rotation[2, 0] * vect_oper[0] + rotation[2, 1] * vect_oper[1] + rotation[2, 2] * vect_oper[2]
 
     return rotated_operator
+
+
+# TODO: Eventually incorporate it into class as classmethod probably
+@jit(["complex64[:,:](complex64[:,:,:], float32[:,:], int64)", "complex128[:,:](complex128[:,:,:], float64[:,:], int64)",
+      "float32[:](float32[:,:], float32[:,:], int64)", "float64[:](float64[:,:], float64[:,:], int64)"],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _rotate_vector_operator_component(vect_oper: ndarray, rotation: ndarray, xyz: int):
+
+    return rotation[xyz, 0] * vect_oper[0] + rotation[xyz, 1] * vect_oper[1] + rotation[xyz, 2] * vect_oper[2]
 
 
 class Rotation:

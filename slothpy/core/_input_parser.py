@@ -148,7 +148,10 @@ def validate_input(group_type: Literal["HAMILTONIAN"]):
                                     raise ValueError(f"The last (stop) state's number has to be equal or greater than the first (start) state's number: {bound_args.arguments['start_state']}.")
                         case "xyz":
                             if value not in ["xyz", "x", "y", "z"]:
-                                raise ValueError(f"The xyz argument has to be one of 'xyz', 'x', 'y', or 'z'.")
+                                value = array(value, copy=False, order='C', dtype=settings.float)
+                                if value.ndim != 1 or value.size != 3:
+                                    raise ValueError(f"The xyz argument has to be one of 'xyz', 'x', 'y', 'z' or it can be an orientation in the form [x,y,z].")
+                                value = _normalize_orientation(value)
                         case "rotation":
                             if value is not None:
                                 value = array(value, copy=False, order='C', dtype=settings.float)

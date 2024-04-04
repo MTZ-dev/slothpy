@@ -17,13 +17,14 @@
 from typing import Union
 from h5py import File, Group, Dataset
 from numpy import ndarray, array, diagonal, float32, float64
-from slothpy.core._slothpy_exceptions import slothpy_exc, SltCompError, SltSaveError
+from slothpy.core._slothpy_exceptions import slothpy_exc, SltCompError, SltSaveError, KeyError
 from slothpy.core._config import settings
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET, H_CM_1
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._system import _get_number_of_processes_threads
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
-from slothpy._angular_momentum._rotation import _rotate_vector_operator
+from slothpy._general_utilities._utils import _rotate_and_return_components, _return_components, _return_components_diag
+from slothpy._general_utilities._io import _get_dataset_slt_dtype
 from slothpy._magnetism._zeeman import _zeeman_splitting
 from slothpy._general_utilities._auto_tune import _autotune
 
@@ -135,10 +136,14 @@ class SltGroup:
     def energies(self):
         return self["STATES_ENERGIES"]
     
+    e = energies
+    
     @property
     @validate_input("HAMILTONIAN")
     def spins(self):
         return self["SPINS"]
+    
+    s = spins
     
     @property
     @validate_input("HAMILTONIAN")
@@ -160,6 +165,8 @@ class SltGroup:
     def angular_momenta(self):
         return self["ANGULAR_MOMENTA"]
     
+    l = angular_momenta
+    
     @property
     @validate_input("HAMILTONIAN")
     def lx(self):
@@ -179,6 +186,8 @@ class SltGroup:
     @validate_input("HAMILTONIAN")
     def electric_dipole_momenta(self):
         return self["ELECTRIC_DIPOLE_MOMENTA"]
+    
+    p = electric_dipole_momenta
     
     @property
     @validate_input("HAMILTONIAN")
@@ -200,6 +209,8 @@ class SltGroup:
     def total_angular_momenta(self):
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "J")
     
+    j = total_angular_momenta
+    
     @property
     @validate_input("HAMILTONIAN")
     def jx(self):
@@ -219,6 +230,8 @@ class SltGroup:
     @validate_input("HAMILTONIAN")
     def magnetic_dipole_momenta(self):
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "M")
+    
+    m = magnetic_dipole_momenta
     
     @property
     @validate_input("HAMILTONIAN")
@@ -273,32 +286,16 @@ class SltGroup:
     def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
             spin_matrices = self.spins[:, start_state:stop_state, start_state:stop_state]
-            spin_matrices = _rotate_vector_operator(spin_matrices, rotation)
-            match xyz:
-                case "x":
-                    spin_matrices =  spin_matrices[0]
-                case "y":
-                    spin_matrices = spin_matrices[1]
-                case "z":
-                    spin_matrices = spin_matrices[2]
+            spin_matrices = _rotate_and_return_components(xyz, spin_matrices, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    spin_matrices = self.spins[:, start_state:stop_state, start_state:stop_state]
-                case "x":
-                    spin_matrices = self.sx[start_state:stop_state, start_state:stop_state]
-                case "y":
-                    spin_matrices = self.sy[start_state:stop_state, start_state:stop_state]
-                case "z":
-                    spin_matrices = self.sz[start_state:stop_state, start_state:stop_state]
-        
+            spin_matrices = _return_components(self.spins, self.sx, self.sy, self.sz, xyz, start_state, stop_state)
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["SPIN_MATRICES"] = spin_matrices
-            new_group["SPIN_MATRICES"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :, :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the spin."
+            new_group["SPIN_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the spin."
             new_group.attributes["Type"] = "SPINS"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = spin_matrices.shape[1] if xyz == "xyz" else spin_matrices.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = spin_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"Spin matrices from Group '{self._group_path}'."
             if rotation is not None:
@@ -310,33 +307,17 @@ class SltGroup:
     @validate_input("HAMILTONIAN")
     def states_spins(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
-            states_spins = diagonal(self.spins[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-            states_spins = _rotate_vector_operator(states_spins, rotation)
-            match xyz:
-                case "x":
-                    states_spins =  states_spins[0]
-                case "y":
-                    states_spins = states_spins[1]
-                case "z":
-                    states_spins = states_spins[2]
+            states_spins = diagonal(self.spins[:, start_state:stop_state, start_state:stop_state].real, axis1=1, axis2=2).astype(settings.float, order="C")
+            states_spins = _rotate_and_return_components(xyz, states_spins, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    states_spins = diagonal(self.spins[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-                case "x":
-                    states_spins = diagonal(self.sx[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "y":
-                    states_spins = diagonal(self.sy[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "z":
-                    states_spins = diagonal(self.sz[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-        
+            states_spins = _return_components_diag(self.spins, self.sx, self.sy, self.sz, xyz, start_state, stop_state)
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["STATES_SPINS"] = states_spins
-            new_group["STATES_SPINS"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the states's spins."
+            new_group["STATES_SPINS"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states's spins."
             new_group.attributes["Type"] = "STATES_SPINS"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = states_spins.shape[1] if xyz == "xyz" else states_spins.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = states_spins.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_spins.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"States' expectation values of the spin from Group '{self._group_path}'."
             if rotation is not None:
@@ -349,32 +330,16 @@ class SltGroup:
     def angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
             angular_momentum_matrices = self.angular_momenta[:, start_state:stop_state, start_state:stop_state]
-            angular_momentum_matrices = _rotate_vector_operator(angular_momentum_matrices, rotation)
-            match xyz:
-                case "x":
-                    angular_momentum_matrices =  angular_momentum_matrices[0]
-                case "y":
-                    angular_momentum_matrices = angular_momentum_matrices[1]
-                case "z":
-                    angular_momentum_matrices = angular_momentum_matrices[2]
+            angular_momentum_matrices = _rotate_and_return_components(xyz, angular_momentum_matrices, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    angular_momentum_matrices = self.angular_momenta[:, start_state:stop_state, start_state:stop_state]
-                case "x":
-                    angular_momentum_matrices = self.lx[start_state:stop_state, start_state:stop_state]
-                case "y":
-                    angular_momentum_matrices = self.ly[start_state:stop_state, start_state:stop_state]
-                case "z":
-                    angular_momentum_matrices = self.lz[start_state:stop_state, start_state:stop_state]
-        
+            angular_momentum_matrices = _return_components(self.angular_momenta, self.lx, self.ly, self.lz, xyz, start_state, stop_state)
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["ANGULAR_MOMENTUM_MATRICES"] = angular_momentum_matrices
-            new_group["ANGULAR_MOMENTUM_MATRICES"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :, :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the angular momentum."
+            new_group["ANGULAR_MOMENTUM_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the angular momentum."
             new_group.attributes["Type"] = "ANGULAR_MOMENTA"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = angular_momentum_matrices.shape[1] if xyz == "xyz" else angular_momentum_matrices.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = angular_momentum_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"Angular momentum matrices from Group '{self._group_path}'."
             if rotation is not None:
@@ -386,33 +351,17 @@ class SltGroup:
     @validate_input("HAMILTONIAN")
     def states_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
-            states_angular_momenta = diagonal(self.angular_momenta[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-            states_angular_momenta = _rotate_vector_operator(states_angular_momenta, rotation)
-            match xyz:
-                case "x":
-                    states_angular_momenta =  states_angular_momenta[0]
-                case "y":
-                    states_angular_momenta = states_angular_momenta[1]
-                case "z":
-                    states_angular_momenta = states_angular_momenta[2]
+            states_angular_momenta = diagonal(self.angular_momenta[:, start_state:stop_state, start_state:stop_state].real, axis1=1, axis2=2).astype(settings.float, order="C")
+            states_angular_momenta = _rotate_and_return_components(xyz, states_angular_momenta, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    states_angular_momenta = diagonal(self.angular_momenta[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-                case "x":
-                    states_angular_momenta = diagonal(self.lx[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "y":
-                    states_angular_momenta = diagonal(self.ly[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "z":
-                    states_angular_momenta = diagonal(self.lz[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-        
+            states_angular_momenta = _return_components_diag(self.angular_momenta, self.lx, self.ly, self.lz, xyz, start_state, stop_state)       
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["STATES_ANGULAR_MOMENTA"] = states_angular_momenta
-            new_group["STATES_ANGULAR_MOMENTA"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the states's angular momenta."
+            new_group["STATES_ANGULAR_MOMENTA"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states's angular momenta."
             new_group.attributes["Type"] = "STATES_ANGULAR_MOMENTA"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = states_angular_momenta.shape[1] if xyz == "xyz" else states_angular_momenta.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = states_angular_momenta.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_angular_momenta.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"States' expectation values of the angular momentum from Group '{self._group_path}'."
             if rotation is not None:
@@ -425,32 +374,16 @@ class SltGroup:
     def electric_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
             electric_dipole_momentum_matrices = self.electric_dipole_momenta[:, start_state:stop_state, start_state:stop_state]
-            electric_dipole_momentum_matrices = _rotate_vector_operator(electric_dipole_momentum_matrices, rotation)
-            match xyz:
-                case "x":
-                    electric_dipole_momentum_matrices =  electric_dipole_momentum_matrices[0]
-                case "y":
-                    electric_dipole_momentum_matrices = electric_dipole_momentum_matrices[1]
-                case "z":
-                    electric_dipole_momentum_matrices = electric_dipole_momentum_matrices[2]
+            electric_dipole_momentum_matrices = _rotate_and_return_components(xyz, electric_dipole_momentum_matrices, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    electric_dipole_momentum_matrices = self.electric_dipole_momenta[:, start_state:stop_state, start_state:stop_state]
-                case "x":
-                    electric_dipole_momentum_matrices = self.px[start_state:stop_state, start_state:stop_state]
-                case "y":
-                    electric_dipole_momentum_matrices = self.py[start_state:stop_state, start_state:stop_state]
-                case "z":
-                    electric_dipole_momentum_matrices = self.pz[start_state:stop_state, start_state:stop_state]
-        
+            electric_dipole_momentum_matrices = _return_components(self.electric_dipole_momenta, self.px, self.py, self.pz, xyz, start_state, stop_state)
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["ELECTRIC_DIPOLE_MOMENTUM_MATRICES"] = electric_dipole_momentum_matrices
-            new_group["ELECTRIC_DIPOLE_MOMENTUM_MATRICES"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :, :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the electric dipole momentum."
+            new_group["ELECTRIC_DIPOLE_MOMENTUM_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the electric dipole momentum."
             new_group.attributes["Type"] = "ELECTRIC_DIPOLE_MOMENTA"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = electric_dipole_momentum_matrices.shape[1] if xyz == "xyz" else electric_dipole_momentum_matrices.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = electric_dipole_momentum_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"Total electric dipole matrices from Group '{self._group_path}'."
             if rotation is not None:
@@ -462,33 +395,17 @@ class SltGroup:
     @validate_input("HAMILTONIAN")
     def states_electric_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
-            states_electric_dipole_momenta = diagonal(self.electric_dipole_momenta[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-            states_electric_dipole_momenta = _rotate_vector_operator(states_electric_dipole_momenta, rotation)
-            match xyz:
-                case "x":
-                    states_electric_dipole_momenta =  states_electric_dipole_momenta[0]
-                case "y":
-                    states_electric_dipole_momenta = states_electric_dipole_momenta[1]
-                case "z":
-                    states_electric_dipole_momenta = states_electric_dipole_momenta[2]
+            states_electric_dipole_momenta = diagonal(self.electric_dipole_momenta[:, start_state:stop_state, start_state:stop_state].real, axis1=1, axis2=2).astype(settings.float, order="C")
+            states_electric_dipole_momenta = _rotate_and_return_components(xyz, states_electric_dipole_momenta, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    states_electric_dipole_momenta = diagonal(self.electric_dipole_momenta[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-                case "x":
-                    states_electric_dipole_momenta = diagonal(self.px[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "y":
-                    states_electric_dipole_momenta = diagonal(self.py[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "z":
-                    states_electric_dipole_momenta = diagonal(self.pz[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-        
+            states_electric_dipole_momenta = _return_components_diag(self.electric_dipole_momenta, self.px, self.py, self.pz, xyz, start_state, stop_state)   
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["STATES_ELECTRIC_DIPOLE_MOMENTA"] = states_electric_dipole_momenta
-            new_group["STATES_ELECTRIC_DIPOLE_MOMENTA"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the states' electric dipole momenta."
+            new_group["STATES_ELECTRIC_DIPOLE_MOMENTA"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states' electric dipole momenta."
             new_group.attributes["Type"] = "STATES_ELECTRIC_DIPOLE_MOMENTA"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = states_electric_dipole_momenta.shape[1] if xyz == "xyz" else states_electric_dipole_momenta.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = states_electric_dipole_momenta.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_electric_dipole_momenta.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"States' expectation values of the electric dipole momentum from Group '{self._group_path}'."
             if rotation is not None:
@@ -501,32 +418,16 @@ class SltGroup:
     def total_angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
             total_angular_momentum_matrices = self.total_angular_momenta[:, start_state:stop_state, start_state:stop_state]
-            total_angular_momentum_matrices = _rotate_vector_operator(total_angular_momentum_matrices, rotation)
-            match xyz:
-                case "x":
-                    total_angular_momentum_matrices =  total_angular_momentum_matrices[0]
-                case "y":
-                    total_angular_momentum_matrices = total_angular_momentum_matrices[1]
-                case "z":
-                    total_angular_momentum_matrices = total_angular_momentum_matrices[2]
+            total_angular_momentum_matrices = _rotate_and_return_components(xyz, total_angular_momentum_matrices, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    total_angular_momentum_matrices = self.total_angular_momenta[:, start_state:stop_state, start_state:stop_state]
-                case "x":
-                    total_angular_momentum_matrices = self.jx[start_state:stop_state, start_state:stop_state]
-                case "y":
-                    total_angular_momentum_matrices = self.jy[start_state:stop_state, start_state:stop_state]
-                case "z":
-                    total_angular_momentum_matrices = self.jz[start_state:stop_state, start_state:stop_state]
-        
+            total_angular_momentum_matrices = _return_components(self.total_angular_momenta, self.jx, self.jy, self.jz, xyz, start_state, stop_state)
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["TOTAL_ANGULAR_MOMENTUM_MATRICES"] = total_angular_momentum_matrices
-            new_group["TOTAL_ANGULAR_MOMENTUM_MATRICES"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :, :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the total angular momentum."
+            new_group["TOTAL_ANGULAR_MOMENTUM_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the total angular momentum."
             new_group.attributes["Type"] = "TOTAL_ANGULAR_MOMENTA"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = total_angular_momentum_matrices.shape[1] if xyz == "xyz" else total_angular_momentum_matrices.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = total_angular_momentum_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"Total angular momentum matrices from Group '{self._group_path}'."
             if rotation is not None:
@@ -538,33 +439,17 @@ class SltGroup:
     @validate_input("HAMILTONIAN")
     def states_total_angular_momentum(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
-            states_total_angular_momenta = diagonal(self.total_angular_momenta[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-            states_total_angular_momenta = _rotate_vector_operator(states_total_angular_momenta, rotation)
-            match xyz:
-                case "x":
-                    states_total_angular_momenta =  states_total_angular_momenta[0]
-                case "y":
-                    states_total_angular_momenta = states_total_angular_momenta[1]
-                case "z":
-                    states_total_angular_momenta = states_total_angular_momenta[2]
+            states_total_angular_momenta = diagonal(self.total_angular_momenta[:, start_state:stop_state, start_state:stop_state].real, axis1=1, axis2=2).astype(settings.float, order="C")
+            states_total_angular_momenta = _rotate_and_return_components(xyz, states_total_angular_momenta, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    states_total_angular_momenta = diagonal(self.total_angular_momenta[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-                case "x":
-                    states_total_angular_momenta = diagonal(self.jx[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "y":
-                    states_total_angular_momenta = diagonal(self.jy[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "z":
-                    states_total_angular_momenta = diagonal(self.jz[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-        
+            states_total_angular_momenta = _return_components(self.total_angular_momenta, self.jx, self.jy, self.jz, xyz, start_state, stop_state)
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["STATES_TOTAL_ANGULAR_MOMENTA"] = states_total_angular_momenta
-            new_group["STATES_TOTAL_ANGULAR_MOMENTA"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the states' total angular momenta."
+            new_group["STATES_TOTAL_ANGULAR_MOMENTA"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states' total angular momenta."
             new_group.attributes["Type"] = "STATES_TOTAL_ANGULAR_MOMENTA"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = states_total_angular_momenta.shape[1] if xyz == "xyz" else states_total_angular_momenta.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = states_total_angular_momenta.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_total_angular_momenta.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"States' expectation values of the total angular momentum from Group '{self._group_path}'."
             if rotation is not None:
@@ -577,32 +462,16 @@ class SltGroup:
     def magnetic_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
             magnetic_dipole_momentum_matrices = self.magnetic_dipole_momenta[:, start_state:stop_state, start_state:stop_state]
-            magnetic_dipole_momentum_matrices = _rotate_vector_operator(magnetic_dipole_momentum_matrices, rotation)
-            match xyz:
-                case "x":
-                    magnetic_dipole_momentum_matrices =  magnetic_dipole_momentum_matrices[0]
-                case "y":
-                    magnetic_dipole_momentum_matrices = magnetic_dipole_momentum_matrices[1]
-                case "z":
-                    magnetic_dipole_momentum_matrices = magnetic_dipole_momentum_matrices[2]
+            magnetic_dipole_momentum_matrices = _rotate_and_return_components(xyz, magnetic_dipole_momentum_matrices, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    magnetic_dipole_momentum_matrices = self.magnetic_dipole_momenta[:, start_state:stop_state, start_state:stop_state]
-                case "x":
-                    magnetic_dipole_momentum_matrices = self.mx[start_state:stop_state, start_state:stop_state]
-                case "y":
-                    magnetic_dipole_momentum_matrices = self.my[start_state:stop_state, start_state:stop_state]
-                case "z":
-                    magnetic_dipole_momentum_matrices = self.mz[start_state:stop_state, start_state:stop_state]
-        
+            magnetic_dipole_momentum_matrices = _return_components(self.magnetic_dipole_momenta, self.mx, self.my, self.mz, xyz, start_state, stop_state)
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["MAGNETIC_DIPOLE_MOMENTUM_MATRICES"] = magnetic_dipole_momentum_matrices
-            new_group["MAGNETIC_DIPOLE_MOMENTUM_MATRICES"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :, :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the magnetic dipole momentum."
+            new_group["MAGNETIC_DIPOLE_MOMENTUM_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the magnetic dipole momentum."
             new_group.attributes["Type"] = "MAGNETIC_DIPOLE_MOMENTA"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = magnetic_dipole_momentum_matrices.shape[1] if xyz == "xyz" else magnetic_dipole_momentum_matrices.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = magnetic_dipole_momentum_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"Total magnetic dipole matrices from Group '{self._group_path}'."
             if rotation is not None:
@@ -614,33 +483,17 @@ class SltGroup:
     @validate_input("HAMILTONIAN")
     def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
-            states_magnetic_dipole_momenta = diagonal(self.magnetic_dipole_momenta[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-            states_magnetic_dipole_momenta = _rotate_vector_operator(states_magnetic_dipole_momenta, rotation)
-            match xyz:
-                case "x":
-                    states_magnetic_dipole_momenta =  states_magnetic_dipole_momenta[0]
-                case "y":
-                    states_magnetic_dipole_momenta = states_magnetic_dipole_momenta[1]
-                case "z":
-                    states_magnetic_dipole_momenta = states_magnetic_dipole_momenta[2]
+            states_magnetic_dipole_momenta = diagonal(self.magnetic_dipole_momenta[:, start_state:stop_state, start_state:stop_state].real, axis1=1, axis2=2).astype(settings.float, order="C")
+            states_magnetic_dipole_momenta = _rotate_and_return_components(xyz, states_magnetic_dipole_momenta, rotation)
         else:
-            match xyz:
-                case "xyz":
-                    states_magnetic_dipole_momenta = diagonal(self.magnetic_dipole_momenta[:, start_state:stop_state, start_state:stop_state], axis1=1, axis2=2).astype(settings.float, order="C")
-                case "x":
-                    states_magnetic_dipole_momenta = diagonal(self.sx[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "y":
-                    states_magnetic_dipole_momenta = diagonal(self.sy[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-                case "z":
-                    states_magnetic_dipole_momenta = diagonal(self.sz[start_state:stop_state, start_state:stop_state]).astype(settings.float, order="C")
-        
+            states_magnetic_dipole_momenta = _return_components_diag(self.magnetic_dipole_momenta, self.mx, self.my, self.mz, xyz, start_state, stop_state) 
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save, exists=False)
             new_group["STATES_MAGNETIC_DIPOLE_MOMENTA"] = states_magnetic_dipole_momenta
-            new_group["STATES_MAGNETIC_DIPOLE_MOMENTA"].attributes["Description"] = f"{xyz.upper()}{' [(x-0, y-1, z-2), :]' if xyz == 'xyz' else ''} component{'s' if xyz == 'xyz' else ''} of the states' magnetic dipole momenta."
+            new_group["STATES_MAGNETIC_DIPOLE_MOMENTA"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states' magnetic dipole momenta."
             new_group.attributes["Type"] = "STATES_MAGNETIC_DIPOLE_MOMENTA"
-            new_group.attributes["Kind"] = f"{xyz.upper()}"
-            new_group.attributes["States"] = states_magnetic_dipole_momenta.shape[1] if xyz == "xyz" else states_magnetic_dipole_momenta.shape[0]
+            new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
+            new_group.attributes["States"] = states_magnetic_dipole_momenta.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_magnetic_dipole_momenta.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
             new_group.attributes["Description"] = f"States' expectation values of the magnetic dipole momentum from Group '{self._group_path}'."
             if rotation is not None:
@@ -698,7 +551,6 @@ class SltGroup:
                 new_group["zeeman_splitting"].attributes["Description"] = f"Dataset containing Zeeman splitting in the form {'[fields, energies]' if average else '[orientations, fields, energies]'}."
                 new_group["magnetic_fields"].attributes["Description"] = "Dataset containing magnetic field (T) values used in the simulation."
                 new_group["orientations"].attributes["Description"] = "Dataset containing magnetic fields' orientation grid used in the simulation."
-
             except Exception as exc:
                 raise SltSaveError(self._hdf5, exc, f"Failed to save Zeeman splitting to {BLUE}Group{RESET} '{group_name}'.") from None
 
@@ -768,9 +620,7 @@ class SltDataset:
         """
         Property to mimic h5py's shape access convention.
         """
-        with File(self._hdf5, 'r') as file:
-            dataset = file[self._dataset_path]
-            return dataset.dtype
+        return _get_dataset_slt_dtype(self._hdf5, self._dataset_path)
 
 
 class SltDatasetSLP():
@@ -789,10 +639,26 @@ class SltDatasetSLP():
         
     @slothpy_exc("SltFileError")
     def __repr__(self):
-        with File(self._hdf5, 'r+') as file:
-            file[self._dataset_path]
-            return f"<{PURPLE}SltDataset{self._slp}{self._xyz_dict[self._xyz]}{RESET} from '{self._dataset_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
+        return f"<{PURPLE}SltDataset{self._slp}{self._xyz_dict[self._xyz] if self._xyz is not None else ''}{RESET} from '{self._dataset_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
+
+    @property
+    def shape(self):
+        """
+        Property to mimic h5py's shape access convention.
+        """
+        with File(self._hdf5, 'r') as file:
+            dataset = file[self._dataset_path]
+            if self._xyz in [0,1,2]:
+                return dataset.shape[1:]
+            else:
+                return dataset.shape
         
+    @property
+    def dtype(self):
+        """
+        Property to mimic h5py's shape access convention.
+        """
+        return _get_dataset_slt_dtype(self._hdf5, self._dataset_path)
 
 class SltDatasetJM():
     def __init__(self, hdf5_file_path, group_path, jm, xyz=None):
@@ -810,8 +676,8 @@ class SltDatasetJM():
                 dataset_s = group["SPINS"].astype(settings.complex)[self._xyz, *(slice_,) if isinstance(slice_, slice) else slice_]
                 dataset_l = group["ANGULAR_MOMENTA"].astype(settings.complex)[self._xyz, *(slice_,) if isinstance(slice_, slice) else slice_]
             else:
-                dataset_s = group["SPINS"][slice_].astype(settings.complex)
-                dataset_l = group["ANGULAR_MOMENTA"][slice_].astype(settings.complex)
+                dataset_s = group["SPINS"].astype(settings.complex)[slice_]
+                dataset_l = group["ANGULAR_MOMENTA"].astype(settings.complex)[slice_]
             if self._jm == "J":
                 return _total_angular_momenta_from_spins_angular_momenta(dataset_s, dataset_l)
             elif self._jm == "M":
@@ -821,6 +687,23 @@ class SltDatasetJM():
         
     @slothpy_exc("SltFileError")
     def __repr__(self):
-        with File(self._hdf5, 'r+') as file:
-            file[self._group_path]
-            return f"<{PURPLE}SltDataset{self._jm}{self._xyz_dict[self._xyz]}{RESET} from '{self._dataset_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
+        return f"<{PURPLE}SltDataset{self._jm}{self._xyz_dict[self._xyz] if self._xyz is not None else ''}{RESET} from {BLUE}Group{RESET} '{self._group_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
+    
+    @property
+    def shape(self):
+        """
+        Property to mimic h5py's shape access convention.
+        """
+        with File(self._hdf5, 'r') as file:
+            dataset = file[self._group_path]["SPINS"]
+            if self._xyz in [0,1,2]:
+                return dataset.shape[1:]
+            else:
+                return dataset.shape
+        
+    @property
+    def dtype(self):
+        """
+        Property to mimic h5py's shape access convention.
+        """
+        return _get_dataset_slt_dtype(self._hdf5, f"{self._group_path}/SPINS")

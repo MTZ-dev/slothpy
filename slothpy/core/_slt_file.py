@@ -248,22 +248,10 @@ class SltGroup:
     def mz(self):
         return SltDatasetJM(self._hdf5, f"{self._group_path}", "M", 2)
 
-    @validate_input("HAMILTONIAN")   
+    @validate_input("HAMILTONIAN")
     def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None):
-        try:
-            energies_cm_1 = self.energies[start_state:stop_state] * H_CM_1
-        except Exception as exc:
-            raise SltCompError(self._hdf5, exc, f"Failed to compute energies in cm-1 from {BLUE}Group{RESET}: '{self._hdf5}'.")
-        if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
-            new_group["STATES_ENERGIES_CM_1"] = energies_cm_1
-            new_group["STATES_ENERGIES_CM_1"].attributes["Description"] = "States' energies in cm-1."
-            new_group.attributes["Type"] = "ENERGIES"
-            new_group.attributes["Kind"] = "CM_1"
-            new_group.attributes["States"] = energies_cm_1.shape[0]
-            new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = "States' energies in cm-1."
-        return energies_cm_1
+        from slothpy.core._delayed_methods import SltStatesEnergiesCm1
+        return SltStatesEnergiesCm1(self, start_state, stop_state, slt_save)
     
     @validate_input("HAMILTONIAN")
     def states_energies_au(self, start_state=0, stop_state=0, slt_save=None):

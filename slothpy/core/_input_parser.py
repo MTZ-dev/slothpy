@@ -20,22 +20,10 @@ from typing import Literal
 from os import cpu_count
 from numpy import array, allclose, identity
 from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError
-from slothpy._general_utilities._grids_over_hemisphere import (
-    lebedev_laikov_grid,
-)
-from slothpy._general_utilities._math_expresions import (
-    _normalize_grid_vectors,
-    _normalize_orientations,
-    _normalize_orientation,
-)
-from slothpy._general_utilities._constants import (
-    GREEN,
-    BLUE,
-    RESET,
-)
-from slothpy._general_utilities._io import (
-    _group_exists,
-)
+from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid
+from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
+from slothpy._general_utilities._constants import GREEN, BLUE, RESET
+from slothpy._general_utilities._io import _group_exists
 from slothpy.core._config import settings
 
 def validate_input(group_type: Literal["HAMILTONIAN"]):
@@ -58,7 +46,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"]):
                 raise SltReadError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_path}' is not a valid SlothPy group.") from None
 
             if self.attributes["Type"] != group_type:
-                raise SltReadError(self._hdf5, None, f"Wrong group type: {self.attributes['Type']} of {BLUE}Group{RESET}: '{self._group_path}' from the {GREEN}File{RESET}: '{self._hdf5}'. Expected '{group_type}' type.")
+                raise SltReadError(self._hdf5, None, f"Wrong group type: '{self.attributes['Type']}' of {BLUE}Group{RESET}: '{self._group_path}' from the {GREEN}File{RESET}: '{self._hdf5}'. Expected '{group_type}' type.")
 
             if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:
                 if _group_exists(self._hdf5, bound_args.arguments["slt_save"]):

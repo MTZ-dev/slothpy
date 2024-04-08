@@ -43,8 +43,9 @@ from slothpy._general_utilities._system import (
     _to_shared_memory,
     _from_shared_memory,
     _chunk_from_shared_memory,
+    _from_shared_memory_to_array,
     _distribute_chunks,
-    _manage_processes,
+    _slt_processes_pool,
 )
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -197,11 +198,10 @@ def _zeeman_splitting(
         magnetic_fields_info = _to_shared_memory(smm, magnetic_fields)
         orientations_info = _to_shared_memory(smm, orientations)
 
-        tasks = [(states_energies_info, magnetic_momenta_info, magnetic_fields_info, orientations_info, _progress_array_info, _zeeman_array_info, chunk, process_index, number_of_states, average, number_threads) for process_index, chunk in enumerate(magnetic_fields_chunks)]
-        _manage_processes(_zeeman_splitting_process_wrapper, tasks, _terminate_event)
+        jobs = [(states_energies_info, magnetic_momenta_info, magnetic_fields_info, orientations_info, _progress_array_info, _zeeman_array_info, chunk, process_index, number_of_states, average, number_threads) for process_index, chunk in enumerate(magnetic_fields_chunks)]
+        _slt_processes_pool(_zeeman_splitting_process_wrapper, jobs, _terminate_event)
 
-        sm_zeeman_array = SharedMemory(_zeeman_array_info[0])
-        zeeman_array = array(_from_shared_memory(sm_zeeman_array, _zeeman_array_info), copy=True, order="C")
+        zeeman_array = _from_shared_memory_to_array(_zeeman_array_info)
         if not average:
             zeeman_array = zeeman_array.transpose((1,0,2))
 

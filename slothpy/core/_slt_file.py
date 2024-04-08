@@ -24,13 +24,13 @@ from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._system import _get_number_of_processes_threads
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
 from slothpy._general_utilities._utils import _rotate_and_return_components, _return_components, _return_components_diag
-from slothpy._general_utilities._io import _get_dataset_slt_dtype
+from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
 from slothpy._magnetism._zeeman import _zeeman_splitting
 from slothpy._general_utilities._auto_tune import _autotune
 
 class SltAttributes:
-    def __init__(self, hdf5_file_path, item_path):
-        self._hdf5 = hdf5_file_path
+    def __init__(self, hdf5_file, item_path):
+        self._hdf5 = hdf5_file
         self._item_path = item_path
 
     @slothpy_exc("SltFileError")
@@ -62,15 +62,15 @@ class SltAttributes:
 
 
 class SltGroup:
-    def __init__(self, hdf5_file_path, group_path, exists=True):
-        self._hdf5 = hdf5_file_path
-        self._group_path = group_path
-        self._exists = exists
-        self.attributes = SltAttributes(hdf5_file_path, group_path)
+    def __init__(self, hdf5_file, group_name):
+        self._hdf5 = hdf5_file
+        self._group_name = group_name
+        self._exists = _group_exists(hdf5_file, group_name)
+        self.attributes = SltAttributes(hdf5_file, group_name)
 
     @slothpy_exc("SltFileError")
     def __getitem__(self, key):
-        full_path = f"{self._group_path}/{key}"
+        full_path = f"{self._group_name}/{key}"
         with File(self._hdf5, 'r') as file:
             if full_path in file:
                 item = file[full_path]
@@ -79,21 +79,21 @@ class SltGroup:
                 elif isinstance(item, Group):
                     raise KeyError(f"Hierarchy only up to {BLUE}Group{RESET}/{PURPLE}Dataset{RESET} or standalone {PURPLE}Datasets{RESET} are supported in .slt files.")
             else:
-                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' doesn't exist in the {BLUE}Group{RESET} '{self._group_path}'.")
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' doesn't exist in the {BLUE}Group{RESET} '{self._group_name}'.")
 
     @slothpy_exc("SltSaveError")        
     def __setitem__(self, key, value):
         with File(self._hdf5, 'r+') as file:
-            group = file.require_group(self._group_path)
+            group = file.require_group(self._group_name)
             self._exists = True
             if key in group:
-                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' already exists within the {BLUE}Group{RESET} '{self._group_path}'. Delete it manually to ensure your data safety.")
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' already exists within the {BLUE}Group{RESET} '{self._group_name}'. Delete it manually to ensure your data safety.")
             group.create_dataset(key, data=array(value))
 
     @slothpy_exc("SltFileError")
     def __repr__(self): 
         if self._exists:
-            return f"<{BLUE}SltGroup{RESET} '{self._group_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
+            return f"<{BLUE}SltGroup{RESET} '{self._group_name}' in {GREEN}File{RESET} '{self._hdf5}'.>"
         else:
             raise RuntimeError(f"This is a {BLUE}Proxy Group{RESET} and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
 
@@ -101,8 +101,8 @@ class SltGroup:
     def __str__(self):
         if self._exists:
             with File(self._hdf5, 'r+') as file:
-                item = file[self._group_path]
-                representation = f"{RED}Group{RESET}: {BLUE}{self._group_path}{RESET} from File: {GREEN}{self._hdf5}{RESET}"
+                item = file[self._group_name]
+                representation = f"{RED}Group{RESET}: {BLUE}{self._group_name}{RESET} from File: {GREEN}{self._hdf5}{RESET}"
                 for attribute_name, attribute_text in item.attrs.items():
                     representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
                 representation += "\nDatasets: \n"
@@ -119,9 +119,9 @@ class SltGroup:
     @slothpy_exc("SltFileError")
     def __delitem__(self, key):
         with File(self._hdf5, 'r+') as file:
-            group = file[self._group_path]
+            group = file[self._group_name]
             if key not in group:
-                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' does not exist in the {BLUE}Group{RESET} '{self._group_path}'.")
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' does not exist in the {BLUE}Group{RESET} '{self._group_name}'.")
             del group[key]
         
     @property
@@ -148,17 +148,17 @@ class SltGroup:
     @property
     @validate_input("HAMILTONIAN")
     def sx(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/SPINS", "S", 0)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 0)
     
     @property
     @validate_input("HAMILTONIAN")
     def sy(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/SPINS", "S", 1)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 1)
     
     @property
     @validate_input("HAMILTONIAN")
     def sz(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/SPINS", "S", 2)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 2)
     
     @property
     @validate_input("HAMILTONIAN")
@@ -170,17 +170,17 @@ class SltGroup:
     @property
     @validate_input("HAMILTONIAN")
     def lx(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/ANGULAR_MOMENTA", "L", 0)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 0)
     
     @property
     @validate_input("HAMILTONIAN")
     def ly(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/ANGULAR_MOMENTA", "L", 1)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 1)
     
     @property
     @validate_input("HAMILTONIAN")
     def lz(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/ANGULAR_MOMENTA", "L", 2)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 2)
     
     @property
     @validate_input("HAMILTONIAN")
@@ -192,61 +192,61 @@ class SltGroup:
     @property
     @validate_input("HAMILTONIAN")
     def px(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/ELECTRIC_DIPOLE_MOMENTA", "P", 0)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 0)
     
     @property
     @validate_input("HAMILTONIAN")
     def py(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/ELECTRIC_DIPOLE_MOMENTA", "P", 1)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 1)
     
     @property
     @validate_input("HAMILTONIAN")
     def pz(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_path}/ELECTRIC_DIPOLE_MOMENTA", "P", 2)
+        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 2)
     
     @property
     @validate_input("HAMILTONIAN")
     def total_angular_momenta(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_path}", "J")
+        return SltDatasetJM(self._hdf5, f"{self._group_name}", "J")
     
     j = total_angular_momenta
     
     @property
     @validate_input("HAMILTONIAN")
     def jx(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_path}", "J", 0)
+        return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 0)
     
     @property
     @validate_input("HAMILTONIAN")
     def jy(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_path}", "J", 1)
+        return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 1)
     
     @property
     @validate_input("HAMILTONIAN")
     def jz(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_path}", "J", 2)
+        return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 2)
     
     @property
     @validate_input("HAMILTONIAN")
     def magnetic_dipole_momenta(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_path}", "M")
+        return SltDatasetJM(self._hdf5, f"{self._group_name}", "M")
     
     m = magnetic_dipole_momenta
     
     @property
     @validate_input("HAMILTONIAN")
     def mx(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_path}", "M", 0)
+        return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 0)
     
     @property
     @validate_input("HAMILTONIAN")
     def my(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_path}", "M", 1)
+        return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 1)
     
     @property
     @validate_input("HAMILTONIAN")
     def mz(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_path}", "M", 2)
+        return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 2)
 
     @validate_input("HAMILTONIAN")
     def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None):
@@ -260,7 +260,7 @@ class SltGroup:
         except Exception as exc:
             raise SltCompError(self._hdf5, exc, f"Failed to compute energies in a.u. from {BLUE}Group{RESET}: '{self._hdf5}'.")
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["STATES_ENERGIES_AU"] = energies_au
             new_group["STATES_ENERGIES_AU"].attributes["Description"] = "States' energies in a.u.."
             new_group.attributes["Type"] = "ENERGIES"
@@ -278,14 +278,14 @@ class SltGroup:
         else:
             spin_matrices = _return_components(self.spins, self.sx, self.sy, self.sz, xyz, start_state, stop_state)
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["SPIN_MATRICES"] = spin_matrices
             new_group["SPIN_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the spin."
             new_group.attributes["Type"] = "SPINS"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = spin_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"Spin matrices from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"Spin matrices from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the spin components."
@@ -300,14 +300,14 @@ class SltGroup:
         else:
             states_spins = _return_components_diag(self.spins, self.sx, self.sy, self.sz, xyz, start_state, stop_state)
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["STATES_SPINS"] = states_spins
             new_group["STATES_SPINS"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states's spins."
             new_group.attributes["Type"] = "STATES_SPINS"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = states_spins.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_spins.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"States' expectation values of the spin from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"States' expectation values of the spin from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the spin components."
@@ -322,14 +322,14 @@ class SltGroup:
         else:
             angular_momentum_matrices = _return_components(self.angular_momenta, self.lx, self.ly, self.lz, xyz, start_state, stop_state)
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["ANGULAR_MOMENTUM_MATRICES"] = angular_momentum_matrices
             new_group["ANGULAR_MOMENTUM_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the angular momentum."
             new_group.attributes["Type"] = "ANGULAR_MOMENTA"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = angular_momentum_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"Angular momentum matrices from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"Angular momentum matrices from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the angular momentum components."
@@ -344,14 +344,14 @@ class SltGroup:
         else:
             states_angular_momenta = _return_components_diag(self.angular_momenta, self.lx, self.ly, self.lz, xyz, start_state, stop_state)       
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["STATES_ANGULAR_MOMENTA"] = states_angular_momenta
             new_group["STATES_ANGULAR_MOMENTA"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states's angular momenta."
             new_group.attributes["Type"] = "STATES_ANGULAR_MOMENTA"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = states_angular_momenta.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_angular_momenta.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"States' expectation values of the angular momentum from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"States' expectation values of the angular momentum from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the angular momentum components."
@@ -366,14 +366,14 @@ class SltGroup:
         else:
             electric_dipole_momentum_matrices = _return_components(self.electric_dipole_momenta, self.px, self.py, self.pz, xyz, start_state, stop_state)
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["ELECTRIC_DIPOLE_MOMENTUM_MATRICES"] = electric_dipole_momentum_matrices
             new_group["ELECTRIC_DIPOLE_MOMENTUM_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the electric dipole momentum."
             new_group.attributes["Type"] = "ELECTRIC_DIPOLE_MOMENTA"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = electric_dipole_momentum_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"Total electric dipole matrices from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"Total electric dipole matrices from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the electric dipole momentum components."
@@ -388,14 +388,14 @@ class SltGroup:
         else:
             states_electric_dipole_momenta = _return_components_diag(self.electric_dipole_momenta, self.px, self.py, self.pz, xyz, start_state, stop_state)   
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["STATES_ELECTRIC_DIPOLE_MOMENTA"] = states_electric_dipole_momenta
             new_group["STATES_ELECTRIC_DIPOLE_MOMENTA"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states' electric dipole momenta."
             new_group.attributes["Type"] = "STATES_ELECTRIC_DIPOLE_MOMENTA"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = states_electric_dipole_momenta.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_electric_dipole_momenta.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"States' expectation values of the electric dipole momentum from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"States' expectation values of the electric dipole momentum from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the electric dipole momentum components."
@@ -410,14 +410,14 @@ class SltGroup:
         else:
             total_angular_momentum_matrices = _return_components(self.total_angular_momenta, self.jx, self.jy, self.jz, xyz, start_state, stop_state)
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["TOTAL_ANGULAR_MOMENTUM_MATRICES"] = total_angular_momentum_matrices
             new_group["TOTAL_ANGULAR_MOMENTUM_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the total angular momentum."
             new_group.attributes["Type"] = "TOTAL_ANGULAR_MOMENTA"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = total_angular_momentum_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"Total angular momentum matrices from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"Total angular momentum matrices from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the total angular momentum components."
@@ -432,14 +432,14 @@ class SltGroup:
         else:
             states_total_angular_momenta = _return_components(self.total_angular_momenta, self.jx, self.jy, self.jz, xyz, start_state, stop_state)
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["STATES_TOTAL_ANGULAR_MOMENTA"] = states_total_angular_momenta
             new_group["STATES_TOTAL_ANGULAR_MOMENTA"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states' total angular momenta."
             new_group.attributes["Type"] = "STATES_TOTAL_ANGULAR_MOMENTA"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = states_total_angular_momenta.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_total_angular_momenta.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"States' expectation values of the total angular momentum from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"States' expectation values of the total angular momentum from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the total angular momentum components."
@@ -454,14 +454,14 @@ class SltGroup:
         else:
             magnetic_dipole_momentum_matrices = _return_components(self.magnetic_dipole_momenta, self.mx, self.my, self.mz, xyz, start_state, stop_state)
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["MAGNETIC_DIPOLE_MOMENTUM_MATRICES"] = magnetic_dipole_momentum_matrices
             new_group["MAGNETIC_DIPOLE_MOMENTUM_MATRICES"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the magnetic dipole momentum."
             new_group.attributes["Type"] = "MAGNETIC_DIPOLE_MOMENTA"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = magnetic_dipole_momentum_matrices.shape[1]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"Total magnetic dipole matrices from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"Total magnetic dipole matrices from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the magnetic dipole momentum components."
@@ -476,14 +476,14 @@ class SltGroup:
         else:
             states_magnetic_dipole_momenta = _return_components_diag(self.magnetic_dipole_momenta, self.mx, self.my, self.mz, xyz, start_state, stop_state) 
         if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save, exists=False)
+            new_group = SltGroup(self._hdf5, slt_save)
             new_group["STATES_MAGNETIC_DIPOLE_MOMENTA"] = states_magnetic_dipole_momenta
             new_group["STATES_MAGNETIC_DIPOLE_MOMENTA"].attributes["Description"] = f"{str(xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(xyz, str) and xyz == 'xyz' else ''} component{'s' if isinstance(xyz, str) and xyz == 'xyz' else ''} of the states' magnetic dipole momenta."
             new_group.attributes["Type"] = "STATES_MAGNETIC_DIPOLE_MOMENTA"
             new_group.attributes["Kind"] = f"{xyz.upper() if isinstance(xyz, str) else 'ORIENTATIONAL'}"
             new_group.attributes["States"] = states_magnetic_dipole_momenta.shape[1] if xyz == "xyz" or isinstance(xyz, ndarray) else states_magnetic_dipole_momenta.shape[0]
             new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = f"States' expectation values of the magnetic dipole momentum from Group '{self._group_path}'."
+            new_group.attributes["Description"] = f"States' expectation values of the magnetic dipole momentum from Group '{self._group_name}'."
             if rotation is not None:
                 new_group["ROTATION"] = rotation
                 new_group["ROTATION"].attributes["Description"] = "Rotation used to rotate the magnetic dipole momentum components."
@@ -520,7 +520,7 @@ class SltGroup:
         try:
             zeeman_array = _zeeman_splitting(states_energies, magnetic_momenta, number_of_states, magnetic_fields, orientations, number_processes, number_threads, _zeeman_array_info, _progress_array_info)
         except Exception as exc:
-            raise SltCompError(self._hdf5, exc, f"Failed to compute Zeeman splitting from {BLUE}Group{RESET} '{self._group_path}'.") from None
+            raise SltCompError(self._hdf5, exc, f"Failed to compute Zeeman splitting from {BLUE}Group{RESET} '{self._group_name}'.") from None
 
         if slt_save is not None:
             try:
@@ -528,7 +528,7 @@ class SltGroup:
                     average = True
                 else:
                     average = False
-                new_group = SltGroup(self._hdf5, slt_save, exists=False)
+                new_group = SltGroup(self._hdf5, slt_save)
                 new_group["zeeman_splitting"] = zeeman_array
                 new_group["magnetic_fields"] = magnetic_fields
                 new_group["orientations"] = orientations
@@ -651,7 +651,7 @@ class SltDatasetSLP():
 class SltDatasetJM():
     def __init__(self, hdf5_file_path, group_path, jm, xyz=None):
         self._hdf5 = hdf5_file_path
-        self._group_path = group_path
+        self._group_name = group_path
         self._jm = jm
         self._xyz = xyz
         self._xyz_dict = {0: "x", 1: "y", 2: "z"}
@@ -659,7 +659,7 @@ class SltDatasetJM():
     @slothpy_exc("SltFileError")
     def __getitem__(self, slice_):
         with File(self._hdf5, 'r') as file:
-            group = file[self._group_path]
+            group = file[self._group_name]
             if self._xyz is not None:
                 dataset_s = group["SPINS"].astype(settings.complex)[self._xyz, *(slice_,) if isinstance(slice_, slice) else slice_]
                 dataset_l = group["ANGULAR_MOMENTA"].astype(settings.complex)[self._xyz, *(slice_,) if isinstance(slice_, slice) else slice_]
@@ -675,7 +675,7 @@ class SltDatasetJM():
         
     @slothpy_exc("SltFileError")
     def __repr__(self):
-        return f"<{PURPLE}SltDataset{self._jm}{self._xyz_dict[self._xyz] if self._xyz is not None else ''}{RESET} from {BLUE}Group{RESET} '{self._group_path}' in {GREEN}File{RESET} '{self._hdf5}'.>"
+        return f"<{PURPLE}SltDataset{self._jm}{self._xyz_dict[self._xyz] if self._xyz is not None else ''}{RESET} from {BLUE}Group{RESET} '{self._group_name}' in {GREEN}File{RESET} '{self._hdf5}'.>"
     
     @property
     def shape(self):
@@ -683,7 +683,7 @@ class SltDatasetJM():
         Property to mimic h5py's shape access convention.
         """
         with File(self._hdf5, 'r') as file:
-            dataset = file[self._group_path]["SPINS"]
+            dataset = file[self._group_name]["SPINS"]
             if self._xyz in [0,1,2]:
                 return dataset.shape[1:]
             else:
@@ -694,4 +694,4 @@ class SltDatasetJM():
         """
         Property to mimic h5py's shape access convention.
         """
-        return _get_dataset_slt_dtype(self._hdf5, f"{self._group_path}/SPINS")
+        return _get_dataset_slt_dtype(self._hdf5, f"{self._group_name}/SPINS")

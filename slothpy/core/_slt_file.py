@@ -508,41 +508,42 @@ class SltGroup:
         states_energies = self.energies[:states_cutoff]
         magnetic_momenta = self.magnetic_dipole_momenta[:, :states_cutoff, :states_cutoff]
 
-        number_processes, number_threads = _get_number_of_processes_threads(number_cpu, number_threads, magnetic_fields.shape[0])
+        # number_processes, number_threads = _get_number_of_processes_threads(number_cpu, number_threads, magnetic_fields.shape[0])
 
-        if autotune == True:
-            try:
-                zeeman_splitting_autotuned = _autotune(magnetic_fields.shape[0], orientations.shape[0], number_cpu)(_zeeman_splitting)
-                number_processes, number_threads = zeeman_splitting_autotuned(states_energies, magnetic_momenta, number_of_states, magnetic_fields, orientations, number_processes, number_threads, _zeeman_array_info, _progress_array_info)
-            except Exception as exc:
-                raise SltCompError(self._hdf5, exc, f"Failed to autotune the number of threads and processes for the zeeman_splitting function.") from None
+        # if autotune == True:
+        #     try:
+        #         zeeman_splitting_autotuned = _autotune(magnetic_fields.shape[0] * orientations.shape[0], number_cpu)(_zeeman_splitting)
+        #         number_processes, number_threads = zeeman_splitting_autotuned(states_energies, magnetic_momenta, number_of_states, magnetic_fields, orientations, number_processes, number_threads, _zeeman_array_info, _progress_array_info)
+        #     except Exception as exc:
+        #         raise SltCompError(self._hdf5, exc, f"Failed to autotune the number of threads and processes for the zeeman_splitting function.") from None
 
-        try:
-            zeeman_array = _zeeman_splitting(states_energies, magnetic_momenta, number_of_states, magnetic_fields, orientations, number_processes, number_threads, _zeeman_array_info, _progress_array_info)
-        except Exception as exc:
-            raise SltCompError(self._hdf5, exc, f"Failed to compute Zeeman splitting from {BLUE}Group{RESET} '{self._group_name}'.") from None
+        # try:
+        #     zeeman_array = _zeeman_splitting(states_energies, magnetic_momenta, number_of_states, magnetic_fields, orientations, number_processes, number_threads, _zeeman_array_info, _progress_array_info)
+        # except Exception as exc:
+        #     raise SltCompError(self._hdf5, exc, f"Failed to compute Zeeman splitting from {BLUE}Group{RESET} '{self._group_name}'.") from None
 
-        if slt_save is not None:
-            try:
-                if orientations.shape[1] == 4 and zeeman_array.ndim == 2:
-                    average = True
-                else:
-                    average = False
-                new_group = SltGroup(self._hdf5, slt_save)
-                new_group["zeeman_splitting"] = zeeman_array
-                new_group["magnetic_fields"] = magnetic_fields
-                new_group["orientations"] = orientations
-                new_group.attributes["Type"] = "ZEEMAN_SPLITTING"
-                new_group.attributes["Kind"] = "AVERAGE" if average else "DIRECTIONAL"
-                new_group.attributes["Precision"] = settings.precision.upper()
-                new_group.attributes["Description"] = f"Group containing Zeeman splitting calculated from Group '{group_name}'."
-                new_group["zeeman_splitting"].attributes["Description"] = f"Dataset containing Zeeman splitting in the form {'[fields, energies]' if average else '[orientations, fields, energies]'}."
-                new_group["magnetic_fields"].attributes["Description"] = "Dataset containing magnetic field (T) values used in the simulation."
-                new_group["orientations"].attributes["Description"] = "Dataset containing magnetic fields' orientation grid used in the simulation."
-            except Exception as exc:
-                raise SltSaveError(self._hdf5, exc, f"Failed to save Zeeman splitting to {BLUE}Group{RESET} '{group_name}'.") from None
+        # if slt_save is not None:
+        #     try:
+        #         if orientations.shape[1] == 4 and zeeman_array.ndim == 2:
+        #             average = True
+        #         else:
+        #             average = False
+        #         new_group = SltGroup(self._hdf5, slt_save)
+        #         new_group["zeeman_splitting"] = zeeman_array
+        #         new_group["magnetic_fields"] = magnetic_fields
+        #         new_group["orientations"] = orientations
+        #         new_group.attributes["Type"] = "ZEEMAN_SPLITTING"
+        #         new_group.attributes["Kind"] = "AVERAGE" if average else "DIRECTIONAL"
+        #         new_group.attributes["Precision"] = settings.precision.upper()
+        #         new_group.attributes["Description"] = f"Group containing Zeeman splitting calculated from Group '{group_name}'."
+        #         new_group["zeeman_splitting"].attributes["Description"] = f"Dataset containing Zeeman splitting in the form {'[fields, energies]' if average else '[orientations, fields, energies]'}."
+        #         new_group["magnetic_fields"].attributes["Description"] = "Dataset containing magnetic field (T) values used in the simulation."
+        #         new_group["orientations"].attributes["Description"] = "Dataset containing magnetic fields' orientation grid used in the simulation."
+        #     except Exception as exc:
+        #         raise SltSaveError(self._hdf5, exc, f"Failed to save Zeeman splitting to {BLUE}Group{RESET} '{group_name}'.") from None
 
-        return zeeman_array
+        from slothpy.core._delayed_methods import SltZeemanSplitting
+        return SltZeemanSplitting(self, number_of_states, magnetic_fields, orientations, states_cutoff, number_cpu, number_threads, autotune, slt_save)
 
 
 class SltDataset:

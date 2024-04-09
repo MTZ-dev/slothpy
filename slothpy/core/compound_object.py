@@ -4788,13 +4788,13 @@ class Compound():
         """
         try:
             # Getting data from .slt
-            zeeman = self[f"{group}", "zeeman_splitting"][:]
-            fields = self[f"{group}", "magnetic_fields"][:]
+            zeeman = self[f"{group}", "ZEEMAN_SPLITTING"][:]
+            fields = self[f"{group}", "MAGNETIC_FIELDS"][:]
             if field == "H":
                 fields *= 10
                 xticks *= 10
             orientations = self[
-                f"{group}", f"orientations"
+                f"{group}", f"ORIENTATIONS"
             ][:]
 
         except Exception as exc:

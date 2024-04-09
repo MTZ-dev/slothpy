@@ -17,7 +17,8 @@
 import sys
 from time import sleep
 from os import cpu_count
-from multiprocessing import Process
+from typing import Iterable
+from multiprocessing import Process, Queue
 from multiprocessing.synchronize import Event
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
@@ -49,27 +50,34 @@ def _get_number_of_processes_threads(number_cpu, number_threads, number_to_paral
     return number_process, number_threads
 
 
+class SharedMemoryArrayInfo:
+    def __init__(self, name, shape, dtype):
+        self.name = name
+        self.shape = shape
+        self.dtype = dtype
+
+
 def _to_shared_memory(smm: SharedMemoryManager, array: ndarray):
     shm = smm.SharedMemory(size=array.nbytes)
     shared_array = ndarray(array.shape, dtype=array.dtype, buffer=shm.buf)
     shared_array[:] = array
     del array
-    return shm.name, shared_array.shape, shared_array.dtype
+    return SharedMemoryArrayInfo(shm.name, shared_array.shape, shared_array.dtype)
 
 
-def _from_shared_memory(sm: SharedMemory, sm_array_info: tuple):
-    return ndarray(sm_array_info[1], sm_array_info[2], sm.buf)
+def _from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArrayInfo):
+    return ndarray(sm_array_info.shape, sm_array_info.dtype, sm.buf)
 
 
-def _from_shared_memory_to_array(sm_array_info: tuple):
-    sm_array = SharedMemory(sm_array_info[0])
-    return array(ndarray(sm_array_info[1], sm_array_info[2], sm_array.buf), copy=True, order="C")
+def _from_shared_memory_to_array(sm_array_info: SharedMemoryArrayInfo, reshape: tuple = None):
+    sm = SharedMemory(sm_array_info.name)
+    return array(ndarray(sm_array_info.shape if reshape is None else reshape, sm_array_info.dtype, sm.buf), copy=True, order="C")
 
 
-def _chunk_from_shared_memory(sm: SharedMemory, sm_array_info: tuple, chunk: tuple):
-    offset = dtype(sm_array_info[2]).itemsize * chunk[0]
-    chunk_length = chunk[1] - chunk[0]
-    return ndarray((chunk_length,), sm_array_info[2], sm.buf, offset)
+class ChunkInfo:
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
 
 
 def _distribute_chunks(data_len, number_processes):
@@ -79,35 +87,57 @@ def _distribute_chunks(data_len, number_processes):
     for i in range(number_processes):
         start = i * chunk_size + min(i, remainder)
         end = start + chunk_size + (1 if i < remainder else 0)
-        yield (start, end)
+        yield ChunkInfo(start, end)
 
 
-def _slt_processes_pool(worker: callable, jobs, terminate_event: Event):
-    processes = []
+def _chunk_from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArrayInfo, chunk: ChunkInfo):
+    offset = dtype(sm_array_info.dtype).itemsize * chunk.start
+    chunk_length = chunk.end - chunk.start
+    return ndarray((chunk_length,), sm_array_info.dtype, sm.buf, offset)
 
-    for job_args in jobs:
-        process = Process(target=worker, args=(job_args,))
-        process.start()
-        processes.append(process)
 
-    if terminate_event is not None:
-        while True:
-            if terminate_event.is_set():
-                for process in processes:
-                    process.terminate()
-                for process in processes:
-                    process.join()
-                return
+class SltProcessPool:
+    def __init__(self, worker: callable, jobs: Iterable, returns: bool = False, terminate_event: Event = None):
+        self.worker = worker
+        self.jobs = jobs
+        self.returns = returns
+        self.terminate_event = terminate_event
+        self.processes = []
+        self.results = []
+        self.result_queue = Queue() if returns else None
+
+    def worker_wrapper(self, worker, args, result_queue=None):
+        result = worker(*args)
+        if result_queue:
+            result_queue.put(result)
+
+    def start_and_collect(self):
+        for job_args in self.jobs:
+            if self.returns:
+                process = Process(target=self.worker_wrapper, args=(self.worker, job_args, self.result_queue))
             else:
-                all_finished = all(not process.is_alive() for process in processes)
-                if all_finished:
-                    break
-            sleep(0.4)
-    
-    for process in processes:
-        process.join()
-        process.close()
+                process = Process(target=self.worker_wrapper, args=(self.worker, job_args))
+            process.start()
+            self.processes.append(process)
 
+        if self.terminate_event:
+            while True:
+                if self.terminate_event.is_set():
+                    for process in self.processes:
+                        process.terminate()
+                    break
+                elif all(not p.is_alive() for p in self.processes):
+                    break
+                sleep(0.5)
+        
+        for process in self.processes:
+            process.join()
+            process.close()
+
+        if self.returns:
+            while not self.result_queue.empty():
+                self.results.append(self.result_queue.get())
+            return self.results
 
 def _is_notebook():
     return "ipykernel" in sys.modules

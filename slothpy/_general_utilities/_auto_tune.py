@@ -25,7 +25,7 @@ from slothpy._general_utilities._constants import YELLOW, BLUE, PURPLE, GREEN, R
 from slothpy._general_utilities._system import _from_shared_memory, _to_shared_memory
 
 
-def _autotune(number_parallel_jobs: int, number_tasks: int, number_cpu: int):
+def _autotune(number_tasks: int, number_cpu: int):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -42,15 +42,15 @@ def _autotune(number_parallel_jobs: int, number_tasks: int, number_cpu: int):
 
             for number_threads in range(min(64, number_cpu), 0, -1):
                 number_processes = number_cpu // number_threads
-                if number_processes >= number_parallel_jobs:
-                    number_processes = number_parallel_jobs
+                if number_processes >= number_tasks:
+                    number_processes = number_tasks
                     number_threads = number_cpu // number_processes
                 if number_processes != old_processes:
                     old_processes = number_processes
                     with SharedMemoryManager() as smm:
-                        chunk_size = number_parallel_jobs // number_processes
-                        remainder = number_parallel_jobs % number_processes
-                        max_tasks_per_process = array([(chunk_size + (1 if i < remainder else 0)) * number_tasks for i in range(number_processes)])
+                        chunk_size = number_tasks // number_processes
+                        remainder = number_tasks % number_processes
+                        max_tasks_per_process = array([(chunk_size + (1 if i < remainder else 0)) for i in range(number_processes)])
                         if any(max_tasks_per_process < 5):
                             print(f"The job for {number_processes} {BLUE}Processes{RESET} and {number_threads} {PURPLE}Threads{RESET} is already too small to be autotuned! Quitting here.")
                             break
@@ -69,9 +69,9 @@ def _autotune(number_parallel_jobs: int, number_tasks: int, number_cpu: int):
                         benchmark_process.start()
                         while any(progress_array <= 1):
                             sleep(0.001)
+                        start_time = perf_counter_ns()
                         start_progress = progress_array.copy()
                         final_progress = start_progress
-                        start_time = perf_counter_ns()
                         stop_time = start_time
                         while any(progress_array - start_progress <= 4) and all(progress_array < max_tasks_per_process):
                             stop_time = perf_counter_ns()

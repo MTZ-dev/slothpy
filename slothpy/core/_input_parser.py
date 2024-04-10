@@ -115,12 +115,15 @@ def validate_input(group_type: Literal["HAMILTONIAN"]):
                             elif value > self.attributes["States"]:
                                 raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
                         case "number_of_states":
-                            if not isinstance(value, int) or value <= 0:
+                            if not isinstance(value, int) or value < 0:
                                 raise ValueError("The number of states has to be a positive integer.")
                             max_states = int(self.attributes["States"])
-                            if "states_cutoff" in bound_args.arguments.keys():
-                                if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0) and bound_args.arguments["states_cutoff"] < self.attributes["States"]:
-                                    max_states = bound_args.arguments["states_cutoff"] 
+                            if isinstance(bound_args.arguments["states_cutoff"], int) and (bound_args.arguments["states_cutoff"] > 0) and bound_args.arguments["states_cutoff"] < self.attributes["States"]:
+                                if value == 0:
+                                    value = bound_args.arguments["states_cutoff"]
+                                max_states = bound_args.arguments["states_cutoff"]
+                            elif bound_args.arguments["states_cutoff"] == 0 and value == 0:
+                                value = max_states
                             if value > max_states:
                                 raise ValueError("The number of states has to be less or equal to the states' cutoff or overall number of states.")
                         case "start_state":

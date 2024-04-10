@@ -290,10 +290,10 @@ class Compound():
     def zeeman_splitting(
         self,
         group_name: str,
-        number_of_states: int,
         magnetic_fields: ndarray[Union[float32, float64]],
         orientations: ndarray[Union[float32, float64]],
         states_cutoff: int = 0,
+        number_of_states: int = 0,
         number_cpu: int = None,
         number_threads: int = None,
         slt_save: str = None,
@@ -310,7 +310,8 @@ class Compound():
             calculations used for the computation of the Zeeman splitting.
         number_of_states : int
             Number of states whose energy splitting will be given in the
-            result array.
+            result array. If set to zero, states_cutoff states will be given.,
+            by default 0
         magnetic_fields : ndarray[float64]
             ArrayLike structure (can be converted to numpy.NDArray) of magnetic
             field values (T) at which Zeeman splitting will be computed.
@@ -379,7 +380,7 @@ class Compound():
         distribute the workload over the provided field values.
         """
 
-        return self[group_name].zeeman_splitting(group_name, number_of_states, magnetic_fields, orientations, states_cutoff, number_cpu, number_threads, slt_save, autotune)
+        return self[group_name].zeeman_splitting(magnetic_fields, orientations, states_cutoff, number_of_states, number_cpu, number_threads, slt_save, autotune)
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None

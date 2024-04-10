@@ -83,13 +83,13 @@ class SltStatesEnergiesCm1(SingleProcessed):
 
 class SltZeemanSplitting(MulitProcessed):
 
-    __slots__ = SingleProcessed.__slots__ + ["_magnetic_fields", "_orientations"]
+    __slots__ = SingleProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff"]
      
     def __init__(self, slt_group: SltGroup,
-        number_of_states: int,
         magnetic_fields: ndarray,
         orientations: ndarray,
         states_cutoff: int,
+        number_of_states: int,
         number_cpu: int,
         number_threads: int,
         autotune: bool,
@@ -100,19 +100,21 @@ class SltZeemanSplitting(MulitProcessed):
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0] , number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
-        ######### Load only when autotune or running to save memory
-        self._args_arrays = (slt_group.energies[:states_cutoff], slt_group.magnetic_dipole_momenta[:, :states_cutoff, :states_cutoff], self._magnetic_fields, self._orientations)
-        if orientations.shape[1] == 4:
-            self._returns = True
-        elif orientations.shape[1] == 3:
-            self._result = zeros((magnetic_fields.shape[0] * orientations.shape[0], number_of_states), dtype=magnetic_fields.dtype, order="C")
-            self._result_shape = (orientations.shape[0], magnetic_fields.shape[0], number_of_states)
+        self._states_cutoff = states_cutoff
         self._args = (number_of_states,)
         self._method_no_return = _zeeman_splitting
         self._method_return = _zeeman_splitting_average
         
     def __repr__(self) -> str:
         return f"<{RED}SltZeemanSplitting{RESET} object from {BLUE}Group{RESET} '{self._group_name}' {GREEN}File{RESET} '{self._hdf5}'.>"
+    
+    def _load_args_arrays(self):
+        self._args_arrays = (self._slt_group.energies[:self._states_cutoff], self._slt_group.magnetic_dipole_momenta[:, :self._states_cutoff, :self._states_cutoff], self._magnetic_fields, self._orientations)
+        if self._orientations.shape[1] == 4:
+            self._returns = True
+        elif self._orientations.shape[1] == 3:
+            self._result = zeros((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._args[0]), dtype=self._magnetic_fields.dtype, order="C")
+            self._result_shape = (self._orientations.shape[0], self._magnetic_fields.shape[0], self._args[0])
     
     def _gather_results(self, results):
         return super()._gather_results()

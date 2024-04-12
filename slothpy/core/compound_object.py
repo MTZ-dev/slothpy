@@ -211,7 +211,7 @@ class Compound():
                 elif isinstance(item, Group):
                     return SltGroup(self._hdf5, key)
             else:
-                return SltGroup(self._hdf5, key, exists=False)
+                return SltGroup(self._hdf5, key)
 
     def __str__(self) -> str:
         """

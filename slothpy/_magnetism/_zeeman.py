@@ -23,6 +23,7 @@ from numpy import (
     ndarray,
     dtype,
     array,
+    arange,
     sum,
     vdot,
     zeros,
@@ -36,17 +37,10 @@ from numpy import (
     int64,
 )
 from numpy.linalg import eigvalsh
-from numba import jit, set_num_threads, prange
+from numba import jit, set_num_threads, prange, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import KB, MU_B, H_CM_1
 from slothpy._general_utilities._system import (
-    SltProcessPool,
-    SharedMemoryArrayInfo,
-    ChunkInfo,
     _get_num_of_processes,
-    _to_shared_memory,
-    _from_shared_memory,
-    _chunk_from_shared_memory,
-    _from_shared_memory_to_array,
     _distribute_chunks,
 )
 from slothpy._general_utilities._io import (
@@ -62,15 +56,25 @@ from slothpy._gui._monitor_gui import _run_monitor_gui
 
 
 @jit([
-        "complex64[:,:](complex64[:,:,:], float32[:], float32, float32[:])",
-        "complex128[:,:](complex128[:,:,:], float64[:], float64, float64[:])"
-    ],
-    nopython=True,
-    nogil=True,
-    cache=True,
-    fastmath=True,
-    inline="always",
-    parallel=True,
+    types.Array(complex64, 2, 'C')(
+        types.Array(complex64, 3, 'C', True), 
+        types.Array(float32, 1, 'C', True), 
+        float32, 
+        types.Array(float32, 1, 'C', True)
+    ),
+    types.Array(complex128, 2, 'C')(
+        types.Array(complex128, 3, 'C', True), 
+        types.Array(float64, 1, 'C', True), 
+        float64, 
+        types.Array(float64, 1, 'C', True)
+    )
+],
+nopython=True,
+nogil=True,
+cache=True,
+fastmath=True,
+inline="always",
+parallel=True,
 )
 def _calculate_zeeman_matrix(
     magnetic_momenta, states_energies, field, orientation
@@ -84,16 +88,29 @@ def _calculate_zeeman_matrix(
 
 
 @jit([
-        "(float32[:], complex64[:,:,:], float32[:], float32[:,:], int64[:], float32[:,:], int64, int64, int64, int64)",
-        "(float32[:], complex64[:,:,:], float32[:], float32[:,:], int64[:], float32[:,:,:], int64, int64, int64, int64)",
-        "(float64[:], complex128[:,:,:], float64[:], float64[:,:], int64[:], float64[:,:], int64, int64, int64, int64)",
-        "(float64[:], complex128[:,:,:], float64[:], float64[:,:], int64[:], float64[:,:,:], int64, int64, int64, int64)"
-    ],
-    nopython=True,
-    cache=True,
-    nogil=True,
-    fastmath=True,
-    inline="always",
+    (
+        types.Array(float32, 1, 'C', True), 
+        types.Array(complex64, 3, 'C', True), 
+        types.Array(float32, 1, 'C', True), 
+        types.Array(float32, 2, 'C', True), 
+        types.Array(int64, 1, 'C'), 
+        types.Array(float32, 2, 'C'), 
+        int64, int64, int64, int64 
+    ),
+    (
+        types.Array(float64, 1, 'C', True), 
+        types.Array(complex128, 3, 'C', True), 
+        types.Array(float64, 1, 'C', True), 
+        types.Array(float64, 2, 'C', True), 
+        types.Array(int64, 1, 'C'), 
+        types.Array(float64, 2, 'C'), 
+        int64, int64, int64, int64 
+    )
+],
+nopython=True,
+cache=True,
+nogil=True,
+fastmath=True,
 )
 def _zeeman_splitting(
     states_energies: ndarray,
@@ -102,32 +119,41 @@ def _zeeman_splitting(
     orientations: ndarray,
     progress_array: ndarray,
     zeeman_array: ndarray,
-    num_of_states: int,
+    number_of_states: int,
     process_index: int,
     start: int,
     end: int,
 ):
     magnetic_fields_shape_0 = magnetic_fields.shape[0]
-    grid_shape_0 = orientations.shape[0]
     h_cm_1 = array(H_CM_1, dtype=states_energies.dtype)
 
     for i in range(start, end):
-        zeeman_matrix = _calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%grid_shape_0], orientations[i//magnetic_fields_shape_0, :3])
-        zeeman_array[i,:] = eigvalsh(zeeman_matrix)[:num_of_states] * h_cm_1
+        zeeman_array[i,:] = eigvalsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]))[:number_of_states] * h_cm_1
         progress_array[process_index] += 1
 
 
 @jit([
-        "(float32[:], complex64[:,:,:], float32[:], float32[:,:], int64[:], float32[:,:], int64, int64, int64, int64)",
-        "(float32[:], complex64[:,:,:], float32[:], float32[:,:], int64[:], float32[:,:,:], int64, int64, int64, int64)",
-        "(float64[:], complex128[:,:,:], float64[:], float64[:,:], int64[:], float64[:,:], int64, int64, int64, int64)",
-        "(float64[:], complex128[:,:,:], float64[:], float64[:,:], int64[:], float64[:,:,:], int64, int64, int64, int64)"
-    ],
-    nopython=True,
-    cache=True,
-    nogil=True,
-    fastmath=True,
-    inline="always",
+    types.Tuple((int64, int64, types.Array(float32, 2, 'C')))(
+        types.Array(float32, 1, 'C', True),
+        types.Array(complex64, 3, 'C', True),
+        types.Array(float32, 1, 'C', True),
+        types.Array(float32, 2, 'C', True),
+        types.Array(int64, 1, 'C'),
+        int64, int64, int64, int64
+    ),
+    types.Tuple((int64, int64, types.Array(float64, 2, 'C')))(
+        types.Array(float64, 1, 'C', True),
+        types.Array(complex128, 3, 'C', True),
+        types.Array(float64, 1, 'C', True),   
+        types.Array(float64, 2, 'C', True),   
+        types.Array(int64, 1, 'C'),     
+        int64, int64, int64, int64 
+    ),
+],
+nopython=True,
+cache=True,
+nogil=True,
+fastmath=True,
 )
 def _zeeman_splitting_average(
     states_energies: ndarray,
@@ -135,27 +161,35 @@ def _zeeman_splitting_average(
     magnetic_fields: ndarray,
     orientations: ndarray,
     progress_array: ndarray,
-    zeeman_array: ndarray,
-    num_of_states: int,
+    number_of_states: int,
     process_index: int,
     start: int,
     end: int,
 ):
-    magnetic_fields_shape_0 = magnetic_fields.shape[0]
-    grid_shape_0 = orientations.shape[0]
+    orientations_shape_0 = orientations.shape[0]
     h_cm_1 = array(H_CM_1, dtype=states_energies.dtype)
-
+    start_field_index = start // orientations_shape_0
+    end_field_index = (end - 1) // orientations_shape_0 + 1
+    previous_field_index = start_field_index
+    zeeman_splitting_array = zeros((end_field_index - start_field_index, number_of_states), dtype=states_energies.dtype)
+    zeeman_index = 0
     for i in range(start, end):
-        zeeman_matrix = _calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%grid_shape_0], orientations[i//magnetic_fields_shape_0, :3])
-        zeeman_array[i,:] = eigvalsh(zeeman_matrix)[:num_of_states] * h_cm_1
+        current_field_index = i // orientations_shape_0
+        orientation_index = i % orientations_shape_0
+        if current_field_index != previous_field_index:
+            zeeman_index += 1
+            previous_field_index = current_field_index
+        zeeman_splitting_array[zeeman_index,:] += eigvalsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[current_field_index], orientations[orientation_index, :3]))[:number_of_states] * h_cm_1 * orientations[orientation_index, 3]
         progress_array[process_index] += 1
+
+    return start_field_index, end_field_index, zeeman_splitting_array
 
 
 def _get_zeeman_matrix(
     filename: str,
     group: str,
     states_cutoff: int,
-    fields: ndarray[float64],
+    fields: ndarray,
     orientations: ndarray,
     rotation: ndarray = None,
 ) -> ndarray:
@@ -196,8 +230,8 @@ def _get_zeeman_matrix(
     fastmath=True,
 )
 def _calculate_helmholtz_energy(
-    energies: ndarray, temperature: float64
-) -> float64:
+    energies: ndarray, temperature
+):
     # Boltzman weights
     exp_diff = exp(-(energies - energies[0]) / (KB * temperature))
 
@@ -215,8 +249,8 @@ def _calculate_helmholtz_energy(
     fastmath=True,
 )
 def _calculate_internal_energy(
-    energies: ndarray, temperature: float64
-) -> float64:
+    energies: ndarray, temperature
+):
     # Boltzman weights
     exp_diff = exp(-(energies - energies[0]) / (KB * temperature))
 
@@ -536,9 +570,9 @@ def _arg_iter_eht(
 def _eth(
     filename: str,
     group: str,
-    fields: ndarray[float64],
-    grid: ndarray[float64],
-    temperatures: ndarray[float64],
+    fields: ndarray,
+    grid: ndarray,
+    temperatures: ndarray,
     energy_type: Literal["helmholtz", "internal"],
     states_cutoff: int,
     num_cpu: int,

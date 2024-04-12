@@ -212,9 +212,9 @@ class MulitProcessed(SingleProcessed):
                 self._method_no_return(*sm_arrays, *self._args, process_index, chunk_start, chunk_end)
 
     def _parallel_executor(self):
-        results =  SltProcessPool(self._executor, self._create_jobs(), self._returns, self._terminate_event).start_and_collect()
+        result_queue =  SltProcessPool(self._executor, self._create_jobs(), self._returns, self._terminate_event).start_and_collect()
         self._sm = []
-        return results
+        return result_queue
 
     @slothpy_exc("SltCompError")
     def autotune(self, _from_run: bool = False):

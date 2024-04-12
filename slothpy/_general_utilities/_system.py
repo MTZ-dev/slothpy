@@ -23,7 +23,6 @@ from multiprocessing.synchronize import Event
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
 from numpy import ndarray, dtype, array
-from numpy import array as np_array
 
 def _get_num_of_processes():
     pass #only for import compatibility
@@ -98,13 +97,13 @@ def _chunk_from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArray
 
 class SltProcessPool:
     def __init__(self, worker: callable, jobs: Iterable, returns: bool = False, terminate_event: Event = None):
-        self.worker = worker
-        self.jobs = jobs
-        self.returns = returns
-        self.terminate_event = terminate_event
-        self.processes = []
-        self.results = []
-        self.result_queue = Queue() if returns else None
+        self._worker = worker
+        self._jobs = jobs
+        self._returns = returns
+        self._terminate_event = terminate_event
+        self._processes = []
+        self._results = []
+        self._result_queue = Queue() if returns else None
 
     def worker_wrapper(self, worker, args, result_queue=None):
         result = worker(*args)
@@ -112,32 +111,30 @@ class SltProcessPool:
             result_queue.put(result)
 
     def start_and_collect(self):
-        for job_args in self.jobs:
-            if self.returns:
-                process = Process(target=self.worker_wrapper, args=(self.worker, job_args, self.result_queue))
+        for job_args in self._jobs:
+            if self._returns:
+                process = Process(target=self.worker_wrapper, args=(self._worker, job_args, self._result_queue))
             else:
-                process = Process(target=self.worker_wrapper, args=(self.worker, job_args))
+                process = Process(target=self.worker_wrapper, args=(self._worker, job_args))
             process.start()
-            self.processes.append(process)
+            self._processes.append(process)
 
-        if self.terminate_event:
+        if self._terminate_event:
             while True:
-                if self.terminate_event.is_set():
-                    for process in self.processes:
+                if self._terminate_event.is_set():
+                    for process in self._processes:
                         process.terminate()
                     break
-                elif all(not p.is_alive() for p in self.processes):
+                elif all(not p.is_alive() for p in self._processes):
                     break
                 sleep(0.5)
         
-        for process in self.processes:
+        for process in self._processes:
             process.join()
             process.close()
 
-        if self.returns:
-            while not self.result_queue.empty():
-                self.results.append(self.result_queue.get())
-            return self.results
+        if self._returns:
+            return self._result_queue
 
 def _is_notebook():
     return "ipykernel" in sys.modules

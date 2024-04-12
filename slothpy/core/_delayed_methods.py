@@ -116,9 +116,14 @@ class SltZeemanSplitting(MulitProcessed):
             self._result = zeros((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._args[0]), dtype=self._magnetic_fields.dtype, order="C")
             self._result_shape = (self._orientations.shape[0], self._magnetic_fields.shape[0], self._args[0])
     
-    def _gather_results(self, results):
-        return super()._gather_results()
-    
+    def _gather_results(self, result_queue):
+        zeeman_splitting_array = zeros((self._magnetic_fields.shape[0], self._args[0]), dtype=settings.float)
+        while not result_queue.empty():
+            start_field_index, end_field_index, zeeman_array = result_queue.get()
+            for i, j in enumerate(range(start_field_index, end_field_index)):
+                zeeman_splitting_array[j, :] += zeeman_array[i, :]
+        return zeeman_splitting_array
+
     @ensure_ready
     def save(self, slt_save = None):
         if self._orientations.shape[1] == 4 and self._result.ndim == 2:

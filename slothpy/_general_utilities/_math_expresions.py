@@ -17,15 +17,38 @@
 from math import factorial
 from numpy import (ndarray, array, zeros, ascontiguousarray, arange, tile, abs, mod, sqrt, min, max, power, float64, int64)
 from numpy.linalg import eigh, inv, norm
-from numba import jit
+from numba import jit, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import GE, MU_B
 from slothpy.core._slothpy_exceptions import SltInputError
 
 
 @jit(
-    ["complex64[:, :](complex64[:, :, :], float32[:])", "complex128[:, :](complex128[:, :, :], float64[:])",
-     "complex64[:](complex64[:, :], float32[:])", "complex128[:](complex128[:, :], float64[:])",
-     "float32[:](float32[:, :], float32[:])", "float64[:](float64[:, :], float64[:])"],
+    [
+        types.Array(complex64, 2, 'C')(
+            types.Array(complex64, 3, 'C', True), 
+            types.Array(float32, 1, 'C', True)
+        ),
+        types.Array(complex128, 2, 'C')(
+            types.Array(complex128, 3, 'C', True), 
+            types.Array(float64, 1, 'C', True)
+        ),
+        types.Array(complex64, 1, 'C')(
+            types.Array(complex64, 2, 'C', True), 
+            types.Array(float32, 1, 'C', True)
+        ),
+        types.Array(complex128, 1, 'C')(
+            types.Array(complex128, 2, 'C', True), 
+            types.Array(float64, 1, 'C', True)
+        ),
+        types.Array(float32, 1, 'C')(
+            types.Array(float32, 2, 'C', True), 
+            types.Array(float32, 1, 'C', True)
+        ),
+        types.Array(float64, 1, 'C')(
+            types.Array(float64, 2, 'C', True), 
+            types.Array(float64, 1, 'C', True)
+        )
+    ],
     nopython=True,
     nogil=True,
     cache=True,

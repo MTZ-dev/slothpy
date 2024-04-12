@@ -72,7 +72,7 @@ class SltSettings:
     @number_cpu.setter
     def number_cpu(self, value):
         if isinstance(value, int) and value >= 0 and value <= int(cpu_count()):
-            self._settings["monitor"] = value
+            self._settings["number_cpu"] = value
         else:
             raise SltInputError(
                 ValueError(f"The number of CPUs has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
@@ -85,7 +85,7 @@ class SltSettings:
     @number_threads.setter
     def number_threads(self, value):
         if isinstance(value, int) and value >= 0 and value <= int(cpu_count()):
-            self._settings["monitor"] = value
+            self._settings["number_threads"] = value
         else:
             raise SltInputError(
                 ValueError(f"The number of Threads has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")

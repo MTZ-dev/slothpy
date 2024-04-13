@@ -75,6 +75,7 @@ def _from_shared_memory_to_array(sm_array_info: SharedMemoryArrayInfo, reshape: 
 
 class ChunkInfo:
     def __init__(self, start, end):
+        __slots__ = ["start", "end"]
         self.start = start
         self.end = end
 
@@ -95,7 +96,7 @@ def _chunk_from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArray
     return ndarray((chunk_length,), sm_array_info.dtype, sm.buf, offset)
 
 
-def worker_wrapper(worker, args, result_queue=None):
+def _worker_wrapper(worker, args, result_queue=None):
         result = worker(*args)
         if result_queue:
             result_queue.put(result)
@@ -111,30 +112,44 @@ class SltProcessPool:
         self._result_queue = Queue() if returns else None
 
     def start_and_collect(self):
-        for job_args in self._jobs:
+        try:
+            for job_args in self._jobs:
+                if self._returns:
+                    process = Process(target=_worker_wrapper, args=(self._worker, job_args, self._result_queue))
+                else:
+                    process = Process(target=_worker_wrapper, args=(self._worker, job_args))
+                process.start()
+                self._processes.append(process)
+
+            if self._terminate_event:
+                while True:
+                    if self._terminate_event.is_set():
+                        for process in self._processes:
+                            process.terminate()
+                        break
+                    elif all(not p.is_alive() for p in self._processes):
+                        break
+                    sleep(0.5)
+            
+            for process in self._processes:
+                process.join()
+                process.close()
+
             if self._returns:
-                process = Process(target=worker_wrapper, args=(self._worker, job_args, self._result_queue))
-            else:
-                process = Process(target=worker_wrapper, args=(self._worker, job_args))
-            process.start()
-            self._processes.append(process)
-
-        if self._terminate_event:
-            while True:
-                if self._terminate_event.is_set():
-                    for process in self._processes:
-                        process.terminate()
-                    break
-                elif all(not p.is_alive() for p in self._processes):
-                    break
-                sleep(0.5)
+                return self._result_queue
         
-        for process in self._processes:
-            process.join()
-            process.close()
-
-        if self._returns:
-            return self._result_queue
+        except KeyboardInterrupt:
+            print("\nSltProcessPool interrupted. Clearing and terminating...")
+            for process in self._processes:
+                if process is not None:
+                    process.terminate()
+            for process in self._processes:
+                if process is not None:
+                    process.join()
+            for process in self._processes:
+                if process is not None:
+                    process.close()
+            raise
 
 def _is_notebook():
     return "ipykernel" in sys.modules

@@ -21,12 +21,9 @@ from slothpy.core._slothpy_exceptions import slothpy_exc, SltCompError, SltSaveE
 from slothpy.core._config import settings
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET, H_CM_1
 from slothpy.core._input_parser import validate_input
-from slothpy._general_utilities._system import _get_number_of_processes_threads
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
 from slothpy._general_utilities._utils import _rotate_and_return_components, _return_components, _return_components_diag
 from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
-from slothpy._magnetism._zeeman import _zeeman_splitting
-from slothpy._general_utilities._auto_tune import _autotune
 
 class SltAttributes:
     def __init__(self, hdf5_file, item_path):
@@ -608,6 +605,7 @@ class SltDatasetSLP():
         Property to mimic h5py's shape access convention.
         """
         return _get_dataset_slt_dtype(self._hdf5, self._dataset_path)
+
 
 class SltDatasetJM():
     def __init__(self, hdf5_file_path, group_path, jm, xyz=None):

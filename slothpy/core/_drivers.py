@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import List, Tuple
 from abc import ABC, abstractmethod
 from contextlib import contextmanager, ExitStack
 from multiprocessing.shared_memory import SharedMemory
@@ -28,13 +27,13 @@ from time import perf_counter_ns, sleep
 from datetime import datetime
 
 from numpy import array, zeros, any, all, median, int64
-from threadpoolctl import threadpool_limits
-from numba import set_num_threads
 
+from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import slothpy_exc
 from slothpy.core._slt_file import SltGroup
-from slothpy._general_utilities._system import SltProcessPool, SharedMemoryArrayInfo, ChunkInfo, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array
+from slothpy._general_utilities._system import _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, YELLOW, PURPLE, RESET
+from slothpy._gui._monitor_gui import _run_monitor_gui
 
 def ensure_ready(func):
     def wrapper(self, *args, **kwargs):
@@ -161,18 +160,18 @@ class MulitProcessed(SingleProcessed):
     def _create_shared_memory(self):
         for array in self._args_arrays:
             self._sm_arrays_info.append(_to_shared_memory(self._smm, array))
-        self._args_arrays = []
+        del self._args_arrays
         self._sm_arrays_info.append(_to_shared_memory(self._smm, zeros((self._number_processes,), dtype=int64, order="C")))
         if not self._returns:
             self._sm_arrays_info.append(_to_shared_memory(self._smm, self._result))
-            self._result = None
+            del self._result
     
     def _retrieve_arrays_and_results_from_shared_memory(self):
         self._args_arrays = []
         for sm_array_info in self._sm_arrays_info[:-2]:
             self._args_arrays.append(_from_shared_memory_to_array(sm_array_info))
         self._result = _from_shared_memory_to_array(self._sm_arrays_info[-1])
-        self._sm_arrays_info = []
+        del self._sm_arrays_info
 
     @abstractmethod
     def _load_args_arrays():
@@ -273,7 +272,13 @@ class MulitProcessed(SingleProcessed):
             with ExitStack() as stack:
                 stack.enter_context(self._ensure_shared_memory_manager())
                 self._create_shared_memory()
+                if settings.monitor:
+                    monitor = Process(target=_run_monitor_gui, args=(self._sm_arrays_info[-1] if self._returns else self._sm_arrays_info[-2], _distribute_chunks(self._number_to_parallelize, self._number_processes), "zeeman_splitting"))
+                    monitor.start()
                 results = self._executor()
+                if settings.monitor and monitor is not None:
+                    monitor.join()
+                    monitor.close()
                 if self._returns:
                     self._result = self._gather_results(results)
                 else:

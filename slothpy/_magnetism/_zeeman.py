@@ -53,8 +53,6 @@ from slothpy._general_utilities._grids_over_sphere import (
     _meshgrid_over_sphere_flatten,
 )
 from slothpy._general_utilities._math_expresions import _3d_dot
-from slothpy.core._config import settings
-from slothpy._gui._monitor_gui import _run_monitor_gui
 
 
 @jit([
@@ -134,21 +132,6 @@ def _zeeman_splitting(
         progress_array[process_index] += 1
 
 
-def _zeeman_splitting_parallel(sm_arrays_info: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, number_threads: int, returns: bool = False):
-    sm = []
-    arrays = []
-    for sm_array_info in sm_arrays_info:
-        sm.append(SharedMemory(sm_array_info.name))
-        arrays.append(_from_shared_memory(sm[-1], sm_array_info))
-
-    with threadpool_limits(limits=number_threads):
-        set_num_threads(number_threads)
-        if returns:
-            return _zeeman_splitting(*arrays, *args_list, process_index, start, end)
-        else:
-            _zeeman_splitting(*arrays, *args_list, process_index, start, end)
-
-
 @jit([
     types.Tuple((int64, int64, types.Array(float32, 2, 'C')))(
         types.Array(float32, 1, 'C', True),
@@ -200,6 +183,21 @@ def _zeeman_splitting_average(
         progress_array[process_index] += 1
 
     return start_field_index, end_field_index, zeeman_splitting_array
+
+
+def _zeeman_splitting_parallel(sm_arrays_info: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, number_threads: int, returns: bool = False):
+    sm = []
+    arrays = []
+    for sm_array_info in sm_arrays_info:
+        sm.append(SharedMemory(sm_array_info.name))
+        arrays.append(_from_shared_memory(sm[-1], sm_array_info))
+
+    with threadpool_limits(limits=number_threads):
+        set_num_threads(number_threads)
+        if returns:
+            return _zeeman_splitting(*arrays, *args_list, process_index, start, end)
+        else:
+            _zeeman_splitting(*arrays, *args_list, process_index, start, end)
 
 
 def _get_zeeman_matrix(

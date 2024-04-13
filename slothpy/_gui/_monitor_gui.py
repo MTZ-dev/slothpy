@@ -52,7 +52,7 @@ class WorkerMonitorApp(QMainWindow):
         main_layout.addWidget(scrollArea)
 
         # Individual Progress Bars
-        self.progress_bars = [QProgressBar() for _ in range(self.progress_array_info[1][0])]
+        self.progress_bars = [QProgressBar() for _ in range(self.progress_array_info.shape[0])]
         for i, bar in enumerate(self.progress_bars):
             bar.setMaximum(self.number_tasks_per_process[i])
             scrollLayout.addWidget(bar)
@@ -78,7 +78,7 @@ class WorkerMonitorApp(QMainWindow):
         self.elapsedTimeTimer.start(1000)
 
     def updateProgress(self):
-        sm_progress = SharedMemory(self.progress_array_info[0])
+        sm_progress = SharedMemory(self.progress_array_info.name)
         progress_array = _from_shared_memory(sm_progress, self.progress_array_info)
         overall_progress = sum(progress_array)
         self.overall_progress_bar.setValue(overall_progress)
@@ -100,8 +100,8 @@ class WorkerMonitorApp(QMainWindow):
         elapsedString = f"{hours:03d}:{minutes:02d}:{seconds:02d}"
         self.elapsedTimeLabel.setText(f"Elapsed Time: {elapsedString}")
 
-def _run_monitor_gui(progress_array_info, chunks, number_inner_tasks, calling_function_name):
-    number_tasks_per_process = [((chunk[1] - chunk[0]) * number_inner_tasks) for chunk in chunks]
+def _run_monitor_gui(progress_array_info, chunks, calling_function_name):
+    number_tasks_per_process = [(chunk.end - chunk.start) for chunk in chunks]
     app = QApplication(sys.argv)
     main_window = WorkerMonitorApp(progress_array_info, number_tasks_per_process, calling_function_name)
     main_window.show()

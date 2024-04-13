@@ -129,7 +129,7 @@ class SingleProcessed(ABC):
 
 class MulitProcessed(SingleProcessed):
 
-    __slots__ = SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_autotune", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info", "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape", "_method_no_return", "_method_return"]
+    __slots__ = SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_autotune", "_smm", "_sm", "_sm_arrays_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
 
     @abstractmethod
     def __init__(self, slt_group: SltGroup, number_to_parallelize: int, number_cpu: int, number_threads: int, autotune: bool, smm: SharedMemoryManager = None, terminate_event: Event = None, slt_save: str = None) -> None:
@@ -142,15 +142,11 @@ class MulitProcessed(SingleProcessed):
         self._smm = smm
         self._sm = []
         self._sm_arrays_info = []
-        self._sm_progress_array_info = None
-        self._sm_result_info = None
         self._terminate_event = terminate_event
         self._returns = False
         self._args_arrays = ()
         self._args = ()
         self._result_shape = ()
-        self._method_no_return = None
-        self._method_return = None
 
     @contextmanager
     def _ensure_shared_memory_manager(self):
@@ -166,55 +162,28 @@ class MulitProcessed(SingleProcessed):
         for array in self._args_arrays:
             self._sm_arrays_info.append(_to_shared_memory(self._smm, array))
         self._args_arrays = []
-        self._sm_progress_array_info = _to_shared_memory(self._smm, zeros((self._number_processes,), dtype=int64, order="C"))
+        self._sm_arrays_info.append(_to_shared_memory(self._smm, zeros((self._number_processes,), dtype=int64, order="C")))
         if not self._returns:
-            self._sm_result_info = _to_shared_memory(self._smm, self._result)
+            self._sm_arrays_info.append(_to_shared_memory(self._smm, self._result))
             self._result = None
-
-    def _retrieve_shared_memory_arrays(self):
-        arrays = []
-        for sm_array_info in self._sm_arrays_info:
-            self._sm.append(SharedMemory(sm_array_info.name))
-            arrays.append(_from_shared_memory(self._sm[-1], sm_array_info))
-        self._sm.append(SharedMemory(self._sm_progress_array_info.name))
-        arrays.append(_from_shared_memory(self._sm[-1], self._sm_progress_array_info))
-        if not self._returns:
-            self._sm.append(SharedMemory(self._sm_result_info.name))
-            arrays.append(_from_shared_memory(self._sm[-1], self._sm_result_info))
-        return arrays
     
-    def _retrieve_args_arrays_and_results_from_shared_memory(self):
+    def _retrieve_arrays_and_results_from_shared_memory(self):
         self._args_arrays = []
-        for sm_array_info in self._sm_arrays_info:
+        for sm_array_info in self._sm_arrays_info[:-2]:
             self._args_arrays.append(_from_shared_memory_to_array(sm_array_info))
+        self._result = _from_shared_memory_to_array(self._sm_arrays_info[-1])
         self._sm_arrays_info = []
-        self._result = _from_shared_memory_to_array(self._sm_result_info)
-        self._sm_result_info = None
 
     @abstractmethod
     def _load_args_arrays():
         pass
 
     def _create_jobs(self):
-        return [(process_index, chunk.start, chunk.end) for process_index, chunk in enumerate(_distribute_chunks(self._number_to_parallelize, self._number_processes))]
+        return [(self._sm_arrays_info, self._args, process_index, chunk.start, chunk.end, self._number_threads, self._returns) for process_index, chunk in enumerate(_distribute_chunks(self._number_to_parallelize, self._number_processes))]
     
     @abstractmethod
     def _gather_results(self, results):
         pass
-
-    def _executor(self, process_index, chunk_start, chunk_end):
-        sm_arrays = self._retrieve_shared_memory_arrays()
-        with threadpool_limits(limits=self._number_threads):
-            set_num_threads(self._number_threads)
-            if self._returns:
-                return self._method_return(*sm_arrays, *self._args, process_index, chunk_start, chunk_end)
-            else:
-                self._method_no_return(*sm_arrays, *self._args, process_index, chunk_start, chunk_end)
-
-    def _parallel_executor(self):
-        result_queue =  SltProcessPool(self._executor, self._create_jobs(), self._returns, self._terminate_event).start_and_collect()
-        self._sm = []
-        return result_queue
 
     @slothpy_exc("SltCompError")
     def autotune(self, _from_run: bool = False):
@@ -244,11 +213,11 @@ class MulitProcessed(SingleProcessed):
                     self._number_processes = number_processes
                     self._number_threads = number_threads
                     progress_array = zeros((number_processes,), dtype=int64, order="C")
-                    self._sm_progress_array_info = _to_shared_memory(self._smm, progress_array)
+                    self._sm_arrays_info[-1 if self._returns else -2] = _to_shared_memory(self._smm, progress_array)
                     self._terminate_event = terminate_event()
-                    benchmark_process = Process(target=self._parallel_executor)
-                    sm_progress = SharedMemory(self._sm_progress_array_info.name)
-                    progress_array = _from_shared_memory(sm_progress, self._sm_progress_array_info)
+                    benchmark_process = Process(target=self._executor)
+                    sm_progress = SharedMemory(self._sm_arrays_info[-1 if self._returns else -2].name)
+                    progress_array = _from_shared_memory(sm_progress, self._sm_arrays_info[-1 if self._returns else -2])
                     benchmark_process.start()
                     while any(progress_array <= 1):
                         sleep(0.001)
@@ -287,10 +256,9 @@ class MulitProcessed(SingleProcessed):
             time_info = f" (starting from now - [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}])" if _from_run else ''
             print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}.\nThe calculation time{time_info} is estimated to be at least: {GREEN}{best_time/1e9} s{RESET}.")
             if _from_run:
-                self._retrieve_args_arrays_and_results_from_shared_memory()
+                self._retrieve_arrays_and_results_from_shared_memory()
             self._number_processes, self._number_threads = final_number_of_processes, final_number_of_threads
             self._sm_arrays_info = []
-            self._sm_progress_array_info = None
             self._terminate_event = current_terminate_event
             self._autotune = False
             
@@ -305,11 +273,11 @@ class MulitProcessed(SingleProcessed):
             with ExitStack() as stack:
                 stack.enter_context(self._ensure_shared_memory_manager())
                 self._create_shared_memory()
-                results = self._parallel_executor()
+                results = self._executor()
                 if self._returns:
                     self._result = self._gather_results(results)
                 else:
-                    self._result = _from_shared_memory_to_array(self._sm_result_info, reshape=(self._result_shape))
+                    self._result = _from_shared_memory_to_array(self._sm_arrays_info[-1], reshape=(self._result_shape))
                 self._ready = True
         if self._slt_save is not None:
             self.save()

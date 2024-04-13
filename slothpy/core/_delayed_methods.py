@@ -25,8 +25,8 @@ from slothpy.core._config import settings
 from slothpy.core._slt_file import SltGroup
 from slothpy.core._drivers import SingleProcessed, MulitProcessed, ensure_ready
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET, H_CM_1
-from slothpy._general_utilities._system import _from_shared_memory_to_array
-from slothpy._magnetism._zeeman import _zeeman_splitting, _zeeman_splitting_average
+from slothpy._general_utilities._system import SltProcessPool
+from slothpy._magnetism._zeeman import _zeeman_splitting_parallel
 
 class SltStatesEnergiesCm1(SingleProcessed):
 
@@ -102,8 +102,6 @@ class SltZeemanSplitting(MulitProcessed):
         self._orientations = orientations
         self._states_cutoff = states_cutoff
         self._args = (number_of_states,)
-        self._method_no_return = _zeeman_splitting
-        self._method_return = _zeeman_splitting_average
         
     def __repr__(self) -> str:
         return f"<{RED}SltZeemanSplitting{RESET} object from {BLUE}Group{RESET} '{self._group_name}' {GREEN}File{RESET} '{self._hdf5}'.>"
@@ -123,6 +121,10 @@ class SltZeemanSplitting(MulitProcessed):
             for i, j in enumerate(range(start_field_index, end_field_index)):
                 zeeman_splitting_array[j, :] += zeeman_array[i, :]
         return zeeman_splitting_array
+    
+    def _executor(self):
+        result_queue = SltProcessPool(_zeeman_splitting_parallel, self._create_jobs(), self._returns, self._terminate_event).start_and_collect()
+        return result_queue
 
     @ensure_ready
     def save(self, slt_save = None):

@@ -40,8 +40,10 @@ from numpy.linalg import eigvalsh
 from numba import jit, set_num_threads, prange, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import KB, MU_B, H_CM_1
 from slothpy._general_utilities._system import (
+    SharedMemoryArrayInfo,
     _get_num_of_processes,
     _distribute_chunks,
+    _from_shared_memory,
 )
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
@@ -128,8 +130,23 @@ def _zeeman_splitting(
     h_cm_1 = array(H_CM_1, dtype=states_energies.dtype)
 
     for i in range(start, end):
-        zeeman_array[i,:] = eigvalsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]))[:number_of_states] * h_cm_1
+        zeeman_array[i] = eigvalsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]))[:number_of_states] * h_cm_1
         progress_array[process_index] += 1
+
+
+def _zeeman_splitting_parallel(sm_arrays_info: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, number_threads: int, returns: bool = False):
+    sm = []
+    arrays = []
+    for sm_array_info in sm_arrays_info:
+        sm.append(SharedMemory(sm_array_info.name))
+        arrays.append(_from_shared_memory(sm[-1], sm_array_info))
+
+    with threadpool_limits(limits=number_threads):
+        set_num_threads(number_threads)
+        if returns:
+            return _zeeman_splitting(*arrays, *args_list, process_index, start, end)
+        else:
+            _zeeman_splitting(*arrays, *args_list, process_index, start, end)
 
 
 @jit([

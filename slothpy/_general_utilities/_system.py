@@ -95,6 +95,12 @@ def _chunk_from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArray
     return ndarray((chunk_length,), sm_array_info.dtype, sm.buf, offset)
 
 
+def worker_wrapper(worker, args, result_queue=None):
+        result = worker(*args)
+        if result_queue:
+            result_queue.put(result)
+
+
 class SltProcessPool:
     def __init__(self, worker: callable, jobs: Iterable, returns: bool = False, terminate_event: Event = None):
         self._worker = worker
@@ -102,20 +108,14 @@ class SltProcessPool:
         self._returns = returns
         self._terminate_event = terminate_event
         self._processes = []
-        self._results = []
         self._result_queue = Queue() if returns else None
-
-    def worker_wrapper(self, worker, args, result_queue=None):
-        result = worker(*args)
-        if result_queue:
-            result_queue.put(result)
 
     def start_and_collect(self):
         for job_args in self._jobs:
             if self._returns:
-                process = Process(target=self.worker_wrapper, args=(self._worker, job_args, self._result_queue))
+                process = Process(target=worker_wrapper, args=(self._worker, job_args, self._result_queue))
             else:
-                process = Process(target=self.worker_wrapper, args=(self._worker, job_args))
+                process = Process(target=worker_wrapper, args=(self._worker, job_args))
             process.start()
             self._processes.append(process)
 

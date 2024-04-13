@@ -306,9 +306,9 @@ def _mt_over_grid_fields(
         )
 
         for f in range(fields_shape_0):
-            zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, soc_energies, fields[f], grid[g]
-            )
+            zeeman_matrix = magnetic_momenta[0] # _calculate_zeeman_matrix(
+            #     magnetic_momenta, soc_energies, fields[f], grid[g]
+            # )
             eigenvalues, eigenvectors = eigh(zeeman_matrix)
 
             states_momenta = (

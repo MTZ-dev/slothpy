@@ -73,7 +73,6 @@ nopython=True,
 nogil=True,
 cache=True,
 fastmath=True,
-inline="always",
 parallel=True,
 )
 def _calculate_zeeman_matrix(
@@ -231,7 +230,7 @@ def _get_zeeman_matrix(
                 magnetic_momenta,
                 states_energies,
                 field,
-                orientation.astype(complex128),
+                orientation,
             )
 
     return zeeman_matrix
@@ -306,11 +305,11 @@ def _helmholtz_energyt_over_fields_grid(
         # Perform calculations for each magnetic field orientation
         for j in range(grid_shape_0):
             # Construct Zeeman matrix
-            orientation = grid[j, :3].astype(complex128)
+            orientation = grid[j, :3]
 
-            zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, states_energies, fields[i], orientation
-            )
+            zeeman_matrix = magnetic_momenta[0]#_calculate_zeeman_matrix(
+            #     magnetic_momenta, states_energies, fields[i], orientation ###nie działało z compatibility
+            # )
 
             # Diagonalize full Hamiltonian matrix
             eigenvalues = eigvalsh(zeeman_matrix)
@@ -357,11 +356,11 @@ def _internal_energyt_over_fields_grid(
         # Perform calculations for each magnetic field orientation
         for j in range(grid_shape_0):
             # Construct Zeeman matrix
-            orientation = grid[j, :3].astype(complex128)
+            orientation = grid[j, :3]
 
-            zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta, states_energies, fields[i], orientation
-            )
+            zeeman_matrix = magnetic_momenta[0] # _calculate_zeeman_matrix( nie działało
+            #     magnetic_momenta, states_energies, fields[i], orientation
+            # )
 
             # Diagonalize full Hamiltonian matrix
             eigenvalues = eigvalsh(zeeman_matrix)
@@ -411,12 +410,12 @@ def _helmholtz_energyt_over_grid_fields(
         for f in range(fields_shape_0):
             # Construct Zeeman matrix
 
-            zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta,
-                states_energies,
-                fields[f],
-                grid[g].astype(complex128),
-            )
+            zeeman_matrix = magnetic_momenta[0] #_calculate_zeeman_matrix( nie działało
+            #     magnetic_momenta,
+            #     states_energies,
+            #     fields[f],
+            #     grid[g],
+            # )
 
             # Diagonalize full Hamiltonian matrix
             eigenvalues = eigvalsh(zeeman_matrix)
@@ -465,12 +464,12 @@ def _internal_energyt_over_grid_fields(
         for f in range(fields_shape_0):
             # Construct Zeeman matrix
 
-            zeeman_matrix = _calculate_zeeman_matrix(
-                magnetic_momenta,
-                states_energies,
-                fields[f],
-                grid[g].astype(complex128),
-            )
+            zeeman_matrix = magnetic_momenta[0] #_calculate_zeeman_matrix( nie działało
+            #     magnetic_momenta,
+            #     states_energies,
+            #     fields[f],
+            #     grid[g],
+            # )
 
             # Diagonalize full Hamiltonian matrix
             eigenvalues = eigvalsh(zeeman_matrix)

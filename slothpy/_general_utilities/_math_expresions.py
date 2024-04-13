@@ -53,7 +53,6 @@ from slothpy.core._slothpy_exceptions import SltInputError
     nogil=True,
     cache=True,
     fastmath=True,
-    inline="always",
     parallel=True,
 )
 def _3d_dot(m, xyz):

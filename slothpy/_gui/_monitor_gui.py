@@ -1,11 +1,11 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QProgressBar, QLabel, QScrollArea, QFrame
-from PyQt6.QtCore import QTimer, QDateTime, QTime
-from PyQt6.QtGui import QFont
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QProgressBar, QLabel, QScrollArea, QFrame
+from PyQt5.QtCore import QTimer, QDateTime, QTime
+from PyQt5.QtGui import QFont
 import sys
 from numpy import array, sum
 from multiprocessing.shared_memory import SharedMemory
 import psutil
-from slothpy._general_utilities._system import _from_shared_memory
+from slothpy._general_utilities._system import _from_shared_memory, _distribute_chunks
 
 class WorkerMonitorApp(QMainWindow):
     def __init__(self, progress_array_info, number_tasks_per_process, calling_function_name):
@@ -100,8 +100,8 @@ class WorkerMonitorApp(QMainWindow):
         elapsedString = f"{hours:03d}:{minutes:02d}:{seconds:02d}"
         self.elapsedTimeLabel.setText(f"Elapsed Time: {elapsedString}")
 
-def _run_monitor_gui(progress_array_info, chunks, calling_function_name):
-    number_tasks_per_process = [(chunk.end - chunk.start) for chunk in chunks]
+def _run_monitor_gui(progress_array_info, number_to_parallelize, number_processes, calling_function_name):
+    number_tasks_per_process = [(chunk.end - chunk.start) for chunk in _distribute_chunks(number_to_parallelize, number_processes)]
     app = QApplication(sys.argv)
     main_window = WorkerMonitorApp(progress_array_info, number_tasks_per_process, calling_function_name)
     main_window.show()

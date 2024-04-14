@@ -22,11 +22,12 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 
 from slothpy.core._config import settings
+from slothpy.core._slothpy_exceptions import slothpy_exc
 from slothpy.core._slt_file import SltGroup
 from slothpy.core._drivers import SingleProcessed, MulitProcessed, ensure_ready
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET, H_CM_1
 from slothpy._general_utilities._system import SltProcessPool
-from slothpy._magnetism._zeeman import _zeeman_splitting_parallel
+from slothpy._magnetism._zeeman import _zeeman_splitting_proxy
 
 class SltStatesEnergiesCm1(SingleProcessed):
 
@@ -43,6 +44,7 @@ class SltStatesEnergiesCm1(SingleProcessed):
     def _executor(self):
         return self._slt_group.energies[self._start_state:self._stop_state] * H_CM_1
     
+    @slothpy_exc("SltSaveError")
     @ensure_ready
     def save(self, slt_save = None):
         new_group = SltGroup(self._hdf5, self._slt_save if slt_save is None else slt_save)
@@ -54,9 +56,10 @@ class SltStatesEnergiesCm1(SingleProcessed):
         new_group.attributes["Precision"] = settings.precision.upper()
         new_group.attributes["Description"] = f"States' energies in cm-1 from Group '{self._group_name}'."
 
-    def _load(self):
+    def _load_from_file(self):
         self._result = self._slt_group["STATES_ENERGIES_CM_1"][:]
 
+    @slothpy_exc("SltPlotError")
     @ensure_ready
     def plot(self):
         fig, ax = plt.subplots()
@@ -74,6 +77,7 @@ class SltStatesEnergiesCm1(SingleProcessed):
         plt.tight_layout()
         plt.show()
     
+    @slothpy_exc("SltReadError")
     @ensure_ready
     def to_data_frame(self):
         self._df = DataFrame({'Energy (cm^-1)': self._result})
@@ -102,6 +106,7 @@ class SltZeemanSplitting(MulitProcessed):
         self._orientations = orientations
         self._states_cutoff = states_cutoff
         self._args = (number_of_states,)
+        self._executor_proxy = _zeeman_splitting_proxy
         
     def __repr__(self) -> str:
         return f"<{RED}SltZeemanSplitting{RESET} object from {BLUE}Group{RESET} '{self._group_name}' {GREEN}File{RESET} '{self._hdf5}'.>"
@@ -121,11 +126,8 @@ class SltZeemanSplitting(MulitProcessed):
             for i, j in enumerate(range(start_field_index, end_field_index)):
                 zeeman_splitting_array[j, :] += zeeman_array[i, :]
         return zeeman_splitting_array
-    
-    def _executor(self):
-        result_queue = SltProcessPool(_zeeman_splitting_parallel, self._create_jobs(), self._returns, self._terminate_event).start_and_collect()
-        return result_queue
 
+    @slothpy_exc("SltSaveError")
     @ensure_ready
     def save(self, slt_save = None):
         if self._orientations.shape[1] == 4 and self._result.ndim == 2:
@@ -144,11 +146,12 @@ class SltZeemanSplitting(MulitProcessed):
         new_group["MAGNETIC_FIELDS"].attributes["Description"] = "Dataset containing magnetic field (T) values used in the simulation."
         new_group["ORIENTATIONS"].attributes["Description"] = "Dataset containing magnetic fields' orientation grid used in the simulation."
 
-    def _load(self):
+    def _load_from_file(self):
         self._result = self._slt_group["ZEEMAN_SPLITTING"][:]
         self._magnetic_fields = self._slt_group["MAGNETIC_FIELDS"][:]
         self._orientations = self._slt_group["ORIENTATIONS"][:]
 
+    @slothpy_exc("SltPlotError")
     @ensure_ready
     def plot(self):
         fig, ax = plt.subplots()
@@ -166,6 +169,7 @@ class SltZeemanSplitting(MulitProcessed):
         plt.tight_layout()
         plt.show()
     
+    @slothpy_exc("SltReadError")
     @ensure_ready
     def to_data_frame(self):
         self._df = DataFrame({'Energy (cm^-1)': self._result})

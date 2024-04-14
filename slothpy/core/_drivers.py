@@ -31,7 +31,7 @@ from numpy import array, zeros, any, all, median, int64
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import slothpy_exc
 from slothpy.core._slt_file import SltGroup
-from slothpy._general_utilities._system import _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array
+from slothpy._general_utilities._system import SltProcessPool, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, YELLOW, PURPLE, RESET
 from slothpy._gui._monitor_gui import _run_monitor_gui
 
@@ -45,7 +45,7 @@ def ensure_ready(func):
 
 class SingleProcessed(ABC):
 
-    __slots__ = ["_slt_group", "_hdf5", "_group_name", "_driver", "_result", "_ready", "_slt_save", "_df"]
+    __slots__ = ["_slt_group", "_hdf5", "_group_name", "_result", "_ready", "_slt_save", "_df"]
 
     @abstractmethod
     def __init__(self, slt_group: SltGroup, slt_save: str = None) -> None:
@@ -53,7 +53,6 @@ class SingleProcessed(ABC):
         self._slt_group = slt_group
         self._hdf5 = slt_group._hdf5
         self._group_name = slt_group._group_name
-        self._driver = "single"
         self._result = None
         self._ready = False
         self._slt_save = slt_save
@@ -69,11 +68,10 @@ class SingleProcessed(ABC):
         instance._slt_group = slt_group
         instance._hdf5 = slt_group._hdf5
         instance._group_name = slt_group._group_name
-        instance._driver = None
         instance._result = None
         instance._slt_save = None
         instance._df = None
-        instance._load()
+        instance._load_from_file()
         instance._ready = True
 
         return instance
@@ -100,7 +98,7 @@ class SingleProcessed(ABC):
         pass
 
     @abstractmethod
-    def _load(self):
+    def _load_from_file(self):
         pass
     
     @abstractmethod
@@ -115,12 +113,14 @@ class SingleProcessed(ABC):
     def to_data_frame(self):
         pass
     
+    @slothpy_exc("SltSaveError")
     def to_csv(self, file_path=".", file_name="states_energies_cm_1.csv", separator=","):
         if self._df is None:
             self.to_data_frame()
         self._df.to_csv(join(file_path, file_name), sep=separator)
     
-    def dataframe_to_slt_file(self, group_name):
+    @slothpy_exc("SltSaveError")
+    def data_frame_to_slt_file(self, group_name):
         if self._df is None:
             self.to_data_frame()
         self._df.to_hdf(self._hdf5)
@@ -128,12 +128,12 @@ class SingleProcessed(ABC):
 
 class MulitProcessed(SingleProcessed):
 
-    __slots__ = SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_autotune", "_smm", "_sm", "_sm_arrays_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
+    __slots__ = SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_smm", "_sm", "_sm_arrays_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
 
     @abstractmethod
     def __init__(self, slt_group: SltGroup, number_to_parallelize: int, number_cpu: int, number_threads: int, autotune: bool, smm: SharedMemoryManager = None, terminate_event: Event = None, slt_save: str = None) -> None:
         super().__init__(slt_group, slt_save)
-        self._driver = "multi"
+        self._executor_proxy = None
         self._number_to_parallelize = number_to_parallelize
         self._number_cpu = number_cpu
         self._number_processes, self._number_threads = _get_number_of_processes_threads(number_cpu, number_threads, number_to_parallelize)
@@ -160,18 +160,18 @@ class MulitProcessed(SingleProcessed):
     def _create_shared_memory(self):
         for array in self._args_arrays:
             self._sm_arrays_info.append(_to_shared_memory(self._smm, array))
-        del self._args_arrays
+        self._args_arrays = ()
         self._sm_arrays_info.append(_to_shared_memory(self._smm, zeros((self._number_processes,), dtype=int64, order="C")))
         if not self._returns:
             self._sm_arrays_info.append(_to_shared_memory(self._smm, self._result))
-            del self._result
+            self._result = None
     
     def _retrieve_arrays_and_results_from_shared_memory(self):
-        self._args_arrays = []
+        self._args_arrays = ()
         for sm_array_info in self._sm_arrays_info[:-2]:
             self._args_arrays.append(_from_shared_memory_to_array(sm_array_info))
         self._result = _from_shared_memory_to_array(self._sm_arrays_info[-1])
-        del self._sm_arrays_info
+        self._sm_arrays_info = []
 
     @abstractmethod
     def _load_args_arrays():
@@ -184,6 +184,12 @@ class MulitProcessed(SingleProcessed):
     def _gather_results(self, results):
         pass
 
+    def _executor(self):
+        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._returns, self._terminate_event)
+        result_queue = self._process_pool.start_and_collect()
+        self._process_pool = None
+        return result_queue
+
     @slothpy_exc("SltCompError")
     def autotune(self, _from_run: bool = False):
         final_number_of_processes = self._number_cpu
@@ -192,6 +198,8 @@ class MulitProcessed(SingleProcessed):
         old_processes = 0
         worse_counter = 0
         current_terminate_event = self._terminate_event
+        if self._ready:
+            result_tmp = self._result
         with ExitStack() as stack:
             stack.enter_context(self._ensure_shared_memory_manager())
             self._load_args_arrays()
@@ -214,7 +222,8 @@ class MulitProcessed(SingleProcessed):
                     progress_array = zeros((number_processes,), dtype=int64, order="C")
                     self._sm_arrays_info[-1 if self._returns else -2] = _to_shared_memory(self._smm, progress_array)
                     self._terminate_event = terminate_event()
-                    benchmark_process = Process(target=self._executor)
+                    self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._returns, self._terminate_event)
+                    benchmark_process = Process(target=self._process_pool.start_and_collect)
                     sm_progress = SharedMemory(self._sm_arrays_info[-1 if self._returns else -2].name)
                     progress_array = _from_shared_memory(sm_progress, self._sm_arrays_info[-1 if self._returns else -2])
                     benchmark_process.start()
@@ -254,13 +263,15 @@ class MulitProcessed(SingleProcessed):
                     print(info)
             time_info = f" (starting from now - [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}])" if _from_run else ''
             print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}.\nThe calculation time{time_info} is estimated to be at least: {GREEN}{best_time/1e9} s{RESET}.")
+            if self._ready:
+                self._result = result_tmp
             if _from_run:
                 self._retrieve_arrays_and_results_from_shared_memory()
             self._number_processes, self._number_threads = final_number_of_processes, final_number_of_threads
             self._sm_arrays_info = []
+            self._process_pool = None
             self._terminate_event = current_terminate_event
             self._autotune = False
-            
     
     @slothpy_exc("SltCompError")
     def run(self):
@@ -273,7 +284,7 @@ class MulitProcessed(SingleProcessed):
                 stack.enter_context(self._ensure_shared_memory_manager())
                 self._create_shared_memory()
                 if settings.monitor:
-                    monitor = Process(target=_run_monitor_gui, args=(self._sm_arrays_info[-1] if self._returns else self._sm_arrays_info[-2], _distribute_chunks(self._number_to_parallelize, self._number_processes), "zeeman_splitting"))
+                    monitor = Process(target=_run_monitor_gui, args=(self._sm_arrays_info[-1] if self._returns else self._sm_arrays_info[-2], self._number_to_parallelize, self._number_processes, "zeeman_splitting"))
                     monitor.start()
                 results = self._executor()
                 if settings.monitor and monitor is not None:
@@ -286,7 +297,15 @@ class MulitProcessed(SingleProcessed):
                 self._ready = True
         if self._slt_save is not None:
             self.save()
+        self._sm_arrays_info = []
+        self._process_pool = None
         return self._result
+    
+    @slothpy_exc("SltCompError")
+    def clear(self):
+        self._result = None
+        self._ready = False
+
 
     
 

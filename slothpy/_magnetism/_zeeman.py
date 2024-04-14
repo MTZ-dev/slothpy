@@ -41,6 +41,7 @@ from numba import jit, set_num_threads, prange, types, int64, float32, float64, 
 from slothpy._general_utilities._constants import KB, MU_B, H_CM_1
 from slothpy._general_utilities._system import (
     SharedMemoryArrayInfo,
+    _load_shared_memory_arrays,
     _get_num_of_processes,
     _distribute_chunks,
     _from_shared_memory,
@@ -184,13 +185,8 @@ def _zeeman_splitting_average(
     return start_field_index, end_field_index, zeeman_splitting_array
 
 
-def _zeeman_splitting_parallel(sm_arrays_info: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, number_threads: int, returns: bool = False):
-    sm = []
-    arrays = []
-    for sm_array_info in sm_arrays_info:
-        sm.append(SharedMemory(sm_array_info.name))
-        arrays.append(_from_shared_memory(sm[-1], sm_array_info))
-
+def _zeeman_splitting_proxy(sm_arrays_info_list: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, number_threads: int, returns: bool = False):
+    sm, arrays = _load_shared_memory_arrays(sm_arrays_info_list)
     with threadpool_limits(limits=number_threads):
         set_num_threads(number_threads)
         if returns:

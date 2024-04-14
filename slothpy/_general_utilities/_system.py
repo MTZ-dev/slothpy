@@ -95,6 +95,14 @@ def _chunk_from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArray
     chunk_length = chunk.end - chunk.start
     return ndarray((chunk_length,), sm_array_info.dtype, sm.buf, offset)
 
+def _load_shared_memory_arrays(sm_arrays_info_list):
+    sm = []
+    arrays = []
+    for sm_array_info in sm_arrays_info_list:
+        sm.append(SharedMemory(sm_array_info.name))
+        arrays.append(_from_shared_memory(sm[-1], sm_array_info))
+    return sm, arrays
+
 
 def _worker_wrapper(worker, args, result_queue=None):
         result = worker(*args)
@@ -125,9 +133,10 @@ class SltProcessPool:
                 while True:
                     if self._terminate_event.is_set():
                         for process in self._processes:
-                            process.terminate()
+                            if process is not None:
+                                process.terminate()
                         break
-                    elif all(not p.is_alive() for p in self._processes):
+                    elif all(p is None or not p.is_alive() for p in self._processes):
                         break
                     sleep(0.5)
             

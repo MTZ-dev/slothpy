@@ -17,51 +17,43 @@
 from __future__ import annotations
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.synchronize import Event
-from numpy import ndarray, zeros, int64
+from numpy import ndarray, zeros
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 
 from slothpy.core._config import settings
-from slothpy.core._slothpy_exceptions import slothpy_exc
-from slothpy.core._slt_file import SltGroup
-from slothpy.core._drivers import SingleProcessed, MulitProcessed, ensure_ready
-from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET, H_CM_1
-from slothpy._general_utilities._system import SltProcessPool
+from slothpy.core._drivers import SingleProcessed, MulitProcessed
+from slothpy._general_utilities._constants import H_CM_1
 from slothpy._magnetism._zeeman import _zeeman_splitting_proxy
 
 class SltStatesEnergiesCm1(SingleProcessed):
 
     __slots__ = SingleProcessed.__slots__ + ["_start_state", "_stop_state"]
      
-    def __init__(self, slt_group: SltGroup, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
+    def __init__(self, slt_group, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
         super().__init__(slt_group, slt_save)
+        self._method_name = "States Energies in cm-1"
         self._start_state = start_state
         self._stop_state = stop_state
-
-    def __repr__(self) -> str:
-        return f"<{RED}SltStatesEnergiesCm1{RESET} object from {BLUE}Group{RESET} '{self._group_name}' {GREEN}File{RESET} '{self._hdf5}'.>"
 
     def _executor(self):
         return self._slt_group.energies[self._start_state:self._stop_state] * H_CM_1
     
-    @slothpy_exc("SltSaveError")
-    @ensure_ready
-    def save(self, slt_save = None):
-        new_group = SltGroup(self._hdf5, self._slt_save if slt_save is None else slt_save)
-        new_group["STATES_ENERGIES_CM_1"] = self._result
-        new_group["STATES_ENERGIES_CM_1"].attributes["Description"] = "States' energies in cm-1."
-        new_group.attributes["Type"] = "ENERGIES"
-        new_group.attributes["Kind"] = "CM_1"
-        new_group.attributes["States"] = self._result.shape[0]
-        new_group.attributes["Precision"] = settings.precision.upper()
-        new_group.attributes["Description"] = f"States' energies in cm-1 from Group '{self._group_name}'."
+    def _save(self):
+        self._metadata_dict = {
+            "Type": "ENERGIES",
+            "Kind": "CM_1",
+            "States": self._result.shape[0],
+            "Precision": settings.precision.upper(),
+            "Description": f"States' energies in cm-1 from Group '{self._group_name}'."
+        }
+        self._data_dict = {"STATES_ENERGIES_CM_1": (self._result,  "States' energies in cm-1.")}
 
     def _load_from_file(self):
         self._result = self._slt_group["STATES_ENERGIES_CM_1"][:]
 
-    @slothpy_exc("SltPlotError")
-    @ensure_ready
-    def plot(self):
+    #TODO: plot
+    def _plot(self):
         fig, ax = plt.subplots()
         x_min = 0
         x_max = 1
@@ -76,11 +68,58 @@ class SltStatesEnergiesCm1(SingleProcessed):
         ax.set_xticks([])
         plt.tight_layout()
         plt.show()
-    
-    @slothpy_exc("SltReadError")
-    @ensure_ready
-    def to_data_frame(self):
+
+    def _to_data_frame(self):
         self._df = DataFrame({'Energy (cm^-1)': self._result})
+        self._df.index.name = 'State Number'
+        return self._df
+
+
+class SltStatesEnergiesAu(SingleProcessed):
+
+    __slots__ = SingleProcessed.__slots__ + ["_start_state", "_stop_state"]
+     
+    def __init__(self, slt_group, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
+        super().__init__(slt_group, slt_save)
+        self._method_name = "States Energies in a.u."
+        self._start_state = start_state
+        self._stop_state = stop_state
+
+    def _executor(self):
+        return self._slt_group.energies[self._start_state:self._stop_state]
+
+    def _save(self):
+        self._metadata_dict = {
+            "Type": "ENERGIES",
+            "Kind": "AU",
+            "States": self._result.shape[0],
+            "Precision": settings.precision.upper(),
+            "Description": f"States' energies in a.u. from Group '{self._group_name}'."
+        }
+        self._data_dict = {"STATES_ENERGIES_AU": (self._result, "States' energies in cm-1.")}
+
+    def _load_from_file(self):
+        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
+
+    #TODO: plot
+    def _plot(self):
+        fig, ax = plt.subplots()
+        x_min = 0
+        x_max = 1
+        for energy in self._result:
+            ax.hlines(y=energy, xmin=x_min, xmax=x_max, colors='skyblue', linestyles='solid', linewidth=2)
+            ax.text(x_max + 0.1, energy, f'{energy:.1f}', va='center', ha='left')
+        ax.set_ylabel('Energy (cm$^{-1}$)')
+        ax.set_title('Energy Levels')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.xaxis.set_ticks_position('none')
+        ax.set_xticks([])
+        plt.tight_layout()
+        plt.show()
+
+    def _to_data_frame(self):
+        self._df = DataFrame({'Energy (a.u.)': self._result})
         self._df.index.name = 'State Number'
         return self._df
 
@@ -89,7 +128,7 @@ class SltZeemanSplitting(MulitProcessed):
 
     __slots__ = SingleProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff"]
      
-    def __init__(self, slt_group: SltGroup,
+    def __init__(self, slt_group,
         magnetic_fields: ndarray,
         orientations: ndarray,
         states_cutoff: int,
@@ -102,14 +141,12 @@ class SltZeemanSplitting(MulitProcessed):
         terminate_event: Event = None,
         ) -> None:
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0] , number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
+        self._method_name = "Zeeman Splitting"
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
         self._states_cutoff = states_cutoff
         self._args = (number_of_states,)
         self._executor_proxy = _zeeman_splitting_proxy
-        
-    def __repr__(self) -> str:
-        return f"<{RED}SltZeemanSplitting{RESET} object from {BLUE}Group{RESET} '{self._group_name}' {GREEN}File{RESET} '{self._hdf5}'.>"
     
     def _load_args_arrays(self):
         self._args_arrays = (self._slt_group.energies[:self._states_cutoff], self._slt_group.magnetic_dipole_momenta[:, :self._states_cutoff, :self._states_cutoff], self._magnetic_fields, self._orientations)
@@ -127,51 +164,26 @@ class SltZeemanSplitting(MulitProcessed):
                 zeeman_splitting_array[j, :] += zeeman_array[i, :]
         return zeeman_splitting_array
 
-    @slothpy_exc("SltSaveError")
-    @ensure_ready
-    def save(self, slt_save = None):
-        if self._orientations.shape[1] == 4 and self._result.ndim == 2:
-            average = True
-        else:
-            average = False
-        new_group = SltGroup(self._hdf5, self._slt_save if slt_save is None else slt_save)
-        new_group["ZEEMAN_SPLITTING"] = self._result
-        new_group["MAGNETIC_FIELDS"] = self._magnetic_fields
-        new_group["ORIENTATIONS"] = self._orientations
-        new_group.attributes["Type"] = "ZEEMAN_SPLITTING"
-        new_group.attributes["Kind"] = "AVERAGE" if average else "DIRECTIONAL"
-        new_group.attributes["Precision"] = settings.precision.upper()
-        new_group.attributes["Description"] = f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."
-        new_group["ZEEMAN_SPLITTING"].attributes["Description"] = f"Dataset containing Zeeman splitting in the form {'[fields, energies]' if average else '[orientations, fields, energies]'}."
-        new_group["MAGNETIC_FIELDS"].attributes["Description"] = "Dataset containing magnetic field (T) values used in the simulation."
-        new_group["ORIENTATIONS"].attributes["Description"] = "Dataset containing magnetic fields' orientation grid used in the simulation."
+    def _save(self):
+        self._metadata_dict = {
+            "Type": "ZEEMAN_SPLITTING",
+            "Kind": "AVERAGE" if self._result.ndim == 2 else "DIRECTIONAL",
+            "Precision": settings.precision.upper(),
+            "Description": f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."
+        }
+        self._data_dict = {
+            "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._result.ndim == 2 else "[orientations, fields, energies]")),
+            "MAGNETIC_FIELDS": (self._magnetic_fields, "Dataset containing magnetic field (T) values used in the simulation."),
+            "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),
+        }
 
     def _load_from_file(self):
         self._result = self._slt_group["ZEEMAN_SPLITTING"][:]
         self._magnetic_fields = self._slt_group["MAGNETIC_FIELDS"][:]
         self._orientations = self._slt_group["ORIENTATIONS"][:]
 
-    @slothpy_exc("SltPlotError")
-    @ensure_ready
-    def plot(self):
-        fig, ax = plt.subplots()
-        x_min = 0
-        x_max = 1
-        for energy in self._result:
-            ax.hlines(y=energy, xmin=x_min, xmax=x_max, colors='skyblue', linestyles='solid', linewidth=2)
-            ax.text(x_max + 0.1, energy, f'{energy:.1f}', va='center', ha='left')
-        ax.set_ylabel('Energy (cm$^{-1}$)')
-        ax.set_title('Energy Levels')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.xaxis.set_ticks_position('none')
-        ax.set_xticks([])
-        plt.tight_layout()
-        plt.show()
-    
-    @slothpy_exc("SltReadError")
-    @ensure_ready
-    def to_data_frame(self):
-        self._df = DataFrame({'Energy (cm^-1)': self._result})
-        self._df.index.name = 'State Number'
-        return self._df
+    def _plot(self):
+        pass
+ 
+    def _to_data_frame(self):
+        pass

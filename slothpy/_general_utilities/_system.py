@@ -64,8 +64,9 @@ def _to_shared_memory(smm: SharedMemoryManager, array: ndarray):
     return SharedMemoryArrayInfo(shm.name, shared_array.shape, shared_array.dtype)
 
 
-def _from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArrayInfo):
-    return ndarray(sm_array_info.shape, sm_array_info.dtype, sm.buf)
+def _from_shared_memory(sm_array_info: SharedMemoryArrayInfo):
+    sm = SharedMemory(sm_array_info.name)
+    return sm, ndarray(sm_array_info.shape, sm_array_info.dtype, sm.buf)
 
 
 def _from_shared_memory_to_array(sm_array_info: SharedMemoryArrayInfo, reshape: tuple = None):
@@ -96,12 +97,13 @@ def _chunk_from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArray
     return ndarray((chunk_length,), sm_array_info.dtype, sm.buf, offset)
 
 def _load_shared_memory_arrays(sm_arrays_info_list):
-    sm = []
-    arrays = []
+    sm_list = []
+    arrays_list = []
     for sm_array_info in sm_arrays_info_list:
-        sm.append(SharedMemory(sm_array_info.name))
-        arrays.append(_from_shared_memory(sm[-1], sm_array_info))
-    return sm, arrays
+        sm, array = _from_shared_memory(sm_array_info)
+        sm_list.append(sm)
+        arrays_list.append(array)
+    return sm_list, arrays_list
 
 
 def _worker_wrapper(worker, args, result_queue=None):
@@ -138,7 +140,7 @@ class SltProcessPool:
                         break
                     elif all(p is None or not p.is_alive() for p in self._processes):
                         break
-                    sleep(0.5)
+                    sleep(0.3)
             
             for process in self._processes:
                 process.join()

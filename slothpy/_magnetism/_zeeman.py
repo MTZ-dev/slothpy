@@ -44,7 +44,6 @@ from slothpy._general_utilities._system import (
     _load_shared_memory_arrays,
     _get_num_of_processes,
     _distribute_chunks,
-    _from_shared_memory,
 )
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,

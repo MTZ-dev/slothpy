@@ -19,11 +19,12 @@ from h5py import File, Group, Dataset
 from numpy import ndarray, array, diagonal, float32, float64
 from slothpy.core._slothpy_exceptions import slothpy_exc, SltCompError, SltSaveError, KeyError
 from slothpy.core._config import settings
-from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET, H_CM_1
+from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
 from slothpy._general_utilities._utils import _rotate_and_return_components, _return_components, _return_components_diag
 from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
+from slothpy.core._delayed_methods import SltStatesEnergiesCm1, SltStatesEnergiesAu, SltZeemanSplitting
 
 class SltAttributes:
     def __init__(self, hdf5_file, item_path):
@@ -246,26 +247,12 @@ class SltGroup:
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 2)
 
     @validate_input("HAMILTONIAN")
-    def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None):
-        from slothpy.core._delayed_methods import SltStatesEnergiesCm1
+    def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesCm1:
         return SltStatesEnergiesCm1(self, start_state, stop_state, slt_save)
     
     @validate_input("HAMILTONIAN")
-    def states_energies_au(self, start_state=0, stop_state=0, slt_save=None):
-        try:
-            energies_au = self.energies[start_state:stop_state]
-        except Exception as exc:
-            raise SltCompError(self._hdf5, exc, f"Failed to compute energies in a.u. from {BLUE}Group{RESET}: '{self._hdf5}'.")
-        if slt_save is not None:
-            new_group = SltGroup(self._hdf5, slt_save)
-            new_group["STATES_ENERGIES_AU"] = energies_au
-            new_group["STATES_ENERGIES_AU"].attributes["Description"] = "States' energies in a.u.."
-            new_group.attributes["Type"] = "ENERGIES"
-            new_group.attributes["Kind"] = "AU"
-            new_group.attributes["States"] = energies_au.shape[0]
-            new_group.attributes["Precision"] = settings.precision.upper()
-            new_group.attributes["Description"] = "States' energies in a.u.."
-        return energies_au
+    def states_energies_au(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesAu:
+        return SltStatesEnergiesAu(self, start_state, stop_state, slt_save)
     
     @validate_input("HAMILTONIAN")
     def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
@@ -498,8 +485,7 @@ class SltGroup:
         number_threads: int = None,
         slt_save: str = None,
         autotune: bool = False,
-    ):
-        from slothpy.core._delayed_methods import SltZeemanSplitting
+    ) -> SltZeemanSplitting:
         return SltZeemanSplitting(self, magnetic_fields, orientations, states_cutoff, number_of_states, number_cpu, number_threads, autotune, slt_save)
 
 

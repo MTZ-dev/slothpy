@@ -678,3 +678,14 @@ def _get_dataset_slt_dtype(file_path, dataset_path):
                     return dtype(settings.int)
                 case _:
                     return _dtype
+                
+
+def _save_data_to_slt(file_path, group_name, data_dict, metadata_dict):
+    with File(file_path, 'a') as file:
+        group = file.create_group(group_name)
+        for key, value in data_dict.items():
+            dataset = group.create_dataset(key, shape=value[0].shape, dtype=value[0].dtype, chunks=True)
+            dataset[:] = value[0]
+            dataset.attrs['Description'] = value[1]
+        for key, value in metadata_dict.items():
+            group.attrs[key] = value

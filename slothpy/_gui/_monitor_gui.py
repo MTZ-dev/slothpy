@@ -78,8 +78,7 @@ class WorkerMonitorApp(QMainWindow):
         self.elapsedTimeTimer.start(1000)
 
     def updateProgress(self):
-        sm_progress = SharedMemory(self.progress_array_info.name)
-        progress_array = _from_shared_memory(sm_progress, self.progress_array_info)
+        sm_progress, progress_array = _from_shared_memory(self.progress_array_info)
         overall_progress = sum(progress_array)
         self.overall_progress_bar.setValue(overall_progress)
         for i, bar in enumerate(self.progress_bars):

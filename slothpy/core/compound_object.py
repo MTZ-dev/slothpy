@@ -190,7 +190,7 @@ class Compound():
                 file.create_dataset(key, data=array(value))
 
     @slothpy_exc("SltFileError")
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Union[SltGroup, SltDataset]:
         """
         Performs the operation __getitem__.
 
@@ -298,7 +298,7 @@ class Compound():
         number_threads: int = None,
         slt_save: str = None,
         autotune: bool = False,
-    ) -> ndarray[Union[float32, float64]]:
+    ):
         """
         Calculates directional or powder-averaged Zeeman splitting for a given
         number of states and a list of magnetic field orientations and values.

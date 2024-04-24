@@ -131,9 +131,9 @@ def validate_input(group_type: Literal["HAMILTONIAN"]):
                                 raise ValueError(f"The first (start) state's number has to be a nonnegative integer less than or equal to the overall number of states - 1: {self.attributes['States'] - 1}.")
                         case "stop_state":
                             if value == 0:
-                                value = int(self.attributes["States"]) - 1
+                                value = int(self.attributes["States"])
                             if not isinstance(value, int) or value < 0 or value > self.attributes["States"]:
-                                raise ValueError(f"The last (stop) state's number has to be a nonnegative integer less than or equal to the overall number of states - 1: {self.attributes['States'] - 1}.")
+                                raise ValueError(f"The last (stop) state's number has to be a nonnegative integer less than or equal to the overall number of states: {self.attributes['States']}.")
                             if "start_state" in bound_args.arguments.keys():
                                 if isinstance(bound_args.arguments["start_state"], int) and (bound_args.arguments["start_state"] >= 0) and bound_args.arguments["start_state"] <= self.attributes["States"] and value < bound_args.arguments["start_state"]:
                                     raise ValueError(f"The last (stop) state's number has to be equal or greater than the first (start) state's number: {bound_args.arguments['start_state']}.")

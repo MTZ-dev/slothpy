@@ -157,9 +157,22 @@ class SltPlotError(SltFileError):
 
     def __init__(self, file: str, exception: Exception, message: str = ""):
         super().__init__(file, exception, message, "SlothPlotError")
+
+
+class SltAutotuneError(SltFileError):
+    """
+    A custom exception class for autotune errors.
+
+    Parameters
+    ----------
+    None
+    """
+
+    def __init__(self, file: str, exception: Exception, message: str = ""):
+        super().__init__(file, exception, message, "SlothAutotuneError")
     
 
-def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError"], slt_message: str = "") -> callable:
+def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError", "SltAutotuneError"], slt_message: str = "") -> callable:
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -173,6 +186,7 @@ def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveE
                     "SltSaveError": SltSaveError,
                     "SltReadError": SltReadError,
                     "SltPlotError": SltPlotError,
+                    "SltAutotuneError": SltAutotuneError,
                 }
                 if slt_exception in exception_mapping:
                     if slt_exception == "SltInputError":

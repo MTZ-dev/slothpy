@@ -28,7 +28,7 @@ from datetime import datetime
 from numpy import array, zeros, any, all, median, int64
 
 from slothpy.core._config import settings
-from slothpy.core._slothpy_exceptions import slothpy_exc, SltCompError, SltSaveError, SltPlotError, SltReadError
+from slothpy.core._slothpy_exceptions import slothpy_exc_methods as slothpy_exc
 from slothpy._general_utilities._system import SltProcessPool, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, YELLOW, PURPLE, RESET
 from slothpy._general_utilities._io import _save_data_to_slt
@@ -44,11 +44,13 @@ def ensure_ready(func):
 
 class SingleProcessed(ABC):
 
-    __slots__ = ["_slt_group", "_hdf5", "_group_name", "_result", "_ready", "_slt_save", "_df", "_method_name", "_metadata_dict", "_data_dict", "_is_from_file"]
+    __slots__ = ["_method_name", "_method_type", "_slt_group", "_hdf5", "_group_name", "_result", "_ready", "_slt_save", "_df", "_metadata_dict", "_data_dict", "_is_from_file"]
 
     @abstractmethod
     def __init__(self, slt_group, slt_save: str = None) -> None:
         super().__init__()
+        self._method_name = None
+        self._method_type = None
         self._slt_group = slt_group
         self._hdf5 = slt_group._hdf5
         self._group_name = slt_group._group_name
@@ -56,7 +58,6 @@ class SingleProcessed(ABC):
         self._ready = False
         self._slt_save = slt_save
         self._df = None
-        self._method_name = None
         self._data_dict = None
         self._metadata_dict = None
         self._is_from_file = False
@@ -100,9 +101,14 @@ class SingleProcessed(ABC):
         pass
     
     @slothpy_exc("SltSaveError")
+    @ensure_ready
     def save(self, slt_save = None):
+        if slt_save is not None:
+            self._slt_save = slt_save
+        if self._slt_save == None:
+            raise NameError("There is no slt_save name provided.")
         self._save()
-        _save_data_to_slt(self._hdf5, self._slt_save if slt_save is None else slt_save, self._data_dict, self._metadata_dict)
+        _save_data_to_slt(self._hdf5, self._slt_save, self._data_dict, self._metadata_dict)
 
     @abstractmethod
     def _load_from_file(self):
@@ -214,6 +220,7 @@ class MulitProcessed(SingleProcessed):
         return result_queue
 
     @slothpy_exc("SltCompError")
+    ################ terminate ctr + c try except cleaning (sometimes smm leaks)
     def autotune(self, _from_run: bool = False):
         if self._is_from_file:
             print(f"The {self.__class__.__name__} object was loaded from the .slt file. There is nothing to autotune.")
@@ -288,6 +295,9 @@ class MulitProcessed(SingleProcessed):
                         info += f"{RED}{current_estimated_time/1e9:.2f}{RESET} s."
                         worse_counter += 1
                     if worse_counter > 3:
+                        sm_progress.close()
+                        sm_progress.unlink()
+                        self._sm_arrays_info = self._sm_arrays_info[:-2]
                         break
                     info += f" The best time: {GREEN}{best_time/1e9:.2f}{RESET} s."
                     print(info)
@@ -333,8 +343,7 @@ class MulitProcessed(SingleProcessed):
                 self._ready = True
         if self._slt_save is not None:
             self.save()
-        self._sm_arrays_info = []
-        self._process_pool = None
+        self._clean_sm_info_and_pool()
     
     @slothpy_exc("SltCompError")
     def clear(self):
@@ -343,6 +352,16 @@ class MulitProcessed(SingleProcessed):
             return
         self._result = None
         self._ready = False
+        self._smm = None
+
+        self._clean_sm_info_and_pool()
+
+    def _clean_sm_info_and_pool(self):
+        self._process_pool = None
+        self._sm_arrays_info = []
+        self._sm_progress_array_info = None
+        self._sm_result_info = None
+
 
 
     

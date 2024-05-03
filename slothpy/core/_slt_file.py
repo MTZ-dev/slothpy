@@ -257,10 +257,10 @@ class SltGroup:
     @validate_input("HAMILTONIAN")
     def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         if rotation is not None:
-            spin_matrices = self.spins[:, start_state:stop_state, start_state:stop_state]
-            spin_matrices = _rotate_and_return_components(xyz, spin_matrices, rotation)
+            spin_matrices = self.spins[:, start_state:stop_state, start_state:stop_state] ## tak pod spodem ma wygladac wywolanie nowej funkcji z getattr
+            spin_matrices = _rotate_and_return_components(self._slt_group, "spins", self._start_state, self._stop_state, self._xyz, self._rotation)
         else:
-            spin_matrices = _return_components(self.spins, self.sx, self.sy, self.sz, xyz, start_state, stop_state)
+            spin_matrices = _return_components(self.spins, self.sx, self.sy, self.sz, xyz, start_state, stop_state) #tutaj bierz tylko self.
         if slt_save is not None:
             new_group = SltGroup(self._hdf5, slt_save)
             new_group["SPIN_MATRICES"] = spin_matrices

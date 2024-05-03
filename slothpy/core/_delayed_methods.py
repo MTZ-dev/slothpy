@@ -33,6 +33,7 @@ class SltStatesEnergiesCm1(SingleProcessed):
     def __init__(self, slt_group, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
         super().__init__(slt_group, slt_save)
         self._method_name = "States Energies in cm-1"
+        self._method_type = "STATES_ENERGIES"
         self._start_state = start_state
         self._stop_state = stop_state
 
@@ -41,7 +42,7 @@ class SltStatesEnergiesCm1(SingleProcessed):
     
     def _save(self):
         self._metadata_dict = {
-            "Type": "ENERGIES",
+            "Type": self._method_type,
             "Kind": "CM_1",
             "States": self._result.shape[0],
             "Precision": settings.precision.upper(),
@@ -82,6 +83,7 @@ class SltStatesEnergiesAu(SingleProcessed):
     def __init__(self, slt_group, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
         super().__init__(slt_group, slt_save)
         self._method_name = "States Energies in a.u."
+        self._method_type = "STATES_ENERGIES"
         self._start_state = start_state
         self._stop_state = stop_state
 
@@ -90,7 +92,7 @@ class SltStatesEnergiesAu(SingleProcessed):
 
     def _save(self):
         self._metadata_dict = {
-            "Type": "ENERGIES",
+            "Type": self._method_type,
             "Kind": "AU",
             "States": self._result.shape[0],
             "Precision": settings.precision.upper(),
@@ -124,6 +126,44 @@ class SltStatesEnergiesAu(SingleProcessed):
         return self._df
 
 
+class SltSpinMatrices(SingleProcessed):
+
+    __slots__ = SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
+     
+    def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
+        super().__init__(slt_group, slt_save)
+        self._method_name = "Spin Matrices"
+        self._method_type = "SPINS"
+        self._xyz = xyz
+        self._start_state = start_state
+        self._stop_state = stop_state
+        self._rotation = rotation
+    ######### tutaj skonczyles
+    def _executor(self):
+        return self._slt_group.energies[self._start_state:self._stop_state]
+
+    def _save(self):
+        self._metadata_dict = {
+            "Type": self._method_type,
+            "Kind": "AU",
+            "States": self._result.shape[0],
+            "Precision": settings.precision.upper(),
+            "Description": f"States' energies in a.u. from Group '{self._group_name}'."
+        }
+        self._data_dict = {"STATES_ENERGIES_AU": (self._result, "States' energies in cm-1.")}
+
+    def _load_from_file(self):
+        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
+
+    #TODO: plot
+    def _plot(self):
+        pass
+
+    #TODO: df
+    def _to_data_frame(self):
+        pass
+    
+
 class SltZeemanSplitting(MulitProcessed):
 
     __slots__ = SingleProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff"]
@@ -142,6 +182,7 @@ class SltZeemanSplitting(MulitProcessed):
         ) -> None:
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0] , number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
         self._method_name = "Zeeman Splitting"
+        self._method_type = "ZEEMAN_SPLITTING"
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
         self._states_cutoff = states_cutoff
@@ -166,7 +207,7 @@ class SltZeemanSplitting(MulitProcessed):
 
     def _save(self):
         self._metadata_dict = {
-            "Type": "ZEEMAN_SPLITTING",
+            "Type": self._method_type,
             "Kind": "AVERAGE" if self._result.ndim == 2 else "DIRECTIONAL",
             "Precision": settings.precision.upper(),
             "Description": f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."

@@ -17,7 +17,7 @@
 """Module for storing custom exception classes with error reporting modes."""
 from functools import wraps
 from typing import Literal
-from slothpy._general_utilities._constants import RED, GREEN, YELLOW, RESET
+from slothpy._general_utilities._constants import RED, GREEN, YELLOW, BLUE, RESET
 
 
 class SltInputError(Exception):
@@ -193,6 +193,33 @@ def slothpy_exc(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveE
                         raise exception_mapping[slt_exception](exc, slt_message) from None
                     else:
                         raise exception_mapping[slt_exception](args[0]._hdf5, exc, slt_message) from None
+                else:
+                    raise ValueError(f"Unsupported {RED}SltException{RESET} provided.") from None
+        return wrapper
+    return decorator
+
+
+def slothpy_exc_methods(slt_exception: Literal["SltFileError", "SltCompError", "SltSaveError", "SltReadError", "SltInputError", "SltPlotError", "SltAutotuneError"]) -> callable:
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as exc:
+                exception_mapping = {
+                    "SltInputError": (SltInputError, ""),
+                    "SltFileError": (SltFileError, ""),
+                    "SltCompError": (SltCompError, f"\nFailed to compute {args[0]._method_name} to {BLUE}Group{RESET}: '{args[0]._group_name}'."),
+                    "SltSaveError": (SltSaveError, f"\nFailed to save {args[0]._method_name} to {BLUE}Group{RESET}: '{args[0]._slt_save}'."),
+                    "SltReadError": (SltReadError, f"\nFailed to read {args[0]._method_name} from {BLUE}Group{RESET}: '{args[0]._group_name}'."),
+                    "SltPlotError": (SltPlotError, f"\nFailed to plot {args[0]._method_name} from {BLUE}Group{RESET}: '{args[0]._group_name}'."),
+                    "SltAutotuneError": (SltAutotuneError, f"\nFailed to autotune {args[0]._method_name} from {BLUE}Group{RESET}: '{args[0]._group_name}'."),
+                }
+                if slt_exception in exception_mapping:
+                    if slt_exception == "SltInputError":
+                        raise exception_mapping[slt_exception][0](exc, exception_mapping[slt_exception][1]) from None
+                    else:
+                        raise exception_mapping[slt_exception][0](args[0]._hdf5, exc, exception_mapping[slt_exception][1]) from None
                 else:
                     raise ValueError(f"Unsupported {RED}SltException{RESET} provided.") from None
         return wrapper

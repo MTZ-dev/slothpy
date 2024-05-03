@@ -22,6 +22,8 @@ from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
     dtype,
+    dot,
+    sort,
     array,
     arange,
     sum,
@@ -53,7 +55,7 @@ from slothpy._general_utilities._grids_over_sphere import (
     _meshgrid_over_sphere_flatten,
 )
 from slothpy._general_utilities._math_expresions import _3d_dot
-
+from scipy.sparse.linalg import eigsh, LinearOperator
 
 @jit([
     types.Array(complex64, 2, 'C')(
@@ -86,31 +88,41 @@ def _calculate_zeeman_matrix(
     return magnetic_momenta
 
 
-@jit([
-    (
-        types.Array(float32, 1, 'C', True), 
-        types.Array(complex64, 3, 'C', True), 
-        types.Array(float32, 1, 'C', True), 
-        types.Array(float32, 2, 'C', True), 
-        types.Array(int64, 1, 'C'), 
-        types.Array(float32, 2, 'C'), 
-        int64, int64, int64, int64 
-    ),
-    (
-        types.Array(float64, 1, 'C', True), 
-        types.Array(complex128, 3, 'C', True), 
-        types.Array(float64, 1, 'C', True), 
-        types.Array(float64, 2, 'C', True), 
-        types.Array(int64, 1, 'C'), 
-        types.Array(float64, 2, 'C'), 
-        int64, int64, int64, int64 
-    )
-],
-nopython=True,
-cache=True,
-nogil=True,
-fastmath=True,
-)
+# @jit([
+#     (
+#         types.Array(float32, 1, 'C', True), 
+#         types.Array(complex64, 3, 'C', True), 
+#         types.Array(float32, 1, 'C', True), 
+#         types.Array(float32, 2, 'C', True), 
+#         types.Array(int64, 1, 'C'), 
+#         types.Array(float32, 2, 'C'), 
+#         int64, int64, int64, int64 
+#     ),
+#     (
+#         types.Array(float64, 1, 'C', True), 
+#         types.Array(complex128, 3, 'C', True), 
+#         types.Array(float64, 1, 'C', True), 
+#         types.Array(float64, 2, 'C', True), 
+#         types.Array(int64, 1, 'C'), 
+#         types.Array(float64, 2, 'C'), 
+#         int64, int64, int64, int64 
+#     )
+# ],
+# nopython=True,
+# cache=True,
+# nogil=True,
+# fastmath=True,
+# )
+
+class KroneckerLinearOperator(LinearOperator):
+    def __init__(self, magnetic_momenta, states_energies, magnetic_fields, orientations, i):
+        self._mat1 = _calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields.shape[0]], orientations[i//magnetic_fields.shape[0], :3]) * array(H_CM_1, dtype=states_energies.dtype)
+        self.shape = self._mat1.shape
+        self.dtype = self._mat1.dtype
+
+    def _matvec(self, v):
+        return kronecker_matvec_jit(v, self._mat1)
+        
 def _zeeman_splitting(
     states_energies: ndarray,
     magnetic_momenta: ndarray,
@@ -123,13 +135,18 @@ def _zeeman_splitting(
     start: int,
     end: int,
 ):
-    magnetic_fields_shape_0 = magnetic_fields.shape[0]
-    h_cm_1 = array(H_CM_1, dtype=states_energies.dtype)
-
     for i in range(start, end):
-        zeeman_array[i] = eigvalsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]))[:number_of_states] * h_cm_1
+        op = KroneckerLinearOperator(magnetic_momenta, states_energies, magnetic_fields, orientations, i)
+        eigval, _ = eigsh(op, k=number_of_states, which="SA")
+        zeeman_array[i] = sort(eigval)
         progress_array[process_index] += 1
 
+
+@jit(nopython=True, fastmath=True, cache=True)
+def kronecker_matvec_jit(v, mat1):
+    v = ascontiguousarray(v)
+    mat1 = ascontiguousarray(mat1)
+    return (mat1@v).reshape(-1, 1)
 
 @jit([
     types.Tuple((int64, int64, types.Array(float32, 2, 'C')))(

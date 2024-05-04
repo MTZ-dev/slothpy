@@ -294,7 +294,9 @@ class MulitProcessed(SingleProcessed):
                     else:
                         info += f"{RED}{current_estimated_time/1e9:.2f}{RESET} s."
                         worse_counter += 1
-                    if worse_counter > 3:
+                    if worse_counter > 4:
+                        info += f" The best time: {GREEN}{best_time/1e9:.2f}{RESET} s."
+                        print(info)
                         sm_progress.close()
                         sm_progress.unlink()
                         self._sm_arrays_info = self._sm_arrays_info[:-2]

@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 from slothpy.core._config import settings
 from slothpy.core._drivers import SingleProcessed, MulitProcessed
 from slothpy._general_utilities._constants import H_CM_1
-from slothpy._magnetism._zeeman import _zeeman_splitting_proxy
+from slothpy._magnetism._zeeman_lanczos import _zeeman_splitting_proxy
 
 class SltStatesEnergiesCm1(SingleProcessed):
 

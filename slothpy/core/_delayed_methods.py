@@ -22,13 +22,13 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 
 from slothpy.core._config import settings
-from slothpy.core._drivers import SingleProcessed, MulitProcessed
+from slothpy.core._drivers import _SingleProcessed, _MultiProcessed
 from slothpy._general_utilities._constants import H_CM_1
-from slothpy._magnetism._zeeman_lanczos import _zeeman_splitting_proxy
+from slothpy._magnetism._zeeman import _zeeman_splitting_proxy
+################# __slots__ in every slt class!!
+class SltStatesEnergiesCm1(_SingleProcessed):
 
-class SltStatesEnergiesCm1(SingleProcessed):
-
-    __slots__ = SingleProcessed.__slots__ + ["_start_state", "_stop_state"]
+    __slots__ = _SingleProcessed.__slots__ + ["_start_state", "_stop_state"]
      
     def __init__(self, slt_group, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
         super().__init__(slt_group, slt_save)
@@ -76,9 +76,9 @@ class SltStatesEnergiesCm1(SingleProcessed):
         return self._df
 
 
-class SltStatesEnergiesAu(SingleProcessed):
+class SltStatesEnergiesAu(_SingleProcessed):
 
-    __slots__ = SingleProcessed.__slots__ + ["_start_state", "_stop_state"]
+    __slots__ = _SingleProcessed.__slots__ + ["_start_state", "_stop_state"]
      
     def __init__(self, slt_group, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
         super().__init__(slt_group, slt_save)
@@ -126,9 +126,9 @@ class SltStatesEnergiesAu(SingleProcessed):
         return self._df
 
 
-class SltSpinMatrices(SingleProcessed):
+class SltSpinMatrices(_SingleProcessed):
 
-    __slots__ = SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
+    __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
@@ -164,9 +164,9 @@ class SltSpinMatrices(SingleProcessed):
         pass
     
 
-class SltZeemanSplitting(MulitProcessed):
+class SltZeemanSplitting(_MultiProcessed):
 
-    __slots__ = SingleProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff"]
+    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff"]
      
     def __init__(self, slt_group,
         magnetic_fields: ndarray,

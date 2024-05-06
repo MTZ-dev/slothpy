@@ -37,6 +37,8 @@ from numpy import (
     int64,
 )
 from numpy.linalg import eigvalsh
+# from scipy.linalg import eigh
+from slothpy.core._lapack import eigh
 from numba import jit, set_num_threads, prange, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import KB, MU_B, H_CM_1
 from slothpy._general_utilities._system import (
@@ -86,31 +88,31 @@ def _calculate_zeeman_matrix(
     return magnetic_momenta
 
 
-@jit([
-    (
-        types.Array(float32, 1, 'C', True), 
-        types.Array(complex64, 3, 'C', True), 
-        types.Array(float32, 1, 'C', True), 
-        types.Array(float32, 2, 'C', True), 
-        types.Array(int64, 1, 'C'), 
-        types.Array(float32, 2, 'C'), 
-        int64, int64, int64, int64 
-    ),
-    (
-        types.Array(float64, 1, 'C', True), 
-        types.Array(complex128, 3, 'C', True), 
-        types.Array(float64, 1, 'C', True), 
-        types.Array(float64, 2, 'C', True), 
-        types.Array(int64, 1, 'C'), 
-        types.Array(float64, 2, 'C'), 
-        int64, int64, int64, int64 
-    )
-],
-nopython=True,
-cache=True,
-nogil=True,
-fastmath=True,
-)
+# @jit([
+#     (
+#         types.Array(float32, 1, 'C', True), 
+#         types.Array(complex64, 3, 'C', True), 
+#         types.Array(float32, 1, 'C', True), 
+#         types.Array(float32, 2, 'C', True), 
+#         types.Array(int64, 1, 'C'), 
+#         types.Array(float32, 2, 'C'), 
+#         int64, int64, int64, int64 
+#     ),
+#     (
+#         types.Array(float64, 1, 'C', True), 
+#         types.Array(complex128, 3, 'C', True), 
+#         types.Array(float64, 1, 'C', True), 
+#         types.Array(float64, 2, 'C', True), 
+#         types.Array(int64, 1, 'C'), 
+#         types.Array(float64, 2, 'C'), 
+#         int64, int64, int64, int64 
+#     )
+# ],
+# nopython=True,
+# cache=True,
+# nogil=True,
+# fastmath=True,
+# )
 def _zeeman_splitting(
     states_energies: ndarray,
     magnetic_momenta: ndarray,
@@ -125,9 +127,18 @@ def _zeeman_splitting(
 ):
     magnetic_fields_shape_0 = magnetic_fields.shape[0]
     h_cm_1 = array(H_CM_1, dtype=states_energies.dtype)
+    driver, driver_args, lwork_args = eigh(ascontiguousarray(magnetic_momenta[0]), eigvals_only=True, overwrite_a=True, subset_by_index=[0, number_of_states-1], driver="evr")
 
     for i in range(start, end):
-        zeeman_array[i] = eigvalsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]))[:number_of_states] * h_cm_1
+        # zeeman_array[i] = eigvalsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]))[:number_of_states] * h_cm_1
+        # zeeman_array[i] = eigh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]), eigvals_only=True, check_finite=False, subset_by_index=[0, number_of_states-1]) * h_cm_1
+        w, v, *other_args, info = driver(a=_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]), **driver_args, **lwork_args)
+        zeeman_array[i] = w[:number_of_states] * h_cm_1
+        # zeeman_array[i] = driver(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields_shape_0], orientations[i//magnetic_fields_shape_0, :3]))* h_cm_1
+        ############ tutaj musisz zrobic funkcję bezpośrednio z scipy.lapack jako drivery bo to sprawdzanie tutaj wszystkiego dodaje mase w duzych petlach
+        ###### jit jest lepszy bo te wszytkie funkcje miliony razy sprawdzaja jakies dziwne rzeczy
+        ######### to samo pewnie do lanczosa
+        ######## ale przez to sprawdzanie scipy jest o wiele lepszy od numpy dla niektórych dużych macierzy wiec nie zepsuj tego
         progress_array[process_index] += 1
 
 

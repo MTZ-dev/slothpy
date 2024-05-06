@@ -42,7 +42,7 @@ def ensure_ready(func):
     
     return wrapper
 
-class SingleProcessed(ABC):
+class _SingleProcessed(ABC):
 
     __slots__ = ["_method_name", "_method_type", "_slt_group", "_hdf5", "_group_name", "_result", "_ready", "_slt_save", "_df", "_metadata_dict", "_data_dict", "_is_from_file"]
 
@@ -66,7 +66,7 @@ class SingleProcessed(ABC):
         return f"<{RED}{self.__class__.__name__}{RESET} object from {BLUE}Group{RESET} '{self._group_name}' {GREEN}File{RESET} '{self._hdf5}'.>"
     
     @classmethod
-    def _from_file(cls, slt_group) -> SingleProcessed:
+    def _from_file(cls, slt_group) -> _SingleProcessed:
         instance = cls.__new__(cls)
         instance._slt_group = slt_group
         instance._hdf5 = slt_group._hdf5
@@ -147,9 +147,9 @@ class SingleProcessed(ABC):
         self._df.to_hdf(self._hdf5)
        
 
-class MulitProcessed(SingleProcessed):
+class _MultiProcessed(_SingleProcessed):
 
-    __slots__ = SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
+    __slots__ = _SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
 
     @abstractmethod
     def __init__(self, slt_group, number_to_parallelize: int, number_cpu: int, number_threads: int, autotune: bool, smm: SharedMemoryManager = None, terminate_event: Event = None, slt_save: str = None) -> None:
@@ -221,6 +221,7 @@ class MulitProcessed(SingleProcessed):
 
     @slothpy_exc("SltCompError")
     ################ terminate ctr + c try except cleaning (sometimes smm leaks)
+    #### add timeout for autotune - that will be extreamly helpful
     def autotune(self, _from_run: bool = False):
         if self._is_from_file:
             print(f"The {self.__class__.__name__} object was loaded from the .slt file. There is nothing to autotune.")
@@ -294,7 +295,7 @@ class MulitProcessed(SingleProcessed):
                     else:
                         info += f"{RED}{current_estimated_time/1e9:.2f}{RESET} s."
                         worse_counter += 1
-                    if worse_counter > 4:
+                    if worse_counter > 3:
                         info += f" The best time: {GREEN}{best_time/1e9:.2f}{RESET} s."
                         print(info)
                         sm_progress.close()

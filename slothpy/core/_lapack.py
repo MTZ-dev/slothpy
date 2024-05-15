@@ -1,3 +1,12 @@
+# License: BSD 3-Clause
+
+# The code to introspect dynamically loaded libraries on POSIX systems is
+# adapted from code ..... available at
+# .... (Copyright (c) 2017, ....)
+# and also published under the BSD 3-Clause license
+
+
+
 
 from numpy import iscomplexobj, inf
 # Local imports

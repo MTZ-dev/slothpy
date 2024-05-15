@@ -15,13 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from time import perf_counter
-from openfermion.linalg.davidson import Davidson
+# from openfermion.linalg.davidson import Davidson
 import numpy as np
 from scipy.sparse.linalg import eigsh, LinearOperator
 from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
-    sort,
     array,
     zeros,
     ascontiguousarray,
@@ -40,6 +39,7 @@ from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
 from slothpy._general_utilities._math_expresions import _3d_dot
+# import primme, scipy.sparse
 
 @jit([
     types.Array(complex64, 2, 'C')(
@@ -109,9 +109,10 @@ def _zeeman_splitting(
 
     for i in range(start, end):
         op.update_matrix(i)
+        # eigval, evecs = primme.eigsh(op, number_of_states, tol=1e-6, which='SA')
         # success, eigval, eigen_vectors = Davidson(op, diagonal(op._mat1)).get_lowest_n(number_of_states)
         eigval, _ = eigsh(op, k=number_of_states, which="SA")
-        zeeman_array[i] = sort(eigval) * array(H_CM_1, dtype=states_energies.dtype)
+        zeeman_array[i] = eigval.argsort() * array(H_CM_1, dtype=states_energies.dtype) ######## moze z primme sa juz posortowane eigvals?
         progress_array[process_index] += 1
 
 @jit(["complex128[:,:](complex128[:,:], complex128[:,:])", "complex128[:,:](complex128[:], complex128[:,:])"], nopython=True, fastmath=True, cache=True)

@@ -61,11 +61,8 @@ def _autotune(number_tasks: int, number_cpu: int):
                         bound_args.arguments["number_processes"] = number_processes
                         bound_args.arguments["number_threads"] = number_threads
                         bound_args.arguments["_terminate_event"] = terminate_event
-                        args = bound_args.args
-                        kwargs = bound_args.kwargs
-                        benchmark_process = Process(target=func, args=args, kwargs=kwargs)
-                        sm_progress = SharedMemory(progress_array_info[0])
-                        progress_array = _from_shared_memory(sm_progress, progress_array_info)
+                        benchmark_process = Process(target=func, args=bound_args.args, kwargs=bound_args.kwargs)
+                        sm_progress, progress_array = _from_shared_memory(progress_array_info)
                         benchmark_process.start()
                         while any(progress_array <= 1):
                             sleep(0.001)

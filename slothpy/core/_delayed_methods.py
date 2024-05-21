@@ -25,7 +25,7 @@ from slothpy.core._config import settings
 from slothpy.core._drivers import _SingleProcessed, _MultiProcessed
 from slothpy._general_utilities._constants import H_CM_1
 from slothpy._magnetism._zeeman_lanczos import _zeeman_splitting_proxy
-################# __slots__ in every slt class!!
+
 class SltStatesEnergiesCm1(_SingleProcessed):
 
     __slots__ = _SingleProcessed.__slots__ + ["_start_state", "_stop_state"]

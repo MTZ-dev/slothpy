@@ -149,7 +149,7 @@ class _SingleProcessed(ABC):
 
 class _MultiProcessed(_SingleProcessed):
 
-    __slots__ = _SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
+    __slots__ = _SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
 
     @abstractmethod
     def __init__(self, slt_group, number_to_parallelize: int, number_cpu: int, number_threads: int, autotune: bool, smm: SharedMemoryManager = None, terminate_event: Event = None, slt_save: str = None) -> None:
@@ -159,6 +159,7 @@ class _MultiProcessed(_SingleProcessed):
         self._number_cpu = number_cpu
         self._number_processes, self._number_threads = _get_number_of_processes_threads(number_cpu, number_threads, number_to_parallelize)
         self._autotune = autotune
+        self._autotune_from_run = False
         self._smm = smm
         self._sm = []
         self._sm_arrays_info = []
@@ -193,17 +194,14 @@ class _MultiProcessed(_SingleProcessed):
         self._args_arrays = []
         for sm_array_info in self._sm_arrays_info:
             self._args_arrays.append(_from_shared_memory_to_array(sm_array_info))
-        self._sm_arrays_info = []
-        self._sm_progress_array_info = None
         self._result = _from_shared_memory_to_array(self._sm_result_info)
-        self._sm_result_info = None
 
     @abstractmethod
     def _load_args_arrays():
         pass
 
     def _create_jobs(self):
-        sm_arrays_info_list = self._sm_arrays_info
+        sm_arrays_info_list = self._sm_arrays_info[:]
         sm_arrays_info_list.append(self._sm_progress_array_info)
         if not self._returns:
             sm_arrays_info_list.append(self._sm_result_info)
@@ -220,9 +218,7 @@ class _MultiProcessed(_SingleProcessed):
         return result_queue
 
     @slothpy_exc("SltCompError")
-    ################ terminate ctr + c try except cleaning (sometimes smm leaks)
-    #### add timeout for autotune - that will be extreamly helpful
-    def autotune(self, _from_run: bool = False):
+    def autotune(self, timeout: float = float("inf")):
         if self._is_from_file:
             print(f"The {self.__class__.__name__} object was loaded from the .slt file. There is nothing to autotune.")
             return
@@ -256,69 +252,80 @@ class _MultiProcessed(_SingleProcessed):
                     progress_array = zeros((number_processes,), dtype=int64, order="C")
                     self._sm_progress_array_info = _to_shared_memory(self._smm, progress_array)
                     self._terminate_event = terminate_event()
-                    self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._returns, self._terminate_event)
-                    benchmark_process = Process(target=self._process_pool.start_and_collect)
-                    sm_progress, progress_array = _from_shared_memory(self._sm_progress_array_info)
-                    benchmark_process.start()
-                    while any(progress_array <= 1):
-                        sleep(0.001)
-                    start_time = perf_counter_ns()
-                    start_progress = progress_array.copy()
-                    final_progress = start_progress
-                    stop_time = start_time
-                    while any(progress_array - start_progress <= 4) and all(progress_array < max_tasks_per_process):
-                        stop_time = perf_counter_ns()
-                        final_progress = progress_array.copy()
-                        sleep(0.01)
-                    self._terminate_event.set()
-                    overall_time = stop_time - start_time
-                    progress = final_progress - start_progress
-                    if any(progress <= 1) or overall_time == 0:
-                        print(f"Jobs iterations for {number_processes} {BLUE}Processes{RESET} and {number_threads} {PURPLE}Threads{RESET} are too fast to be reliably autotuned! Quitting here.")
+                    try:
+                        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._returns, self._terminate_event)
+                        benchmark_process = Process(target=self._process_pool.start_and_collect)
+                        sm_progress, progress_array = _from_shared_memory(self._sm_progress_array_info)
+                        benchmark_process.start()
+                        timeout_reached = False
+                        start_time_timeout = perf_counter_ns()
+                        while any(progress_array <= 1):
+                            if (perf_counter_ns() - start_time_timeout)/1e9 >= timeout:
+                                timeout_reached = True
+                                break
+                            sleep(0.001)
+                        if timeout_reached:
+                            print("Autotune timeout has been reached. Quitting here.")
+                            self._terminate_event.set()
+                            benchmark_process.join()
+                            benchmark_process.close()
+                            sm_progress.close()
+                            sm_progress.unlink()
+                            break
+                        start_time = perf_counter_ns()
+                        start_progress = progress_array.copy()
+                        final_progress = start_progress
+                        stop_time = start_time
+                        while any(progress_array - start_progress <= 4) and all(progress_array < max_tasks_per_process):
+                            stop_time = perf_counter_ns()
+                            final_progress = progress_array.copy()
+                            sleep(0.001)
+                        self._terminate_event.set()
+                        overall_time = stop_time - start_time
+                        progress = final_progress - start_progress
+                        if any(progress <= 1) or overall_time == 0:
+                            print(f"Jobs iterations for {number_processes} {BLUE}Processes{RESET} and {number_threads} {PURPLE}Threads{RESET} are too fast to be reliably autotuned! Quitting here.")
+                            benchmark_process.join()
+                            benchmark_process.close()
+                            sm_progress.close()
+                            sm_progress.unlink()
+                            break
+                        current_estimated_time = overall_time * (max_tasks_per_process/(progress))
+                        current_estimated_time = median(current_estimated_time[:remainder] if remainder != 0 else current_estimated_time)
                         benchmark_process.join()
                         benchmark_process.close()
-                        sm_progress.close()
-                        sm_progress.unlink()
-                        self._sm_arrays_info = self._sm_arrays_info[:-2]
-                        break
-                    current_estimated_time = overall_time * (max_tasks_per_process/(progress))
-                    current_estimated_time = median(current_estimated_time[:remainder] if remainder != 0 else current_estimated_time)
-                    benchmark_process.join()
-                    benchmark_process.close()
-                    info = f"{BLUE}Processes{RESET}: {number_processes}, {PURPLE}Threads{RESET}: {number_threads}. Estimated execution time of the main loop: "
-                    if current_estimated_time < best_time:
-                        best_time = current_estimated_time
-                        final_number_of_processes = number_processes
-                        final_number_of_threads = number_threads
-                        info += f"{GREEN}{current_estimated_time/1e9:.2f}{RESET} s."
-                        worse_counter = 0
-                    else:
-                        info += f"{RED}{current_estimated_time/1e9:.2f}{RESET} s."
-                        worse_counter += 1
-                    if worse_counter > 3:
+                        info = f"{BLUE}Processes{RESET}: {number_processes}, {PURPLE}Threads{RESET}: {number_threads}. Estimated execution time of the main loop: "
+                        if current_estimated_time < best_time:
+                            best_time = current_estimated_time
+                            final_number_of_processes = number_processes
+                            final_number_of_threads = number_threads
+                            info += f"{GREEN}{current_estimated_time/1e9:.2f}{RESET} s."
+                            worse_counter = 0
+                        else:
+                            info += f"{RED}{current_estimated_time/1e9:.2f}{RESET} s."
+                            worse_counter += 1
+                        if worse_counter > 3:
+                            info += f" The best time: {GREEN}{best_time/1e9:.2f}{RESET} s."
+                            print(info)
+                            sm_progress.close()
+                            sm_progress.unlink()
+                            break
                         info += f" The best time: {GREEN}{best_time/1e9:.2f}{RESET} s."
                         print(info)
                         sm_progress.close()
                         sm_progress.unlink()
-                        self._sm_arrays_info = self._sm_arrays_info[:-2]
-                        break
-                    info += f" The best time: {GREEN}{best_time/1e9:.2f}{RESET} s."
-                    print(info)
-                    sm_progress.close()
-                    sm_progress.unlink()
-                    self._sm_arrays_info = self._sm_arrays_info[:-2]
-            time_info = f" (starting from now - [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}])" if _from_run else ''
-            print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}.\nThe calculation time{time_info} is estimated to be at least: {GREEN}{best_time/1e9} s{RESET}.")
+                    except KeyboardInterrupt:
+                        sm_progress.close()
+                        sm_progress.unlink()
+                        raise
+            time_info = f" (starting from now - [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}])" if self._autotune_from_run else ''
+            print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}." + (f"\nThe calculation time{time_info} is estimated to be at least: {GREEN}{best_time/1e9} s{RESET}." if best_time != float("inf") else ""))
             self._number_processes, self._number_threads = final_number_of_processes, final_number_of_threads
             if self._ready:
                 self._result = result_tmp
-            if _from_run:
+            if self._autotune_from_run:
                 self._retrieve_arrays_and_results_from_shared_memory()
-            else:
-                self._sm_arrays_info = []
-                self._sm_progress_array_info = None
-                self._sm_result_info = None
-            self._process_pool = None
+            self._clean_sm_info_and_pool()
             self._terminate_event = current_terminate_event
             self._autotune = False
     
@@ -326,7 +333,9 @@ class _MultiProcessed(_SingleProcessed):
     def run(self):
         if not self._ready:
             if self._autotune:
-                self.autotune(True)
+                self._autotune_from_run = True
+                self.autotune()
+                self._autotune_from_run = False
             else:
                 self._load_args_arrays()
             with ExitStack() as stack:

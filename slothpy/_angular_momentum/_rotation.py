@@ -14,12 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from numpy import ndarray, zeros_like
-from numba import jit
+from numpy import ndarray, empty_like
+from numba import jit, types, complex128, complex64, float64, float32, int64
 
-# TODO: Eventually incorporate it into class as classmethod probably
-@jit(["complex64[:,:,:](complex64[:,:,:], float32[:,:])", "complex128[:,:,:](complex128[:,:,:], float64[:,:])",
-      "float32[:,:](float32[:,:], float32[:,:])", "float64[:,:](float64[:,:], float64[:,:])"],
+
+@jit([
+        types.Array(complex64, 3, 'C')(types.Array(complex64, 3, 'C', True), types.Array(float32, 2, 'C', True)),
+        types.Array(complex128, 3, 'C')(types.Array(complex128, 3, 'C', True), types.Array(float64, 2, 'C', True)),
+        types.Array(float64, 2, 'C')(types.Array(float64, 2, 'C', True), types.Array(float64, 2, 'C', True)),
+        types.Array(float32, 2, 'C')(types.Array(float32, 2, 'C', True), types.Array(float32, 2, 'C', True)),
+    ],
     nopython=True,
     nogil=True,
     cache=True,
@@ -28,7 +32,7 @@ from numba import jit
     parallel=True,
 )
 def _rotate_vector_operator(vect_oper: ndarray, rotation: ndarray):
-    rotated_operator = zeros_like(vect_oper)
+    rotated_operator = empty_like(vect_oper)
     rotated_operator[0] = rotation[0, 0] * vect_oper[0] + rotation[0, 1] * vect_oper[1] + rotation[0, 2] * vect_oper[2]
     rotated_operator[1] = rotation[1, 0] * vect_oper[0] + rotation[1, 1] * vect_oper[1] + rotation[1, 2] * vect_oper[2]
     rotated_operator[2] = rotation[2, 0] * vect_oper[0] + rotation[2, 1] * vect_oper[1] + rotation[2, 2] * vect_oper[2]
@@ -36,9 +40,12 @@ def _rotate_vector_operator(vect_oper: ndarray, rotation: ndarray):
     return rotated_operator
 
 
-# TODO: Eventually incorporate it into class as classmethod probably
-@jit(["complex64[:,:](complex64[:,:,:], float32[:,:], int64)", "complex128[:,:](complex128[:,:,:], float64[:,:], int64)",
-      "float32[:](float32[:,:], float32[:,:], int64)", "float64[:](float64[:,:], float64[:,:], int64)"],
+@jit([
+        types.Array(complex64, 2, 'C')(types.Array(complex64, 3, 'C', True),types.Array(float32, 2, 'C', True), int64),
+        types.Array(complex128, 2, 'C')(types.Array(complex128, 3, 'C', True), types.Array(float64, 2, 'C', True), int64),
+        types.Array(float64, 1, 'C')(types.Array(float64, 2, 'C', True), types.Array(float64, 2, 'C', True), int64),
+        types.Array(float32, 1, 'C')(types.Array(float32, 2, 'C', True), types.Array(float32, 2, 'C', True), int64),
+    ],
     nopython=True,
     nogil=True,
     cache=True,
@@ -51,5 +58,31 @@ def _rotate_vector_operator_component(vect_oper: ndarray, rotation: ndarray, xyz
     return rotation[xyz, 0] * vect_oper[0] + rotation[xyz, 1] * vect_oper[1] + rotation[xyz, 2] * vect_oper[2]
 
 
+@jit([
+        types.Array(complex64, 2, 'C')(types.Array(complex64, 3, 'C', True), types.Array(float32, 2, 'C', True), types.Array(float32, 1, 'C', True)),
+        types.Array(complex128, 2, 'C')(types.Array(complex128, 3, 'C', True), types.Array(float64, 2, 'C', True), types.Array(float64, 1, 'C', True)),
+        types.Array(float64, 1, 'C')(types.Array(float64, 2, 'C', True), types.Array(float64, 2, 'C', True), types.Array(float64, 1, 'C', True)),
+        types.Array(float32, 1, 'C')(types.Array(float32, 2, 'C', True), types.Array(float32, 2, 'C', True), types.Array(float32, 1, 'C', True)),
+    ],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _rotate_vector_operator_orintation(vect_oper: ndarray, rotation: ndarray, orientation: ndarray):
+    rotation_oriented = empty_like(rotation)
+    rotated_operator = empty_like(vect_oper[0])
+    rotation_oriented[0, :] = rotation[0, :] * orientation[0]
+    rotation_oriented[1, :] = rotation[1, :] * orientation[1]
+    rotation_oriented[2, :] = rotation[2, :] * orientation[2]
+    rotated_operator = rotation_oriented[0, 0] * vect_oper[0] + rotation_oriented[0, 1] * vect_oper[1] + rotation_oriented[0, 2] * vect_oper[2]
+    rotated_operator += rotation_oriented[1, 0] * vect_oper[0] + rotation_oriented[1, 1] * vect_oper[1] + rotation_oriented[1, 2] * vect_oper[2]
+    rotated_operator += rotation_oriented[2, 0] * vect_oper[0] + rotation_oriented[2, 1] * vect_oper[1] + rotation_oriented[2, 2] * vect_oper[2]
+
+    return rotated_operator
+
+# TODO Incorporate it into class with Euler angles, axis rot, and quats
 class Rotation:
     pass

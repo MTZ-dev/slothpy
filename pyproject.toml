@@ -1,9 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project.files]
-include = ["slothpy/static/slothpy_3.ico", "slothpy/settings.ini"]
+requires = ["hatchling", "setuptools", "wheel", "cython", "numpy"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "slothpy"
@@ -14,9 +11,6 @@ authors = [
 description = "A small molecular magnetism related package."
 license = {file = "LICENSE.txt"}
 readme = "README.md"
-homepage = "https://pypi.org/project/slothpy/"
-repository = "https://github.com/MTZ-dev/slothpy"
-documentation = " "
 requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.24.3",
@@ -41,5 +35,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/MTZ-dev/SlothPy"
+Homepage = "https://github.com/MTZ-dev/SlothPy"
 "Bug Tracker" = "https://github.com/MTZ-dev/SlothPy/issues"

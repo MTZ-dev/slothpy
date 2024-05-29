@@ -24,35 +24,18 @@ from slothpy.core._slothpy_exceptions import SltInputError
 
 @jit(
     [
-        types.Array(complex64, 2, 'C')(
-            types.Array(complex64, 3, 'C', True), 
-            types.Array(float32, 1, 'C', True)
-        ),
-        types.Array(complex128, 2, 'C')(
-            types.Array(complex128, 3, 'C', True), 
-            types.Array(float64, 1, 'C', True)
-        ),
-        types.Array(complex64, 1, 'C')(
-            types.Array(complex64, 2, 'C', True), 
-            types.Array(float32, 1, 'C', True)
-        ),
-        types.Array(complex128, 1, 'C')(
-            types.Array(complex128, 2, 'C', True), 
-            types.Array(float64, 1, 'C', True)
-        ),
-        types.Array(float32, 1, 'C')(
-            types.Array(float32, 2, 'C', True), 
-            types.Array(float32, 1, 'C', True)
-        ),
-        types.Array(float64, 1, 'C')(
-            types.Array(float64, 2, 'C', True), 
-            types.Array(float64, 1, 'C', True)
-        )
+        types.Array(complex64, 2, 'C')(types.Array(complex64, 3, 'C', True), types.Array(float32, 1, 'C', True)),
+        types.Array(complex128, 2, 'C')(types.Array(complex128, 3, 'C', True), types.Array(float64, 1, 'C', True)),
+        types.Array(complex64, 1, 'C')(types.Array(complex64, 2, 'C', True), types.Array(float32, 1, 'C', True)),
+        types.Array(complex128, 1, 'C')(types.Array(complex128, 2, 'C', True), types.Array(float64, 1, 'C', True)),
+        types.Array(float32, 1, 'C')(types.Array(float32, 2, 'C', True), types.Array(float32, 1, 'C', True)),
+        types.Array(float64, 1, 'C')(types.Array(float64, 2, 'C', True), types.Array(float64, 1, 'C', True)),
     ],
     nopython=True,
     nogil=True,
     cache=True,
     fastmath=True,
+    inline="always",
     parallel=True,
 )
 def _3d_dot(m, xyz):
@@ -244,7 +227,10 @@ def _normalize_orientations(orientations: ndarray):
 
 
 @jit(
-    ["float32[:](float32[:])", "float64[:](float64[:])"],
+    [
+        types.Array(float64, 1, 'C')(types.Array(float64, 1, 'C', True)),
+        types.Array(float32, 1, 'C')(types.Array(float32, 1, 'C', True)),
+    ],
     nopython=True,
     nogil=True,
     cache=True,
@@ -258,8 +244,8 @@ def _normalize_orientation_comp(orientation: ndarray):
     if length == 0:
         raise ValueError("Vector of length zero detected in the input orientation.")
     length = array(1/sqrt(length), dtype=orientation.dtype)
-    orientation = orientation * length
-    return orientation
+
+    return orientation * length
 
 
 def _normalize_orientation(orientation: ndarray):
@@ -268,9 +254,14 @@ def _normalize_orientation(orientation: ndarray):
     return _normalize_orientation_comp(orientation)
 
 
-@jit(
-    [f"complex64[:](complex64[:], complex64[:])", f"complex64[:,:](complex64[:,:], complex64[:,:])", f"complex64[:,:,:](complex64[:,:,:], complex64[:,:,:])",
-     f"complex128[:](complex128[:], complex128[:])", f"complex128[:,:](complex128[:,:], complex128[:,:])", f"complex128[:,:,:](complex128[:,:,:], complex128[:,:,:])"],
+@jit([
+        types.Array(float32, 1, 'C')(types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True)),
+        types.Array(complex64, 2, 'C')(types.Array(complex64, 2, 'C', True), types.Array(complex64, 2, 'C', True)),
+        types.Array(complex64, 3, 'C')(types.Array(complex64, 3, 'C', True), types.Array(complex64, 3, 'C', True)),
+        types.Array(float64, 1, 'C')(types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True)),
+        types.Array(complex128, 2, 'C')(types.Array(complex128, 2, 'C', True), types.Array(complex128, 2, 'C', True)),
+        types.Array(complex128, 3, 'C')(types.Array(complex128, 3, 'C', True), types.Array(complex128, 3, 'C', True)),
+    ],
     nopython=True,
     cache=True,
     nogil=True,
@@ -283,9 +274,14 @@ def _magnetic_dipole_momenta_from_spins_angular_momenta(spins: ndarray, angular_
     return -mu_b*(ge * spins + angular_momenta)
 
 
-@jit(
-    [f"complex64[:](complex64[:], complex64[:])", f"complex64[:,:](complex64[:,:], complex64[:,:])", f"complex64[:,:,:](complex64[:,:,:], complex64[:,:,:])",
-     f"complex128[:](complex128[:], complex128[:])", f"complex128[:,:](complex128[:,:], complex128[:,:])", f"complex128[:,:,:](complex128[:,:,:], complex128[:,:,:])"],
+@jit([
+        types.Array(float32, 1, 'C')(types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True)),
+        types.Array(complex64, 2, 'C')(types.Array(complex64, 2, 'C', True), types.Array(complex64, 2, 'C', True)),
+        types.Array(complex64, 3, 'C')(types.Array(complex64, 3, 'C', True), types.Array(complex64, 3, 'C', True)),
+        types.Array(float64, 1, 'C')(types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True)),
+        types.Array(complex128, 2, 'C')(types.Array(complex128, 2, 'C', True), types.Array(complex128, 2, 'C', True)),
+        types.Array(complex128, 3, 'C')(types.Array(complex128, 3, 'C', True), types.Array(complex128, 3, 'C', True)),
+    ],
     nopython=True,
     cache=True,
     nogil=True,

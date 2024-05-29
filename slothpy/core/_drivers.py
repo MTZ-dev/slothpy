@@ -49,9 +49,10 @@ class _SingleProcessed(ABC):
     @abstractmethod
     def __init__(self, slt_group, slt_save: str = None) -> None:
         super().__init__()
+        from slothpy.core._slt_file import SltGroup
         self._method_name = None
         self._method_type = None
-        self._slt_group = slt_group
+        self._slt_group: SltGroup  = slt_group
         self._hdf5 = slt_group._hdf5
         self._group_name = slt_group._group_name
         self._result = None
@@ -84,7 +85,7 @@ class _SingleProcessed(ABC):
     def _executor():
         pass
     
-    @slothpy_exc("SltCompError")
+    # @slothpy_exc("SltCompError")
     def run(self):
         if not self._ready:
             self._result = self._executor()

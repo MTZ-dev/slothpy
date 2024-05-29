@@ -27,3 +27,4 @@ seminarium.py
 gui
 test_nodes.py
 test_lanczos.py
+test*

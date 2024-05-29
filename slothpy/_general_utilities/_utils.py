@@ -13,52 +13,83 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Literal
 
-from numpy import ndarray, diagonal
-from slothpy.core._config import settings
-from slothpy._angular_momentum._rotation import _rotate_vector_operator, _rotate_vector_operator_component
+from numpy import ndarray
+
+from slothpy._angular_momentum._rotation import _rotate_vector_operator, _rotate_vector_operator_component, _rotate_vector_operator_orintation
 from slothpy._general_utilities._math_expresions import _3d_dot
 
-def _rotate_and_return_components(xyz, array, rotation): 
+
+def _return_components(slt_group, which: Literal["s", "l", "p", "j", "m"], xyz, start_state, stop_state):
     if isinstance(xyz, ndarray):
-        return _3d_dot(_rotate_vector_operator(array, rotation), xyz)
+        return _3d_dot(getattr(slt_group, f"{which}")[:, start_state:stop_state, start_state:stop_state], xyz)
     match xyz:
         case "xyz":
-            array = _rotate_vector_operator(array, rotation)
+            array = getattr(slt_group, f"{which}")[:, start_state:stop_state, start_state:stop_state]
         case "x":
-            array =  _rotate_vector_operator_component(array, rotation, 0)
+            array = getattr(slt_group, f"{which}x")[start_state:stop_state, start_state:stop_state]
         case "y":
-            array =  _rotate_vector_operator_component(array, rotation, 1)
+            array = getattr(slt_group, f"{which}y")[start_state:stop_state, start_state:stop_state]
         case "z":
-            array =  _rotate_vector_operator_component(array, rotation, 2)
+            array = getattr(slt_group, f"{which}z")[start_state:stop_state, start_state:stop_state]    
     return array
 
 
-def _return_components(array_xyz, array_x, array_y, array_z, xyz, start_state, stop_state):
+def _rotate_and_return_components(slt_group, which: Literal["s", "l", "p", "j", "m"], xyz, start_state, stop_state, rotation): 
     if isinstance(xyz, ndarray):
-        return _3d_dot(array_xyz[:, start_state:stop_state, start_state:stop_state], xyz)
+        return _rotate_vector_operator_orintation(getattr(slt_group, f"{which}")[:, start_state:stop_state, start_state:stop_state], rotation, xyz)
     match xyz:
         case "xyz":
-            array = array_xyz[:, start_state:stop_state, start_state:stop_state]
+            array = _rotate_vector_operator(getattr(slt_group, f"{which}")[:, start_state:stop_state, start_state:stop_state], rotation)
         case "x":
-            array = array_x[start_state:stop_state, start_state:stop_state]
+            array =  _rotate_vector_operator_component(getattr(slt_group, f"{which}")[:, start_state:stop_state, start_state:stop_state], rotation, 0)
         case "y":
-            array = array_y[start_state:stop_state, start_state:stop_state]
+            array =  _rotate_vector_operator_component(getattr(slt_group, f"{which}")[:, start_state:stop_state, start_state:stop_state], rotation, 1)
         case "z":
-            array = array_z[start_state:stop_state, start_state:stop_state]    
+            array =  _rotate_vector_operator_component(getattr(slt_group, f"{which}")[:, start_state:stop_state, start_state:stop_state], rotation, 2)
     return array
 
 
-def _return_components_diag(array_xyz, array_x, array_y, array_z, xyz, start_state, stop_state):
+def _return_components_diag(slt_group, which: Literal["s", "l", "p", "j", "m"], xyz, start_state, stop_state):
     if isinstance(xyz, ndarray):
-        return _3d_dot(diagonal(array_xyz[:, start_state:stop_state, start_state:stop_state].real, axis1=1, axis2=2).astype(settings.float, order="C"), xyz)
+        return _3d_dot(getattr(slt_group, f"{which}")._get_diagonal(start_state, stop_state), xyz)
     match xyz:
         case "xyz":
-            array = diagonal(array_xyz[:, start_state:stop_state, start_state:stop_state].real, axis1=1, axis2=2).astype(settings.float, order="C")
+            array = getattr(slt_group, f"{which}")._get_diagonal(start_state, stop_state)
         case "x":
-            array = diagonal(array_x[start_state:stop_state, start_state:stop_state].real).astype(settings.float, order="C")
+            array = getattr(slt_group, f"{which}x")._get_diagonal(start_state, stop_state)
         case "y":
-            array = diagonal(array_y[start_state:stop_state, start_state:stop_state].real).astype(settings.float, order="C")
+            array = getattr(slt_group, f"{which}y")._get_diagonal(start_state, stop_state)
         case "z":
-            array = diagonal(array_z[start_state:stop_state, start_state:stop_state].real).astype(settings.float, order="C")      
+            array = getattr(slt_group, f"{which}z")._get_diagonal(start_state, stop_state)  
     return array
+
+
+def _rotate_and_return_components_diag(slt_group, which: Literal["s", "l", "p", "j", "m"], xyz, start_state, stop_state, rotation): 
+    if isinstance(xyz, ndarray):
+        return _rotate_vector_operator_orintation(getattr(slt_group, f"{which}")._get_diagonal(start_state, stop_state), rotation, xyz)
+    match xyz:
+        case "xyz":
+            array = _rotate_vector_operator(getattr(slt_group, f"{which}")._get_diagonal(start_state, stop_state), rotation)
+        case "x":
+            array =  _rotate_vector_operator_component(getattr(slt_group, f"{which}")._get_diagonal(start_state, stop_state), rotation, 0)
+        case "y":
+            array =  _rotate_vector_operator_component(getattr(slt_group, f"{which}")._get_diagonal(start_state, stop_state), rotation, 1)
+        case "z":
+            array =  _rotate_vector_operator_component(getattr(slt_group, f"{which}")._get_diagonal(start_state, stop_state), rotation, 2)
+    return array
+
+
+def slpjm_components_driver(slt_group, kind: Literal["diagonal", "full"], which: Literal["s", "l", "p", "j", "m"], xyz='xyz', start_state=0, stop_state=0, rotation=None):
+    if rotation is None:
+        if kind == "diagonal":
+            return _return_components_diag(slt_group, which, xyz, start_state, stop_state)
+        if kind == "full":
+            return _return_components(slt_group, which, xyz, start_state, stop_state)
+    else:
+        if kind == "diagonal":
+            return _rotate_and_return_components_diag(slt_group, which, xyz, start_state, stop_state, rotation)
+        if kind == "full":
+            return _rotate_and_return_components(slt_group, which, xyz, start_state, stop_state, rotation)
+

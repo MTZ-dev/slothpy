@@ -38,6 +38,7 @@ from slothpy._general_utilities._system import (
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
+from scipy.linalg.blas import zhemv
 from slothpy._general_utilities._math_expresions import _3d_dot
 # import primme, scipy.sparse
 
@@ -82,15 +83,15 @@ class KroneckerLinearOperator(LinearOperator):
         self.shape = (self.magnetic_momenta.shape[1], self.magnetic_momenta.shape[2])
 
     def update_matrix(self, i):
-        self._mat1 = _calculate_zeeman_matrix(
+        self._mat1 = array(_calculate_zeeman_matrix(
             self.magnetic_momenta,
             self.states_energies,
             self.magnetic_fields[i % self.magnetic_fields.shape[0]],
             self.orientations[i // self.magnetic_fields.shape[0], :3]
-        )
+        ), order="F")
     
     def _matvec(self, v):
-        return kronecker_matvec_jit(v, self._mat1)
+        return (zhemv(1, self._mat1, v)).reshape(-1,1)
     
     def _mat(self):
         return self._mat1
@@ -113,19 +114,21 @@ def _zeeman_splitting(
 
     for i in range(start, end):
         op.update_matrix(i)
-        eigval, evecs = primme.eigsh(op, number_of_states, tol=1e-6, which='SA')
+        eigval = primme.eigsh(op, number_of_states, tol=1e-7, which='SA', return_eigenvectors = False)
         # eigval, evecs = primme.eigsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields.shape[0]], orientations[i//magnetic_fields.shape[0], :3]), number_of_states, tol=1e-6, which='SA')
         # success, eigval, eigen_vectors = Davidson(op, diagonal(op._mat1)).get_lowest_n(number_of_states)
-        # eigval, _ = eigsh(op, k=number_of_states, which="SA")
-        zeeman_array[i] = eigval * array(H_CM_1, dtype=states_energies.dtype) ######## moze z primme sa juz posortowane eigvals?
+        # eigval = eigsh(op, k=number_of_states, which="SA", return_eigenvectors=False)
+        zeeman_array[i] = eigval * array(H_CM_1, dtype=states_energies.dtype)
         progress_array[process_index] += 1
 
 # @jit(["complex128[:,:](complex128[:,:], complex128[:,:])", "complex128[:,:](complex128[:], complex128[:,:])"], nopython=True, fastmath=True, cache=True)
 ###jit wolny tutaj
-def kronecker_matvec_jit(v, mat1):
-    # v = ascontiguousarray(v)
-    # mat1 = ascontiguousarray(mat1)
-    return (mat1@v).reshape(-1,1)
+
+
+# def kronecker_matvec_jit(v, mat1):
+#     # v = ascontiguousarray(v)
+#     # mat1 = ascontiguousarray(mat1)
+#     return (zhemv(1, mat1, v)).reshape(-1,1)
 
 def _zeeman_splitting_average(
     states_energies: ndarray,

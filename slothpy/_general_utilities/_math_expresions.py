@@ -173,7 +173,18 @@ def _decomposition_of_hermitian_matrix(matrix):
     return (eigenvectors * eigenvectors.conj()).real.T * 100
 
 
-def _normalize_grid_vectors(grid: ndarray): ##################### przy mag tutaj jak orientation/s jited itd.
+@jit([
+        types.Array(float32, 2, 'C')(types.Array(float32, 2, 'C', False)),
+        types.Array(float64, 2, 'C')(types.Array(float64, 2, 'C', False)),
+    ],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _normalize_grid_vectors(grid: ndarray):
 
     if grid.ndim != 2 or grid.shape[1] != 4:
         raise ValueError(
@@ -181,7 +192,7 @@ def _normalize_grid_vectors(grid: ndarray): ##################### przy mag tutaj
                 " [[direction_x, direction_y, direction_z, weight],...]."
         )
 
-    norm = 0
+    norm = zeros(1, dtype=grid.dtype)
 
     for vector_index in range(grid.shape[0]):
         length = sqrt(
@@ -189,20 +200,22 @@ def _normalize_grid_vectors(grid: ndarray): ##################### przy mag tutaj
             + grid[vector_index][1] ** 2
             + grid[vector_index][2] ** 2
         )
-        norm += grid[vector_index][3]
+        norm[0] += grid[vector_index][3]
         if length == 0:
             raise ValueError("Vector of length zero detected in the input grid.")
 
         grid[vector_index][:3] = grid[vector_index][:3] / length
 
-    if norm != 0:
-        grid[:, 3] = grid[:, 3] / norm
+    if norm[0] != 0:
+        grid[:, 3] = grid[:, 3] / norm[0]
 
     return grid
 
 
-@jit(
-    ["float32[:,:](float32[:,:])", "float64[:,:](float64[:,:])"],
+@jit([
+        types.Array(float32, 2, 'C')(types.Array(float32, 2, 'C', False)),
+        types.Array(float64, 2, 'C')(types.Array(float64, 2, 'C', False)),
+    ],
     nopython=True,
     nogil=True,
     cache=True,
@@ -226,8 +239,7 @@ def _normalize_orientations(orientations: ndarray):
     return _normalize_orientations_comp(orientations)
 
 
-@jit(
-    [
+@jit([
         types.Array(float64, 1, 'C')(types.Array(float64, 1, 'C', True)),
         types.Array(float32, 1, 'C')(types.Array(float32, 1, 'C', True)),
     ],
@@ -256,10 +268,10 @@ def _normalize_orientation(orientation: ndarray):
 
 @jit([
         types.Array(float32, 1, 'C')(types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True)),
-        types.Array(complex64, 2, 'C')(types.Array(complex64, 2, 'C', True), types.Array(complex64, 2, 'C', True)),
+        types.Array(float32, 2, 'C')(types.Array(float32, 2, 'C', True), types.Array(float32, 2, 'C', True)),
         types.Array(complex64, 3, 'C')(types.Array(complex64, 3, 'C', True), types.Array(complex64, 3, 'C', True)),
         types.Array(float64, 1, 'C')(types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True)),
-        types.Array(complex128, 2, 'C')(types.Array(complex128, 2, 'C', True), types.Array(complex128, 2, 'C', True)),
+        types.Array(float64, 2, 'C')(types.Array(float64, 2, 'C', True), types.Array(float64, 2, 'C', True)),
         types.Array(complex128, 3, 'C')(types.Array(complex128, 3, 'C', True), types.Array(complex128, 3, 'C', True)),
     ],
     nopython=True,
@@ -276,10 +288,10 @@ def _magnetic_dipole_momenta_from_spins_angular_momenta(spins: ndarray, angular_
 
 @jit([
         types.Array(float32, 1, 'C')(types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True)),
-        types.Array(complex64, 2, 'C')(types.Array(complex64, 2, 'C', True), types.Array(complex64, 2, 'C', True)),
+        types.Array(float32, 2, 'C')(types.Array(float32, 2, 'C', True), types.Array(float32, 2, 'C', True)),
         types.Array(complex64, 3, 'C')(types.Array(complex64, 3, 'C', True), types.Array(complex64, 3, 'C', True)),
         types.Array(float64, 1, 'C')(types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True)),
-        types.Array(complex128, 2, 'C')(types.Array(complex128, 2, 'C', True), types.Array(complex128, 2, 'C', True)),
+        types.Array(float64, 2, 'C')(types.Array(float64, 2, 'C', True), types.Array(float64, 2, 'C', True)),
         types.Array(complex128, 3, 'C')(types.Array(complex128, 3, 'C', True), types.Array(complex128, 3, 'C', True)),
     ],
     nopython=True,

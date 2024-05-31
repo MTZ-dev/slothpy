@@ -16,6 +16,7 @@
 
 from os import path
 from functools import partial
+from ast import literal_eval
 from typing import Tuple, Union, Literal
 from h5py import File, Group, Dataset
 from numpy import (
@@ -32,6 +33,7 @@ from numpy import (
     allclose,
     identity,
     ones,
+    string_
 )
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.gridspec import GridSpec
@@ -124,6 +126,8 @@ class Compound():
     """
     The core object constituting the API and access to all the methods.
     """
+
+    __slots__ = ["_hdf5", "_groups", "_datasets", "_groups_and_datasets"]
 
     @classmethod
     def _new(cls, filepath: str, filename: str):
@@ -286,6 +290,41 @@ class Compound():
             if key not in file:
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
             del file[key]
+
+    def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str):
+        with File(self._hdf5, 'a') as file:
+            group = file.create_group(slt_save)
+            group.attrs["TYPE"] = "HAMILTONIAN"
+            group.attrs["KIND"] = "SLOTHPY"
+            group.attrs["Description"] = f"A custom Hamiltonian created by the user."
+            
+            def save_dict_to_group(group, data_dict, subgroup_name):
+                subgroup = group.create_group(subgroup_name)
+                for key, value in data_dict.items():
+                    if isinstance(value, (list, tuple)):
+                        for i, item in enumerate(value):
+                            key_str = str(key) if not isinstance(key, str) else f"'{key}'"
+                            item_name = f"{key_str}_{i}"
+                            self._create_dataset(subgroup, item_name, item)
+                    else:
+                        self._create_dataset(subgroup, key, value)
+            
+            save_dict_to_group(group, magnetic_centers, "MAGNETIC_CENTERS")
+            save_dict_to_group(group, exchange_interactions, "EXCHANGE_INTERACTIONS")
+    
+    def _create_dataset(self, group, name, data):
+        if data is None:
+            data=string_('None')
+        elif isinstance(data, (ndarray, list)):
+            data = array(data)
+        elif isinstance(data, (int, float)):
+            data = array(data)
+        elif isinstance(data, str):
+            data = string_(data)
+        else:
+            raise ValueError(f"Unsupported data type: {type(data)}")
+        
+        group.create_dataset(name, data=data)
     
     def zeeman_splitting(
         self,

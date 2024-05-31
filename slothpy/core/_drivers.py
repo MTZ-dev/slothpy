@@ -85,7 +85,7 @@ class _SingleProcessed(ABC):
     def _executor():
         pass
     
-    # @slothpy_exc("SltCompError")
+    @slothpy_exc("SltCompError")
     def run(self):
         if not self._ready:
             self._result = self._executor()

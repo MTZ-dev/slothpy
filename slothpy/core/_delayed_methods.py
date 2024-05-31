@@ -167,7 +167,7 @@ class SltSpinMatrices(_SingleProcessed):
         pass
 
 
-class SltStatesSpin(_SingleProcessed):
+class SltStatesSpins(_SingleProcessed):
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
@@ -301,7 +301,7 @@ class SltElectricDipoleMomentumMatrices(_SingleProcessed):
         self._rotation = rotation
 
     def _executor(self):
-        return slpjm_components_driver(self._slt_group, "full", "s", self._xyz, self._start_state, self._stop_state, self._rotation)
+        return slpjm_components_driver(self._slt_group, "full", "p", self._xyz, self._start_state, self._stop_state, self._rotation)
 
     def _save(self):
         self._metadata_dict = {
@@ -333,15 +333,15 @@ class SltStatesElectricDipoleMomenta(_SingleProcessed):
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' spins"
-        self._method_type = "STATES_SPINS"
+        self._method_name = "States' electric dipole momenta"
+        self._method_type = "STATES_ELECTRIC_DIPOLE_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
         self._rotation = rotation
 
     def _executor(self):
-        return slpjm_components_driver(self._slt_group, "diagonal", "s", self._xyz, self._start_state, self._stop_state, self._rotation)
+        return slpjm_components_driver(self._slt_group, "diagonal", "p", self._xyz, self._start_state, self._stop_state, self._rotation)
 
     def _save(self):
         self._metadata_dict = {
@@ -349,14 +349,14 @@ class SltStatesElectricDipoleMomenta(_SingleProcessed):
             "Kind": f"{self._xyz.upper() if isinstance(self._xyz, str) else 'ORIENTATIONAL'}",
             "States": self._result.shape[1] if self._xyz == "xyz" or isinstance(self._xyz, ndarray) else self._result.shape[0],
             "Precision": settings.precision.upper(),
-            "Description": f"States' expectation values of the spin from Group '{self._group_name}'."
+            "Description": f"States' expectation values of the electric dipole momentum from Group '{self._group_name}'."
         }
-        self._data_dict = {"STATES_SPINS": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the states's spins.")}
+        self._data_dict = {"STATES_ELECTRIC_DIPOLE_MOMENTA": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the states's electric dipole momenta.")}
         if self._rotation is not None:
-            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
+            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the electric dipole momentum components.")
     
     def _load_from_file(self):
-        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
+        self._result = self._slt_group["STATES_ELECTRIC_DIPOLE_MOMENTA"][:]
 
     #TODO: plot
     def _plot(self):
@@ -367,21 +367,21 @@ class SltStatesElectricDipoleMomenta(_SingleProcessed):
         pass
 
 
-class SltSpinMatrices(_SingleProcessed):
+class SltTotalAngularMomentumMatrices(_SingleProcessed):
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "Spin Matrices"
-        self._method_type = "SPINS"
+        self._method_name = "Total angular momentum matrices"
+        self._method_type = "TOTAL_ANGULAR_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
         self._rotation = rotation
 
     def _executor(self):
-        return slpjm_components_driver(self._slt_group, "full", "s", self._xyz, self._start_state, self._stop_state, self._rotation)
+        return slpjm_components_driver(self._slt_group, "full", "j", self._xyz, self._start_state, self._stop_state, self._rotation)
 
     def _save(self):
         self._metadata_dict = {
@@ -389,14 +389,14 @@ class SltSpinMatrices(_SingleProcessed):
             "Kind": f"{self._xyz.upper() if isinstance(self._xyz, str) else 'ORIENTATIONAL'}",
             "States": self._result.shape[1],
             "Precision": settings.precision.upper(),
-            "Description": f"Spin matrices from Group '{self._group_name}'."
+            "Description": f"Total angular momentum matrices from Group '{self._group_name}'."
         }
-        self._data_dict = {"SPIN_MATRICES": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the spin.")}
+        self._data_dict = {"TOTAL_ANGULAR_MOMENTUM_MATRICES": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the total angular momentum.")}
         if self._rotation is not None:
-            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
+            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the total angular momentum components.")
     
     def _load_from_file(self):
-        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
+        self._result = self._slt_group["TOTAL_ANGULAR_MOMENTUM_MATRICES"][:]
 
     #TODO: plot
     def _plot(self):
@@ -407,21 +407,21 @@ class SltSpinMatrices(_SingleProcessed):
         pass
 
 
-class SltStatesSpin(_SingleProcessed):
+class SltStatesTotalAngularMomenta(_SingleProcessed):
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' spins"
-        self._method_type = "STATES_SPINS"
+        self._method_name = "States' total angular momenta"
+        self._method_type = "STATES_TOTAL_ANGULAR_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
         self._rotation = rotation
 
     def _executor(self):
-        return slpjm_components_driver(self._slt_group, "diagonal", "s", self._xyz, self._start_state, self._stop_state, self._rotation)
+        return slpjm_components_driver(self._slt_group, "diagonal", "j", self._xyz, self._start_state, self._stop_state, self._rotation)
 
     def _save(self):
         self._metadata_dict = {
@@ -429,14 +429,14 @@ class SltStatesSpin(_SingleProcessed):
             "Kind": f"{self._xyz.upper() if isinstance(self._xyz, str) else 'ORIENTATIONAL'}",
             "States": self._result.shape[1] if self._xyz == "xyz" or isinstance(self._xyz, ndarray) else self._result.shape[0],
             "Precision": settings.precision.upper(),
-            "Description": f"States' expectation values of the spin from Group '{self._group_name}'."
+            "Description": f"States' expectation values of the total angular momentum from Group '{self._group_name}'."
         }
-        self._data_dict = {"STATES_SPINS": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the states's spins.")}
+        self._data_dict = {"STATES_TOTAL_ANGULAR_MOMENTA": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the states's total angular momenta.")}
         if self._rotation is not None:
-            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
+            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the total angular momentum components.")
     
     def _load_from_file(self):
-        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
+        self._result = self._slt_group["STATES_TOTAL_ANGULAR_MOMENTA"][:]
 
     #TODO: plot
     def _plot(self):
@@ -447,21 +447,21 @@ class SltStatesSpin(_SingleProcessed):
         pass
 
 
-class SltSpinMatrices(_SingleProcessed):
+class SltMagneticDipoleMomentumMatrices(_SingleProcessed):
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "Spin Matrices"
-        self._method_type = "SPINS"
+        self._method_name = "Magnetic dipole momentum matrices"
+        self._method_type = "MAGNETIC_DIPOLE_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
         self._rotation = rotation
 
     def _executor(self):
-        return slpjm_components_driver(self._slt_group, "full", "s", self._xyz, self._start_state, self._stop_state, self._rotation)
+        return slpjm_components_driver(self._slt_group, "full", "m", self._xyz, self._start_state, self._stop_state, self._rotation)
 
     def _save(self):
         self._metadata_dict = {
@@ -469,14 +469,14 @@ class SltSpinMatrices(_SingleProcessed):
             "Kind": f"{self._xyz.upper() if isinstance(self._xyz, str) else 'ORIENTATIONAL'}",
             "States": self._result.shape[1],
             "Precision": settings.precision.upper(),
-            "Description": f"Spin matrices from Group '{self._group_name}'."
+            "Description": f"Magnetic dipole momentum matrices from Group '{self._group_name}'."
         }
-        self._data_dict = {"SPIN_MATRICES": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the spin.")}
+        self._data_dict = {"MAGNETIC_DIPOLE_MOMENTUM_MATRICES": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the magnetic dipole momentum.")}
         if self._rotation is not None:
-            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
+            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the magnetic dipole momentum components.")
     
     def _load_from_file(self):
-        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
+        self._result = self._slt_group["MAGNETIC_DIPOLE_MOMENTUM_MATRICES"][:]
 
     #TODO: plot
     def _plot(self):
@@ -487,21 +487,21 @@ class SltSpinMatrices(_SingleProcessed):
         pass
 
 
-class SltStatesSpin(_SingleProcessed):
+class SltStatesMagneticDipoleMomenta(_SingleProcessed):
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' spins"
-        self._method_type = "STATES_SPINS"
+        self._method_name = "States' magnetic dipole momenta"
+        self._method_type = "STATES_MAGNETIC_DIPOLE_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
         self._rotation = rotation
 
     def _executor(self):
-        return slpjm_components_driver(self._slt_group, "diagonal", "s", self._xyz, self._start_state, self._stop_state, self._rotation)
+        return slpjm_components_driver(self._slt_group, "diagonal", "m", self._xyz, self._start_state, self._stop_state, self._rotation)
 
     def _save(self):
         self._metadata_dict = {
@@ -509,14 +509,14 @@ class SltStatesSpin(_SingleProcessed):
             "Kind": f"{self._xyz.upper() if isinstance(self._xyz, str) else 'ORIENTATIONAL'}",
             "States": self._result.shape[1] if self._xyz == "xyz" or isinstance(self._xyz, ndarray) else self._result.shape[0],
             "Precision": settings.precision.upper(),
-            "Description": f"States' expectation values of the spin from Group '{self._group_name}'."
+            "Description": f"States' expectation values of the magnetic dipole momentum from Group '{self._group_name}'."
         }
-        self._data_dict = {"STATES_SPINS": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the states's spins.")}
+        self._data_dict = {"STATES_MAGNETIC_DIPOLE_MOMENTA": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the states's magnetic dipole momenta.")}
         if self._rotation is not None:
-            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
+            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the magnetic dipole momentum components.")
     
     def _load_from_file(self):
-        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
+        self._result = self._slt_group["STATES_MAGNETIC_DIPOLE_MOMENTA"][:]
 
     #TODO: plot
     def _plot(self):
@@ -525,95 +525,6 @@ class SltStatesSpin(_SingleProcessed):
     #TODO: df
     def _to_data_frame(self):
         pass
-
-
-class SltSpinMatrices(_SingleProcessed):
-
-    __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
-     
-    def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
-        super().__init__(slt_group, slt_save)
-        self._method_name = "Spin Matrices"
-        self._method_type = "SPINS"
-        self._xyz = xyz
-        self._start_state = start_state
-        self._stop_state = stop_state
-        self._rotation = rotation
-
-    def _executor(self):
-        return slpjm_components_driver(self._slt_group, "full", "s", self._xyz, self._start_state, self._stop_state, self._rotation)
-
-    def _save(self):
-        self._metadata_dict = {
-            "Type": self._method_type,
-            "Kind": f"{self._xyz.upper() if isinstance(self._xyz, str) else 'ORIENTATIONAL'}",
-            "States": self._result.shape[1],
-            "Precision": settings.precision.upper(),
-            "Description": f"Spin matrices from Group '{self._group_name}'."
-        }
-        self._data_dict = {"SPIN_MATRICES": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :, :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the spin.")}
-        if self._rotation is not None:
-            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
-    
-    def _load_from_file(self):
-        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
-
-    #TODO: plot
-    def _plot(self):
-        pass
-
-    #TODO: df
-    def _to_data_frame(self):
-        pass
-
-
-class SltStatesSpin(_SingleProcessed):
-
-    __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
-     
-    def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
-        super().__init__(slt_group, slt_save)
-        self._method_name = "States' spins"
-        self._method_type = "STATES_SPINS"
-        self._xyz = xyz
-        self._start_state = start_state
-        self._stop_state = stop_state
-        self._rotation = rotation
-
-    def _executor(self):
-        return slpjm_components_driver(self._slt_group, "diagonal", "s", self._xyz, self._start_state, self._stop_state, self._rotation)
-
-    def _save(self):
-        self._metadata_dict = {
-            "Type": self._method_type,
-            "Kind": f"{self._xyz.upper() if isinstance(self._xyz, str) else 'ORIENTATIONAL'}",
-            "States": self._result.shape[1] if self._xyz == "xyz" or isinstance(self._xyz, ndarray) else self._result.shape[0],
-            "Precision": settings.precision.upper(),
-            "Description": f"States' expectation values of the spin from Group '{self._group_name}'."
-        }
-        self._data_dict = {"STATES_SPINS": (self._result, f"{str(self._xyz).upper()}{' [(x-0, y-1, z-2), :]' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} component{'s' if isinstance(self._xyz, str) and self._xyz == 'xyz' else ''} of the states's spins.")}
-        if self._rotation is not None:
-            self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
-    
-    def _load_from_file(self):
-        self._result = self._slt_group["STATES_ENERGIES_AU"][:]
-
-    #TODO: plot
-    def _plot(self):
-        pass
-
-    #TODO: df
-    def _to_data_frame(self):
-        pass
-
-
-
-
-
-
-
-
-
 
 
 class SltZeemanSplitting(_MultiProcessed):

@@ -26,7 +26,7 @@ from slothpy._general_utilities._constants import GREEN, BLUE, RESET
 from slothpy._general_utilities._io import _group_exists
 from slothpy.core._config import settings
 
-def validate_input(group_type: Literal["HAMILTONIAN"]):
+def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = False):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -37,16 +37,20 @@ def validate_input(group_type: Literal["HAMILTONIAN"]):
             self = bound_args.arguments["self"]
 
             if not self._exists:
-                raise SltFileError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_path}' does not exist in the {GREEN}File{RESET}: '{self._hdf5}'.")
+                raise SltFileError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' does not exist in the {GREEN}File{RESET}: '{self._hdf5}'.")
 
             try:
                 self.attributes["Type"]
                 self.attributes["States"]
             except SltFileError as exc:
-                raise SltReadError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_path}' is not a valid SlothPy group.") from None
+                raise SltReadError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' is not a valid SlothPy group.") from None
 
             if self.attributes["Type"] != group_type:
-                raise SltReadError(self._hdf5, None, f"Wrong group type: '{self.attributes['Type']}' of {BLUE}Group{RESET}: '{self._group_path}' from the {GREEN}File{RESET}: '{self._hdf5}'. Expected '{group_type}' type.")
+                raise SltReadError(self._hdf5, None, f"Wrong group type: '{self.attributes['Type']}' of {BLUE}Group{RESET}: '{self._group_name}' from the {GREEN}File{RESET}: '{self._hdf5}'. Expected '{group_type}' type.")
+
+            if self.attributes["Type"] == "HAMILTONIAN" and direct_acces:
+                if self.attributes["Kind"] == "SLOTHPY":
+                    raise SltFileError(self._hdf5, None, "Custom SlothPy Hamiltonians do not support direct access to their properties. For all the supported methods, use them as input in place of the slt_group argument.")
 
             if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:
                 if _group_exists(self._hdf5, bound_args.arguments["slt_save"]):

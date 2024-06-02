@@ -150,7 +150,7 @@ class _SingleProcessed(ABC):
 
 class _MultiProcessed(_SingleProcessed):
 
-    __slots__ = _SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
+    __slots__ = _SingleProcessed.__slots__ + ["_slt_hamiltonian", "_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape"]
 
     @abstractmethod
     def __init__(self, slt_group, number_to_parallelize: int, number_cpu: int, number_threads: int, autotune: bool, smm: SharedMemoryManager = None, terminate_event: Event = None, slt_save: str = None) -> None:
@@ -171,6 +171,7 @@ class _MultiProcessed(_SingleProcessed):
         self._args_arrays = []
         self._args = ()
         self._result_shape = ()
+        self._slt_hamiltonian = None
 
     @contextmanager
     def _ensure_shared_memory_manager(self):
@@ -330,7 +331,7 @@ class _MultiProcessed(_SingleProcessed):
             self._terminate_event = current_terminate_event
             self._autotune = False
     
-    @slothpy_exc("SltCompError")
+    # @slothpy_exc("SltCompError")
     def run(self):
         if not self._ready:
             if self._autotune:

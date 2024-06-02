@@ -25,7 +25,7 @@ from slothpy.core._config import settings
 from slothpy.core._drivers import _SingleProcessed, _MultiProcessed
 from slothpy._general_utilities._constants import H_CM_1
 from slothpy._general_utilities._utils import slpjm_components_driver
-from slothpy._magnetism._zeeman_lanczos import _zeeman_splitting_proxy
+from slothpy._magnetism._zeeman import _zeeman_splitting_proxy
 
 class SltStatesEnergiesCm1(_SingleProcessed):
 
@@ -551,9 +551,11 @@ class SltZeemanSplitting(_MultiProcessed):
         self._states_cutoff = states_cutoff
         self._args = (number_of_states,)
         self._executor_proxy = _zeeman_splitting_proxy
+        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(states_cutoff=self._states_cutoff)
+        self._slt_hamiltonian._mode = "ems"
     
     def _load_args_arrays(self):
-        self._args_arrays = (self._slt_group.energies[:self._states_cutoff], self._slt_group.magnetic_dipole_momenta[:, :self._states_cutoff, :self._states_cutoff], self._magnetic_fields, self._orientations)
+        self._args_arrays = (*self._slt_hamiltonian.arrays, self._magnetic_fields, self._orientations)
         if self._orientations.shape[1] == 4:
             self._returns = True
         elif self._orientations.shape[1] == 3:

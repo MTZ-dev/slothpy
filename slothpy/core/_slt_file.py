@@ -30,6 +30,7 @@ from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta
 from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
 from slothpy.core._delayed_methods import *
 
+
 class SltAttributes:
     def __init__(self, hdf5_file, item_path):
         self._hdf5 = hdf5_file
@@ -134,202 +135,203 @@ class SltGroup:
         return self.attributes
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def energies(self):
         return self["STATES_ENERGIES"]
     
     e = energies
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def spins(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S")
     
     s = spins
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def sx(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 0)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def sy(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 1)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def sz(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 2)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def angular_momenta(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L")
     
     l = angular_momenta
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def lx(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 0)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def ly(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 1)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def lz(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 2)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def electric_dipole_momenta(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P")
     
     p = electric_dipole_momenta
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def px(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 0)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def py(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 1)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def pz(self):
         return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 2)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def total_angular_momenta(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "J")
     
     j = total_angular_momenta
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def jx(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 0)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def jy(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 1)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def jz(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 2)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def magnetic_dipole_momenta(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "M")
     
     m = magnetic_dipole_momenta
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def mx(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 0)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def my(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 1)
     
     @property
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def mz(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 2)
 
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesCm1:
         return SltStatesEnergiesCm1(self, start_state, stop_state, slt_save)
     
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def states_energies_au(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesAu:
         return SltStatesEnergiesAu(self, start_state, stop_state, slt_save)
     
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltSpinMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
     
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def states_spins(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltStatesSpins(self, xyz, start_state, stop_state, rotation, slt_save)
     
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltAngularMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
     
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def states_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltStatesAngularMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
 
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def electric_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltElectricDipoleMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
     
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def states_electric_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltStatesElectricDipoleMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
 
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def total_angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltTotalAngularMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
 
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def states_total_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltStatesTotalAngularMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
 
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def magnetic_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltMagneticDipoleMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
 
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", True)
     def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltStatesMagneticDipoleMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
     
-    def _retrieve_hamiltonian_dict(self, slt_save: str):
-        with File(self._hdf5, 'r') as file:
-            group = file[slt_save]
-            
-            def load_dict_from_group(group, subgroup_name):
-                data_dict = {}
-                subgroup = group[subgroup_name]
-                for key in subgroup.keys():
-                    value = subgroup[key][()]
-                    original_key = literal_eval(key.rsplit('_', 1)[0])
-                    if original_key not in data_dict.keys():
-                        data_dict[original_key] = []
-                    if isinstance(value, bytes):
-                        value = value.decode('utf-8')
-                        if value == 'None':
-                            value = None
-                    elif isinstance(value, ndarray) and value.shape == ():
-                        value = value.item()
-                    data_dict[original_key].append(value)
-                return data_dict
-            
-            magnetic_centers = load_dict_from_group(group, "MAGNETIC_CENTERS")
-            exchange_interactions = load_dict_from_group(group, "EXCHANGE_INTERACTIONS")
+    def _retrieve_hamiltonian_dict(self, states_cutoff=0, rotation=None, hyperfine=None):
+        if self.attributes["Kind"] == "SLOTHPY":
+            with File(self._hdf5, 'r') as file:
+                group = file[self._group_name]
+                
+                def load_dict_from_group(group, subgroup_name):
+                    data_dict = {}
+                    subgroup = group[subgroup_name]
+                    for key in subgroup.keys():
+                        value = subgroup[key][()]
+                        original_key = literal_eval(key.rsplit('_', 1)[0])
+                        if original_key not in data_dict.keys():
+                            data_dict[original_key] = []
+                        if isinstance(value, bytes):
+                            value = value.decode('utf-8')
+                            if value == 'None':
+                                value = None
+                        elif isinstance(value, ndarray) and value.shape == ():
+                            value = value.item()
+                        data_dict[original_key].append(value)
+                    return data_dict
+                
+                magnetic_centers = load_dict_from_group(group, "MAGNETIC_CENTERS")
+                exchange_interactions = load_dict_from_group(group, "EXCHANGE_INTERACTIONS")
+        else:
+            magnetic_centers = {0:(self._group_name, states_cutoff, rotation, hyperfine)}
+            exchange_interactions = {}
         
         return magnetic_centers, exchange_interactions
     
     @validate_input("HAMILTONIAN")
-    def _hamiltonian_from_slt_group(self):
-        if self.attributes["KIND"] in ["MOLCAS", "ORCA"]:
-            return self
-        elif self.attributes["KIND"] == ["SLOTHPY"]:
-            pass
+    def _hamiltonian_from_slt_group(self, states_cutoff=0, rotation=None, hyperfine=None):
+            return SltHamiltonian(self, states_cutoff, rotation, hyperfine)
     
     @validate_input("HAMILTONIAN")
     def zeeman_splitting(
@@ -539,3 +541,63 @@ class SltDatasetJM():
                 return  _magnetic_dipole_momenta_from_spins_angular_momenta(diag_s.astype(settings.float), diag_l.astype(settings.float))
             else:
                 raise ValueError("The only supported options are 'J' for total angular momenta or 'M' for magnetic dipole momenta.")
+            
+
+class SltHamiltonian():
+
+    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_mode"]
+
+    def __init__(self, slt_group: SltGroup, states_cutoff=0, rotation=None, hyperfine=None) -> None:
+        self._hdf5 = slt_group._hdf5
+        self._magnetic_centers, self._exchange_interactions = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine)
+        self._mode = None # "eslpjm" where the last letter is for exchange interactions
+    
+    @property
+    def e(self):
+        data = []
+        for center in self._magnetic_centers.values():
+            data.append(SltGroup(self._hdf5, center[0]).states_energies_au(stop_state=center[1]).eval())
+        return data
+
+    @property
+    def s(self):
+        data = []
+        for center in self._magnetic_centers.values():
+            data.append(SltGroup(self._hdf5, center[0]).spin_matrices(stop_state=center[1], rotation=center[2]).eval())
+        return data
+        
+    @property
+    def l(self):
+        data = []
+        for center in self._magnetic_centers.values():
+            data.append(SltGroup(self._hdf5, center[0]).angular_momentum_matrices(stop_state=center[1], rotation=center[2]).eval())
+        return data
+    
+    @property
+    def p(self):
+        data = []
+        for center in self._magnetic_centers.values():
+            data.append(SltGroup(self._hdf5, center[0]).electric_dipole_momentum_matrices(stop_state=center[1], rotation=center[2]).eval())
+        return data
+
+    @property
+    def j(self):
+        data = []
+        for center in self._magnetic_centers.values():
+            data.append(SltGroup(self._hdf5, center[0]).total_angular_momentum_matrices(stop_state=center[1], rotation=center[2]).eval())
+        return data
+
+    @property
+    def m(self):
+        data = []
+        for center in self._magnetic_centers.values():
+            data.append(SltGroup(self._hdf5, center[0]).magnetic_dipole_momentum_matrices(stop_state=center[1], rotation=center[2]).eval())
+        return data
+    
+    @property
+    def arrays(self):
+        if len(self._magnetic_centers.keys()) < 2:
+            return [item for property in self._mode[:-1] for item in getattr(self, property)] # for a single center no exchange is needed
+        else:
+            return [item for property in self._mode for item in getattr(self, property)]
+

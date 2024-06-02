@@ -294,8 +294,9 @@ class Compound():
     def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str):
         with File(self._hdf5, 'a') as file:
             group = file.create_group(slt_save)
-            group.attrs["TYPE"] = "HAMILTONIAN"
-            group.attrs["KIND"] = "SLOTHPY"
+            group.attrs["Type"] = "HAMILTONIAN"
+            group.attrs["Kind"] = "SLOTHPY"
+            group.attrs["States"] = "" ######################## tutaj coś z parse hamiltonian jak sprawdzasz czy wszystko ok w dict
             group.attrs["Description"] = f"A custom Hamiltonian created by the user."
             
             def save_dict_to_group(group, data_dict, subgroup_name):

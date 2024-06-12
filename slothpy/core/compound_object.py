@@ -329,11 +329,13 @@ class Compound():
     
     def zeeman_splitting(
         self,
-        group_name: str,
+        group_name: str, #########zmienic na hamiltonian group name
         magnetic_fields: ndarray[Union[float32, float64]],
         orientations: ndarray[Union[float32, float64]],
         states_cutoff: int = 0,
         number_of_states: int = 0,
+        rotation: ndarray = None, ###################opisac z nowa klasa
+        hyperfine: dict = None, #################opisac
         number_cpu: int = None,
         number_threads: int = None,
         slt_save: str = None,
@@ -420,7 +422,7 @@ class Compound():
         distribute the workload over the provided field values.
         """
 
-        return self[group_name].zeeman_splitting(magnetic_fields, orientations, states_cutoff, number_of_states, number_cpu, number_threads, slt_save, autotune)
+        return self[group_name].zeeman_splitting(magnetic_fields, orientations, number_of_states, states_cutoff, rotation, hyperfine, number_cpu, number_threads, slt_save, autotune)
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None

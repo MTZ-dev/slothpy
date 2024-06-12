@@ -4,12 +4,12 @@ import numpy as np
 
 extensions = [
     Extension(
-        name="compute_diagonal",
-        sources=["compute_diagonal.pyx"],
+        name="slothpy._general_utilities._lapack",
+        sources=["slothpy/_general_utilities/_lapack.pyx"],
         include_dirs=[np.get_include()],
-        libraries=["blas"],
         extra_compile_args=["-fopenmp", "-O3", "-march=native", "-ffast-math", "-funroll-loops", "-flto"],
         extra_link_args=["-fopenmp", "-flto"],
+        define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
     )
 ]
 
@@ -21,6 +21,7 @@ setup(
             'boundscheck': False,
             'wraparound': False,
             'cdivision': True,
+            'language_level': "3",
     }
         ),
     zip_safe=False,

@@ -31,6 +31,7 @@ from numpy import (
 )
 from numba import jit, set_num_threads, prange, types, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import H_CM_1
+from slothpy._general_utilities._lapack import _zheevr_lwork, _zheevr
 from slothpy._general_utilities._system import (
     SharedMemoryArrayInfo,
     _load_shared_memory_arrays,
@@ -109,12 +110,14 @@ def _zeeman_splitting(
     start: int,
     end: int,
 ):
-    op = KroneckerLinearOperator(magnetic_momenta, states_energies, magnetic_fields, orientations)
-    import primme
-
+    # op = KroneckerLinearOperator(magnetic_momenta, states_energies, magnetic_fields, orientations)
+    # import primme
+    work = _zheevr_lwork(magnetic_momenta.shape[1], jobz='N', range='I', il=1, iu=number_of_states)
+    
     for i in range(start, end):
-        op.update_matrix(i)
-        eigval = primme.eigsh(op, number_of_states, tol=1e-7, which='SA', return_eigenvectors = False)
+        # op.update_matrix(i)
+        eigval = _zheevr(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields.shape[0]], orientations[i//magnetic_fields.shape[0], :3]).T, *work, jobz='N', range='I', il=1, iu=number_of_states)
+        # eigval = primme.eigsh(op, number_of_states, tol=1e-7, which='SA', return_eigenvectors = False)
         # eigval, evecs = primme.eigsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[i%magnetic_fields.shape[0]], orientations[i//magnetic_fields.shape[0], :3]), number_of_states, tol=1e-6, which='SA')
         # success, eigval, eigen_vectors = Davidson(op, diagonal(op._mat1)).get_lowest_n(number_of_states)
         # eigval = eigsh(op, k=number_of_states, which="SA", return_eigenvectors=False)

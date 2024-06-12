@@ -338,14 +338,16 @@ class SltGroup:
         self,
         magnetic_fields: ndarray[Union[float32, float64]],
         orientations: ndarray[Union[float32, float64]],
-        states_cutoff: int = 0,
         number_of_states: int = 0,
+        states_cutoff: int = 0,
+        rotation: ndarray = None,
+        hyperfine: dict = None,
         number_cpu: int = None,
         number_threads: int = None,
         slt_save: str = None,
         autotune: bool = False,
     ) -> SltZeemanSplitting:
-        return SltZeemanSplitting(self, magnetic_fields, orientations, states_cutoff, number_of_states, number_cpu, number_threads, autotune, slt_save)
+        return SltZeemanSplitting(self, magnetic_fields, orientations, number_of_states, states_cutoff, number_cpu, number_threads, autotune, slt_save, rotation=rotation, hyperfine=hyperfine)
 
 
 class SltDataset:
@@ -563,35 +565,35 @@ class SltHamiltonian():
     def s(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).spin_matrices(stop_state=center[1], rotation=center[2]).eval())
+            data.append(SltGroup(self._hdf5, center[0]).spin_matrices(stop_state=center[1], rotation=center[2]).eval().conj()) #return conj of hermitian matrix in c-order to prepare it already for lapack f-order using .T
         return data
         
     @property
     def l(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).angular_momentum_matrices(stop_state=center[1], rotation=center[2]).eval())
+            data.append(SltGroup(self._hdf5, center[0]).angular_momentum_matrices(stop_state=center[1], rotation=center[2]).eval().conj())
         return data
     
     @property
     def p(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).electric_dipole_momentum_matrices(stop_state=center[1], rotation=center[2]).eval())
+            data.append(SltGroup(self._hdf5, center[0]).electric_dipole_momentum_matrices(stop_state=center[1], rotation=center[2]).eval().conj())
         return data
 
     @property
     def j(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).total_angular_momentum_matrices(stop_state=center[1], rotation=center[2]).eval())
+            data.append(SltGroup(self._hdf5, center[0]).total_angular_momentum_matrices(stop_state=center[1], rotation=center[2]).eval().conj())
         return data
 
     @property
     def m(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).magnetic_dipole_momentum_matrices(stop_state=center[1], rotation=center[2]).eval())
+            data.append(SltGroup(self._hdf5, center[0]).magnetic_dipole_momentum_matrices(stop_state=center[1], rotation=center[2]).eval().conj())
         return data
     
     @property

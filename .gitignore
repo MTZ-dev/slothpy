@@ -33,4 +33,5 @@ test_lanczos.py
 perturbation_at_the_end.ipynb
 test*
 CTM.ipynb
-Er.ipnyb
+utmu.pyx
+Er.ipynb

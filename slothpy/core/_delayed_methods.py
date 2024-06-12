@@ -529,19 +529,21 @@ class SltStatesMagneticDipoleMomenta(_SingleProcessed):
 
 class SltZeemanSplitting(_MultiProcessed):
 
-    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff"]
+    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff", "_rotation", "_hyperfine"]
      
     def __init__(self, slt_group,
         magnetic_fields: ndarray,
         orientations: ndarray,
-        states_cutoff: int,
         number_of_states: int,
+        states_cutoff: int,
         number_cpu: int,
         number_threads: int,
-        autotune: bool,
+        autotune: bool = False,
         slt_save: str = None,
         smm: SharedMemoryManager = None,
         terminate_event: Event = None,
+        rotation: ndarray = None,
+        hyperfine: dict = None,
         ) -> None:
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0] , number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
         self._method_name = "Zeeman Splitting"
@@ -549,9 +551,11 @@ class SltZeemanSplitting(_MultiProcessed):
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
         self._states_cutoff = states_cutoff
+        self._rotation = rotation
+        self._hyperfine = hyperfine
         self._args = (number_of_states,)
         self._executor_proxy = _zeeman_splitting_proxy
-        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(states_cutoff=self._states_cutoff)
+        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine)
         self._slt_hamiltonian._mode = "ems"
     
     def _load_args_arrays(self):

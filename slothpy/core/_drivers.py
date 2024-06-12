@@ -331,7 +331,7 @@ class _MultiProcessed(_SingleProcessed):
             self._terminate_event = current_terminate_event
             self._autotune = False
     
-    # @slothpy_exc("SltCompError")
+    @slothpy_exc("SltCompError")
     def run(self):
         if not self._ready:
             if self._autotune:

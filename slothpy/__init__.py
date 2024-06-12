@@ -17,7 +17,10 @@
 from multiprocessing import current_process, set_start_method
 
 if current_process().name == 'MainProcess':
-    set_start_method('spawn')
+    try:
+        set_start_method('spawn')
+    except RuntimeError as exc:
+        pass
 
 import os
 

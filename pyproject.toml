@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "setuptools", "wheel", "cython", "numpy"]
+requires = ["hatchling", "setuptools>=42", "wheel", "cython", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]

@@ -6,15 +6,33 @@
 
 cimport numpy as np
 import numpy as np
-from scipy.linalg.cython_blas cimport zhemm, zdotc, chemm, cdotc
+from scipy.linalg.cython_blas cimport zaxpy, zhemm, zdotc, caxpy, chemm, cdotc
 from scipy.linalg.cython_lapack cimport zheevr, cheevr
 from cython cimport boundscheck, wraparound
 
+# SlothPy
+# Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ)
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
 #Double precision
+
 
 @boundscheck(False)
 @wraparound(False)
-def _zheevr_lwork(int n, jobz ='N', range='A', int il=0, int iu=0, np.float64_t vl=0, np.float64_t vu=0):
+def _zheevr_lwork(int n, jobz ='N', range='A', int il=0, int iu=0, np.float64_t vl=-1e30, np.float64_t vu=0):
     cdef:
         char jobz_char = jobz.encode('ascii')[0]
         char range_char = range.encode('ascii')[0]
@@ -69,9 +87,10 @@ def _zheevr_lwork(int n, jobz ='N', range='A', int il=0, int iu=0, np.float64_t 
     
     return lwork, lrwork, liwork
 
+
 @boundscheck(False)
 @wraparound(False)
-def _zheevr(np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a, int lwork, int lrwork, int liwork, jobz='N', range='A', int il=0, int iu=0, np.float64_t vl=0, np.float64_t vu=0):
+def _zheevr(np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a, int lwork, int lrwork, int liwork, jobz='N', range='A', int il=0, int iu=0, np.float64_t vl=-1e30, np.float64_t vu=0):
     cdef:
         char jobz_char = jobz.encode('ascii')[0]
         char range_char = range.encode('ascii')[0]
@@ -120,6 +139,7 @@ def _zheevr(np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a, int lwork, in
     else:
         return w[:m]
 
+
 @boundscheck(False)
 @wraparound(False)
 def _zutmud(np.ndarray[np.complex128_t, ndim=2, mode="fortran"] U,
@@ -144,11 +164,34 @@ def _zutmud(np.ndarray[np.complex128_t, ndim=2, mode="fortran"] U,
     return C_diag
 
 
+@boundscheck(False)
+@wraparound(False)
+def _zdot3d(np.ndarray[np.complex128_t, ndim=3] M, np.ndarray[np.float64_t, ndim=1] V) -> np.ndarray[np.complex128_t]:
+    cdef int m = M.shape[1]
+    cdef int n = M.shape[2]
+    cdef np.npy_intp *dims = [m, n]
+    cdef np.ndarray[np.complex128_t, ndim=2] result = np.PyArray_ZEROS(2, dims, np.NPY_COMPLEX128, 0)
+
+    cdef int one = 1
+    cdef np.complex128_t alpha0 = V[0] + 0.0j
+    cdef np.complex128_t alpha1 = V[1] + 0.0j
+    cdef np.complex128_t alpha2 = V[2] + 0.0j
+    cdef int size = m * n
+
+    with nogil:
+        zaxpy(&size, &alpha0, &M[0, 0, 0], &one, &result[0, 0], &one)
+        zaxpy(&size, &alpha1, &M[1, 0, 0], &one, &result[0, 0], &one)
+        zaxpy(&size, &alpha2, &M[2, 0, 0], &one, &result[0, 0], &one)
+
+    return result
+
+
 #Single precision
+
 
 @boundscheck(False)
 @wraparound(False)
-def _cheevr_lwork(int n, jobz='N', range='A', int il=0, int iu=0, np.float32_t vl=0, np.float32_t vu=0):
+def _cheevr_lwork(int n, jobz='N', range='A', int il=0, int iu=0, np.float32_t vl=-1e30, np.float32_t vu=0):
     cdef:
         char jobz_char = jobz.encode('ascii')[0]
         char range_char = range.encode('ascii')[0]
@@ -203,9 +246,10 @@ def _cheevr_lwork(int n, jobz='N', range='A', int il=0, int iu=0, np.float32_t v
     
     return lwork, lrwork, liwork
 
+
 @boundscheck(False)
 @wraparound(False)
-def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int lrwork, int liwork, jobz='N', range='A', int il=0, int iu=0, np.float32_t vl=0, np.float32_t vu=0):
+def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int lrwork, int liwork, jobz='N', range='A', int il=0, int iu=0, np.float32_t vl=-1e30, np.float32_t vu=0):
     cdef:
         char jobz_char = jobz.encode('ascii')[0]
         char range_char = range.encode('ascii')[0]
@@ -254,6 +298,7 @@ def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int
     else:
         return w[:m]
 
+
 @boundscheck(False)
 @wraparound(False)
 def _cutmud(np.ndarray[np.complex64_t, ndim=2, mode="fortran"] U,
@@ -276,3 +321,25 @@ def _cutmud(np.ndarray[np.complex64_t, ndim=2, mode="fortran"] U,
                 C_diag[i] = cdotc(&n, &U[0, i], &one, &B[0, i], &one).real
 
     return C_diag
+
+
+@boundscheck(False)
+@wraparound(False)
+def _cdot3d(np.ndarray[np.complex64_t, ndim=3] M, np.ndarray[np.float32_t, ndim=1] V) -> np.ndarray[np.complex64_t]:
+    cdef int m = M.shape[1]
+    cdef int n = M.shape[2]
+    cdef np.npy_intp *dims = [m, n]
+    cdef np.ndarray[np.complex64_t, ndim=2] result = np.PyArray_ZEROS(2, dims, np.NPY_COMPLEX64, 0)
+
+    cdef int one = 1
+    cdef np.complex64_t alpha0 = V[0] + 0.0j
+    cdef np.complex64_t alpha1 = V[1] + 0.0j
+    cdef np.complex64_t alpha2 = V[2] + 0.0j
+    cdef int size = m * n
+
+    with nogil:
+        caxpy(&size, &alpha0, &M[0, 0, 0], &one, &result[0, 0], &one)
+        caxpy(&size, &alpha1, &M[1, 0, 0], &one, &result[0, 0], &one)
+        caxpy(&size, &alpha2, &M[2, 0, 0], &one, &result[0, 0], &one)
+
+    return result

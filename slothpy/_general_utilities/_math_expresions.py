@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from math import factorial
-from numpy import (ndarray, array, zeros, ascontiguousarray, arange, tile, abs, mod, sqrt, min, max, power, float64, int64)
-from numpy.linalg import eigh, inv, norm
-from numba import jit, types, int64, float32, float64, complex64, complex128
+from numpy import ndarray, array, zeros, ascontiguousarray, arange, tile, abs, mod, sqrt, min, max, power, float64, int64
+from numpy.linalg import eigh, inv
+from numba import jit, prange, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import GE, MU_B
 from slothpy.core._slothpy_exceptions import SltInputError
 
@@ -40,6 +40,24 @@ from slothpy.core._slothpy_exceptions import SltInputError
 )
 def _3d_dot(m, xyz):
     return m[0] * xyz[0] + m[1] * xyz[1] + m[2] * xyz[2]
+
+
+@jit(
+    [
+        (types.Array(complex64, 2, 'C', False), types.Array(float32, 1, 'C', True)),
+        (types.Array(complex128, 2, 'C', False), types.Array(float64, 1, 'C', True)),
+    ],
+nopython=True,
+nogil=True,
+cache=True,
+fastmath=True,
+inline="always",
+parallel=True,
+)
+def _add_diagonal(matrix, diagonal):
+
+    for k in prange(matrix.shape[0]):
+        matrix[k, k] += diagonal[k]
 
 
 @jit("float64(float64, float64)", nopython=True, cache=True, nogil=True)

@@ -19,7 +19,8 @@ import warnings
 from ast import literal_eval
 
 from h5py import File, Group, Dataset
-from numpy import ndarray, ComplexWarning, array, empty, float32, float64
+from numpy import ndarray, ComplexWarning, array, empty, float32, float64, tensordot, abs
+from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
 
 from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError
@@ -28,6 +29,8 @@ from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELL
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
 from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
+from slothpy._general_utilities._constants import MU_B_T
+from slothpy._general_utilities._direct_product_space import _kron_mult
 from slothpy.core._delayed_methods import *
 
 
@@ -299,7 +302,8 @@ class SltGroup:
     def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
         return SltStatesMagneticDipoleMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
     
-    def _retrieve_hamiltonian_dict(self, states_cutoff=0, rotation=None, hyperfine=None):
+    def _retrieve_hamiltonian_dict(self, states_cutoff=[0,0], rotation=None, coordinates=None, hyperfine=None):
+        states = self.attributes["States"]
         if self.attributes["Kind"] == "SLOTHPY":
             with File(self._hdf5, 'r') as file:
                 group = file[self._group_name]
@@ -324,13 +328,13 @@ class SltGroup:
                 magnetic_centers = load_dict_from_group(group, "MAGNETIC_CENTERS")
                 exchange_interactions = load_dict_from_group(group, "EXCHANGE_INTERACTIONS")
         else:
-            magnetic_centers = {0:(self._group_name, states_cutoff, rotation, hyperfine)}
-            exchange_interactions = {}
+            magnetic_centers = {0:(self._group_name, (states_cutoff[0],0,states_cutoff[1]), rotation, coordinates, hyperfine)}
+            exchange_interactions = None
         
-        return magnetic_centers, exchange_interactions
+        return magnetic_centers, exchange_interactions, states
     
     @validate_input("HAMILTONIAN")
-    def _hamiltonian_from_slt_group(self, states_cutoff=0, rotation=None, hyperfine=None):
+    def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None):
             return SltHamiltonian(self, states_cutoff, rotation, hyperfine)
     
     @validate_input("HAMILTONIAN")
@@ -339,7 +343,7 @@ class SltGroup:
         magnetic_fields: ndarray[Union[float32, float64]],
         orientations: ndarray[Union[float32, float64]],
         number_of_states: int = 0,
-        states_cutoff: int = 0,
+        states_cutoff: int = [0, "auto"],
         rotation: ndarray = None,
         hyperfine: dict = None,
         number_cpu: int = None,
@@ -347,7 +351,7 @@ class SltGroup:
         slt_save: str = None,
         autotune: bool = False,
     ) -> SltZeemanSplitting:
-        return SltZeemanSplitting(self, magnetic_fields, orientations, number_of_states, states_cutoff, number_cpu, number_threads, autotune, slt_save, rotation=rotation, hyperfine=hyperfine)
+        return SltZeemanSplitting(self, magnetic_fields, orientations, number_of_states, states_cutoff, rotation, hyperfine, number_cpu, number_threads, autotune, slt_save)
 
 
 class SltDataset:
@@ -547,59 +551,106 @@ class SltDatasetJM():
 
 class SltHamiltonian():
 
-    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_mode"]
+    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_mode"]
 
-    def __init__(self, slt_group: SltGroup, states_cutoff=0, rotation=None, hyperfine=None) -> None:
-        self._hdf5 = slt_group._hdf5
-        self._magnetic_centers, self._exchange_interactions = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine)
-        self._mode = None # "eslpjm" where the last letter is for exchange interactions
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None) -> None:
+        self._hdf5: str = slt_group._hdf5
+        self._magnetic_centers, self._exchange_interactions, self._states = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine)
+        self._mode: str = None # "eslpjm"
     
     @property
     def e(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).states_energies_au(stop_state=center[1]).eval())
+            data.append(SltGroup(self._hdf5, center[0]).states_energies_au(stop_state=center[1][0]).eval())
         return data
 
     @property
     def s(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).spin_matrices(stop_state=center[1], rotation=center[2]).eval().conj()) #return conj of hermitian matrix in c-order to prepare it already for lapack f-order using .T
+            data.append(SltGroup(self._hdf5, center[0]).spin_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj()) #return conj of hermitian matrix in c-order to prepare it already for lapack f-order using .T
         return data
         
     @property
     def l(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).angular_momentum_matrices(stop_state=center[1], rotation=center[2]).eval().conj())
+            data.append(SltGroup(self._hdf5, center[0]).angular_momentum_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
     
     @property
     def p(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).electric_dipole_momentum_matrices(stop_state=center[1], rotation=center[2]).eval().conj())
+            data.append(SltGroup(self._hdf5, center[0]).electric_dipole_momentum_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
 
     @property
     def j(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).total_angular_momentum_matrices(stop_state=center[1], rotation=center[2]).eval().conj())
+            data.append(SltGroup(self._hdf5, center[0]).total_angular_momentum_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
 
     @property
     def m(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).magnetic_dipole_momentum_matrices(stop_state=center[1], rotation=center[2]).eval().conj())
+            data.append(SltGroup(self._hdf5, center[0]).magnetic_dipole_momentum_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
     
     @property
-    def arrays(self):
-        if len(self._magnetic_centers.keys()) < 2:
-            return [item for property in self._mode[:-1] for item in getattr(self, property)] # for a single center no exchange is needed
-        else:
-            return [item for property in self._mode for item in getattr(self, property)]
+    def interaction_matrix(self): # you will have to move implementation of this somewhere else not to import linalg and numpy etc. and tha same with everything because slt file is used everywhere 
+        result = zeros((self._states, self._states), dtype=settings.complex)
+        if not None in [value[3] for value in self._magnetic_centers.values()]:
+            n = len(self._magnetic_centers.keys())
+            dipole_magnetic_momenta_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).magnetic_dipole_momentum_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
+            for key1 in self._magnetic_centers.keys():
+                for key2 in range(key1+1, n):
+                    r_vec = self._magnetic_centers[key1][3] - self._magnetic_centers[key2][3]
+                    r_norm = norm(r_vec)
+                    if r_norm <= 1e-3:
+                        raise ValueError("Magnetic centers are closer than 1e-3 Angstrom. Please double-check the SlothPy Hamiltonian dictionary. Quitting here.")
+                    coeff = MU_B_T  / r_norm ** 3
+                    r_vec = r_vec / r_norm
+                    op1 = tensordot(dipole_magnetic_momenta_dict[key1], - 3. * coeff * r_vec ,axes=(0, 0))
+                    op2 = tensordot(dipole_magnetic_momenta_dict[key2], r_vec, axes=(0, 0))
+                    ops = [op1 if k == key1 else op2 if k == key2 else dipole_magnetic_momenta_dict[k].shape[1] for k in range(n)]
+                    result += _kron_mult(ops)
+                    for i in range(3):
+                        ops[key1] = coeff * dipole_magnetic_momenta_dict[key1][i]
+                        ops[key2] = dipole_magnetic_momenta_dict[key2][i]
+                        result += _kron_mult(ops)
+        
+        for (key1, key2), J in self._exchange_interactions.items():
+            spin_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).spin_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
+            for l in range(3):
+                for m in range(3):
+                    coeff = - J[l, m]
+                    if abs(coeff) < 1e-13:
+                        continue
+                    op1 = coeff * spin_dict[key1][l]
+                    op2 = spin_dict[key2][m]
+                    ops = [op1 if k == key1 else op2 if k == key2 else spin_dict[k].shape[1] for k in range(n)]
+                    result += _kron_mult(ops)
+
+        #TODO: hyperfine interactions and different types of interactions (J,L???)
+
+        return result
+
+    @property
+    def arrays_to_shared_memory(self):
+        arrays = [item for property in self._mode for item in getattr(self, property)]
+        if len(self._magnetic_centers.keys()) > 1:
+            arrays.append(self.interaction_matrix)
+        return arrays
+    
+    @property
+    def info(self):
+        info_list = []
+        for i in range(len(self._magnetic_centers.keys())):
+            info_list.append(self._magnetic_centers[i][1])
+        return (self._mode, info_list)
+
 

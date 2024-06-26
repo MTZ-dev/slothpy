@@ -16,7 +16,6 @@
 
 from os import path
 from functools import partial
-from ast import literal_eval
 from typing import Tuple, Union, Literal
 from h5py import File, Group, Dataset
 from numpy import (
@@ -119,8 +118,8 @@ from slothpy._general_utilities._grids_over_sphere import (
     _meshgrid_over_sphere_flatten,
     _fibonacci_over_sphere,
 )
-from slothpy.core._input_parser import validate_input
-from slothpy.core._slt_file import SltGroup, SltDataset, SltAttributes
+from slothpy.core._input_parser import validate_input, _parse_hamiltonian_dicts
+from slothpy.core._slt_file import SltGroup, SltDataset
 
 class Compound():
     """
@@ -291,12 +290,14 @@ class Compound():
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
             del file[key]
 
-    def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str):
+    @slothpy_exc("SltFileError")
+    def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str): # in magnetic_centers dict values must be list (mutable) not tuples!!!
+        states = _parse_hamiltonian_dicts(self, magnetic_centers, exchange_interactions)
         with File(self._hdf5, 'a') as file:
             group = file.create_group(slt_save)
             group.attrs["Type"] = "HAMILTONIAN"
             group.attrs["Kind"] = "SLOTHPY"
-            group.attrs["States"] = "" ######################## tutaj coś z parse hamiltonian jak sprawdzasz czy wszystko ok w dict
+            group.attrs["States"] = states
             group.attrs["Description"] = f"A custom Hamiltonian created by the user."
             
             def save_dict_to_group(group, data_dict, subgroup_name):
@@ -332,10 +333,10 @@ class Compound():
         group_name: str, #########zmienic na hamiltonian group name
         magnetic_fields: ndarray[Union[float32, float64]],
         orientations: ndarray[Union[float32, float64]],
-        states_cutoff: int = 0,
+        states_cutoff: list = [0, 'auto'], ######## teraz to jest lista
         number_of_states: int = 0,
         rotation: ndarray = None, ###################opisac z nowa klasa
-        hyperfine: dict = None, #################opisac
+        hyperfine: dict = None, #################opisac ze nie ma xd
         number_cpu: int = None,
         number_threads: int = None,
         slt_save: str = None,

@@ -164,9 +164,9 @@ class SltSettings:
     @property
     def complex(self):
         if self._settings["precision"] == "single":
-            return "complex64"
+            return complex64
         elif self._settings["precision"] == "double":
-            return "complex128"
+            return complex128
         
     @property
     def numba_int(self):

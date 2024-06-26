@@ -535,15 +535,15 @@ class SltZeemanSplitting(_MultiProcessed):
         magnetic_fields: ndarray,
         orientations: ndarray,
         number_of_states: int,
-        states_cutoff: int,
-        number_cpu: int,
-        number_threads: int,
+        states_cutoff: list = [0,0],
+        rotation: ndarray = None,
+        hyperfine: dict = None,
+        number_cpu: int = 1,
+        number_threads: int = 1,
         autotune: bool = False,
         slt_save: str = None,
         smm: SharedMemoryManager = None,
         terminate_event: Event = None,
-        rotation: ndarray = None,
-        hyperfine: dict = None,
         ) -> None:
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0] , number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
         self._method_name = "Zeeman Splitting"
@@ -556,10 +556,10 @@ class SltZeemanSplitting(_MultiProcessed):
         self._args = (number_of_states,)
         self._executor_proxy = _zeeman_splitting_proxy
         self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine)
-        self._slt_hamiltonian._mode = "ems"
+        self._slt_hamiltonian._mode = "em"
     
     def _load_args_arrays(self):
-        self._args_arrays = (*self._slt_hamiltonian.arrays, self._magnetic_fields, self._orientations)
+        self._args_arrays = (*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations)
         if self._orientations.shape[1] == 4:
             self._returns = True
         elif self._orientations.shape[1] == 3:

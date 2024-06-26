@@ -207,14 +207,14 @@ class _MultiProcessed(_SingleProcessed):
         sm_arrays_info_list.append(self._sm_progress_array_info)
         if not self._returns:
             sm_arrays_info_list.append(self._sm_result_info)
-        return [(sm_arrays_info_list, self._args, process_index, chunk.start, chunk.end, self._number_threads, self._returns) for process_index, chunk in enumerate(_distribute_chunks(self._number_to_parallelize, self._number_processes))]
+        return [(self._slt_hamiltonian.info, sm_arrays_info_list, self._args, process_index, chunk.start, chunk.end, self._returns) for process_index, chunk in enumerate(_distribute_chunks(self._number_to_parallelize, self._number_processes))]
             
     @abstractmethod
     def _gather_results(self, results):
         pass
 
     def _executor(self):
-        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._returns, self._terminate_event)
+        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, self._terminate_event)
         result_queue = self._process_pool.start_and_collect()
         self._process_pool = None
         return result_queue
@@ -255,7 +255,7 @@ class _MultiProcessed(_SingleProcessed):
                     self._sm_progress_array_info = _to_shared_memory(self._smm, progress_array)
                     self._terminate_event = terminate_event()
                     try:
-                        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._returns, self._terminate_event)
+                        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, self._terminate_event)
                         benchmark_process = Process(target=self._process_pool.start_and_collect)
                         sm_progress, progress_array = _from_shared_memory(self._sm_progress_array_info)
                         benchmark_process.start()

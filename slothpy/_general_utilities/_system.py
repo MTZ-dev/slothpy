@@ -22,6 +22,9 @@ from multiprocessing import Process, Queue
 from multiprocessing.synchronize import Event
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
+
+from threadpoolctl import threadpool_limits
+from numba import set_num_threads
 from numpy import ndarray, dtype, array
 
 def _get_num_of_processes():
@@ -96,6 +99,7 @@ def _chunk_from_shared_memory(sm: SharedMemory, sm_array_info: SharedMemoryArray
     chunk_length = chunk.end - chunk.start
     return ndarray((chunk_length,), sm_array_info.dtype, sm.buf, offset)
 
+
 def _load_shared_memory_arrays(sm_arrays_info_list):
     sm_list = []
     arrays_list = []
@@ -106,16 +110,19 @@ def _load_shared_memory_arrays(sm_arrays_info_list):
     return sm_list, arrays_list
 
 
-def _worker_wrapper(worker, args, result_queue=None):
-        result = worker(*args)
+def _worker_wrapper(worker, args, number_threads, result_queue=None):
+        with threadpool_limits(limits=number_threads):
+            set_num_threads(number_threads)
+            result = worker(*args)
         if result_queue:
             result_queue.put(result)
 
 
 class SltProcessPool:
-    def __init__(self, worker: callable, jobs: Iterable, returns: bool = False, terminate_event: Event = None):
+    def __init__(self, worker: callable, jobs: Iterable, number_threads: int, returns: bool = False, terminate_event: Event = None):
         self._worker = worker
         self._jobs = jobs
+        self._number_threads = number_threads
         self._returns = returns
         self._terminate_event = terminate_event
         self._processes = []
@@ -125,9 +132,9 @@ class SltProcessPool:
         try:
             for job_args in self._jobs:
                 if self._returns:
-                    process = Process(target=_worker_wrapper, args=(self._worker, job_args, self._result_queue))
+                    process = Process(target=_worker_wrapper, args=(self._worker, job_args, self._number_threads, self._result_queue))
                 else:
-                    process = Process(target=_worker_wrapper, args=(self._worker, job_args))
+                    process = Process(target=_worker_wrapper, args=(self._worker, job_args, self._number_threads))
                 process.start()
                 self._processes.append(process)
 

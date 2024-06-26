@@ -30,3 +30,4 @@ KB = 3.166811563e-6  # Boltzmann constant a.u./K
 MU_B = 2.127191078656686e-06  # Bohr magneton in a.u./T
 H_CM_1 = 219474.6  # Atomic units (Hartree) to wavenumbers
 MU_B_CM_3 = 0.5584938904  # Conversion factor from Bohr magneton to cm3 for chi
+MU_B_T = 435974.8198 # Conversion factor from Bohr magneton in a.u./T to field in T produced by the magnetic dipole

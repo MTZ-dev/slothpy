@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from math import factorial
-from numpy import ndarray, array, zeros, ascontiguousarray, arange, tile, abs, mod, sqrt, min, max, power, float64, int64
+from numpy import ndarray, array, zeros, ascontiguousarray, arange, tile, abs, mod, sqrt, min, max, power, float64, int64, min as np_min
 from numpy.linalg import eigh, inv
 from numba import jit, prange, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import GE, MU_B
@@ -299,9 +299,8 @@ def _normalize_orientation(orientation: ndarray):
     parallel=True,
 )
 def _magnetic_dipole_momenta_from_spins_angular_momenta(spins: ndarray, angular_momenta: ndarray):
-    mu_b = array(MU_B, dtype=spins.dtype)
     ge = array(GE, dtype=spins.dtype)
-    return -mu_b*(ge * spins + angular_momenta)
+    return -(ge * spins + angular_momenta)
 
 
 @jit([
@@ -320,3 +319,9 @@ def _magnetic_dipole_momenta_from_spins_angular_momenta(spins: ndarray, angular_
 )
 def _total_angular_momenta_from_spins_angular_momenta(spins: ndarray, angular_momenta: ndarray):
     return spins + angular_momenta
+
+
+def _subtract_min_from_arrays_list(array_list):
+    min_value = min([np_min(arr) for arr in array_list])
+    for arr in array_list:
+        arr -= min_value

@@ -16,6 +16,7 @@
 
 from numpy import zeros, arange, kron, eye
 from slothpy.core._config import settings
+from numpy import int64
 
 
 def _kron_A_N(A, N):
@@ -27,12 +28,12 @@ def _kron_A_N(A, N):
     return out
 
 def _kron_mult(ops):
-    if isinstance(ops[0], int):
+    if isinstance(ops[0], (int, int64)):
         result = eye(ops[0], dtype=settings.complex)
     else:
         result = ops[0]
-    for op in ops:
-        if isinstance(op, int):
+    for op in ops[1:]:
+        if isinstance(op, (int, int64)):
             result = _kron_A_N(result, op)
         else:
             result = kron(result, op)

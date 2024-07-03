@@ -303,13 +303,13 @@ class Compound():
             def save_dict_to_group(group, data_dict, subgroup_name):
                 subgroup = group.create_group(subgroup_name)
                 for key, value in data_dict.items():
+                    key_str = str(key) if not isinstance(key, str) else f"'{key}'"
                     if isinstance(value, (list, tuple)):
                         for i, item in enumerate(value):
-                            key_str = str(key) if not isinstance(key, str) else f"'{key}'"
                             item_name = f"{key_str}_{i}"
                             self._create_dataset(subgroup, item_name, item)
                     else:
-                        self._create_dataset(subgroup, key, value)
+                        self._create_dataset(subgroup, key_str, value)
             
             save_dict_to_group(group, magnetic_centers, "MAGNETIC_CENTERS")
             save_dict_to_group(group, exchange_interactions, "EXCHANGE_INTERACTIONS")
@@ -330,11 +330,11 @@ class Compound():
     
     def zeeman_splitting(
         self,
-        group_name: str, #########zmienic na hamiltonian group name
+        hamiltonian_group_name: str, #########zmienic na hamiltonian group name
         magnetic_fields: ndarray[Union[float32, float64]],
         orientations: ndarray[Union[float32, float64]],
-        states_cutoff: list = [0, 'auto'], ######## teraz to jest lista
         number_of_states: int = 0,
+        states_cutoff: list = [0, 'auto'], ######## teraz to jest lista
         rotation: ndarray = None, ###################opisac z nowa klasa
         hyperfine: dict = None, #################opisac ze nie ma xd
         number_cpu: int = None,
@@ -348,7 +348,7 @@ class Compound():
 
         Parameters
         ----------
-        group : str
+        hamiltonian_group_name : str
             Name of a group containing results of relativistic ab initio
             calculations used for the computation of the Zeeman splitting.
         number_of_states : int
@@ -423,7 +423,7 @@ class Compound():
         distribute the workload over the provided field values.
         """
 
-        return self[group_name].zeeman_splitting(magnetic_fields, orientations, number_of_states, states_cutoff, rotation, hyperfine, number_cpu, number_threads, slt_save, autotune)
+        return self[hamiltonian_group_name].zeeman_splitting(magnetic_fields, orientations, number_of_states, states_cutoff, rotation, hyperfine, number_cpu, number_threads, slt_save, autotune)
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None
@@ -559,19 +559,20 @@ class Compound():
 
         return g_tensor_list, magnetic_axes_list
 
-    @validate_input
     def magnetisation(
         self,
-        group: str,
-        fields: ndarray[float64],
-        grid: Union[int, ndarray[float64]],
+        hamiltonian_group_name: str,
+        magnetic_fields: ndarray[float64],
+        orientations: Union[int, ndarray[float64]],
         temperatures: ndarray[float64],
-        states_cutoff: int = 0,
+        states_cutoff: list = [0, "auto"],
+        rotation: ndarray = None, ###################opisac z nowa klasa
+        hyperfine: dict = None, #################opisac ze nie ma xd
         number_cpu: int = 0,
         number_threads: int = 1,
         slt_save: str = None,
         autotune: bool = False,
-    ) -> ndarray[float64]:
+    ):
         """
         Calculates powder-averaged or directional molar magnetisation M(T,H)
         for a given list of temperature and field values.
@@ -656,143 +657,7 @@ class Compound():
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
         """
-        if settings.monitor:
-            print("Initialization...")
-        # if slt is not None:
-        #     slt_group_name = f"{slt}_magnetisation"
-        #     if _group_exists(self._hdf5, slt_group_name):
-        #         raise SltSaveError(
-        #             self._hdf5,
-        #             NameError(""),
-        #             message="Unable to save the results. "
-        #             + BLUE
-        #             + "Group "
-        #             + RESET
-        #             + '"'
-        #             + BLUE
-        #             + slt_group_name
-        #             + RESET
-        #             + '" '
-        #             + "already exists. Delete it manually.",
-        #         ) from None
-        # try:
-        #     fields = array(fields, dtype=float64)
-        #     temperatures = array(temperatures, dtype=float64)
-        # except Exception as exc:
-        #     raise SltInputError(exc) from None
-
-        # if fields.ndim != 1:
-        #     raise SltInputError(
-        #         ValueError("The list of fields has to be a 1D array.")
-        #     ) from None
-
-        # if temperatures.ndim != 1:
-        #     raise SltInputError(
-        #         ValueError("The list of temperatures has to be a 1D array.")
-        #     ) from None
-
-        # if isinstance(grid, int):
-        #     grid = lebedev_laikov_grid(grid)
-        # else:
-        #     grid = _normalize_grid_vectors(grid)
-
-        if autotune:
-            try:
-                number_threads = _auto_tune(
-                    self._hdf5,
-                    group,
-                    fields,
-                    grid,
-                    temperatures,
-                    states_cutoff,
-                    number_cpu,
-                    fields.shape[0],
-                    grid.shape[0],
-                    "magnetisation",
-                )
-            except Exception as exc:
-                raise SltCompError(
-                    self._hdf5,
-                    exc,
-                    "Failed to autotune a number of processes and threads to"
-                    " the data within "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + f"{group}"
-                    + RESET
-                    + '".',
-                ) from None
-
-        try:
-            mth_array = _mth(
-                self._hdf5,
-                group,
-                fields,
-                grid,
-                temperatures,
-                states_cutoff,
-                number_cpu,
-                number_threads,
-            )
-        except Exception as exc:
-            raise SltCompError(
-                self._hdf5,
-                exc,
-                "Failed to compute M(T,H) from "
-                + BLUE
-                + "Group "
-                + RESET
-                + '"'
-                + BLUE
-                + f"{group}"
-                + RESET
-                + '".',
-            ) from None
-
-        if slt_save is not None:
-            try:
-                with File(self._hdf5, "r+") as file:
-                    group = file.create_group(slt_save)
-                    group.attrs["Type"] = "magnetisation"
-                self[
-                    slt_save,
-                    f"mth",
-                    "Dataset containing M(T,H) magnetisation (T - rows, H"
-                    f" - columns) calculated from group: {group}.",
-                    f"Group({slt_save}) containing M(T,H) magnetisation"
-                    f" calculated from group: {group}.",
-                ] = mth_array[:, :]
-                self[
-                    slt_save,
-                    f"fields",
-                    "Dataset containing magnetic field H values used in"
-                    f" simulation of M(T,H) from group: {group}.",
-                ] = fields[:]
-                self[
-                    slt_save,
-                    f"temperatures",
-                    "Dataset containing temperature T values used in"
-                    f" simulation of M(T,H) from group: {group}.",
-                ] = temperatures[:]
-            except Exception as exc:
-                raise SltFileError(
-                    self._hdf5,
-                    exc,
-                    "Failed to save M(T,H) to "
-                    + BLUE
-                    + "Group "
-                    + RESET
-                    + '"'
-                    + BLUE
-                    + slt_save
-                    + RESET
-                    + '".',
-                ) from None
-
-        return mth_array
+        return self[hamiltonian_group_name].magnetisation(magnetic_fields, orientations, temperatures, states_cutoff, rotation, hyperfine, number_cpu, number_threads, slt_save, autotune)
 
     def calculate_magnetisation_3d(
         self,

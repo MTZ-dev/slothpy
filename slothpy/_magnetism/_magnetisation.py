@@ -36,9 +36,11 @@ from numpy import (
     int64,
     array_equal,
     concatenate,
+    prod,
+    divide,
 )
 from numpy.linalg import eigh
-from numba import jit, set_num_threads, prange
+from numba import jit, set_num_threads, prange, float32, float64
 from numba import types
 from slothpy._general_utilities._constants import KB, MU_B
 from slothpy._general_utilities._system import (
@@ -57,6 +59,9 @@ import time
 from datetime import datetime
 import psutil
 from slothpy.core._config import settings
+
+from slothpy._general_utilities._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
+from slothpy.core._hamiltonian_object import Hamiltonian
 
 @jit(
     "float64[:](complex128[:,:], complex128[:,:])",
@@ -127,8 +132,9 @@ def _calculate_zeeman_matrix2(
     return magnetic_momenta_orient, magnetic_momenta
 
 
-@jit(
-    "float64(float64[:], float64[:], float64)",
+@jit([types.Tuple((float32, float32))(types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True), float32),
+      types.Tuple((float64, float64))(types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True), float64),
+    ],
     nopython=True,
     nogil=True,
     cache=True,
@@ -136,9 +142,7 @@ def _calculate_zeeman_matrix2(
     inline="always",
     parallel=True,
 )
-def _calculate_magnetization(
-    energies: ndarray, states_momenta: ndarray, temperature: float64
-) -> float64:
+def _magnetic_moment_partition_function(energies, states_momenta, temperature):
     factor = KB * temperature
     z = 0
     m = 0
@@ -147,32 +151,136 @@ def _calculate_magnetization(
         z += e
         m += e * states_momenta[i]
 
+    return m, z
+
+@jit([(types.Array(float32, 1, 'C', False), types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True), float32),
+      (types.Array(float64, 1, 'C', False), types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True), float64),
+    ],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+)
+def _magnetisation_temperature_single_center_av(magnetisation_array, energies, states_momenta, temperatures, weight):
+    for t in range(temperatures.shape[0]):
+        m, z = _magnetic_moment_partition_function(energies, states_momenta, temperatures[t])
+        magnetisation_array[t] += m / z * weight
+
+
+@jit([(types.Array(float32, 1, 'C', False), types.Array(float32, 1, 'C', False), types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True), float32),
+      (types.Array(float64, 1, 'C', False), types.Array(float64, 1, 'C', False), types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True), float64),
+    ],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+)
+def _momenta_partition_functions_multi_center_av(momenta_array, partition_functions_array, energies, states_momenta, temperatures, weight):
+    for t in range(temperatures.shape[0]):
+        m, z = _magnetic_moment_partition_function(energies, states_momenta, temperatures[t])
+        momenta_array[t] += m * weight
+        partition_functions_array[t] += z
+
+
+def _magnetisation_proxy(slt_hamiltonian_info, sm_arrays_info_list: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, returns: bool = False):
+    hamiltonian = Hamiltonian(sm_arrays_info_list, slt_hamiltonian_info[0], slt_hamiltonian_info[1])
+    sm, arrays = _load_shared_memory_arrays(sm_arrays_info_list[hamiltonian._shared_memory_index:])
+    if returns:
+        return _magnetisation_average(hamiltonian, *arrays, process_index, start, end) #no *args because the list is empty
+    else:
+        _magnetisation(hamiltonian, *arrays, process_index, start, end)
+
+
+def _magnetisation(
+    hamiltonian: Hamiltonian,
+    magnetic_fields: ndarray,
+    orientations: ndarray,
+    temperatures: ndarray,
+    progress_array: ndarray,
+    magnetisation_array: ndarray,
+    number_of_states: int,
+    process_index: int,
+    start: int,
+    end: int,
+):  
+    pass
+    # magnetic_fields_shape_0 = magnetic_fields.shape[0]
+    
+    # for i in range(start, end):
+    #     hamiltonian._magnetic_field = orientations[i//magnetic_fields_shape_0, :3] * magnetic_fields[i%magnetic_fields_shape_0]
+    #     energies = hamiltonian.zeeman_energies(number_of_states)
+    #     zeeman_array[i] = energies[:number_of_states] * h_cm_1
+    #     progress_array[process_index] += 1
+
+
+def _magnetisation_average(
+    hamiltonian: Hamiltonian,
+    magnetic_fields: ndarray,
+    orientations: ndarray,
+    temperatures: ndarray,
+    progress_array: ndarray,
+    process_index: int,
+    start: int,
+    end: int,
+):
+    orientations_shape_0 = orientations.shape[0]
+    start_field_index = start // orientations_shape_0
+    end_field_index = (end - 1) // orientations_shape_0 + 1
+    previous_field_index = start_field_index
+    magnetisation_array = zeros((end_field_index - start_field_index, temperatures.shape[0]), dtype=temperatures.dtype)
+    magnetisation_index = 0
+    for i in range(start, end):
+        current_field_index = i // orientations_shape_0
+        orientation_index = i % orientations_shape_0
+        if current_field_index != previous_field_index:
+            magnetisation_index += 1
+            previous_field_index = current_field_index
+        hamiltonian._magnetic_field = magnetic_fields[current_field_index] * orientations[orientation_index, :3]
+        energies, states_momenta = hamiltonian.slpjm_under_magnetic_field("m", orientations[orientation_index, :3])
+        if isinstance(energies, list):
+            momenta = zeros((len(energies), temperatures.shape[0]), dtype=temperatures.dtype, order='C')
+            partition_functions = zeros((len(energies), temperatures.shape[0]), dtype=temperatures.dtype, order='C')
+            for index, (energy, moment) in enumerate(zip(energies, states_momenta)):
+                _momenta_partition_functions_multi_center_av(momenta[index, :], partition_functions[index, :], energy, moment, temperatures, orientations[orientation_index, 3])
+            partition_product = prod(partition_functions[:-1, :], axis=0)
+            if any(partition_product < 1e-200):
+                magnetisation_array[magnetisation_index, :] += momenta[-1, :] / partition_functions[-1, :]
+            else:
+                denominator = partition_functions[-1, :] + partition_product
+                numerator = momenta[-1, :] + sum(divide(momenta[:-1, :], partition_functions[:-1, :])) * partition_product
+                magnetisation_array[magnetisation_index, :] += numerator/denominator
+        else:
+            _magnetisation_temperature_single_center_av(magnetisation_array[magnetisation_index, :], energies, states_momenta, temperatures, orientations[orientation_index, 3])
+        progress_array[process_index] += 1
+
+    return start_field_index, end_field_index, magnetisation_array
+
+
+@jit(
+    "float64(float64[:], float64[:], float64)",
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+)
+def _calculate_magnetization(
+    energies: ndarray, states_momenta: ndarray, temperature: float64
+) -> float64:
+    energies = ascontiguousarray(energies)
+    states_momenta = ascontiguousarray(states_momenta)
+    # Boltzman weights
+    energies = exp(-(energies - energies[0]) / (KB * temperature))
+
+    # Partition function
+    z = sum(energies)
+
+    # Weighted magnetic moments of microstates
+    m = vdot(states_momenta, energies)
+
     return m / z
-
-
-# @jit(
-#     "float64(float64[:], float64[:], float64)",
-#     nopython=True,
-#     nogil=True,
-#     cache=True,
-#     fastmath=True,
-#     inline="always",
-# )
-# def _calculate_magnetization(
-#     energies: ndarray, states_momenta: ndarray, temperature: float64
-# ) -> float64:
-#     energies = ascontiguousarray(energies)
-#     states_momenta = ascontiguousarray(states_momenta)
-#     # Boltzman weights
-#     energies = exp(-(energies - energies[0]) / (KB * temperature))
-
-#     # Partition function
-#     z = sum(energies)
-
-#     # Weighted magnetic moments of microstates
-#     m = vdot(states_momenta, energies)
-
-#     return m / z
 
 
 @jit(

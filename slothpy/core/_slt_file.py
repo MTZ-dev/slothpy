@@ -29,7 +29,7 @@ from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELL
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
 from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
-from slothpy._general_utilities._constants import MU_B_T
+from slothpy._general_utilities._constants import MU_T
 from slothpy._general_utilities._direct_product_space import _kron_mult
 from slothpy.core._delayed_methods import *
 
@@ -333,7 +333,7 @@ class SltGroup:
         
         return magnetic_centers, exchange_interactions, states
     
-    @validate_input("HAMILTONIAN")
+    @validate_input("HAMILTONIAN", only_hamiltonian_check=True)
     def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None):
             return SltHamiltonian(self, states_cutoff, rotation, hyperfine)
     
@@ -352,6 +352,22 @@ class SltGroup:
         autotune: bool = False,
     ) -> SltZeemanSplitting:
         return SltZeemanSplitting(self, magnetic_fields, orientations, number_of_states, states_cutoff, rotation, hyperfine, number_cpu, number_threads, autotune, slt_save)
+    
+    @validate_input("HAMILTONIAN")
+    def magnetisation(
+        self,
+        magnetic_fields: ndarray[Union[float32, float64]],
+        orientations: ndarray[Union[float32, float64]],
+        temperatures: ndarray[Union[float32, float64]],
+        states_cutoff: int = [0, "auto"],
+        rotation: ndarray = None,
+        hyperfine: dict = None,
+        number_cpu: int = None,
+        number_threads: int = None,
+        slt_save: str = None,
+        autotune: bool = False,
+    ) -> SltMagnetisation:
+        return SltMagnetisation(self, magnetic_fields, orientations, temperatures, states_cutoff, rotation, hyperfine, number_cpu, number_threads, autotune, slt_save)
 
 
 class SltDataset:
@@ -603,8 +619,8 @@ class SltHamiltonian():
     @property
     def interaction_matrix(self): # you will have to move implementation of this somewhere else not to import linalg and numpy etc. and tha same with everything because slt file is used everywhere 
         result = zeros((self._states, self._states), dtype=settings.complex)
-        if not None in [value[3] for value in self._magnetic_centers.values()]:
-            n = len(self._magnetic_centers.keys())
+        n = len(self._magnetic_centers.keys())
+        if not any(value[3] is None for value in self._magnetic_centers.values()):
             dipole_magnetic_momenta_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).magnetic_dipole_momentum_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
             for key1 in self._magnetic_centers.keys():
                 for key2 in range(key1+1, n):
@@ -612,7 +628,7 @@ class SltHamiltonian():
                     r_norm = norm(r_vec)
                     if r_norm <= 1e-3:
                         raise ValueError("Magnetic centers are closer than 1e-3 Angstrom. Please double-check the SlothPy Hamiltonian dictionary. Quitting here.")
-                    coeff = MU_B_T  / r_norm ** 3
+                    coeff = MU_T / r_norm ** 3
                     r_vec = r_vec / r_norm
                     op1 = tensordot(dipole_magnetic_momenta_dict[key1], - 3. * coeff * r_vec ,axes=(0, 0))
                     op2 = tensordot(dipole_magnetic_momenta_dict[key2], r_vec, axes=(0, 0))
@@ -627,7 +643,7 @@ class SltHamiltonian():
             spin_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).spin_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
             for l in range(3):
                 for m in range(3):
-                    coeff = - J[l, m]
+                    coeff = - J[0][l, m]
                     if abs(coeff) < 1e-13:
                         continue
                     op1 = coeff * spin_dict[key1][l]

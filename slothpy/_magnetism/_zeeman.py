@@ -103,7 +103,7 @@ def _zeeman_splitting(
     
     for i in range(start, end):
         hamiltonian._magnetic_field = orientations[i//magnetic_fields_shape_0, :3] * magnetic_fields[i%magnetic_fields_shape_0]
-        energies = hamiltonian.zeeman_energies()
+        energies = hamiltonian.zeeman_energies(number_of_states)
         zeeman_array[i] = energies[:number_of_states] * h_cm_1
         progress_array[process_index] += 1
 

@@ -9,6 +9,10 @@
 *.csv
 *.xyz
 *.mol2
+*.c
+*.so
+*.pyx
+build
 __pycache__
 .vscode
 .ipynb_checkpoints

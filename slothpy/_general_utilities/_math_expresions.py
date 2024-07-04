@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from math import factorial
-from numpy import ndarray, array, zeros, ascontiguousarray, arange, tile, abs, mod, sqrt, min, max, power, float64, int64, min as np_min
+from numpy import ndarray, array, zeros, ascontiguousarray, arange, tile, ones, argsort, take_along_axis, abs, mod, sqrt, min, max, power, float64, int64, min as np_min
 from numpy.linalg import eigh, inv
 from numba import jit, prange, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import GE, MU_B
@@ -325,3 +325,40 @@ def _subtract_min_from_arrays_list(array_list):
     min_value = min([np_min(arr) for arr in array_list])
     for arr in array_list:
         arr -= min_value
+
+
+@jit([
+    (types.Array(types.float32, 2, 'C', True), types.Array(types.float32, 2, 'C', True), types.Array(types.float32, 1, 'C', False), types.Array(types.float32, 1, 'C', False)),
+    (types.Array(types.float64, 2, 'C', True), types.Array(types.float64, 2, 'C', True), types.Array(types.float64, 1, 'C', False), types.Array(types.float64, 1, 'C', False))
+    ],
+    nopython=True,
+    nogil=True,
+    cache=True,
+    fastmath=True,
+    inline="always",
+    parallel=True,
+)
+def _compute_products_and_sums(sorted_partition_array, sorted_momenta_array, partition_product, magnetisation_sum):
+    for col in prange(sorted_partition_array.shape[1]):
+        for row in range(sorted_partition_array.shape[0]):
+            if partition_product[col] * sorted_partition_array[row, col] > 1e-300:
+                partition_product[col] *= sorted_partition_array[row, col]
+                magnetisation_sum[col] += sorted_momenta_array[row, col] / sorted_partition_array[row, col]
+            else:
+                partition_product[col] = 0
+                magnetisation_sum[col] = 0
+                break
+
+
+def _validate_and_compute_partition_product_and_magnetisation_sum(partition_array, momenta_array):
+    sorted_indices = argsort(partition_array, axis=0)[::-1]
+    sorted_partition_array = take_along_axis(partition_array, sorted_indices, axis=0)
+    sorted_momenta_array = take_along_axis(momenta_array, sorted_indices, axis=0)
+
+    partition_product = ones(partition_array.shape[1])
+    magnetisation_sum = ones(momenta_array.shape[1])
+
+    _compute_products_and_sums(sorted_partition_array, sorted_momenta_array, partition_product, magnetisation_sum)
+
+    return partition_product, magnetisation_sum
+

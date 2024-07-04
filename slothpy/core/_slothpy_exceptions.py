@@ -209,8 +209,8 @@ def slothpy_exc_methods(slt_exception: Literal["SltFileError", "SltCompError", "
                 exception_mapping = {
                     "SltInputError": (SltInputError, ""),
                     "SltFileError": (SltFileError, ""),
-                    "SltCompError": (SltCompError, f"\nFailed to compute {args[0]._method_name} to {BLUE}Group{RESET}: '{args[0]._group_name}'."),
-                    "SltSaveError": (SltSaveError, f"\nFailed to save {args[0]._method_name} to {BLUE}Group{RESET}: '{args[0]._slt_save}'."),
+                    "SltCompError": (SltCompError, f"\nFailed to compute {args[0]._method_name} from {BLUE}Group{RESET}: '{args[0]._group_name}'."),
+                    "SltSaveError": (SltSaveError, f"\nFailed to save {args[0]._method_name} from {BLUE}Group{RESET}: '{args[0]._slt_save}'."),
                     "SltReadError": (SltReadError, f"\nFailed to read {args[0]._method_name} from {BLUE}Group{RESET}: '{args[0]._group_name}'."),
                     "SltPlotError": (SltPlotError, f"\nFailed to plot {args[0]._method_name} from {BLUE}Group{RESET}: '{args[0]._group_name}'."),
                     "SltAutotuneError": (SltAutotuneError, f"\nFailed to autotune {args[0]._method_name} from {BLUE}Group{RESET}: '{args[0]._group_name}'."),

@@ -17,8 +17,7 @@
 from typing import Literal
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.shared_memory import SharedMemory
-from multiprocessing import Pool, Process
-from threading import Thread
+from multiprocessing import Pool
 from threadpoolctl import threadpool_limits
 from numpy import (
     ndarray,
@@ -50,7 +49,6 @@ from slothpy._general_utilities._system import (
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )
-from slothpy._magnetism._zeeman import _calculate_zeeman_matrix
 from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
     _meshgrid_over_sphere_flatten,
@@ -60,8 +58,10 @@ from datetime import datetime
 import psutil
 from slothpy.core._config import settings
 
+from slothpy._general_utilities._math_expresions import _validate_and_compute_partition_product_and_magnetisation_sum
 from slothpy._general_utilities._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
 from slothpy.core._hamiltonian_object import Hamiltonian
+
 
 @jit(
     "float64[:](complex128[:,:], complex128[:,:])",
@@ -244,13 +244,9 @@ def _magnetisation_average(
             partition_functions = zeros((len(energies), temperatures.shape[0]), dtype=temperatures.dtype, order='C')
             for index, (energy, moment) in enumerate(zip(energies, states_momenta)):
                 _momenta_partition_functions_multi_center_av(momenta[index, :], partition_functions[index, :], energy, moment, temperatures, orientations[orientation_index, 3])
-            partition_product = prod(partition_functions[:-1, :], axis=0)
-            if any(partition_product < 1e-200):
-                magnetisation_array[magnetisation_index, :] += momenta[-1, :] / partition_functions[-1, :]
-            else:
-                denominator = partition_functions[-1, :] + partition_product
-                numerator = momenta[-1, :] + sum(divide(momenta[:-1, :], partition_functions[:-1, :])) * partition_product
-                magnetisation_array[magnetisation_index, :] += numerator/denominator
+            partition_product, magnetisation_sum = _validate_and_compute_partition_product_and_magnetisation_sum(partition_functions[:-1, :], momenta[:-1, :])
+            print(partition_product, magnetisation_sum)
+            magnetisation_array[magnetisation_index, :] += (momenta[-1, :] + magnetisation_sum * partition_product) / (partition_functions[-1, :] + partition_product)
         else:
             _magnetisation_temperature_single_center_av(magnetisation_array[magnetisation_index, :], energies, states_momenta, temperatures, orientations[orientation_index, 3])
         progress_array[process_index] += 1

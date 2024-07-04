@@ -197,7 +197,8 @@ class _MultiProcessed(_SingleProcessed):
         self._args_arrays = []
         for sm_array_info in self._sm_arrays_info:
             self._args_arrays.append(_from_shared_memory_to_array(sm_array_info))
-        self._result = _from_shared_memory_to_array(self._sm_result_info)
+        if not self._returns:
+            self._result = _from_shared_memory_to_array(self._sm_result_info)
 
     @abstractmethod
     def _load_args_arrays():

@@ -483,3 +483,7 @@ def _custom_color_cycler(number_of_colors: int, cmap1: str, cmap2: str):
             " solely on sloths."
             + "Source: https://en.wikipedia.org/wiki/Sloth"
         )
+    
+
+def _plot_zeeman_splitting(zeeman_array, magnetic_fields, orientations, ldfkgjdflgkdjf, dklfjgdfkgj):
+    pass

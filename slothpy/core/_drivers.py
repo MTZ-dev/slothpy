@@ -120,6 +120,7 @@ class _SingleProcessed(ABC):
         pass
 
     @slothpy_exc("SltPlotError")
+    @ensure_ready
     def plot(self, *args, **kwargs):
         self._plot(*args, **kwargs)
     
@@ -132,6 +133,7 @@ class _SingleProcessed(ABC):
         pass
     
     @slothpy_exc("SltReadError")
+    @ensure_ready
     def to_data_frame(self):
         return self._to_data_frame()
     
@@ -142,6 +144,7 @@ class _SingleProcessed(ABC):
         self._df.to_csv(join(file_path, file_name), sep=separator)
     
     @slothpy_exc("SltSaveError")
+    @ensure_ready
     def data_frame_to_slt_file(self, group_name):
         if self._df is None:
             self._to_data_frame()
@@ -248,7 +251,7 @@ class _MultiProcessed(_SingleProcessed):
                     chunk_size = self._number_to_parallelize // number_processes
                     remainder = self._number_to_parallelize % number_processes
                     max_tasks_per_process = array([(chunk_size + (1 if i < remainder else 0)) for i in range(number_processes)])
-                    if any(max_tasks_per_process < 5):
+                    if any(max_tasks_per_process < 6):
                         print(f"The job for {number_processes} {BLUE}Processes{RESET} and {number_threads} {PURPLE}Threads{RESET} is already too small to be autotuned! Quitting here.")
                         break
                     self._number_processes = number_processes
@@ -280,10 +283,10 @@ class _MultiProcessed(_SingleProcessed):
                         start_progress = progress_array.copy()
                         final_progress = start_progress
                         stop_time = start_time
-                        while any(progress_array - start_progress <= 4) and all(progress_array < max_tasks_per_process):
+                        while any(progress_array - start_progress <= 5) and all(progress_array < max_tasks_per_process):
                             stop_time = perf_counter_ns()
                             final_progress = progress_array.copy()
-                            sleep(0.001)
+                            sleep(0.01)
                         self._terminate_event.set()
                         overall_time = stop_time - start_time
                         progress = final_progress - start_progress
@@ -294,8 +297,9 @@ class _MultiProcessed(_SingleProcessed):
                             sm_progress.close()
                             sm_progress.unlink()
                             break
-                        current_estimated_time = overall_time * (max_tasks_per_process/(progress))
-                        current_estimated_time = median(current_estimated_time[:remainder] if remainder != 0 else current_estimated_time)
+                        current_estimated_time = overall_time * (max_tasks_per_process/progress)
+                        current_estimated_time.sort()
+                        current_estimated_time = median(current_estimated_time[(len(current_estimated_time)//2):]) if len(current_estimated_time) > 1 else current_estimated_time[0]
                         benchmark_process.join()
                         benchmark_process.close()
                         info = f"{BLUE}Processes{RESET}: {number_processes}, {PURPLE}Threads{RESET}: {number_threads}. Estimated execution time of the main loop: "
@@ -323,7 +327,7 @@ class _MultiProcessed(_SingleProcessed):
                         sm_progress.unlink()
                         raise
             time_info = f" (starting from now - [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}])" if self._autotune_from_run else ''
-            print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}." + (f"\nThe calculation time{time_info} is estimated to be at least: {GREEN}{best_time/1e9} s{RESET}." if best_time != float("inf") else ""))
+            print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}." + (f"\nThe calculation time{time_info} is estimated to be at least: {GREEN}{best_time/1e9:.2f} s{RESET}." if best_time != float("inf") else ""))
             self._number_processes, self._number_threads = final_number_of_processes, final_number_of_threads
             if self._ready:
                 self._result = result_tmp

@@ -18,8 +18,9 @@ import inspect
 from functools import wraps
 from typing import Literal
 from os import cpu_count
+from warnings import warn
 from numpy import array, allclose, identity, log, int64
-from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError, slothpy_exc
+from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError, SltWarning, slothpy_exc
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid
 from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
 from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1
@@ -115,6 +116,10 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 else:
                                     raise ValueError("The orientations' array must be (n,3) in the form: [[direction_x, direction_y, direction_z],...] or (n,4) array in the form: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
                         case "states_cutoff":
+                            if bound_args.arguments["self"].attributes["Kind"] == "SLOTHPY":
+                                if value != [0, "auto"]:
+                                    warn("State cutoff was modified, but it has no impact on the SlothPy user-defined Hamiltonian.", SltWarning)
+                                continue
                             if not isinstance(value, list) or len(value) != 2:
                                 raise ValueError("The states' cutoff must be a Python's list of length 2.")
                             if value[0] == 0:

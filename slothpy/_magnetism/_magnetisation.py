@@ -245,7 +245,6 @@ def _magnetisation_average(
             for index, (energy, moment) in enumerate(zip(energies, states_momenta)):
                 _momenta_partition_functions_multi_center_av(momenta[index, :], partition_functions[index, :], energy, moment, temperatures, orientations[orientation_index, 3])
             partition_product, magnetisation_sum = _validate_and_compute_partition_product_and_magnetisation_sum(partition_functions[:-1, :], momenta[:-1, :])
-            print(partition_product, magnetisation_sum)
             magnetisation_array[magnetisation_index, :] += (momenta[-1, :] + magnetisation_sum * partition_product) / (partition_functions[-1, :] + partition_product)
         else:
             _magnetisation_temperature_single_center_av(magnetisation_array[magnetisation_index, :], energies, states_momenta, temperatures, orientations[orientation_index, 3])

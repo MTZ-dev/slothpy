@@ -12,6 +12,7 @@
 *.o
 *.so
 *.c
+*.cif
 __pycache__
 .vscode
 .ipynb_checkpoints

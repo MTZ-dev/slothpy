@@ -48,7 +48,7 @@ from ._general_utilities import (
     color_map,
 )
 from .core import Compound
-from . import exporting
+from . import export
 
 __all__ = [
     "compound_from_slt",
@@ -65,7 +65,7 @@ __all__ = [
     "set_log_level",
     "lebedev_laikov_grid",
     "colour_map",
-    "exporting",
+    "export",
 ]
 
 if current_process().name == "MainProcess":

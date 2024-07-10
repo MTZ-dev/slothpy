@@ -96,7 +96,7 @@ class WorkerMonitorApp(QMainWindow):
         elapsed = self.startTime.secsTo(currentTime)
         hours, remainder = divmod(elapsed, 3600)
         minutes, seconds = divmod(remainder, 60)
-        elapsedString = f"{hours:03d}:{minutes:02d}:{seconds:02d}"
+        elapsedString = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         self.elapsedTimeLabel.setText(f"Elapsed Time: {elapsedString}")
 
 def _run_monitor_gui(progress_array_info, number_to_parallelize, number_processes, calling_function_name):

@@ -16,6 +16,7 @@
 
 
 from numpy import ndarray, complex128, int64, ascontiguousarray, tensordot, empty, zeros_like, zeros
+from numpy.linalg import norm
 
 from slothpy._general_utilities._constants import MU_B
 from slothpy._general_utilities._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
@@ -87,10 +88,10 @@ class Hamiltonian():
                     result_local = empty((3, eigenvectors.shape[1]), dtype=energies.dtype, order='C')
                     for k in range(3):
                         matrix_local = getattr(self, mode)[i][k]
-                        result_local[i,:] = self._utmud(eigenvectors, matrix_local.T)
+                        result_local[k,:] = self._utmud(eigenvectors, matrix_local.T)
                         ops_result = [ascontiguousarray(matrix_local[:self._cutoff_info_list[i][1], :self._cutoff_info_list[i][1]]) if l == i else self._cutoff_info_list[l][1] for l in range(self._number_of_centers)]
                         result_matrix[k,:,:] += _kron_mult(ops_result)
-                else:
+                else: 
                     matrix_local = tensordot(getattr(self, mode)[i], orientation, axes=(0,0))
                     result_local = self._utmud(eigenvectors, matrix_local.T)
                     ops_result = [ascontiguousarray(matrix_local[:self._cutoff_info_list[i][1], :self._cutoff_info_list[i][1]]) if l == i else self._cutoff_info_list[l][1] for l in range(self._number_of_centers)]

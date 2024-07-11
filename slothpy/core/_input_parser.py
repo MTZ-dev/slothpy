@@ -26,6 +26,7 @@ from slothpy._general_utilities._math_expresions import _normalize_grid_vectors,
 from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1
 from slothpy._general_utilities._io import _group_exists
 from slothpy.core._config import settings
+from slothpy._general_utilities._grids_over_sphere import _fibonacci_over_sphere, _meshgrid_over_sphere_flatten ###TODO: rewrite it over hemisphere 
 
 def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = False, only_hamiltonian_check: bool = False):
     def decorator(func):
@@ -105,6 +106,17 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                         case "orientations":
                             if isinstance(value, (int, int64)):
                                 value = lebedev_laikov_grid(value)
+                            elif isinstance(value, (tuple, list)):
+                                if isinstance(value[1], (int, int64)):
+                                    raise ValueError()
+                                if value[0] == "fibonacci":
+                                    value = ["fibonacci", _fibonacci_over_sphere(value[1])]
+                                if value[0] == "mesh":
+                                    value = ["mesh", _meshgrid_over_sphere_flatten(value[1])]
+                                if value[0] == "lebedev_laikov":
+                                    value = ["lebedev_laikov", lebedev_laikov_grid(value[1])[:, :3]]
+                                else:
+                                    raise ValueError()
                             else:
                                 value = array(value, copy=False, order='C', dtype=settings.float)
                                 if value.ndim != 2:

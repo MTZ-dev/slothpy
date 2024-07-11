@@ -27,11 +27,13 @@ from numpy import (
     float64,
     abs,
 )
-from numba import jit
+from numba import jit, types, float64, float32, int64
 
 
-@jit(
-    "float64[:,:](int64)",
+@jit([
+        types.Array(float32, 1, 'C')(int64),
+        types.Array(float64, 1, 'C')(int64),
+    ],
     nopython=True,
     nogil=True,
     cache=True,

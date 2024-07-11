@@ -546,7 +546,7 @@ class SltZeemanSplitting(_MultiProcessed):
         smm: SharedMemoryManager = None,
         terminate_event: Event = None,
         ) -> None:
-        super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0] , number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
+        super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0], number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
         self._method_name = "Zeeman Splitting"
         self._method_type = "ZEEMAN_SPLITTING"
         self._magnetic_fields = magnetic_fields

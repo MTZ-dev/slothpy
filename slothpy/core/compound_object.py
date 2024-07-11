@@ -313,7 +313,7 @@ class Compound():
             
             save_dict_to_group(group, magnetic_centers, "MAGNETIC_CENTERS")
             save_dict_to_group(group, exchange_interactions, "EXCHANGE_INTERACTIONS")
-    
+
     def _create_dataset(self, group, name, data):
         if data is None:
             data=string_('None')

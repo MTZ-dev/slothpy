@@ -263,43 +263,43 @@ class SltGroup:
         return SltStatesEnergiesAu(self, start_state, stop_state, slt_save)
     
     @validate_input("HAMILTONIAN", True)
-    def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltSpinMatrices:
         return SltSpinMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
     
     @validate_input("HAMILTONIAN", True)
-    def states_spins(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def states_spins(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesSpins:
         return SltStatesSpins(self, xyz, start_state, stop_state, rotation, slt_save)
     
     @validate_input("HAMILTONIAN", True)
-    def angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltAngularMomentumMatrices:
         return SltAngularMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
     
     @validate_input("HAMILTONIAN", True)
-    def states_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def states_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesAngularMomenta:
         return SltStatesAngularMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
 
     @validate_input("HAMILTONIAN", True)
-    def electric_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def electric_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltElectricDipoleMomentumMatrices:
         return SltElectricDipoleMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
     
     @validate_input("HAMILTONIAN", True)
-    def states_electric_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def states_electric_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesElectricDipoleMomenta:
         return SltStatesElectricDipoleMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
 
     @validate_input("HAMILTONIAN", True)
-    def total_angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def total_angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltTotalAngularMomentumMatrices:
         return SltTotalAngularMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
 
     @validate_input("HAMILTONIAN", True)
-    def states_total_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def states_total_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesTotalAngularMomenta:
         return SltStatesTotalAngularMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
 
     @validate_input("HAMILTONIAN", True)
-    def magnetic_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def magnetic_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltMagneticDipoleMomentumMatrices:
         return SltMagneticDipoleMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
 
     @validate_input("HAMILTONIAN", True)
-    def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None):
+    def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesMagneticDipoleMomenta:
         return SltStatesMagneticDipoleMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
     
     def _retrieve_hamiltonian_dict(self, states_cutoff=[0,0], rotation=None, coordinates=None, hyperfine=None):

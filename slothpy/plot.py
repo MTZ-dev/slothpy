@@ -12,6 +12,7 @@ def zeeman_spltting(slt_group, jgjhjh, gfkfjgnfkj):
         _description_
     gfkfjgnfkj : _type_
         _description_
+    lll
     """
     from slothpy.core._delayed_methods import SltZeemanSplitting
     zeeman = SltZeemanSplitting._from_file(slt_group)

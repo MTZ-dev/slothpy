@@ -30,23 +30,26 @@ from numpy import (
 from numba import jit, types, float64, float32, int64
 
 
-@jit([
-        types.Array(float32, 1, 'C')(int64),
-        types.Array(float64, 1, 'C')(int64),
-    ],
+@jit(
     nopython=True,
     nogil=True,
     cache=True,
     fastmath=True,
 )
-def _fibonacci_over_sphere(num_points):
-    indices = arange(0, num_points, dtype=float64)
+def _fibonacci_over_sphere(num_points, precision):
+    if precision == "double":
+        indices = arange(0, num_points, dtype=float64)
+    else:
+        indices = arange(0, num_points, dtype=float32)
     phi = pi * (3.0 - sqrt(5.0))  # golden angle in radians
     xyz_trans = zeros((3, num_points))
 
-    y = 1 - (indices / float64(num_points - 1)) * 2  # y goes from 1 to -1
+    if precision == "double":
+        y = 1 - (indices / float64(num_points - 1)) * 2  # y goes from 1 to -1
+    else:
+        y = 1 - (indices / float32(num_points - 1)) * 2  # y goes from 1 to -1
+    
     radius = sqrt(abs(1.0 - y * y))  # radius at y
-
     theta = phi * indices  # golden angle increment
 
     x = cos(theta) * radius

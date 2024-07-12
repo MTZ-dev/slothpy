@@ -71,14 +71,13 @@ from slothpy._general_utilities._constants import (
 from slothpy.core._config import settings
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
 
-from slothpy._magnetism._magnetisation import _mth, _mag_3d
+from slothpy._magnetism._magnetisation import _mag_3d
 from slothpy._magnetism._susceptibility import (
     _chitht,
     _chitht_tensor,
     _chit_3d,
 )
 from slothpy._magnetism._zeeman import (
-    _zeeman_splitting,
     _get_zeeman_matrix,
     _eth,
     _energy_3d,
@@ -118,10 +117,10 @@ from slothpy._general_utilities._grids_over_sphere import (
     _meshgrid_over_sphere_flatten,
     _fibonacci_over_sphere,
 )
-from slothpy.core._input_parser import validate_input, _parse_hamiltonian_dicts
+from slothpy.core._input_parser import _parse_hamiltonian_dicts
 from slothpy.core._slt_file import SltGroup, SltDataset
 
-class Compound():
+class SltFile():
     """
     The core object constituting the API and access to all the methods.
     """
@@ -131,22 +130,22 @@ class Compound():
     @classmethod
     def _new(cls, filepath: str, filename: str):
         """
-        This is a private method for initializing the Compound object that
+        This is a private method for initializing the SltFile object that
         should be only used by the creation_functions.
 
         Parameters
         ----------
         filepath : str
             A path of the file that will be associated with the created
-            instance of the Compound class.
+            instance of the SltFile class.
         filename : str
             A name of the file that will be associated with the created
-            instance of the Compound class.
+            instance of the SltFile class.
 
         Returns
         -------
-        Compound
-            An instance of the Compound class.
+        SltFile
+            An instance of the SltFile class.
         """
 
         filename += ".slt"
@@ -160,17 +159,17 @@ class Compound():
     def __new__(cls, *args, **kwargs) -> None:
         """
         The definition of this method prevents direct instantialization of the
-        Compound class.
+        SltFile class.
 
         Raises
         ------
         TypeError
-            Prevents Compound() from working.
+            Prevents SltFile() from working.
         """
 
         raise TypeError(
-            f"The {RED}Compound{RESET} object should not be instantiated "
-            "directly. Use a Compound creation function instead."
+            f"The {RED}SltFile{RESET} object should not be instantiated "
+            "directly. Use a SltFile creation function instead."
         )
     
     @slothpy_exc("SltFileError")
@@ -179,7 +178,7 @@ class Compound():
         Performs the operation __setitem__.
 
         Provides a convenient method for setting groups and datasets in the
-        .slt file associated with a Compund instance in an array-like manner.
+        .slt file associated with a SltFile instance in an array-like manner.
         """
         with File(self._hdf5, 'r+') as file:
             if isinstance(key, tuple) and len(key) == 2:
@@ -198,7 +197,7 @@ class Compound():
         Performs the operation __getitem__.
 
         Provides a convenient method for getting datasets from the .slt file
-        associated with a Compund instance in an array-like manner.
+        associated with a SltFile instance in an array-like manner.
         """
         with File(self._hdf5, 'r+') as file:
             if isinstance(key, tuple) and len(key) == 2:
@@ -220,7 +219,7 @@ class Compound():
         """
         Performs the operation __str__.
 
-        Creates a string representation of the Compound object using names and
+        Creates a string representation of the SltFile object using names and
         attributes of the groups and datasets contained in the associated
         .slt file.
 
@@ -232,7 +231,7 @@ class Compound():
 
         self._get_hdf5_groups_datasets_and_attributes()
         
-        representation = f"{RED}Compound{RESET} from File: {GREEN}{self._hdf5}{RESET} with the following {BLUE}Groups{RESET}/{PURPLE}Datasets{RESET}.\n"
+        representation = f"{RED}SltFile{RESET} from File: {GREEN}{self._hdf5}{RESET} with the following {BLUE}Groups{RESET}/{PURPLE}Datasets{RESET}.\n"
         for group, attributes_group in self._groups.items():
             representation += f"Group: {BLUE}{group}{RESET}"
             for attribute_name, attribute_text in attributes_group.items():
@@ -255,7 +254,7 @@ class Compound():
         return representation.rstrip()
 
     def __repr__(self) -> str:
-        return f"<{RED}SltCompound{RESET} object for {GREEN}File{RESET} '{self._hdf5}'.>"
+        return f"<{RED}SltSltFile{RESET} object for {GREEN}File{RESET} '{self._hdf5}'.>"
 
     def _get_hdf5_groups_datasets_and_attributes(self):
         self._groups = {}
@@ -413,7 +412,7 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.plot_zeeman,
+        slothpy.SltFile.plot_zeeman,
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
 
@@ -653,7 +652,7 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.plot_magnetisation,
+        slothpy.SltFile.plot_magnetisation,
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
         """
@@ -775,8 +774,8 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.plot_3d, slothpy.Compound.interactive_plot_3d,
-        slothpy.Compound.animate_3d
+        slothpy.SltFile.plot_3d, slothpy.SltFile.interactive_plot_3d,
+        slothpy.SltFile.animate_3d
         """
 
         if slt is not None:
@@ -1065,7 +1064,7 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.plot_susceptibility
+        slothpy.SltFile.plot_susceptibility
         """
         if slt is not None:
             slt_group_name = f"{slt}_susceptibility"
@@ -1698,8 +1697,8 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.plot_3d, slothpy.Compound.interactive_plot_3d,
-        slothpy.Compound.animate_3d
+        slothpy.SltFile.plot_3d, slothpy.SltFile.interactive_plot_3d,
+        slothpy.SltFile.animate_3d
         """
 
         if slt is not None:
@@ -2005,7 +2004,7 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.plot_energy
+        slothpy.SltFile.plot_energy
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
         """
@@ -2284,8 +2283,8 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.plot_3d, slothpy.Compound.interactive_plot_3d,
-        slothpy.Compound.animate_3d
+        slothpy.SltFile.plot_3d, slothpy.SltFile.interactive_plot_3d,
+        slothpy.SltFile.animate_3d
         """
         if energy_type == "internal":
             group_suffix = "_internal_energy_3d"
@@ -4122,7 +4121,7 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.calculate_magnetisation
+        slothpy.SltFile.calculate_magnetisation
         """
         try:
             # Getting data from .slt or sloth file
@@ -4301,7 +4300,7 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.calculate_susceptibility
+        slothpy.SltFile.calculate_susceptibility
         """
         try:
             # Getting data from .slt or sloth file
@@ -4496,7 +4495,7 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.calculate_energy
+        slothpy.SltFile.calculate_energy
         """
         if energy_type == "internal":
             name = "internal"
@@ -4693,7 +4692,7 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.calculate_zeeman_splitting
+        slothpy.SltFile.calculate_zeeman_splitting
         """
         try:
             # Getting data from .slt
@@ -5160,9 +5159,9 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.calculate_magnetisation_3d, slothpy.Compound.calculate_susceptibility_3d,
-        slothpy.Compound.calculate_energy_3d,
-        slothpy.Compound.calculate_g_tensor_axes
+        slothpy.SltFile.calculate_magnetisation_3d, slothpy.SltFile.calculate_susceptibility_3d,
+        slothpy.SltFile.calculate_energy_3d,
+        slothpy.SltFile.calculate_g_tensor_axes
         """
         if (not isinstance(axes_scale_factor, (float, int))) or (
             axes_scale_factor < 1
@@ -5546,9 +5545,9 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.calculate_magnetisation_3d, slothpy.Compound.calculate_susceptibility_3d,
-        slothpy.Compound.calculate_energy_3d,
-        slothpy.Compound.calculate_g_tensor_axes
+        slothpy.SltFile.calculate_magnetisation_3d, slothpy.SltFile.calculate_susceptibility_3d,
+        slothpy.SltFile.calculate_energy_3d,
+        slothpy.SltFile.calculate_g_tensor_axes
         """
         if (not isinstance(axes_scale_factor, (float, int))) or (
             axes_scale_factor < 1
@@ -6150,9 +6149,9 @@ class Compound():
 
         See Also
         --------
-        slothpy.Compound.calculate_magnetisation_3d, slothpy.Compound.calculate_susceptibility_3d,
-        slothpy.Compound.calculate_energy_3d,
-        slothpy.Compound.calculate_g_tensor_axes
+        slothpy.SltFile.calculate_magnetisation_3d, slothpy.SltFile.calculate_susceptibility_3d,
+        slothpy.SltFile.calculate_energy_3d,
+        slothpy.SltFile.calculate_g_tensor_axes
         """
         if (not isinstance(axes_scale_factor, (float, int))) or (
             axes_scale_factor < 1

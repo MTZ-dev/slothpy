@@ -527,6 +527,12 @@ class SltStatesMagneticDipoleMomenta(_SingleProcessed):
     def _to_data_frame(self):
         pass
 
+class SltPropertyUnderMagneticField(_MultiProcessed):
+
+    def __repr__():
+        pass # tutaj jak z SLPGroup różne rperezentacje
+
+    #matrix, states, etc under field with energies returned also in input parser add to error with direct acces to properties to use property_under_magnetic_field instead!! for slothpy hamiltonians with field [0,0,0]
 
 class SltZeemanSplitting(_MultiProcessed):
 

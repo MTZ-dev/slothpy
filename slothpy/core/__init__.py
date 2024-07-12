@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .creation_functions import (
-    compound_from_molcas,
-    compound_from_orca,
-    compound_from_slt,
+    hamiltonian_from_molcas,
+    hamiltonian_from_orca,
+    slt_file,
 )
 
-from .compound_object import Compound
+from .slt_file_object import SltFile
 
 from ._config import (
     settings,
@@ -34,10 +34,10 @@ from ._config import (
 )
 
 __all__ = [
-    "compound_from_slt",
-    "compound_from_molcas",
-    "compound_from_orca",
-    "Compound",
+    "slt_file",
+    "hamiltonian_from_molcas",
+    "hamiltonian_from_orca",
+    "SltFile",
     "settings",
     "turn_on_monitor",
     "turn_off_monitor",

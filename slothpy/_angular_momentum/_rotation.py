@@ -16,6 +16,7 @@
 
 from numpy import ndarray, empty_like
 from numba import jit, types, complex128, complex64, float64, float32, int64
+from scipy.spatial.transform import Rotation
 
 
 @jit([
@@ -83,6 +84,17 @@ def _rotate_vector_operator_orintation(vect_oper: ndarray, rotation: ndarray, or
 
     return rotated_operator
 
-# TODO Incorporate it into class with Euler angles, axis rot, and quats
-class Rotation:
+
+class SltRotation(Rotation):
+    """
+    This is a wrapper for the scipy.spatial.transform.Rotation class, you can
+    use it or the scipy's Rotation directly, but SlothPy only supports single
+    rotation in a single instance. For various methods of creating and using
+    the instances, please refer to the scipy's docs at:
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html#scipy.spatial.transform.Rotation.
+
+    See also
+    ----------
+    scipy.spatial.transform.Rotation
+    """
     pass

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from os.path import join
-from slothpy.core.compound_object import Compound
+from slothpy.core.slt_file_object import SltFile
 from slothpy._general_utilities._io import (
     _orca_spin_orbit_to_slt,
     _molcas_spin_orbit_to_slt,
@@ -23,16 +23,16 @@ from slothpy._general_utilities._io import (
 from slothpy.core._slothpy_exceptions import SltFileError, SltInputError
 
 
-def compound_from_orca(
+def hamiltonian_from_orca(
     orca_filepath: str,
     orca_filename: str,
     slt_filepath: str,
     slt_filename: str,
     group_name: str,
     pt2: bool = False,
-) -> Compound:
+) -> SltFile:
     """
-    Create a Compound from ORCA output file.
+    Create or append data to a SltFile from ORCA output file.
 
     Parameters
     ----------
@@ -54,14 +54,14 @@ def compound_from_orca(
 
     Returns
     -------
-    Compound
-        An instance of Compound class associated with the given .slt file, that
+    SltFile
+        An instance of SltFile class associated with the given .slt file, that
         serves as an user interface, holding all the available methods.
 
     Raises
     ------
     SltFileError
-        If the program is unable to create a Compound from given files.
+        If the program is unable to create a SltFile from given files.
 
     Note
     ----
@@ -90,19 +90,19 @@ def compound_from_orca(
             message="Failed to create a .slt file from the ORCA output file",
         ) from None
 
-    return Compound._new(slt_filepath, slt_filename)
+    return SltFile._new(slt_filepath, slt_filename)
 
 
-def compound_from_molcas(
+def hamiltonian_from_molcas(
     molcas_filepath: str,
     molcas_filename: str,
     slt_filepath: str,
     slt_filename: str,
     group_name: str,
     edipmom: bool = False,
-) -> Compound:
+) -> SltFile:
     """
-    Create a Compound from MOLCAS rassi.h5 file.
+    Create a SltFile from MOLCAS rassi.h5 file.
 
     Parameters
     ----------
@@ -124,14 +124,14 @@ def compound_from_molcas(
 
     Returns
     -------
-    Compound
-        An instance of Compound class associated with the given .slt file, that
+    SltFile
+        An instance of SltFile class associated with the given .slt file, that
         serves as an user interface, holding all the available methods.
 
     Raises
     ------
     SltFileError
-        If the program is unable to create a Compound from given files.
+        If the program is unable to create a SltFile from given files.
 
     Note
     ----
@@ -165,12 +165,12 @@ def compound_from_molcas(
             ),
         ) from None
 
-    return Compound._new(slt_filepath, slt_filename)
+    return SltFile._new(slt_filepath, slt_filename)
 
 
-def compound_from_slt(slt_filepath: str, slt_filename: str) -> Compound:
+def slt_file(slt_filepath: str, slt_filename: str) -> SltFile:
     """
-    Create a Compound from the existing .slt file.
+    Create a SltFile object from the existing .slt file.
 
     Parameters
     ----------
@@ -181,24 +181,24 @@ def compound_from_slt(slt_filepath: str, slt_filename: str) -> Compound:
 
     Returns
     -------
-    Compound
-        An instance of Compound class associated with the given .slt file, that
+    SltFile
+        An instance of SltFile class associated with the given .slt file, that
         serves as an user interface, holding all the available methods.
 
     Raises
     ------
     SltFileError
-        If the program is unable to create a Compound from a given file.
+        If the program is unable to create a SltFile from a given file.
     """
 
     if slt_filename.endswith(".slt"):
         slt_filename = slt_filename[:-4]
     try:
-        return Compound._new(slt_filepath, slt_filename)
+        return SltFile._new(slt_filepath, slt_filename)
     except Exception as exc:
         file = join(slt_filepath, slt_filename)
         raise SltFileError(
             file,
             exc,
-            message="Failed to load Compound from the .slt file.",
+            message="Failed to load SltFIle from the .slt file.",
         ) from None

@@ -110,7 +110,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 if isinstance(value[1], (int, int64)):
                                     raise ValueError()
                                 if value[0] == "fibonacci":
-                                    value = ["fibonacci", _fibonacci_over_sphere(value[1])]
+                                    value = ["fibonacci", _fibonacci_over_sphere(value[1], settings.precision)]
                                 if value[0] == "mesh":
                                     value = ["mesh", _meshgrid_over_sphere_flatten(value[1])]
                                 if value[0] == "lebedev_laikov":
@@ -182,14 +182,8 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 if value.ndim != 1 or value.size != 3:
                                     raise ValueError(f"The xyz argument must be one of 'xyz', 'x', 'y', 'z' or it can be an orientation in the form [x,y,z].")
                                 value = _normalize_orientation(value)
-                        case "rotation": # TODO: Tutaj przerobić do nowej klasy i zwracac to as array!
-                            if value is not None:
-                                value = array(value, copy=False, order='C', dtype=settings.float)
-                                if value.shape != (3, 3):
-                                    raise ValueError("The rotation matrix must be a 3x3 array.")
-                                product = value.T @ value
-                                if not allclose(product, identity(3), atol=1e-2, rtol=0):
-                                    raise ValueError("Input rotation matrix must be orthogonal.")
+                        case "rotation":
+                            value = _parse_rotation(value)
                     bound_args.arguments[name] = value
                     
             except Exception as exc:
@@ -230,10 +224,10 @@ def _parse_hamiltonian_dicts(compound, magnetic_centers: dict, exchange_interact
             raise ValueError("The cutoff parameters must satisfy local_cutoff >= mixing_cutoff >= exchange_cutoff.")
         states *= value[1][1]
         exchange_states *= value[1][2]
+        if value[2] != None:
+            value[2] = _parse_rotation(value[2])
         if value[3] != None and (len(value[3]) != 3 or not all(isinstance(x, (int, int64, float)) for x in value[3])):
             raise ValueError("Coordinates must be None or iterable of length 3 with numerical values in Angstrom [x,y,z].")
-        if value[3] != None:
-            value[3] = array(value[3], copy=False, order='C', dtype=settings.float)
        #TODO: value[4] hyperfine add checks when implemented
 
     if states >= 10000 or (states >= 9000 and exchange_states >= 100):
@@ -250,6 +244,21 @@ def _parse_hamiltonian_dicts(compound, magnetic_centers: dict, exchange_interact
     return states
 
 
+def _parse_rotation(value):
+    from slothpy._angular_momentum._rotation import SltRotation
+    from scipy.spatial.transform import Rotation
+    if isinstance(value, (SltRotation, Rotation)):
+        if not value.single:
+            raise ValueError("SlothPy only supports (Slt)Rotation class instances with a single rotation.")
+        value = value.as_matrix().astype(settings.float)
+    elif value is not None:
+        value = array(value, copy=False, order='C', dtype=settings.float)
+        if value.shape != (3, 3):
+            raise ValueError("The rotation matrix must be a 3x3 array.")
+        product = value.T @ value
+        if not allclose(product, identity(3), atol=1e-2, rtol=0):
+            raise ValueError("Input rotation matrix must be orthogonal.")
+    return value
       
 
 

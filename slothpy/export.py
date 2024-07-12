@@ -26,7 +26,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 from numpy import array, float64
 
-from slothpy.core.compound_object import Compound
+from slothpy.core.slt_file_object import SltFile
 from slothpy.core._slothpy_exceptions import (
     SltFileError,
     SltSaveError,
@@ -36,7 +36,7 @@ from slothpy._general_utilities._constants import BLUE, YELLOW, RED, RESET
 
 
 def table_energy_and_g(
-    slt_file: Compound,
+    slt_file: SltFile,
     group: str,
     i_last_doublet: int,
     krames: bool,
@@ -53,13 +53,13 @@ def table_energy_and_g(
 
     Parameters
     ----------
-    slt_file : Compound
+    slt_file : SltFile
         Slt file storing data needed for the table.
     group: str
         Name of a group from .slt file for which table will be created.
         Requires f"{group}_soc_energies", f"{group}_g_tensors_axes" and
         f"{group}_magnetic_decomposition" or f"{group}_total_angular
-        _decomposition" (outputs of Compound functions: soc_energies_cm_1,
+        _decomposition" (outputs of SltFile functions: soc_energies_cm_1,
         calculate_g_tensor_and_axes_doublet, matrix_decomposition_in_z_pseudo
         _spin_basis(with 'soc' and 'total_angular' or 'magnetic' setting,
         additionally rotation should be set as one for the ground state)).
@@ -98,21 +98,21 @@ def table_energy_and_g(
     Raises
     ------
     SltFileError
-        If a Compound object is not passed as an input or it doesn't include
+        If a SltFile object is not passed as an input or it doesn't include
         all the necessary data.
     SltSaveError
         If the program is unable to correctly save the .docx file.
 
     See Also
     --------
-    slothpy.Compound.calculate_g_tensor_and_axes_doublet
-    slothpy.Compound.soc_energies_cm_1
-    slothpy.Compound.matrix_decomposition_in_z_pseudo_spin_basis
+    slothpy.SltFile.calculate_g_tensor_and_axes_doublet
+    slothpy.SltFile.soc_energies_cm_1
+    slothpy.SltFile.matrix_decomposition_in_z_pseudo_spin_basis
 
     """
-    if not isinstance(slt_file, Compound):
+    if not isinstance(slt_file, SltFile):
         raise SltFileError(
-            TypeError(""), messege="A Compound object must be passed!"
+            TypeError(""), messege="A SltFile object must be passed!"
         ) from None
 
     if not i_first_composition:
@@ -410,7 +410,7 @@ def table_energy_and_g(
 
 
 def axes_in_xyz(
-    slt_file: Compound,
+    slt_file: SltFile,
     group: str,
     central_atom: str,
     xyz_path: str,
@@ -425,8 +425,8 @@ def axes_in_xyz(
 
     Parameters
     ----------
-    slt_file : Compound
-        Name of a Compound object corresponding to the .slt file that will
+    slt_file : SltFile
+        Name of a SltFile object corresponding to the .slt file that will
         be used.
     group : str
         Name of the group with axes and g_tensors (result of the
@@ -448,7 +448,7 @@ def axes_in_xyz(
     Raises
     ------
     SltFileError
-        If a Compound object is not passed as an input.
+        If a SltFile object is not passed as an input.
     SltInputError
         If the name of an input xyz file does not end with .xyz.
     SltSaveError
@@ -461,11 +461,11 @@ def axes_in_xyz(
 
     See Also
     --------
-    slothpy.Compound.calculate_g_tensor_and_axes_doublet
+    slothpy.SltFile.calculate_g_tensor_and_axes_doublet
     """
-    if not isinstance(slt_file, Compound):
+    if not isinstance(slt_file, SltFile):
         raise SltFileError(
-            TypeError(""), messege="A Compound object must be passed!"
+            TypeError(""), messege="A SltFile object must be passed!"
         ) from None
 
     if xyz_file_name[-4:] != ".xyz":
@@ -583,7 +583,7 @@ def axes_in_xyz(
 
 
 def axes_in_mol2(
-    slt_file: Compound,
+    slt_file: SltFile,
     group: str,
     mol2_file_path: str,
     mol2_file_name: str,
@@ -598,8 +598,8 @@ def axes_in_mol2(
 
     Parameters
     ----------
-    slt_file : Compound
-        Name of a Compound object corresponding to the .slt file that will
+    slt_file : SltFile
+        Name of a SltFile object corresponding to the .slt file that will
         be used.
     group : str
         Name of the group with axes and g_tensors (result of the
@@ -621,7 +621,7 @@ def axes_in_mol2(
     Raises
     ------
     SltFileError
-        If a Compound object is not passed as an input.
+        If a SltFile object is not passed as an input.
     SltInputError
         If the name of an input xyz file does not end with .xyz.
     SltSaveError
@@ -634,12 +634,12 @@ def axes_in_mol2(
 
     See Also
     --------
-    slothpy.Compound.calculate_g_tensor_and_axes_doublet
+    slothpy.SltFile.calculate_g_tensor_and_axes_doublet
     """
 
-    if not isinstance(slt_file, Compound):
+    if not isinstance(slt_file, SltFile):
         raise SltFileError(
-            TypeError(""), messege="A Compound object must be passed!"
+            TypeError(""), messege="A SltFile object must be passed!"
         ) from None
 
     if mol2_file_name[-5:] != ".mol2":

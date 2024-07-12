@@ -31,9 +31,9 @@ os.environ['NUMBA_ENABLE_AVX'] = '1'
 from multiprocessing import current_process
 
 from .core import (
-    compound_from_orca,
-    compound_from_slt,
-    compound_from_molcas,
+    slt_file,
+    hamiltonian_from_molcas,
+    hamiltonian_from_orca,
     settings,
     turn_on_monitor,
     turn_off_monitor,
@@ -47,14 +47,15 @@ from ._general_utilities import (
     lebedev_laikov_grid,
     color_map,
 )
-from .core import Compound
+from ._angular_momentum import SltRotation
+from .core import SltFile
 from . import export
 
 __all__ = [
-    "compound_from_slt",
-    "compound_from_molcas",
-    "compound_from_orca",
-    "Compound",
+    "slt_file",
+    "hamiltonian_from_molcas",
+    "hamiltonian_from_orca",
+    "SltFile",
     "settings",
     "turn_on_monitor",
     "turn_off_monitor",
@@ -66,6 +67,7 @@ __all__ = [
     "lebedev_laikov_grid",
     "colour_map",
     "export",
+    "SltRotation"
 ]
 
 if current_process().name == "MainProcess":

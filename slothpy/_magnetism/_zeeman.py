@@ -52,7 +52,7 @@ from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
     _meshgrid_over_sphere_flatten,
 )
-
+from numpy import min as np_min
 
 @jit(
     "complex128[:,:](complex128[:,:,:], float64[:], float64, float64[:])",
@@ -901,6 +901,7 @@ def _energy_3d(
     num_cpu: int,
     num_threads: int,
     rotation: ndarray = None,
+    _subtract_spherical_component: bool = False,
 ) -> ndarray:
     if grid_type != "mesh" and grid_type != "fibonacci":
         raise ValueError(
@@ -1003,6 +1004,8 @@ def _energy_3d(
                     )
 
         eght = concatenate(eght)
+        if _subtract_spherical_component:
+            eght = eght - np_min(eght, axis=0)
         grid = grid_shared_arr[:].copy()
         fields_shape = fields_shared_arr.shape[0]
         temperatures_shape = temperatures_shared_arr.shape[0]

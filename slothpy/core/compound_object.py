@@ -2301,6 +2301,7 @@ class Compound:
         rotation: ndarray[float64] = None,
         slt: str = None,
         autotune: bool = False,
+        _subtract_spherical_component: bool = False,
     ) -> ndarray[float64]:
         """
         Calculates 3D Helmholtz or internal energy over a spherical grid for
@@ -2522,6 +2523,7 @@ class Compound:
                 number_cpu,
                 number_threads,
                 rotation,
+                _subtract_spherical_component,
             )
         except Exception as exc:
             raise SltCompError(

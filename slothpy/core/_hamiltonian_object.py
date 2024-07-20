@@ -16,7 +16,6 @@
 
 
 from numpy import ndarray, complex128, int64, ascontiguousarray, tensordot, empty, zeros_like, zeros
-from numpy.linalg import norm
 
 from slothpy._general_utilities._constants import MU_B
 from slothpy._general_utilities._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
@@ -50,8 +49,10 @@ class Hamiltonian():
         self._heevr_lwork, self._heevr, self._utmud, self._dot3d = _heevr_lwork, _heevr, _utmud, _dot3d
         self._lwork = None
 
-    def zeeman_hamiltonian(self, index: int, cutoff: int = None):
+    def build_hamiltonian(self, index: int, cutoff: int = None, mode: str = "", mode_fields: list = []):
         hamiltonian = self._dot3d(self.m[index] if cutoff is None else ascontiguousarray(self.m[index][:, :cutoff,:cutoff]), (self._magnetic_field * -MU_B).astype(self._magnetic_field.dtype))
+        for m, mf in zip(mode, mode_fields): # Here I assume that m is always present, it may change in the future!
+            hamiltonian += self._dot3d(getattr(self, m)[index] if cutoff is None else ascontiguousarray(getattr(self, m)[index][:, :cutoff,:cutoff]), (mf).astype(mf.dtype)) # TODO Here convesion factor for varius fields
         _add_diagonal(hamiltonian, self.e[index])
         return hamiltonian
     
@@ -60,7 +61,7 @@ class Hamiltonian():
         if self._number_of_centers > 1:
             hamiltonian = self._interaction_matrix.copy()
             for i in range(self._number_of_centers):
-                ops = [self.zeeman_hamiltonian(i, self._cutoff_info_list[i][1]) if k == i else self._cutoff_info_list[k][1] for k in range(self._number_of_centers)]
+                ops = [self.build_hamiltonian(i, self._cutoff_info_list[i][1]) if k == i else self._cutoff_info_list[k][1] for k in range(self._number_of_centers)]
                 hamiltonian += _kron_mult(ops)
             if self._lwork is None:
                 self._lwork = self._heevr_lwork(hamiltonian.shape[1], jobz='N', range='I', il=1, iu=iu)
@@ -68,7 +69,7 @@ class Hamiltonian():
         else:
             if self._lwork is None:
                 self._lwork = self._heevr_lwork(self.m[0].shape[1], jobz='N', range='I' if isinstance(iu, (int, int64)) else 'V', il=1, iu=iu, vu=iu)
-            return self._heevr(self.zeeman_hamiltonian(0).T, *self._lwork, jobz='N', range='I' if isinstance(iu, (int, int64)) else 'V', il=1, iu=iu, vu=iu)
+            return self._heevr(self.build_hamiltonian(0).T, *self._lwork, jobz='N', range='I' if isinstance(iu, (int, int64)) else 'V', il=1, iu=iu, vu=iu)[:number_of_states]
 
     def slpjm_under_magnetic_field(self, mode, orientation):
         if self._number_of_centers > 1:
@@ -77,7 +78,7 @@ class Hamiltonian():
             hamiltonian = self._interaction_matrix.copy()
             result_matrix = zeros_like(hamiltonian) if isinstance(orientation, ndarray) else zeros((3, hamiltonian.shape[0], hamiltonian.shape[1]))
             for i in range(self._number_of_centers):
-                zeeman_matrix = self.zeeman_hamiltonian(i)
+                zeeman_matrix = self.build_hamiltonian(i)
                 ops = [ascontiguousarray(zeeman_matrix[:self._cutoff_info_list[i][1], :self._cutoff_info_list[i][1]]) if k == i else self._cutoff_info_list[k][1] for k in range(self._number_of_centers)]
                 hamiltonian += _kron_mult(ops)
                 start_state = self._cutoff_info_list[i][2] + 1
@@ -113,7 +114,7 @@ class Hamiltonian():
         else:
             if self._lwork is None:
                 self._lwork = self._heevr_lwork(self.m[0].shape[1], jobz='V', range='I' if isinstance(self._cutoff, (int, int64)) else 'V', il=1, iu=self._cutoff, vu=self._cutoff)
-            energies, eigenvectors =  self._heevr(self.zeeman_hamiltonian(0).T, *self._lwork, jobz='V', range='I' if isinstance(self._cutoff, (int, int64)) else 'V', il=1, iu=self._cutoff, vu=self._cutoff)
+            energies, eigenvectors =  self._heevr(self.build_hamiltonian(0).T, *self._lwork, jobz='V', range='I' if isinstance(self._cutoff, (int, int64)) else 'V', il=1, iu=self._cutoff, vu=self._cutoff)
             if len(energies) < 1:
                 raise ValueError("Auto-cutoff failed! Please set it manually and run the calculation using the reviewed settings once again.")
             if not isinstance(orientation, ndarray):

@@ -219,7 +219,7 @@ class _MultiProcessed(_SingleProcessed):
         pass
 
     def _executor(self):
-        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, self._terminate_event)
+        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, self, self._terminate_event)
         result_queue = self._process_pool.start_and_collect()
         self._process_pool = None
         return result_queue
@@ -357,7 +357,7 @@ class _MultiProcessed(_SingleProcessed):
                     monitor.join()
                     monitor.close()
                 if self._returns:
-                    self._result = self._gather_results(results)
+                    self._result = results
                 else:
                     self._result = _from_shared_memory_to_array(self._sm_result_info, reshape=(self._result_shape))
                     if self._transpose_result is not None:

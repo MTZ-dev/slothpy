@@ -111,22 +111,25 @@ def _load_shared_memory_arrays(sm_arrays_info_list):
 
 
 def _worker_wrapper(worker, args, number_threads, result_queue=None):
-        with threadpool_limits(limits=number_threads):
-            set_num_threads(number_threads)
-            result = worker(*args)
-        if result_queue:
-            result_queue.put(result)
+    with threadpool_limits(limits=number_threads):
+        set_num_threads(number_threads)
+        result = worker(*args)
+    if result_queue is not None:
+        result_queue.put(result)
 
 
 class SltProcessPool:
-    def __init__(self, worker: callable, jobs: Iterable, number_threads: int, returns: bool = False, terminate_event: Event = None):
+    def __init__(self, worker: callable, jobs: Iterable, number_threads: int, returns: bool, gather_results_class, terminate_event: Event = None):
         self._worker = worker
         self._jobs = jobs
         self._number_threads = number_threads
-        self._returns = returns
         self._terminate_event = terminate_event
         self._processes = []
-        self._result_queue = Queue() if returns else None
+        self._returns = returns
+        if returns:
+            self._result_queue = Queue()
+            self._gather_results_class = gather_results_class
+        self._result = None
 
     def start_and_collect(self):
         try:
@@ -148,13 +151,15 @@ class SltProcessPool:
                     elif all(p is None or not p.is_alive() for p in self._processes):
                         break
                     sleep(0.3)
-            
+
             for process in self._processes:
                 process.join()
                 process.close()
-
+            
             if self._returns:
-                return self._result_queue
+                self._result = self._gather_results_class._gather_results(self._result_queue)
+
+            return self._result
         
         except KeyboardInterrupt:
             print("\nSltProcessPool interrupted. Clearing and terminating...")

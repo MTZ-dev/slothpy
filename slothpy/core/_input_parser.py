@@ -106,9 +106,9 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                         case "orientations":
                             if isinstance(value, (int, int64)):
                                 value = lebedev_laikov_grid(value)
-                            elif isinstance(value, (tuple, list)):
-                                if isinstance(value[1], (int, int64)):
-                                    raise ValueError()
+                            elif isinstance(value, (tuple, list)) and len(value) == 2:
+                                if not isinstance(value[1], (int, int64)):
+                                    raise ValueError("The second entry in the orientation list/tuple must contain an integer controlling the number of the grid points.")
                                 if value[0] == "fibonacci":
                                     value = ["fibonacci", _fibonacci_over_sphere(value[1], settings.precision)]
                                 if value[0] == "mesh":
@@ -116,7 +116,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 if value[0] == "lebedev_laikov":
                                     value = ["lebedev_laikov", lebedev_laikov_grid(value[1])[:, :3]]
                                 else:
-                                    raise ValueError()
+                                    raise ValueError("The only orientation grids available are: 'fibonacci', 'mesh', and 'lebedev_laikov'.")
                             else:
                                 value = array(value, copy=False, order='C', dtype=settings.float)
                                 if value.ndim != 2:

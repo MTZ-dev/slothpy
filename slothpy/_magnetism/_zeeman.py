@@ -87,78 +87,36 @@ def _calculate_zeeman_matrix(
     return magnetic_momenta
 
 
-def _zeeman_splitting(
-    hamiltonian: Hamiltonian,
-    magnetic_fields: ndarray,
-    orientations: ndarray,
-    progress_array: ndarray,
-    zeeman_array: ndarray,
-    number_of_states: int,
-    process_index: int,
-    start: int,
-    end: int,
-):  
+def _zeeman_splitting(hamiltonian: Hamiltonian, magnetic_fields: ndarray, orientations: ndarray, progress_array: ndarray, zeeman_array: ndarray, number_of_states: int, process_index: int, start: int, end: int):  
     magnetic_fields_shape_0 = magnetic_fields.shape[0]
     h_cm_1 = array(H_CM_1, dtype=magnetic_fields.dtype)
     
     for i in range(start, end):
         hamiltonian._magnetic_field = orientations[i//magnetic_fields_shape_0, :3] * magnetic_fields[i%magnetic_fields_shape_0]
-        energies = hamiltonian.zeeman_energies(number_of_states)
-        zeeman_array[i] = energies[:number_of_states] * h_cm_1
+        zeeman_array[i, :] = hamiltonian.zeeman_energies(number_of_states) * h_cm_1
         progress_array[process_index] += 1
 
 
-@jit([
-    types.Tuple((int64, int64, types.Array(float32, 2, 'C')))(
-        types.Array(float32, 1, 'C', True),
-        types.Array(complex64, 3, 'C', True),
-        types.Array(float32, 1, 'C', True),
-        types.Array(float32, 2, 'C', True),
-        types.Array(int64, 1, 'C'),
-        int64, int64, int64, int64
-    ),
-    types.Tuple((int64, int64, types.Array(float64, 2, 'C')))(
-        types.Array(float64, 1, 'C', True),
-        types.Array(complex128, 3, 'C', True),
-        types.Array(float64, 1, 'C', True),   
-        types.Array(float64, 2, 'C', True),   
-        types.Array(int64, 1, 'C'),     
-        int64, int64, int64, int64 
-    ),
-],
-nopython=True,
-cache=True,
-nogil=True,
-fastmath=True,
-)
-def _zeeman_splitting_average(
-    states_energies: ndarray,
-    magnetic_momenta: ndarray,
-    magnetic_fields: ndarray,
-    orientations: ndarray,
-    progress_array: ndarray,
-    number_of_states: int,
-    process_index: int,
-    start: int,
-    end: int,
-):
+def _zeeman_splitting_average(hamiltonian: Hamiltonian, magnetic_fields: ndarray, orientations: ndarray, progress_array: ndarray, number_of_states: int, process_index: int, start: int, end: int):
     orientations_shape_0 = orientations.shape[0]
-    h_cm_1 = array(H_CM_1, dtype=states_energies.dtype)
     start_field_index = start // orientations_shape_0
     end_field_index = (end - 1) // orientations_shape_0 + 1
     previous_field_index = start_field_index
-    zeeman_splitting_array = zeros((end_field_index - start_field_index, number_of_states), dtype=states_energies.dtype)
+    zeeman_array = zeros((end_field_index - start_field_index, number_of_states), dtype=magnetic_fields.dtype)
     zeeman_index = 0
+    h_cm_1 = array(H_CM_1, dtype=magnetic_fields.dtype)
+
     for i in range(start, end):
         current_field_index = i // orientations_shape_0
         orientation_index = i % orientations_shape_0
         if current_field_index != previous_field_index:
             zeeman_index += 1
             previous_field_index = current_field_index
-        zeeman_splitting_array[zeeman_index,:] += eigvalsh(_calculate_zeeman_matrix(magnetic_momenta, states_energies, magnetic_fields[current_field_index], orientations[orientation_index, :3]))[:number_of_states] * h_cm_1 * orientations[orientation_index, 3]
+        hamiltonian._magnetic_field = orientations[orientation_index, :3] * magnetic_fields[current_field_index]
+        zeeman_array[zeeman_index, :] += hamiltonian.zeeman_energies(number_of_states) * h_cm_1 * orientations[orientation_index, 3]
         progress_array[process_index] += 1
-
-    return start_field_index, end_field_index, zeeman_splitting_array
+ 
+    return start_field_index, end_field_index, zeeman_array
 
 
 def _zeeman_splitting_proxy(slt_hamiltonian_info, sm_arrays_info_list: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, returns: bool = False):

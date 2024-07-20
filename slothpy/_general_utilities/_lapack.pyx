@@ -4,11 +4,12 @@
 # cython: cdivision = True
 # cython: language_level = 3
 
+from cython cimport boundscheck, wraparound
+
 cimport numpy as np
 import numpy as np
 from scipy.linalg.cython_blas cimport zaxpy, zhemm, zdotc, caxpy, chemm, cdotc
 from scipy.linalg.cython_lapack cimport zheevr, cheevr
-from cython cimport boundscheck, wraparound
 
 # SlothPy
 # Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ)
@@ -27,7 +28,7 @@ from cython cimport boundscheck, wraparound
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-#Double precision
+# Double precision
 
 
 @boundscheck(False)
@@ -186,7 +187,7 @@ def _zdot3d(np.ndarray[np.complex128_t, ndim=3] M, np.ndarray[np.float64_t, ndim
     return result
 
 
-#Single precision
+# Single precision
 
 
 @boundscheck(False)

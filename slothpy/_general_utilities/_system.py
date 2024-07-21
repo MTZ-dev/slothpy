@@ -119,7 +119,7 @@ def _worker_wrapper(worker, args, number_threads, result_queue=None):
 
 
 class SltProcessPool:
-    def __init__(self, worker: callable, jobs: Iterable, number_threads: int, returns: bool, gather_results_class, terminate_event: Event = None):
+    def __init__(self, worker: callable, jobs: Iterable, number_threads: int, returns: bool, gather_results: callable, terminate_event: Event = None):
         self._worker = worker
         self._jobs = jobs
         self._number_threads = number_threads
@@ -128,7 +128,7 @@ class SltProcessPool:
         self._returns = returns
         if returns:
             self._result_queue = Queue()
-            self._gather_results_class = gather_results_class
+            self._gather_results = gather_results
         self._result = None
 
     def start_and_collect(self):
@@ -150,14 +150,14 @@ class SltProcessPool:
                         break
                     elif all(p is None or not p.is_alive() for p in self._processes):
                         break
-                    sleep(0.3)
+                    sleep(0.2)
 
             for process in self._processes:
                 process.join()
                 process.close()
             
             if self._returns:
-                self._result = self._gather_results_class._gather_results(self._result_queue)
+                self._result = self._gather_results(self._result_queue)
 
             return self._result
         
@@ -174,5 +174,10 @@ class SltProcessPool:
                     process.close()
             raise
 
+
 def _is_notebook():
     return "ipykernel" in sys.modules
+
+
+def _dummy(queue):
+    pass

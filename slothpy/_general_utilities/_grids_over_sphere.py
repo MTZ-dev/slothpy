@@ -14,20 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from numpy import (
-    arange,
-    ascontiguousarray,
-    linspace,
-    meshgrid,
-    zeros,
-    pi,
-    sqrt,
-    cos,
-    sin,
-    float64,
-    abs,
-)
-from numba import jit, types, float64, float32, int64
+from numpy import arange, ascontiguousarray, linspace, meshgrid, zeros, pi, sqrt, cos, sin, float64, abs
+from numba import jit, float64, float32
 
 
 @jit(
@@ -62,12 +50,17 @@ def _fibonacci_over_sphere(num_points, precision):
     return ascontiguousarray(xyz_trans.T)
 
 
-def _meshgrid_over_sphere_flatten(grid_number):
-    theta = linspace(0, 2 * pi, 2 * grid_number, dtype=float64)
-    phi = linspace(0, pi, grid_number, dtype=float64)
+def _meshgrid_over_sphere_flatten(grid_number, precision):
+    if precision == "double":
+        theta = linspace(0, 2 * pi, 2 * grid_number, dtype=float64)
+        phi = linspace(0, pi, grid_number, dtype=float64)
+    else:
+        theta = linspace(0, 2 * pi, 2 * grid_number, dtype=float32)
+        phi = linspace(0, pi, grid_number, dtype=float32)
+
     theta, phi = meshgrid(theta, phi)
 
-    xyz_mesh = zeros((phi.shape[0], phi.shape[1], 3), dtype=float64)
+    xyz_mesh = zeros((phi.shape[0], phi.shape[1], 3), dtype=phi.dtype)
 
     xyz_mesh[:, :, 0] = sin(phi) * cos(theta)
     xyz_mesh[:, :, 1] = sin(phi) * sin(theta)

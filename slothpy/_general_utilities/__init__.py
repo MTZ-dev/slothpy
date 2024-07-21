@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from ._grids_over_hemisphere import lebedev_laikov_grid
+from ._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere
 from ._ploting_utilities import color_map
 
 __all__ = [
-    "lebedev_laikov_grid",
+    "lebedev_laikov_grid_over_hemisphere",
     "colour_map",
 ]

@@ -25,4 +25,8 @@ setup(
     }
         ),
     zip_safe=False,
+    include_package_data=True,
+    package_data={
+        'slothpy': ['static/data', 'static/slothpy_3.ico', 'settings.ini'],
+    },
 )

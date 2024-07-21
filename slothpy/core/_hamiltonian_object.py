@@ -65,7 +65,7 @@ class Hamiltonian():
                 hamiltonian += _kron_mult(ops)
             if self._lwork is None:
                 self._lwork = self._heevr_lwork(hamiltonian.shape[1], jobz='N', range='I', il=1, iu=iu)
-            return self._heevr(hamiltonian.T, *self._lwork, jobz='N', range='I', il=1, iu=iu)
+            return self._heevr(hamiltonian.T, *self._lwork, jobz='N', range='I', il=1, iu=iu)[:number_of_states]
         else:
             if self._lwork is None:
                 self._lwork = self._heevr_lwork(self.m[0].shape[1], jobz='N', range='I' if isinstance(iu, (int, int64)) else 'V', il=1, iu=iu, vu=iu)

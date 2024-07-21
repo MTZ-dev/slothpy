@@ -25,11 +25,11 @@ from os.path import join
 from time import perf_counter_ns, sleep
 from datetime import datetime
 
-from numpy import array, zeros, any, all, median, int64, transpose
+from numpy import array, zeros, any, all, median, int64
 
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import slothpy_exc_methods as slothpy_exc
-from slothpy._general_utilities._system import SltProcessPool, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array
+from slothpy._general_utilities._system import SltProcessPool, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array, _dummy
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, YELLOW, PURPLE, RESET
 from slothpy._general_utilities._io import _save_data_to_slt
 from slothpy._gui._monitor_gui import _run_monitor_gui
@@ -219,10 +219,10 @@ class _MultiProcessed(_SingleProcessed):
         pass
 
     def _executor(self):
-        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, self, self._terminate_event)
-        result_queue = self._process_pool.start_and_collect()
+        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, self._gather_results, self._terminate_event)
+        result = self._process_pool.start_and_collect()
         self._process_pool = None
-        return result_queue
+        return result
 
     @slothpy_exc("SltCompError")
     def autotune(self, timeout: float = float("inf")):
@@ -260,7 +260,7 @@ class _MultiProcessed(_SingleProcessed):
                     self._sm_progress_array_info = _to_shared_memory(self._smm, progress_array)
                     self._terminate_event = terminate_event()
                     try:
-                        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, self._terminate_event)
+                        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, _dummy, self._terminate_event)
                         benchmark_process = Process(target=self._process_pool.start_and_collect)
                         sm_progress, progress_array = _from_shared_memory(self._sm_progress_array_info)
                         benchmark_process.start()
@@ -352,12 +352,12 @@ class _MultiProcessed(_SingleProcessed):
                 if settings.monitor:
                     monitor = Process(target=_run_monitor_gui, args=(self._sm_progress_array_info, self._number_to_parallelize, self._number_processes, self._method_name))
                     monitor.start()
-                results = self._executor()
+                result = self._executor()
                 if settings.monitor and monitor is not None:
                     monitor.join()
                     monitor.close()
                 if self._returns:
-                    self._result = results
+                    self._result = result
                 else:
                     self._result = _from_shared_memory_to_array(self._sm_result_info, reshape=(self._result_shape))
                     if self._transpose_result is not None:

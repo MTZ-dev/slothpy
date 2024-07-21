@@ -83,7 +83,7 @@ from slothpy._magnetism._zeeman import (
     _energy_3d,
 )
 from slothpy._general_utilities._grids_over_hemisphere import (
-    lebedev_laikov_grid,
+    lebedev_laikov_grid_over_hemisphere,
 )
 from slothpy._general_utilities._io import (
     _group_exists,

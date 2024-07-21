@@ -21,7 +21,7 @@ from os import cpu_count
 from warnings import warn
 from numpy import array, allclose, identity, log, int64
 from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError, SltWarning, slothpy_exc
-from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid
+from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere, _fibonacci_over_hemisphere, _meshgrid_over_hemisphere_flatten
 from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
 from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1
 from slothpy._general_utilities._io import _group_exists
@@ -94,7 +94,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 raise ValueError("Zero or negative temperatures were detected in the input.")
                         case "grid":
                             if isinstance(value, (int, int64)):
-                                value = lebedev_laikov_grid(value)
+                                value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
                             else:
                                 value = array(value, copy=False, order='C', dtype=settings.float)
                                 if value.ndim != 2:
@@ -105,16 +105,16 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                     raise ValueError("The grid must be set to an integer from 0-11, or a custom one must be in the form [[direction_x, direction_y, direction_z, weight],...].")
                         case "orientations":
                             if isinstance(value, (int, int64)):
-                                value = lebedev_laikov_grid(value)
+                                value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
                             elif isinstance(value, (tuple, list)) and len(value) == 2:
                                 if not isinstance(value[1], (int, int64)):
                                     raise ValueError("The second entry in the orientation list/tuple must contain an integer controlling the number of the grid points.")
                                 if value[0] == "fibonacci":
-                                    value = ["fibonacci", _fibonacci_over_sphere(value[1], settings.precision)]
+                                    value = ["fibonacci", _fibonacci_over_hemisphere(value[1], settings.precision)]
                                 if value[0] == "mesh":
-                                    value = ["mesh", _meshgrid_over_sphere_flatten(value[1])]
+                                    value = ["mesh", _meshgrid_over_hemisphere_flatten(value[1], settings.precision)]
                                 if value[0] == "lebedev_laikov":
-                                    value = ["lebedev_laikov", lebedev_laikov_grid(value[1])[:, :3]]
+                                    value = ["lebedev_laikov", lebedev_laikov_grid_over_hemisphere(value[1], settings.precision)[:, :3]]
                                 else:
                                     raise ValueError("The only orientation grids available are: 'fibonacci', 'mesh', and 'lebedev_laikov'.")
                             else:
@@ -156,7 +156,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 raise ValueError("The number of states must be a positive integer or 0 for all of the calculated states.")
                             if not isinstance(bound_args.arguments["states_cutoff"], list) or len(bound_args.arguments["states_cutoff"]) != 2:
                                 raise ValueError("The states' cutoff must be a Python's list of length 2.")
-                            max_states = int(self.attributes["States"]) if bound_args.arguments["states_cutoff"][0] == 0 else bound_args.arguments["states_cutoff"][0]
+                            max_states = int(self.attributes["States"]) if bound_args.arguments["states_cutoff"][0] == 0 or self.attributes["Kind"] == "SLOTHPY" else bound_args.arguments["states_cutoff"][0]
                             if isinstance(bound_args.arguments["states_cutoff"][1], (int, int64)) and (bound_args.arguments["states_cutoff"][1] > 0) and (bound_args.arguments["states_cutoff"][1] <= bound_args.arguments["states_cutoff"][0]) if isinstance(bound_args.arguments["states_cutoff"][0], (int, int64)) else False:
                                 if value == 0:
                                     value = bound_args.arguments["states_cutoff"][1]
@@ -164,6 +164,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                             elif bound_args.arguments["states_cutoff"][1] in [0, "auto"] and value == 0:
                                 value = max_states
                             if value > max_states:
+                                print(max_states)
                                 raise ValueError("The number of states must be less or equal to the states' cutoff or overall number of states.")
                         case "start_state":
                             if not (isinstance(value, (int, int64)) and value >= 0 and value < self.attributes["States"]):

@@ -19,7 +19,7 @@ from functools import wraps
 from typing import Literal
 from os import cpu_count
 from warnings import warn
-from numpy import array, allclose, identity, log, int64
+from numpy import asarray, allclose, identity, log, int64
 from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError, SltWarning, slothpy_exc
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere, _fibonacci_over_hemisphere, _meshgrid_over_hemisphere_flatten
 from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
@@ -83,11 +83,11 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                             elif not (isinstance(value, (int, int64)) and value > 0 and value <= int(cpu_count())):
                                 raise ValueError(f"The number of CPUs must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
                         case "magnetic_fields":
-                            value = array(value, copy=False, order='C', dtype=settings.float)
+                            value = asarray(value, order='C', dtype=settings.float)
                             if value.ndim != 1:
                                 raise ValueError("The list of fields must be a 1D array.")
                         case "temperatures":
-                            value = array(value, copy=False, order='C', dtype=settings.float)
+                            value = asarray(value, order='C', dtype=settings.float)
                             if value.ndim != 1:
                                 raise ValueError("The list of temperatures must be a 1D array.")
                             if (value <= 0).any():
@@ -96,7 +96,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                             if isinstance(value, (int, int64)):
                                 value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
                             else:
-                                value = array(value, copy=False, order='C', dtype=settings.float)
+                                value = asarray(value, order='C', dtype=settings.float)
                                 if value.ndim != 2:
                                     raise ValueError("The grid array must be a 2D array in the form [[direction_x, direction_y, direction_z, weight],...].")
                                 if value.shape[1] == 3:
@@ -118,7 +118,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 else:
                                     raise ValueError("The only orientation grids available are: 'fibonacci', 'mesh', and 'lebedev_laikov'.")
                             else:
-                                value = array(value, copy=False, order='C', dtype=settings.float)
+                                value = asarray(value, order='C', dtype=settings.float)
                                 if value.ndim != 2:
                                     raise ValueError("The array of orientations must be a 2D array in the form: [[direction_x, direction_y, direction_z],...] or [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
                                 if value.shape[1] == 4:
@@ -179,7 +179,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                     raise ValueError(f"The last (stop) state's number must be equal or greater than the first (start) state's number: {bound_args.arguments['start_state']}.")
                         case "xyz":
                             if value not in ["xyz", "x", "y", "z"]:
-                                value = array(value, copy=False, order='C', dtype=settings.float)
+                                value = asarray(value, order='C', dtype=settings.float)
                                 if value.ndim != 1 or value.size != 3:
                                     raise ValueError(f"The xyz argument must be one of 'xyz', 'x', 'y', 'z' or it can be an orientation in the form [x,y,z].")
                                 value = _normalize_orientation(value)
@@ -237,7 +237,7 @@ def _parse_hamiltonian_dicts(compound, magnetic_centers: dict, exchange_interact
     for key, value in exchange_interactions.items():
         if len(key) != 2 or not all(isinstance(x, (int, int64)) and 0 <= x < n for x in key):
             raise ValueError("Two-center exchange interactions must be enumerated with iterables of length 2 [centerA_number, centerB_number] containing integers from 0 to the number of centers - 1.")
-        value = array(value, copy=False, order='C', dtype=settings.float) / H_CM_1
+        value = asarray(value, order='C', dtype=settings.float) / H_CM_1
         if value.ndim != 2 or value.shape != (3,3):
             raise ValueError("The J exchange interaction parameters must be real arrays with shape(3,3).")
         exchange_interactions[key] = value
@@ -253,7 +253,7 @@ def _parse_rotation(value):
             raise ValueError("SlothPy only supports (Slt)Rotation class instances with a single rotation.")
         value = value.as_matrix().astype(settings.float)
     elif value is not None:
-        value = array(value, copy=False, order='C', dtype=settings.float)
+        value = asarray(value, order='C', dtype=settings.float)
         if value.shape != (3, 3):
             raise ValueError("The rotation matrix must be a 3x3 array.")
         product = value.T @ value

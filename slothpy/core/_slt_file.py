@@ -19,7 +19,8 @@ import warnings
 from ast import literal_eval
 
 from h5py import File, Group, Dataset
-from numpy import ndarray, ComplexWarning, array, empty, float32, float64, tensordot, abs
+from numpy import ndarray, array, empty, float32, float64, tensordot, abs
+from numpy.exceptions import ComplexWarning
 from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
 

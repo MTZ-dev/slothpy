@@ -32,7 +32,7 @@ from numpy import (
     allclose,
     identity,
     ones,
-    string_
+    bytes_
 )
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.gridspec import GridSpec
@@ -315,13 +315,13 @@ class SltFile():
 
     def _create_dataset(self, group, name, data):
         if data is None:
-            data=string_('None')
+            data=bytes_('None')
         elif isinstance(data, (ndarray, list)):
             data = array(data)
         elif isinstance(data, (int, float)):
             data = array(data)
         elif isinstance(data, str):
-            data = string_(data)
+            data = bytes_(data)
         else:
             raise ValueError(f"Unsupported data type: {type(data)}")
         

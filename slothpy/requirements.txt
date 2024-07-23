@@ -6,6 +6,7 @@ threadpoolctl>=3.2.0
 h5py>=3.11.0
 pandas>=2.2.2
 matplotlib>=3.9.1
+setuptools>=71.1.0
 ipython>=8.13.2
 PyQt5>=5.15.9
 icc-rt>=2020.0.133

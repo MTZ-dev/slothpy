@@ -238,7 +238,7 @@ def _magnetisation_average(
             magnetisation_index += 1
             previous_field_index = current_field_index
         hamiltonian._magnetic_field = magnetic_fields[current_field_index] * orientations[orientation_index, :3]
-        energies, states_momenta = hamiltonian.slpjm_under_magnetic_field("m", orientations[orientation_index, :3])
+        energies, states_momenta = hamiltonian.slpjm_under_fields("m", orientations[orientation_index, :3])
         if isinstance(energies, list):
             momenta = zeros((len(energies), temperatures.shape[0]), dtype=temperatures.dtype, order='C')
             partition_functions = zeros((len(energies), temperatures.shape[0]), dtype=temperatures.dtype, order='C')

@@ -16,7 +16,7 @@
 
 from pkg_resources import resource_filename
 
-from numpy import ndarray, arange, ascontiguousarray, linspace, meshgrid, zeros, abs, pi, sqrt, cos, sin, float64, int64
+from numpy import ndarray, arange, ascontiguousarray, linspace, meshgrid, zeros, abs, pi, sqrt, cos, sin, float64, float32, int64
 from numba import jit
 from h5py import File
 

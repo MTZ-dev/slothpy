@@ -71,7 +71,7 @@ class Hamiltonian():
                 self._lwork = self._heevr_lwork(self.m[0].shape[1], jobz='N', range='I' if isinstance(iu, (int, int64)) else 'V', il=1, iu=iu, vu=iu)
             return self._heevr(self.build_hamiltonian(0).T, *self._lwork, jobz='N', range='I' if isinstance(iu, (int, int64)) else 'V', il=1, iu=iu, vu=iu)[:number_of_states]
 
-    def slpjm_under_magnetic_field(self, mode, orientation):
+    def slpjm_under_fields(self, mode, orientation):
         if self._number_of_centers > 1:
             result_list = []
             energies_list = []
@@ -126,7 +126,7 @@ class Hamiltonian():
         return energies - energies[0], result
 
 
-    def slpjm_matrix_under_magnetic_field(self, mode, orientation):
+    def slpjm_matrix_under_fields(self, mode, orientation):
         pass
 
     

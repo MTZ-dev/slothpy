@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# TODO use annotations like Optional[Union[str, np.ndarray, Sequence]]
+
 from os import path
 from functools import partial
 from typing import Tuple, Union, Literal
@@ -34,6 +36,8 @@ from numpy import (
     ones,
     bytes_
 )
+from scipy.spatial.transform import Rotation
+from slothpy import SltRotation
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.gridspec import GridSpec
 from matplotlib.animation import PillowWriter
@@ -68,7 +72,6 @@ from slothpy._general_utilities._constants import (
     YELLOW,
     RESET,
 )
-from slothpy.core._config import settings
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
 
 from slothpy._magnetism._magnetisation import _mag_3d
@@ -81,9 +84,6 @@ from slothpy._magnetism._zeeman import (
     _get_zeeman_matrix,
     _eth,
     _energy_3d,
-)
-from slothpy._general_utilities._grids_over_hemisphere import (
-    lebedev_laikov_grid_over_hemisphere,
 )
 from slothpy._general_utilities._io import (
     _group_exists,
@@ -329,12 +329,13 @@ class SltFile():
     
     def zeeman_splitting(
         self,
-        hamiltonian_group_name: str, #########zmienic na hamiltonian group name
+        hamiltonian_group_name: str,
         magnetic_fields: ndarray[Union[float32, float64]],
-        orientations: ndarray[Union[float32, float64]],
+        orientations: Union[ndarray[Union[float32, float64]], int, list],
         number_of_states: int = 0,
         states_cutoff: list = [0, 'auto'], ######## teraz to jest lista
-        rotation: ndarray = None, ###################opisac z nowa klasa
+        rotation: Union[ndarray[Union[float32, float64]], SltRotation, Rotation] = None, ###################opisac z nowa klasa
+        electric_field_vector: ndarray = None, ### sprawdzić czy hamiltonian ma dipolemomenta
         hyperfine: dict = None, #################opisac ze nie ma xd
         number_cpu: int = None,
         number_threads: int = None,
@@ -348,31 +349,48 @@ class SltFile():
         Parameters
         ----------
         hamiltonian_group_name : str
-            Name of a group containing results of relativistic ab initio
-            calculations used for the computation of the Zeeman splitting.
+            Name of a Hamiltonian-type group from the corresponding .slt file
+            which will be used to compute the Zeeman splitting.
         number_of_states : int
-            Number of states whose energy splitting will be given in the
-            result array. If set to zero, states_cutoff states will be given.,
+            Number of states whose energy splitting will be given in the result
+            array. If set to zero, states_cutoff[0] states will be given.,
             by default 0
-        magnetic_fields : ndarray[float64]
+        magnetic_fields : ndarray[Union[float32, float64]]
             ArrayLike structure (can be converted to numpy.NDArray) of magnetic
             field values (T) at which Zeeman splitting will be computed.
-        orientations : ndarray[float64]
+        orientations : Union[ndarray[Union[float32, float64]], int, list]
             ArrayLike structure (can be converted to numpy.NDArray) of magnetic
-            fields orientations in the list format: [[direction_x, direction_y,
-            direction_z],...]. If the orientations are set to an integer from
-            0-11, then the prescribed Lebedev-Laikov grids over the hemisphere
-            will be used (see slothpy.lebedev_laikov_grid documentation) and
-            powder-averaging will be performed. Otherwise, the user can provide
-            an ArrayLike structure with the convention: [[direction_x,
-            direction_y, direction_z, weight],...] for powder-averaging over
-            the chosen directions using the provided weights. Custom grids
-            and orientations will be automatically normalized to the unit
-            directional vectors.
-        states_cutoff : int, optional
-            Number of states that will be taken into account for construction
-            of Zeeman Hamiltonian. If set to zero, all available states from
-            the file will be used., by default 0
+            field orientations in the list format: [[direction_x, direction_y,
+            direction_z],...]. Users can choose from predefined orientational 
+            grids providing a list or tuple in the form [gird_name,
+            number_of points] where grid_name can be: 'fibonacci', 'mesh',
+            'lebedev_laikov', and number_of_points is an integer controlling
+            the grid density. If the orientations is set to an integer from
+            0-11, the prescribed Lebedev-Laikov grids over the hemisphere will
+            be used (see slothpy.lebedev_laikov_grid_over_hemisphere
+            documentation) and powder-averaging will be performed. Otherwise,
+            the user can provide an ArrayLike structure with the convention:
+            [[direction_x, direction_y, direction_z, weight],...] for
+            powder-averaging over the chosen directions using the provided
+            weights. Custom grids and orientations will be automatically
+            normalized to the unit directional vectors.
+        states_cutoff : list, optional
+            List of integers of length 2 where the first one represents the
+            number of states that will be taken into account for construction
+            of the Zeeman Hamiltonian. If it is set to zero, all available
+            states from the Hamiltonian group will be used. The second integer
+            controls the number of eigenvalues and eigenvectors to be found
+            during Hamiltonian diagonalization. For methods taking
+            number_of_states parameter, the second entry must be at least equal
+            to the desired number of states, while for functions including
+            temperature dependencies, it should be large enough to accommodate
+            states with energies relevant to a given range of temperatures.
+            You can let SlothPy decide automatically on the optimal value of
+            the second parameter setting it to 'auto'., by default [0, 'auto']
+        rotation: Union[ndarray[Union[float32, float64]], SltRotation, Rotation]
+            ,by default None
+        hyperfine: dict = None
+            ,by default None
         number_cpu : int, optional
             Number of logical CPUs to be assigned to perform the calculation.
             If set to zero, all available CPUs will be used. If None, the 
@@ -383,13 +401,13 @@ class SltFile():
             Number of threads used in a multithreaded implementation of linear
             algebra libraries during the calculation. Higher values benefit
             from the increasing size of matrices (states_cutoff) over the
-            parallelization over CPUs. If set to zero, a number of all
-            available logical CPUs will be used. If None, the default number
-            from the SlothPy settings is used. See: slothpy.set_number_threads,
-            slothpy.settings.number_threads., by default None
+            parallelization over CPUs. If set to zero, a number_cpu will be
+            used. If None, the default number from the SlothPy settings is used.
+            See: slothpy.set_number_threads, slothpy.settings.number_threads.,
+            by default None
         slt_save : str, optional
-            If given, the results will be saved in a group of this name to
-            .slt., by default None
+            If given, the results will be saved in a group of this name to the
+            corresponding .slt file., by default None
         autotune : bool, optional
             If True the program will automatically try to choose the best
             number of threads (and therefore parallel processes), for the given
@@ -397,7 +415,7 @@ class SltFile():
             process can take a significant amount of time, so start to use it
             with medium-sized calculations (e.g. for states_cutoff > 300 with
             dense grids or a higher number of field values) where it becomes
-            a necessity., by default Falsee
+            a necessity., by default False
 
         Returns
         -------
@@ -406,21 +424,23 @@ class SltFile():
             energy levels in cm-1 for each orientation in the form
             [orientations, fields, energies] - the first dimension
             runs over different orientations, the second over field values, and
-            the last gives energies of number_of_states states. When the
+            the last gives energies of number_of_states states, unless orientations is of 'mesh' type, then  When the
             powder-average calculation is performed, the array is returned in
             the form: [fields, energies].
 
         See Also
         --------
-        slothpy.SltFile.plot_zeeman,
-        slothpy.lebedev_laikov_grid : For the description of the prescribed
-                                      Lebedev-Laikov grids.
+        slothpy.plot.zeeman,
+        slothpy.lebedev_laikov_grid_over_hemisphere : For the description of
+                                        the prescribed Lebedev-Laikov grids.
 
         Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
         distribute the workload over the provided field values.
         """
+
+        #######see also rotation all grids etc
 
         return self[hamiltonian_group_name].zeeman_splitting(magnetic_fields, orientations, number_of_states, states_cutoff, rotation, hyperfine, number_cpu, number_threads, slt_save, autotune)
 

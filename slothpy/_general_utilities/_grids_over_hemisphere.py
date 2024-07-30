@@ -16,24 +16,45 @@
 
 from pkg_resources import resource_filename
 
+from typing import Literal, Union
+
 from numpy import ndarray, arange, ascontiguousarray, linspace, meshgrid, zeros, abs, pi, sqrt, cos, sin, float64, float32, int64
 from numba import jit
 from h5py import File
 
-# TODO Reconsider making those public as lebedev-laikov
 @jit(
     nopython=True,
     nogil=True,
     cache=True,
     fastmath=True,
 )
-def _fibonacci_over_hemisphere(num_points, precision):
+def fibonacci_over_hemisphere(num_points: int, precision: Literal["double", "single"]) -> ndarray[Union[float64, float32]]:
+    """Generates Fibonacci-type grid of points over a unit hemisphere.
+
+    Parameters
+    ----------
+    num_points : int
+        Controls the number of points to be generated.
+    precision : Literal[&quot;double&quot;, &quot;single&quot;]
+        Controls floating-point precision: 'double' - float64,
+        'single' - float32.
+
+    Returns
+    -------
+    ndarray[Union[float64, float32]]
+        The returned array is in the form [point, xyz-coordinates] - the first
+        dimension runs over different points, the second gives their (x-0, y-1,
+        z-2) coordinates.
+    """
+
     if precision == "double":
         indices = arange(0, num_points, dtype=float64)
     else:
         indices = arange(0, num_points, dtype=float32)
+    
+    xyz = zeros((num_points, 3), dtype=indices.dtype)
+
     phi = pi * (3.0 - sqrt(5.0))  # golden angle in radians
-    xyz_trans = zeros((3, num_points))
 
     if precision == "double":
         y = 1 - (indices / float64(num_points - 1))  # y goes from 1 to 0
@@ -46,14 +67,34 @@ def _fibonacci_over_hemisphere(num_points, precision):
     x = cos(theta) * radius
     z = sin(theta) * radius
 
-    xyz_trans[0] = x
-    xyz_trans[1] = y
-    xyz_trans[2] = z
+    xyz[:, 0] = x
+    xyz[:, 1] = y
+    xyz[:, 2] = z
 
-    return ascontiguousarray(xyz_trans.T)
+    return xyz
 
 
-def _meshgrid_over_hemisphere_flatten(grid_number, precision):
+def meshgrid_over_hemisphere(grid_number: int, precision: Literal["double", "single"]) -> ndarray[Union[float64, float32]]:
+    """Generates meshgrid of points on a unit hemisphere corresponding to
+       spherical angles theta and phi running from 0 to pi.
+
+    Parameters
+    ----------
+    grid_number : int
+        Controls the number of points for each angle between 0 and pi. Thus,
+        the overall number of generated points will be grid_number ** 2.
+    precision : Literal[&quot;double&quot;, &quot;single&quot;]
+        Controls floating-point precision: 'double' - float64,
+        'single' - float32.
+
+    Returns
+    -------
+    ndarray[Union[float64, float32]]
+        The returned arrray is in the form [mesh, mesh, xyz-coordinates] - the
+        first two diemnsions correspond to meshgrids of theta and phi, the last
+        diemnsion runs over the (x-0, y-1, z-2) coordinates of poins on the
+        unit hemisphere.
+    """
     if precision == "double":
         theta = linspace(0, pi, grid_number, dtype=float64)
         phi = linspace(0, pi, grid_number, dtype=float64)
@@ -69,12 +110,10 @@ def _meshgrid_over_hemisphere_flatten(grid_number, precision):
     xyz_mesh[:, :, 1] = sin(phi) * sin(theta)
     xyz_mesh[:, :, 2] = cos(phi)
 
-    xyz = xyz_mesh.reshape((-1, 3))
-
-    return ascontiguousarray(xyz)
+    return ascontiguousarray(xyz_mesh)
 
 
-def lebedev_laikov_grid_over_hemisphere(grid_number: int, precision) -> ndarray:
+def lebedev_laikov_grid_over_hemisphere(grid_number: int, precision: Literal["double", "single"]) -> ndarray[Union[float64, float32]]:
     """
     Returns Lebedev-Laikov-Grids [1] over a hemisphere.
 
@@ -97,9 +136,13 @@ def lebedev_laikov_grid_over_hemisphere(grid_number: int, precision) -> ndarray:
         10 - 1381 points,
         11 - 2949 points
 
+    precision: Literal[&quot;double&quot;, &quot;single&quot;]
+        Controls floating-point precision: 'double' - float64,
+        'single' - float32.
+
     Returns
     -------
-    ndarray
+    ndarray[Union[float64, float32]]
         Grid array in the form [[direction_x, direction_y, direction_z,
         weight], ...].
 

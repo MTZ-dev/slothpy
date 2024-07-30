@@ -51,7 +51,7 @@ from slothpy._general_utilities._io import (
 )
 from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
-    _meshgrid_over_sphere_flatten,
+    _meshgrid_over_sphere,
 )
 from slothpy._general_utilities._math_expresions import _3d_dot
 from slothpy.core._hamiltonian_object import Hamiltonian

@@ -308,8 +308,8 @@ def _cutmud(np.ndarray[np.complex64_t, ndim=2, mode="fortran"] U,
     cdef int n = U.shape[1]
     cdef np.npy_intp *dims = [m, n]
     cdef np.npy_intp *dim = [n]
-    cdef np.ndarray[np.float32_t, ndim=1, mode="fortran"] C_diag = np.PyArray_EMPTY(1, dim, np.NPY_FLOAT64, 1)
-    cdef np.ndarray[np.complex64_t, ndim=2, mode="fortran"] B = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX128, 1)
+    cdef np.ndarray[np.float32_t, ndim=1, mode="fortran"] C_diag = np.PyArray_EMPTY(1, dim, np.NPY_FLOAT32, 1)
+    cdef np.ndarray[np.complex64_t, ndim=2, mode="fortran"] B = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX64, 1)
 
     cdef int i
     cdef np.complex64_t alpha = 1.0 + 0.0j

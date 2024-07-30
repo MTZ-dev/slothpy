@@ -46,7 +46,6 @@ class SltAttributes:
             item = file[self._item_path]
             return item.attrs[attr_name]
 
-
     @slothpy_exc("SltFileError")
     def __setitem__(self, attr_name, value):
         with File(self._hdf5, 'r+') as file:
@@ -627,8 +626,8 @@ class SltHamiltonian():
                 for key2 in range(key1+1, n):
                     r_vec = self._magnetic_centers[key1][3] - self._magnetic_centers[key2][3]
                     r_norm = norm(r_vec)
-                    if r_norm <= 1e-3:
-                        raise ValueError("Magnetic centers are closer than 1e-3 Angstrom. Please double-check the SlothPy Hamiltonian dictionary. Quitting here.")
+                    if r_norm <= 1e-2:
+                        raise ValueError("Magnetic centers are closer than 0.01 Angstrom. Please double-check the SlothPy Hamiltonian dictionary. Quitting here.")
                     coeff = MU_T / r_norm ** 3
                     r_vec = r_vec / r_norm
                     op1 = tensordot(dipole_magnetic_momenta_dict[key1], - 3. * coeff * r_vec ,axes=(0, 0))

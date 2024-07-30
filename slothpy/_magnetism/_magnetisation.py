@@ -51,7 +51,7 @@ from slothpy._general_utilities._io import (
 )
 from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
-    _meshgrid_over_sphere_flatten,
+    _meshgrid_over_sphere,
 )
 import time
 from datetime import datetime

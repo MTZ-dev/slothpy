@@ -32,3 +32,4 @@ H_CM_1 = 219474.6  # Atomic units (Hartree) to wavenumbers
 MU_B_CM_3 = 0.5584938904  # Conversion factor from Bohr magneton to cm3 for chi
 MU_T = 1.97276072296918e-06 # Conversion factor magnetic momenta in a.u. to field in T produced by the magnetic dipole (MU_B_T * MU_B ** 2)
 MU_B_T = 435974.8198 # Conversion factor from Bohr magneton in a.u./T to field in T produced by the magnetic dipole
+F_AU_VM = 5.14220675112e11 # Electric field in a.u. to V/m

@@ -46,6 +46,8 @@ from .core import (
 )
 from ._general_utilities import (
     lebedev_laikov_grid_over_hemisphere,
+    fibonacci_over_hemisphere,
+    meshgrid_over_hemisphere,
     color_map,
 )
 from ._angular_momentum import SltRotation
@@ -66,6 +68,8 @@ __all__ = [
     "set_single_precision",
     "set_log_level",
     "lebedev_laikov_grid_over_hemisphere",
+    "fibonacci_over_hemisphere",
+    "meshgrid_over_hemisphere",
     "colour_map",
     "export",
     "SltRotation"

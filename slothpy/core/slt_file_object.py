@@ -37,7 +37,6 @@ from numpy import (
     bytes_
 )
 from scipy.spatial.transform import Rotation
-from slothpy import SltRotation
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.gridspec import GridSpec
 from matplotlib.animation import PillowWriter
@@ -72,6 +71,7 @@ from slothpy._general_utilities._constants import (
     YELLOW,
     RESET,
 )
+from slothpy._angular_momentum._rotation import SltRotation
 from slothpy._magnetism._g_tensor import _g_tensor_and_axes_doublet
 
 from slothpy._magnetism._magnetisation import _mag_3d
@@ -114,7 +114,7 @@ from slothpy._general_utilities._ploting_utilities import (
 )
 from slothpy._general_utilities._ploting_utilities import _display_plot
 from slothpy._general_utilities._grids_over_sphere import (
-    _meshgrid_over_sphere_flatten,
+    _meshgrid_over_sphere,
     _fibonacci_over_sphere,
 )
 from slothpy.core._input_parser import _parse_hamiltonian_dicts
@@ -171,7 +171,7 @@ class SltFile():
             f"The {RED}SltFile{RESET} object should not be instantiated "
             "directly. Use a SltFile creation function instead."
         )
-    
+
     @slothpy_exc("SltFileError")
     def __setitem__(self, key, value) -> None:
         """
@@ -288,16 +288,82 @@ class SltFile():
             if key not in file:
                 raise KeyError(f"'{key}' does not exist in the .slt file.")
             del file[key]
-
+    
     @slothpy_exc("SltFileError")
     def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str): # in magnetic_centers dict values must be list (mutable) not tuples!!!
-        states = _parse_hamiltonian_dicts(self, magnetic_centers, exchange_interactions)
+        """Creates a custom, user-defined SlothPy exchange Hamiltonian and
+        saves it as a group in the corresponding .slt file to be used for
+        subsequent calculations.
+
+        Parameters
+        ----------
+        magnetic_centers : dict
+            A dictionary with integer keys (from 0) enumerating magnetic
+            centers in the form: {center_number : [hamiltonian_group_name,
+            cutoff_list, rotation, coordinates, hyperfine], ...} where:
+            'hamiltonian_group_name' is the name of a Hamiltonian-type group
+            in the .slt file representing the desired magnetic center; Note:
+            here another SlothPy exchange Hamiltonians cannot be used!,
+            'cutoff_list' is a list of three integers [local, mixing, exchange]
+            where local represents the overall cutoff for matrices of operators
+            for a given magnetic center to be considered in caluclations,
+            mixing is the number of states that will be included in the
+            exchange Hamiltonian, therefore, the dimension of exchange direct
+            product basis for N centers is a product over their mixing
+            parameters \prod_{i = 1}^{N} mixing_{i}, and exchange controls how
+            many eigenvalues and eigenvectors for a particular center will be
+            computed for subsequent calculations using the exchange basis (once
+            again, the number of considered eigenvalues/vectors for N centers
+            is given by \prod_{i = 1}^{N} exchange_{i}). All of the states that
+            do not fit into the diemnsion of exchange space will be included as
+            local (not participating in the exchange directly - only by mixing
+            part), that is, for each center (local - exchange) number of states
+            will be reated in this way. For more examples and the underlying
+            theory of such a partitioning scheme, please see tutorials or
+            theory section at slothpy.org.,
+            'rotation' is a (3,3) orthogonal rotation matrix, an instance of
+            SltRotation class or scipy.spatial.transform.Rotation (only single 
+            rotation) used to rotate operator matrices for a given magnetic
+            center. Note that the inverse matrix has to be given to rotate the
+            reference frame instead, set it to None if rotation is not needed.
+            'coordinates' is a list or 1d-array of coordinates in Angstrom
+            [x,y,z] of magnetic centers to include long-range magnetic (and
+            electric if available in the Hamiltonians) dipole interactions
+            between all centers. For this to work, the user needs to provide
+            coordinates for all the defined centers or set it to None if one
+            do not need to include them.,
+            hyperfine is scheduled to be released in the 0.4 major release. Now
+            left it as None.
+        exchange_interactions : dict
+            A dictionary whose keys are tuples of integers (n,m) where n and m
+            correspondst to magnetic centers numbers defined in the
+            magnetic_centers dictionary and values are J anisotropic coupling
+            tensor in the form {(n,m) : [[Jxx, Jxy, Jxz],[Jyx, Jyy, Jyz],
+            [Jzx, Jzy, Jzz]], ...} with exchange Hamiltonian of the form
+            /sum_nm -J_nm*S_n*S_m where S_n are spin vector operators of
+            corresponding magnetic centers.
+        slt_save : str
+            Name of the group to which the Hamiltonian will be saved.
+            The user can use this name for every available method, the same as 
+            any other Hamiltonian groups.
+        
+        Examples
+        --------
+        >>> import slothpy as slt
+        >>> Dy = slt.hamiltonian_from_molcas(".", "DyCo_bas3", ".", "example", "Dy")
+        >>> Dy.hamiltonian({0:["Dy", [30,16,16], None, [0,0,0], None], 1:["demo", [30,16,16], None, [2,2,2], None], 2:["demo", [30,16,16], None, [4,4,4], None]},
+          {(0,1):[[1,2,3],[1,2,3],[1,2,3]], (0,2):[[1,2,3],[1,2,3],[1,2,3]], (1,2):[[1,2,3],[1,2,3],[1,2,3]]}, "Dy3_exchange")
+        (3x Dy centers in a line with 16x16x16 exchange basis and higher term included as 'local' states)
+        """
+        states, contains_electric_dipole_momenta = _parse_hamiltonian_dicts(self, magnetic_centers, exchange_interactions)
         with File(self._hdf5, 'a') as file:
             group = file.create_group(slt_save)
             group.attrs["Type"] = "HAMILTONIAN"
             group.attrs["Kind"] = "SLOTHPY"
             group.attrs["States"] = states
-            group.attrs["Description"] = f"A custom Hamiltonian created by the user."
+            group.attrs["Description"] = f"A custom exchange Hamiltonian created by the user."
+            if contains_electric_dipole_momenta:
+                group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
             
             def save_dict_to_group(group, data_dict, subgroup_name):
                 subgroup = group.create_group(subgroup_name)
@@ -333,10 +399,10 @@ class SltFile():
         magnetic_fields: ndarray[Union[float32, float64]],
         orientations: Union[ndarray[Union[float32, float64]], int, list],
         number_of_states: int = 0,
-        states_cutoff: list = [0, 'auto'], ######## teraz to jest lista
-        rotation: Union[ndarray[Union[float32, float64]], SltRotation, Rotation] = None, ###################opisac z nowa klasa
-        electric_field_vector: ndarray = None, ### sprawdzić czy hamiltonian ma dipolemomenta
-        hyperfine: dict = None, #################opisac ze nie ma xd
+        states_cutoff: list = [0, 'auto'],
+        rotation: Union[ndarray[Union[float32, float64]], SltRotation, Rotation] = None,
+        electric_field_vector: ndarray = None, # sprawdzić czy hamiltonian ma dipolemomenta
+        hyperfine: dict = None,
         number_cpu: int = None,
         number_threads: int = None,
         slt_save: str = None,
@@ -386,11 +452,23 @@ class SltFile():
             temperature dependencies, it should be large enough to accommodate
             states with energies relevant to a given range of temperatures.
             You can let SlothPy decide automatically on the optimal value of
-            the second parameter setting it to 'auto'., by default [0, 'auto']
-        rotation: Union[ndarray[Union[float32, float64]], SltRotation, Rotation]
-            ,by default None
-        hyperfine: dict = None
-            ,by default None
+            the second parameter setting it to 'auto'. Note that when using
+            custom SlothPy-type exchange Hamiltonian, this argument has no
+            effect since the cutoff scheme is already defined while creating
+            one (see the documentation of SltFile.hamiltonian creation method).
+            , by default [0, 'auto']
+        rotation: Union[ndarray[Union[float32, float64]], SltRotation, Rotation], optional
+            A (3,3) orthogonal rotation matrix, instance of SltRotation class
+            or scipy.spatial.transform.Rotation (only single rotation) used to
+            rotate operators matrices. Note that the inverse matrix has to be
+            given to rotate the reference frame instead.,by default None
+        electric_field_vector: ndarray, optional
+            ArrayLike structure (can be converted to numpy.NDArray)
+            representing a vector [Fx, Fy, Fz] of static uniform electric field
+            (V/m) to be included in the Hamiltonian., by default None
+        hyperfine: dict, optional
+            Hyperfine interactions are not available yet and are scheduled to
+            be implemented in the upcoming 0.4 major release, by default None
         number_cpu : int, optional
             Number of logical CPUs to be assigned to perform the calculation.
             If set to zero, all available CPUs will be used. If None, the 
@@ -419,28 +497,33 @@ class SltFile():
 
         Returns
         -------
-        ndarray[Union[float32, float64]]
-            The resulting array gives Zeeman splitting of number_of_states
+        SltZeemanSplitting
+            The resulting numpy array (after invoking run, eval or
+            to_numpy_array methods) gives Zeeman splitting of number_of_states
             energy levels in cm-1 for each orientation in the form
             [orientations, fields, energies] - the first dimension
             runs over different orientations, the second over field values, and
-            the last gives energies of number_of_states states, unless orientations is of 'mesh' type, then  When the
-            powder-average calculation is performed, the array is returned in
-            the form: [fields, energies].
+            the last gives energies of number_of_states states, unless the
+            orientations argument is of 'mesh' type, then the retuened array is
+            in the form [mesh, mesh, fields, temperatures] - the first two
+            dimensions are in the form of meshgrids over theta and phi angles,
+            ready to be combined with xyz orientational meshgrids for 3D plots
+            (see slothpy.meshgrid_over_hemisphere documentation).
+            When the powder-average calculation is performed, the array is
+            returned in the form: [fields, energies].
 
         See Also
         --------
-        slothpy.plot.zeeman,
+        slothpy.plot.zeeman, sltohpy.SltRotation, 
+        slothpy.fibonacci_over_hemisphere, slothpy.meshgrid_over_hemisphere,
         slothpy.lebedev_laikov_grid_over_hemisphere : For the description of
-                                        the prescribed Lebedev-Laikov grids.
+                                        the prescribed orientations grids.
 
         Note
         -----
         Here, (number_cpu // number_threads) parallel processes are used to
-        distribute the workload over the provided field values.
+        distribute the workload over the provided field and orientation values.
         """
-
-        #######see also rotation all grids etc
 
         return self[hamiltonian_group_name].zeeman_splitting(magnetic_fields, orientations, number_of_states, states_cutoff, rotation, hyperfine, number_cpu, number_threads, slt_save, autotune)
 

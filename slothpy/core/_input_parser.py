@@ -19,14 +19,13 @@ from functools import wraps
 from typing import Literal
 from os import cpu_count
 from warnings import warn
-from numpy import asarray, allclose, identity, log, int64
+from numpy import asarray, ascontiguousarray, allclose, identity, log, int64
 from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError, SltWarning, slothpy_exc
-from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere, _fibonacci_over_hemisphere, _meshgrid_over_hemisphere_flatten
+from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere, fibonacci_over_hemisphere, meshgrid_over_hemisphere
 from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
-from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1
+from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1, F_AU_VM
 from slothpy._general_utilities._io import _group_exists
 from slothpy.core._config import settings
-from slothpy._general_utilities._grids_over_sphere import _fibonacci_over_sphere, _meshgrid_over_sphere_flatten ###TODO: rewrite it over hemisphere 
 
 def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = False, only_hamiltonian_check: bool = False):
     def decorator(func):
@@ -76,12 +75,15 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                             elif not (isinstance(value, (int, int64)) and value > 0 and value <= int(cpu_count())):
                                 raise ValueError(f"The number of CPUs must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
                         case "number_threads":
+                            max_threads = int(cpu_count()) if bound_args.arguments['number_cpu'] == 0 else bound_args.arguments['number_cpu']
+                            if max_threads is None:
+                                max_threads = settings.number_cpu
                             if value is None:
                                 value = settings.number_threads
                             if value == 0:
-                                value = int(cpu_count())
-                            elif not (isinstance(value, (int, int64)) and value > 0 and value <= int(cpu_count())):
-                                raise ValueError(f"The number of CPUs must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
+                                value = max_threads
+                            elif not (isinstance(value, (int, int64)) and value > 0 and value <= max_threads):
+                                raise ValueError(f"The number of threads must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
                         case "magnetic_fields":
                             value = asarray(value, order='C', dtype=settings.float)
                             if value.ndim != 1:
@@ -110,11 +112,11 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 if not isinstance(value[1], (int, int64)):
                                     raise ValueError("The second entry in the orientation list/tuple must contain an integer controlling the number of the grid points.")
                                 if value[0] == "fibonacci":
-                                    value = ["fibonacci", _fibonacci_over_hemisphere(value[1], settings.precision)]
+                                    value = ["fibonacci", fibonacci_over_hemisphere(value[1], settings.precision)]
                                 if value[0] == "mesh":
-                                    value = ["mesh", _meshgrid_over_hemisphere_flatten(value[1], settings.precision)]
+                                    value = ["mesh", meshgrid_over_hemisphere(value[1], settings.precision)]
                                 if value[0] == "lebedev_laikov":
-                                    value = ["lebedev_laikov", lebedev_laikov_grid_over_hemisphere(value[1], settings.precision)[:, :3]]
+                                    value = ["lebedev_laikov", ascontiguousarray(lebedev_laikov_grid_over_hemisphere(value[1], settings.precision)[:, :3])]
                                 else:
                                     raise ValueError("The only orientation grids available are: 'fibonacci', 'mesh', and 'lebedev_laikov'.")
                             else:
@@ -185,6 +187,15 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                 value = _normalize_orientation(value)
                         case "rotation":
                             value = _parse_rotation(value)
+                        case "electric_field_vector":
+                            if self.attributes["Additional"] != "ELECTRIC_DIPOLE_MOMENTA":
+                                raise ValueError("The provided Hamiltonian gorup does not contain electric dipole momenta integrals.")
+                            value = asarray(value, order='C', dtype=settings.float) / settings.float(F_AU_VM)
+                            if value.ndim != 1 or value.shape[0] != 3:
+                                raise ValueError("The electric field vector must be an array-like object in the form of [x, y, z] components.")
+                        case "hyperfine":
+                            if value != None:
+                                raise NotImplementedError("Hyperfine interactions have not been implemented yet. They are scheduled to be released in the 0.4 major release.")
                     bound_args.arguments[name] = value
                     
             except Exception as exc:
@@ -196,7 +207,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
     return decorator
 
 @slothpy_exc("SltInputError")
-def _parse_hamiltonian_dicts(compound, magnetic_centers: dict, exchange_interactions: dict):
+def _parse_hamiltonian_dicts(slt_file, magnetic_centers: dict, exchange_interactions: dict):
 
     if not isinstance(magnetic_centers, dict) or not isinstance(exchange_interactions, dict):
         raise ValueError("Magnetic centers and exchange interactions parameters must be dictionaries.")
@@ -213,12 +224,18 @@ def _parse_hamiltonian_dicts(compound, magnetic_centers: dict, exchange_interact
     
     states = 1
     exchange_states = 1
+    contains_electric_dipole_momenta = True
 
     for value in magnetic_centers.values():
         if not isinstance(value, list):
             raise ValueError("The values of the magnetic centers dictionary must be Python's lists.")
-        if compound[value[0]].attributes["Type"] != "HAMILTONIAN" or compound[value[0]].attributes["Kind"] == "SLOTHPY":
+        if slt_file[value[0]].attributes["Type"] != "HAMILTONIAN" or slt_file[value[0]].attributes["Kind"] == "SLOTHPY":
             raise ValueError(f"Group {value[0]} either does not exist or has a wrong type: expected HAMILTONIAN (it cannot be a custom SlothPy Hamiltonian).")
+        try:
+            if slt_file[value[0]].attributes["Additional"] != "ELECTRIC_DIPOLE_MOMENTA":
+                contains_electric_dipole_momenta = False
+        except SltFileError:
+            contains_electric_dipole_momenta = False
         if (len(value[1]) != 3 or not all(isinstance(x, (int, int64)) for x in value[1])):
             raise ValueError("States cutoff must be an interable of length 3 [local_cutoff, mixing_cutoff, exchange_cutoff] with integer values.")
         if value[1][0] < value[1][1] or value[1][1] < value[1][2]:
@@ -228,10 +245,10 @@ def _parse_hamiltonian_dicts(compound, magnetic_centers: dict, exchange_interact
         if value[2] != None:
             value[2] = _parse_rotation(value[2])
         if value[3] != None and (len(value[3]) != 3 or not all(isinstance(x, (int, int64, float)) for x in value[3])):
-            raise ValueError("Coordinates must be None or iterable of length 3 with numerical values in Angstrom [x,y,z].")
+            raise ValueError("Coordinates must be None or iterable of length 3 with numerical values in Angstrom [x, y, z].")
        #TODO: value[4] hyperfine add checks when implemented
 
-    if states >= 10000 or (states >= 9000 and exchange_states >= 100):
+    if states >= 8000 or (states >= 6000 and exchange_states >= 100):
         print(f"You created a custom Hamiltonian with {states}x{states} exchange space, and computations will require to find {exchange_states} eigenvalues/eigenvectors, which is considered very expensive. You must know what you are doing. All computations will be very lengthy, if possible at all.")
 
     for key, value in exchange_interactions.items():
@@ -242,7 +259,7 @@ def _parse_hamiltonian_dicts(compound, magnetic_centers: dict, exchange_interact
             raise ValueError("The J exchange interaction parameters must be real arrays with shape(3,3).")
         exchange_interactions[key] = value
 
-    return states
+    return states, contains_electric_dipole_momenta
 
 
 def _parse_rotation(value):

@@ -225,7 +225,7 @@ def _set_default_error_reporting_mode():
 def set_number_cpu(value: int = 0, permanent: bool = False) -> None:
     """
     Run this to set the number of CPUs used by SlotphPy caluclations.
-    Set permanent = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the .ini file.
     """
 
     settings.number_cpu = value
@@ -237,7 +237,7 @@ def set_number_threads(value: int = 1, permanent: bool = False) -> None:
     """
     Run this to set the number of Threads in linear algebra libraries used by
     SlotphPy caluclations. Set permanent = True to save the settings
-    permanently in the ini file.
+    permanently in the .ini file.
     """
 
     settings.number_threads = value
@@ -248,7 +248,7 @@ def set_number_threads(value: int = 1, permanent: bool = False) -> None:
 def turn_on_monitor(permanent: bool = False) -> None:
     """
     Run this to turn on the SlothPy Monitor utility.
-    Set permanent = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the .ini file.
     """
     settings.monitor = True
     if permanent:
@@ -258,7 +258,7 @@ def turn_on_monitor(permanent: bool = False) -> None:
 def turn_off_monitor(permanent: bool = False) -> None:
     """
     Run this to turn off the SlothPy Monitor utility.
-    Set permanent = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the .ini file.
     """
     settings.monitor = False
     if permanent:
@@ -268,7 +268,7 @@ def turn_off_monitor(permanent: bool = False) -> None:
 def set_plain_error_reporting_mode(permanent: bool = False) -> None:
     """
     Run this to set the custom SlothPy-style error printing without tracebacks.
-    Set permanent = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the .ini file.
     """
 
     settings.traceback = False
@@ -279,7 +279,7 @@ def set_plain_error_reporting_mode(permanent: bool = False) -> None:
 def set_default_error_reporting_mode(permanent: bool = False) -> None:
     """
     Run this to set the default full error tracebacks.
-    Set permanent = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the .ini file.
     """
 
     settings.traceback = True
@@ -290,7 +290,7 @@ def set_default_error_reporting_mode(permanent: bool = False) -> None:
 def set_double_precision(permanent: bool = False) -> None:
     """
     Run this to set the double precision (float64, complex128) in computations.
-    Set permanent = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the .ini file.
     """
 
     settings.precision = "double"
@@ -301,7 +301,7 @@ def set_double_precision(permanent: bool = False) -> None:
 def set_single_precision(permanent: bool = False) -> None:
     """
     Run this to set the single precision (float64, complex128) in computations.
-    Set permanent = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the .ini file.
     """
 
     settings.precision = "single"
@@ -312,7 +312,7 @@ def set_single_precision(permanent: bool = False) -> None:
 def set_log_level(value: int = 0, permanent: bool = False) -> None:
     """
     Run this to set the logging level (float64, complex128) in SlotphPy.
-    Set permanent = True to save the settings permanently in the ini file.
+    Set permanent = True to save the settings permanently in the .ini file.
     """
 
     settings.log_level = value

@@ -536,7 +536,7 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
 
 class SltZeemanSplitting(_MultiProcessed):
 
-    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff", "_rotation", "_hyperfine"]
+    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
      
     def __init__(self, slt_group,
         magnetic_fields: ndarray,
@@ -544,6 +544,7 @@ class SltZeemanSplitting(_MultiProcessed):
         number_of_states: int,
         states_cutoff: list = [0,0],
         rotation: ndarray = None,
+        electric_field_vector: ndarray = None,
         hyperfine: dict = None,
         number_cpu: int = 1,
         number_threads: int = 1,
@@ -559,8 +560,9 @@ class SltZeemanSplitting(_MultiProcessed):
         self._orientations = orientations
         self._states_cutoff = states_cutoff
         self._rotation = rotation
+        self._electric_field_vector = electric_field_vector
         self._hyperfine = hyperfine
-        self._args = (number_of_states,)
+        self._args = (number_of_states, electric_field_vector)
         self._executor_proxy = _zeeman_splitting_proxy
         self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine)
         self._slt_hamiltonian._mode = "em"
@@ -609,7 +611,7 @@ class SltZeemanSplitting(_MultiProcessed):
 
 class SltMagnetisation(_MultiProcessed):
 
-    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_temperatures", "_states_cutoff", "_rotation", "_hyperfine"]
+    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_temperatures", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
      
     def __init__(self, slt_group,
         magnetic_fields: ndarray,
@@ -617,6 +619,7 @@ class SltMagnetisation(_MultiProcessed):
         temperatures: ndarray,
         states_cutoff: list = [0,0],
         rotation: ndarray = None,
+        electric_field_vector: ndarray = None,
         hyperfine: dict = None,
         number_cpu: int = 1,
         number_threads: int = 1,
@@ -633,8 +636,9 @@ class SltMagnetisation(_MultiProcessed):
         self._temperatures = temperatures
         self._states_cutoff = states_cutoff
         self._rotation = rotation
+        self._electric_field_vector = electric_field_vector
         self._hyperfine = hyperfine
-        self._args = ()
+        self._args = (electric_field_vector,)
         self._executor_proxy = _magnetisation_proxy
         self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine)
         self._slt_hamiltonian._mode = "em"

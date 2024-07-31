@@ -87,9 +87,10 @@ def _calculate_zeeman_matrix(
     return magnetic_momenta
 
 
-def _zeeman_splitting(hamiltonian: Hamiltonian, magnetic_fields: ndarray, orientations: ndarray, progress_array: ndarray, zeeman_array: ndarray, number_of_states: int, process_index: int, start: int, end: int):  
+def _zeeman_splitting(hamiltonian: Hamiltonian, magnetic_fields: ndarray, orientations: ndarray, progress_array: ndarray, zeeman_array: ndarray, number_of_states: int, electric_field_vector: ndarray, process_index: int, start: int, end: int):  
     magnetic_fields_shape_0 = magnetic_fields.shape[0]
     h_cm_1 = array(H_CM_1, dtype=magnetic_fields.dtype)
+    hamiltonian._electric_field = electric_field_vector
     
     for i in range(start, end):
         hamiltonian._magnetic_field = orientations[i//magnetic_fields_shape_0, :3] * magnetic_fields[i%magnetic_fields_shape_0]
@@ -97,7 +98,7 @@ def _zeeman_splitting(hamiltonian: Hamiltonian, magnetic_fields: ndarray, orient
         progress_array[process_index] += 1
 
 
-def _zeeman_splitting_average(hamiltonian: Hamiltonian, magnetic_fields: ndarray, orientations: ndarray, progress_array: ndarray, number_of_states: int, process_index: int, start: int, end: int):
+def _zeeman_splitting_average(hamiltonian: Hamiltonian, magnetic_fields: ndarray, orientations: ndarray, progress_array: ndarray, number_of_states: int, electric_field_vector: ndarray, process_index: int, start: int, end: int):
     orientations_shape_0 = orientations.shape[0]
     start_field_index = start // orientations_shape_0
     end_field_index = (end - 1) // orientations_shape_0 + 1
@@ -105,6 +106,7 @@ def _zeeman_splitting_average(hamiltonian: Hamiltonian, magnetic_fields: ndarray
     zeeman_array = zeros((end_field_index - start_field_index, number_of_states), dtype=magnetic_fields.dtype)
     zeeman_index = 0
     h_cm_1 = array(H_CM_1, dtype=magnetic_fields.dtype)
+    hamiltonian._electric_field = electric_field_vector
 
     for i in range(start, end):
         current_field_index = i // orientations_shape_0

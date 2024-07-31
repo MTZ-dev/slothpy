@@ -17,7 +17,6 @@
 
 from numpy import ndarray, complex128, int64, ascontiguousarray, tensordot, empty, zeros_like, zeros
 
-from slothpy._general_utilities._constants import MU_B
 from slothpy._general_utilities._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
 from slothpy._general_utilities._math_expresions import _add_diagonal
 from slothpy._general_utilities._direct_product_space import _kron_mult
@@ -42,6 +41,7 @@ class Hamiltonian():
             self._sm.append(sm)
             self._interaction_matrix = interaction_matrix[0]
         self._magnetic_field = None
+        self._electric_field = None
         if self.m[0].dtype == complex128: # Here I assume that m is always present, it may change in the future!
             from slothpy._general_utilities._lapack import _zheevr_lwork as _heevr_lwork, _zheevr as _heevr, _zutmud as _utmud, _zdot3d as _dot3d
         else:
@@ -49,10 +49,10 @@ class Hamiltonian():
         self._heevr_lwork, self._heevr, self._utmud, self._dot3d = _heevr_lwork, _heevr, _utmud, _dot3d
         self._lwork = None
 
-    def build_hamiltonian(self, index: int, cutoff: int = None, mode: str = "", mode_fields: list = []):
-        hamiltonian = self._dot3d(self.m[index] if cutoff is None else ascontiguousarray(self.m[index][:, :cutoff,:cutoff]), (self._magnetic_field * -MU_B).astype(self._magnetic_field.dtype))
-        for m, mf in zip(mode, mode_fields): # Here I assume that m is always present, it may change in the future!
-            hamiltonian += self._dot3d(getattr(self, m)[index] if cutoff is None else ascontiguousarray(getattr(self, m)[index][:, :cutoff,:cutoff]), (mf).astype(mf.dtype)) # TODO Here convesion factor for varius fields
+    def build_hamiltonian(self, index: int, cutoff: int = None):
+        hamiltonian = self._dot3d(self.m[index] if cutoff is None else ascontiguousarray(self.m[index][:, :cutoff,:cutoff]), -self._magnetic_field)
+        if self._electric_field is not None:
+            hamiltonian += self._dot3d(self.p[index] if cutoff is None else ascontiguousarray(self.p[index][:, :cutoff,:cutoff]), -self._electric_field)
         _add_diagonal(hamiltonian, self.e[index])
         return hamiltonian
     

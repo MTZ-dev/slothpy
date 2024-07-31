@@ -23,7 +23,7 @@ from numpy import asarray, ascontiguousarray, allclose, identity, log, int64
 from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError, SltWarning, slothpy_exc
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere, fibonacci_over_hemisphere, meshgrid_over_hemisphere
 from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
-from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1, F_AU_VM
+from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1, B_AU_T, F_AU_VM
 from slothpy._general_utilities._io import _group_exists
 from slothpy.core._config import settings
 
@@ -85,7 +85,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                             elif not (isinstance(value, (int, int64)) and value > 0 and value <= max_threads):
                                 raise ValueError(f"The number of threads must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
                         case "magnetic_fields":
-                            value = asarray(value, order='C', dtype=settings.float)
+                            value = asarray(value, order='C', dtype=settings.float) / asarray(B_AU_T, order='C', dtype=settings.numba_float)
                             if value.ndim != 1:
                                 raise ValueError("The list of fields must be a 1D array.")
                         case "temperatures":
@@ -188,11 +188,15 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                         case "rotation":
                             value = _parse_rotation(value)
                         case "electric_field_vector":
-                            if self.attributes["Additional"] != "ELECTRIC_DIPOLE_MOMENTA":
-                                raise ValueError("The provided Hamiltonian gorup does not contain electric dipole momenta integrals.")
-                            value = asarray(value, order='C', dtype=settings.float) / settings.float(F_AU_VM)
-                            if value.ndim != 1 or value.shape[0] != 3:
-                                raise ValueError("The electric field vector must be an array-like object in the form of [x, y, z] components.")
+                            if value is not None:
+                                try:
+                                    if self.attributes["Additional"] != "ELECTRIC_DIPOLE_MOMENTA":
+                                        raise ValueError("The provided Hamiltonian gorup does not contain electric dipole momenta integrals.")
+                                    value = asarray(value, order='C', dtype=settings.float) / settings.float(F_AU_VM)
+                                    if value.ndim != 1 or value.shape[0] != 3:
+                                        raise ValueError("The electric field vector must be an array-like object in the form of [x, y, z] components.")
+                                except SltFileError:
+                                    raise ValueError(f"The provided Hamiltonian group {self._group_name} does not contain electric dipole momenta to include effect of electric field vector.")
                         case "hyperfine":
                             if value != None:
                                 raise NotImplementedError("Hyperfine interactions have not been implemented yet. They are scheduled to be released in the 0.4 major release.")

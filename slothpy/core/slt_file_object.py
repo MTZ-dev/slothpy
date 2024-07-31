@@ -291,7 +291,7 @@ class SltFile():
     
     @slothpy_exc("SltFileError")
     def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str): # in magnetic_centers dict values must be list (mutable) not tuples!!!
-        """Creates a custom, user-defined SlothPy exchange Hamiltonian and
+        r"""Creates a custom, user-defined SlothPy exchange Hamiltonian and
         saves it as a group in the corresponding .slt file to be used for
         subsequent calculations.
 
@@ -350,9 +350,9 @@ class SltFile():
         Examples
         --------
         >>> import slothpy as slt
-        >>> Dy = slt.hamiltonian_from_molcas(".", "DyCo_bas3", ".", "example", "Dy")
-        >>> Dy.hamiltonian({0:["Dy", [30,16,16], None, [0,0,0], None], 1:["demo", [30,16,16], None, [2,2,2], None], 2:["demo", [30,16,16], None, [4,4,4], None]},
-          {(0,1):[[1,2,3],[1,2,3],[1,2,3]], (0,2):[[1,2,3],[1,2,3],[1,2,3]], (1,2):[[1,2,3],[1,2,3],[1,2,3]]}, "Dy3_exchange")
+        >>> Dy = slt.hamiltonian_from_molcas('.', 'DyCo_bas3', '.', 'example', 'Dy')
+        >>> Dy.hamiltonian({0:['Dy', [30,16,16], None, [0,0,0], None], 1:['Dy', [30,16,16], None, [2,2,2], None], 2:['Dy', [30,16,16], None, [4,4,4], None]},
+          {(0,1):[[1,2,3],[1,2,3],[1,2,3]], (0,2):[[1,2,3],[1,2,3],[1,2,3]], (1,2):[[1,2,3],[1,2,3],[1,2,3]]}, 'Dy3_exchange')
         (3x Dy centers in a line with 16x16x16 exchange basis and higher term included as 'local' states)
         """
         states, contains_electric_dipole_momenta = _parse_hamiltonian_dicts(self, magnetic_centers, exchange_interactions)
@@ -401,7 +401,7 @@ class SltFile():
         number_of_states: int = 0,
         states_cutoff: list = [0, 'auto'],
         rotation: Union[ndarray[Union[float32, float64]], SltRotation, Rotation] = None,
-        electric_field_vector: ndarray = None, # sprawdzić czy hamiltonian ma dipolemomenta
+        electric_field_vector: ndarray[Union[float32, float64]] = None,
         hyperfine: dict = None,
         number_cpu: int = None,
         number_threads: int = None,
@@ -462,7 +462,7 @@ class SltFile():
             or scipy.spatial.transform.Rotation (only single rotation) used to
             rotate operators matrices. Note that the inverse matrix has to be
             given to rotate the reference frame instead.,by default None
-        electric_field_vector: ndarray, optional
+        electric_field_vector: ndarray[Union[float32, float64]], optional
             ArrayLike structure (can be converted to numpy.NDArray)
             representing a vector [Fx, Fy, Fz] of static uniform electric field
             (V/m) to be included in the Hamiltonian., by default None
@@ -525,7 +525,7 @@ class SltFile():
         distribute the workload over the provided field and orientation values.
         """
 
-        return self[hamiltonian_group_name].zeeman_splitting(magnetic_fields, orientations, number_of_states, states_cutoff, rotation, hyperfine, number_cpu, number_threads, slt_save, autotune)
+        return self[hamiltonian_group_name].zeeman_splitting(magnetic_fields, orientations, number_of_states, states_cutoff, rotation, electric_field_vector, hyperfine, number_cpu, number_threads, slt_save, autotune)
 
     def calculate_g_tensor_and_axes_doublet(
         self, group: str, doublets: ndarray[int64], slt: str = None
@@ -669,6 +669,7 @@ class SltFile():
         temperatures: ndarray[float64],
         states_cutoff: list = [0, "auto"],
         rotation: ndarray = None, ###################opisac z nowa klasa
+        electric_field_vector: ndarray[Union[float32, float64]] = None,
         hyperfine: dict = None, #################opisac ze nie ma xd
         number_cpu: int = 0,
         number_threads: int = 1,
@@ -759,7 +760,7 @@ class SltFile():
         slothpy.lebedev_laikov_grid : For the description of the prescribed
                                       Lebedev-Laikov grids.
         """
-        return self[hamiltonian_group_name].magnetisation(magnetic_fields, orientations, temperatures, states_cutoff, rotation, hyperfine, number_cpu, number_threads, slt_save, autotune)
+        return self[hamiltonian_group_name].magnetisation(magnetic_fields, orientations, temperatures, states_cutoff, rotation, electric_field_vector, hyperfine, number_cpu, number_threads, slt_save, autotune)
 
     def calculate_magnetisation_3d(
         self,

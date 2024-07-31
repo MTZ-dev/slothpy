@@ -18,7 +18,7 @@ from math import factorial
 from numpy import ndarray, array, zeros, ascontiguousarray, arange, tile, ones, argsort, take_along_axis, abs, mod, sqrt, min, max, power, float64, int64, min as np_min
 from numpy.linalg import eigh, inv
 from numba import jit, prange, types, int64, float32, float64, complex64, complex128
-from slothpy._general_utilities._constants import GE, MU_B
+from slothpy._general_utilities._constants import GE, MU_B_AU
 from slothpy.core._slothpy_exceptions import SltInputError
 
 
@@ -300,7 +300,8 @@ def _normalize_orientation(orientation: ndarray):
 )
 def _magnetic_dipole_momenta_from_spins_angular_momenta(spins: ndarray, angular_momenta: ndarray):
     ge = array(GE, dtype=spins.dtype)
-    return -(ge * spins + angular_momenta)
+    mu_b = array(MU_B_AU, dtype=spins.dtype)
+    return -mu_b*(ge * spins + angular_momenta)
 
 
 @jit([

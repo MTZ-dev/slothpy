@@ -41,7 +41,7 @@ from numpy import (
 from numpy.linalg import eigh
 from numba import jit, set_num_threads, prange, float32, float64
 from numba import types
-from slothpy._general_utilities._constants import KB, MU_B
+from slothpy._general_utilities._constants import KB, MU_B_AU, MU_B_AU_T # do drugie ma zniknac jak sie usunie wszystko stare - teraz pole jest przeliczane na a.u.
 from slothpy._general_utilities._system import (
     _get_num_of_processes,
     _distribute_chunks,
@@ -123,7 +123,7 @@ def _calculate_zeeman_matrix2(
     magnetic_momenta, soc_energies, field, orientation
 ):
     magnetic_momenta_orient = _3d_dot_nie_czaje(magnetic_momenta, orientation) #################################### Wrong signature after modifications
-    magnetic_momenta = -field * MU_B * magnetic_momenta_orient
+    magnetic_momenta = -field * MU_B_AU_T * magnetic_momenta_orient
 
     # Add SOC energy to diagonal of Hamiltonian(Zeeman) matrix
     for k in prange(magnetic_momenta.shape[0]):
@@ -188,9 +188,9 @@ def _magnetisation_proxy(slt_hamiltonian_info, sm_arrays_info_list: list[SharedM
     hamiltonian = Hamiltonian(sm_arrays_info_list, slt_hamiltonian_info[0], slt_hamiltonian_info[1])
     sm, arrays = _load_shared_memory_arrays(sm_arrays_info_list[hamiltonian._shared_memory_index:])
     if returns:
-        return _magnetisation_average(hamiltonian, *arrays, process_index, start, end) #no *args because the list is empty
+        return _magnetisation_average(hamiltonian, *arrays, *args_list, process_index, start, end)
     else:
-        _magnetisation(hamiltonian, *arrays, process_index, start, end)
+        _magnetisation(hamiltonian, *arrays, *args_list, process_index, start, end)
 
 
 def _magnetisation(
@@ -221,6 +221,7 @@ def _magnetisation_average(
     orientations: ndarray,
     temperatures: ndarray,
     progress_array: ndarray,
+    electric_field_vector: ndarray,
     process_index: int,
     start: int,
     end: int,
@@ -231,6 +232,7 @@ def _magnetisation_average(
     previous_field_index = start_field_index
     magnetisation_array = zeros((end_field_index - start_field_index, temperatures.shape[0]), dtype=temperatures.dtype)
     magnetisation_index = 0
+    hamiltonian._electric_field = electric_field_vector
     for i in range(start, end):
         current_field_index = i // orientations_shape_0
         orientation_index = i % orientations_shape_0
@@ -250,7 +252,7 @@ def _magnetisation_average(
             _magnetisation_temperature_single_center_av(magnetisation_array[magnetisation_index, :], energies, states_momenta, temperatures, orientations[orientation_index, 3])
         progress_array[process_index] += 1
 
-    return start_field_index, end_field_index, magnetisation_array
+    return start_field_index, end_field_index, magnetisation_array / array(MU_B_AU, dtype=magnetic_fields.dtype)
 
 
 @jit(
@@ -349,7 +351,7 @@ def _mt_over_fields_tensor(
         for i in range(3):
             for j in range(3):
                 # Construct Zeeman matrix
-                zeeman_matrix = -fields[f] * MU_B * magnetic_momenta[j]
+                zeeman_matrix = -fields[f] * MU_B_AU_T * magnetic_momenta[j]
                 for k in range(zeeman_matrix.shape[0]):
                     zeeman_matrix[k, k] += soc_energies[k]
 

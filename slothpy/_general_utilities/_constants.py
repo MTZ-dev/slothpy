@@ -26,10 +26,12 @@ RESET = "\033[0m"
 
 # Physical constants
 GE = 2.00231930436256  # Electron g-factor
-KB = 3.166811563e-6  # Boltzmann constant a.u./K
-MU_B = 2.127191078656686e-06  # Bohr magneton in a.u./T
+KB = 3.166811563e-6  # Boltzmann constant a.u. / K
+MU_B_AU_T = 2.127191078656686e-6  # Bohr magneton in a.u. / T
+MU_B_AU = 0.5 # Bohr magneton in a.u.
 H_CM_1 = 219474.6  # Atomic units (Hartree) to wavenumbers
 MU_B_CM_3 = 0.5584938904  # Conversion factor from Bohr magneton to cm3 for chi
-MU_T = 1.97276072296918e-06 # Conversion factor magnetic momenta in a.u. to field in T produced by the magnetic dipole (MU_B_T * MU_B ** 2)
-MU_B_T = 435974.8198 # Conversion factor from Bohr magneton in a.u./T to field in T produced by the magnetic dipole
-F_AU_VM = 5.14220675112e11 # Electric field in a.u. to V/m
+U_PI_T_A_AU = 435974.82 # Vacuum magnetic permeability / 4pi in T^2 * A^3 / a.u.
+E_PI_A_AU = 0.01179216466 # 1 / Vacuum electric permittivity / 4pi in a.u. * A^3
+B_AU_T = 2.35051757077e5 # Magnetic field in a.u. to T
+F_AU_VM = 5.14220675112e11 # Electric field in a.u. to V / m

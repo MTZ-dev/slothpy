@@ -30,7 +30,7 @@ from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELL
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
 from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
-from slothpy._general_utilities._constants import U_PI_T_A_AU, E_PI_A_AU
+from slothpy._general_utilities._constants import U_PI_A_AU, E_PI_A_AU
 from slothpy._general_utilities._direct_product_space import _kron_mult
 from slothpy.core._delayed_methods import *
 
@@ -340,8 +340,8 @@ class SltGroup:
         return magnetic_centers, exchange_interactions, states, electric_dipole
     
     @validate_input("HAMILTONIAN", only_hamiltonian_check=True)
-    def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None):
-            return SltHamiltonian(self, states_cutoff, rotation, hyperfine)
+    def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, electric_interactions=False, hyperfine=None):
+            return SltHamiltonian(self, states_cutoff, rotation, electric_interactions, hyperfine)
     
     @validate_input("HAMILTONIAN")
     def zeeman_splitting(
@@ -575,11 +575,12 @@ class SltDatasetJM():
 
 class SltHamiltonian():
 
-    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_mode"]
+    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_electric_interactions", "_mode"]
 
-    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None) -> None:
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, electric_interactions=False, hyperfine=None) -> None:
         self._hdf5: str = slt_group._hdf5
         self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine)
+        self._electric_interactions = electric_interactions
         self._mode: str = None # "eslpjm"
     
     @property
@@ -630,10 +631,10 @@ class SltHamiltonian():
         n = len(self._magnetic_centers.keys())
         if not any(value[3] is None for value in self._magnetic_centers.values()):
             dipole_magnetic_momenta_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).magnetic_dipole_momentum_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
-            self._add_dipole_interaction(dipole_magnetic_momenta_dict, n, U_PI_T_A_AU, result)
-            if self._electric_dipole:
+            result = self._add_dipole_interaction(dipole_magnetic_momenta_dict, n, U_PI_A_AU, result)
+            if self._electric_dipole and self._electric_interactions: ### tylko ta czesc robi spontaniczna magnetyzacje co jest dziwne ale moze ok
                 dipole_electric_momenta_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).electric_dipole_momentum_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
-                self._add_dipole_interaction(dipole_electric_momenta_dict, n, E_PI_A_AU, result)
+                result = self._add_dipole_interaction(dipole_electric_momenta_dict, n, E_PI_A_AU, result)
 
         for (key1, key2), J in self._exchange_interactions.items():
             spin_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).spin_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
@@ -648,7 +649,6 @@ class SltHamiltonian():
                     result += _kron_mult(ops)
 
         #TODO: hyperfine interactions and different types of interactions (J,L???)
-
         return result
     
     def _add_dipole_interaction(self, dipole_momenta_dict, n, coeff, result):
@@ -668,6 +668,8 @@ class SltHamiltonian():
                     ops[key1] = coeff * dipole_momenta_dict[key1][i]
                     ops[key2] = dipole_momenta_dict[key2][i]
                     result += _kron_mult(ops)
+        
+        return result
 
     @property
     def arrays_to_shared_memory(self):

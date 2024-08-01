@@ -139,9 +139,9 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                             if value[0] == 0:
                                 value[0] = int(self.attributes["States"])
                             elif not isinstance(value[0], (int, int64)) or value[0] < 0:
-                                raise ValueError(f"The states' cutoff must be a nonnegative integer less than or equal to the overall number of available states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
+                                raise ValueError(f"The states' cutoff must be a nonnegative integer less than or equal to the overall number of available states: {self.attributes['States']} (or 0 for all the states).")
                             elif value[0] > self.attributes["States"]:
-                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available states: {self[bound_args.arguments['group_name']].attributes['States']} (or 0 for all the states).")
+                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available states: {self.attributes['States']} (or 0 for all the states).")
                             if value[1] == 0:
                                 value[1] = value[0]
                             if value[1] == "auto":
@@ -196,7 +196,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                                     if value.ndim != 1 or value.shape[0] != 3:
                                         raise ValueError("The electric field vector must be an array-like object in the form of [x, y, z] components.")
                                 except SltFileError:
-                                    raise ValueError(f"The provided Hamiltonian group {self._group_name} does not contain electric dipole momenta to include effect of electric field vector.")
+                                    raise ValueError(f"The provided Hamiltonian {BLUE}Group{RESET}: '{self._group_name}' does not contain electric dipole momenta to include effect of electric field vector.")
                         case "hyperfine":
                             if value != None:
                                 raise NotImplementedError("Hyperfine interactions have not been implemented yet. They are scheduled to be released in the 0.4 major release.")

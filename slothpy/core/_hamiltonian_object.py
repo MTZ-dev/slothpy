@@ -78,26 +78,33 @@ class Hamiltonian():
             hamiltonian = self._interaction_matrix.copy()
             result_matrix = zeros_like(hamiltonian) if isinstance(orientation, ndarray) else zeros((3, hamiltonian.shape[0], hamiltonian.shape[1]))
             for i in range(self._number_of_centers):
+                local_states_to_add = False ### popraw to z tą flagą bo te 4c if to jakies szaleństwo z tymi petlami
                 zeeman_matrix = self.build_hamiltonian(i)
                 ops = [ascontiguousarray(zeeman_matrix[:self._cutoff_info_list[i][1], :self._cutoff_info_list[i][1]]) if k == i else self._cutoff_info_list[k][1] for k in range(self._number_of_centers)]
                 hamiltonian += _kron_mult(ops)
-                start_state = self._cutoff_info_list[i][2] + 1
-                _lwork = self._heevr_lwork(zeeman_matrix.shape[1], jobz='V', range='I', il=start_state, iu=zeeman_matrix.shape[1])
-                energies, eigenvectors = self._heevr(zeeman_matrix.T, *_lwork, jobz='V', range='I', il=start_state, iu=zeeman_matrix.shape[1])
-                energies_list.append(energies)
+                if self._cutoff_info_list[i][2] < self._cutoff_info_list[i][0]:
+                    local_states_to_add = True
+                    start_state = self._cutoff_info_list[i][2] + 1
+                    _lwork = self._heevr_lwork(zeeman_matrix.shape[1], jobz='V', range='I', il=start_state, iu=zeeman_matrix.shape[1])
+                    energies, eigenvectors = self._heevr(zeeman_matrix.T, *_lwork, jobz='V', range='I', il=start_state, iu=zeeman_matrix.shape[1])
+                    energies_list.append(energies)
                 if not isinstance(orientation, ndarray):
-                    result_local = empty((3, eigenvectors.shape[1]), dtype=energies.dtype, order='C')
+                    if local_states_to_add:
+                        result_local = empty((3, eigenvectors.shape[1]), dtype=energies.dtype, order='C')
                     for k in range(3):
                         matrix_local = getattr(self, mode)[i][k]
-                        result_local[k,:] = self._utmud(eigenvectors, matrix_local.T)
                         ops_result = [ascontiguousarray(matrix_local[:self._cutoff_info_list[i][1], :self._cutoff_info_list[i][1]]) if l == i else self._cutoff_info_list[l][1] for l in range(self._number_of_centers)]
                         result_matrix[k,:,:] += _kron_mult(ops_result)
+                        if local_states_to_add:
+                            result_local[k,:] = self._utmud(eigenvectors, matrix_local.T)
                 else: 
                     matrix_local = tensordot(getattr(self, mode)[i], orientation, axes=(0,0))
-                    result_local = self._utmud(eigenvectors, matrix_local.T)
                     ops_result = [ascontiguousarray(matrix_local[:self._cutoff_info_list[i][1], :self._cutoff_info_list[i][1]]) if l == i else self._cutoff_info_list[l][1] for l in range(self._number_of_centers)]
                     result_matrix += _kron_mult(ops_result)
-                result_list.append(result_local)
+                    if local_states_to_add:
+                        result_local = self._utmud(eigenvectors, matrix_local.T)
+                if local_states_to_add:
+                    result_list.append(result_local)
             if self._lwork is None:
                 self._lwork = self._heevr_lwork(hamiltonian.shape[1], jobz='V', range='I', il=1, iu=self._cutoff)
             energies, eigenvectors =  self._heevr(hamiltonian.T, *self._lwork, jobz='V', range='I', il=1, iu=self._cutoff)

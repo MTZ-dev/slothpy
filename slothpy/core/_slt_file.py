@@ -19,10 +19,11 @@ import warnings
 from ast import literal_eval
 
 from h5py import File, Group, Dataset
-from numpy import ndarray, array, empty, float32, float64, tensordot, abs
+from numpy import ndarray, array, empty, float32, float64, tensordot, abs, diag
 from numpy.exceptions import ComplexWarning
 from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
+from scipy.linalg import eigvalsh
 
 from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError
 from slothpy.core._config import settings
@@ -32,6 +33,7 @@ from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta
 from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
 from slothpy._general_utilities._constants import U_PI_A_AU, E_PI_A_AU
 from slothpy._general_utilities._direct_product_space import _kron_mult
+from slothpy._general_utilities._math_expresions import _subtract_const_diagonal
 from slothpy.core._delayed_methods import *
 
 
@@ -305,9 +307,18 @@ class SltGroup:
     def _retrieve_hamiltonian_dict(self, states_cutoff=[0,0], rotation=None, hyperfine=None, coordinates=None):
         states = self.attributes["States"]
         electric_dipole = False
+        magnetic_interactions = False
+        electric_interactions = False
         try:
             if self.attributes["Additional"] == "ELECTRIC_DIPOLE_MOMENTA":
                 electric_dipole = True
+        except SltFileError:
+            pass
+        try:
+            if "m" in self.attributes["Interactions"]:
+                magnetic_interactions = True
+            if "p" in self.attributes["Interactions"]:
+                electric_interactions = True
         except SltFileError:
             pass
         if self.attributes["Kind"] == "SLOTHPY":
@@ -337,11 +348,11 @@ class SltGroup:
             magnetic_centers = {0:(self._group_name, (states_cutoff[0],0,states_cutoff[1]), rotation, coordinates, hyperfine)}
             exchange_interactions = None
         
-        return magnetic_centers, exchange_interactions, states, electric_dipole
+        return magnetic_centers, exchange_interactions, states, electric_dipole, magnetic_interactions, electric_interactions
     
     @validate_input("HAMILTONIAN", only_hamiltonian_check=True)
-    def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, electric_interactions=False, hyperfine=None):
-            return SltHamiltonian(self, states_cutoff, rotation, electric_interactions, hyperfine)
+    def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None):
+            return SltHamiltonian(self, states_cutoff, rotation, hyperfine)
     
     @validate_input("HAMILTONIAN")
     def zeeman_splitting(
@@ -575,12 +586,11 @@ class SltDatasetJM():
 
 class SltHamiltonian():
 
-    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_electric_interactions", "_mode"]
+    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode"]
 
-    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, electric_interactions=False, hyperfine=None) -> None:
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None) -> None:
         self._hdf5: str = slt_group._hdf5
-        self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine)
-        self._electric_interactions = electric_interactions
+        self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole, self._magnetic_interactions, self._electric_interactions = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine)
         self._mode: str = None # "eslpjm"
     
     @property
@@ -629,10 +639,10 @@ class SltHamiltonian():
     def interaction_matrix(self): # you will have to move implementation of this somewhere else not to import linalg and numpy etc. and tha same with everything because slt file is used everywhere 
         result = zeros((self._states, self._states), dtype=settings.complex)
         n = len(self._magnetic_centers.keys())
-        if not any(value[3] is None for value in self._magnetic_centers.values()):
+        if not any(value[3] is None for value in self._magnetic_centers.values()) and self._magnetic_interactions:
             dipole_magnetic_momenta_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).magnetic_dipole_momentum_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
             result = self._add_dipole_interaction(dipole_magnetic_momenta_dict, n, U_PI_A_AU, result)
-            if self._electric_dipole and self._electric_interactions: ### tylko ta czesc robi spontaniczna magnetyzacje co jest dziwne ale moze ok
+            if self._electric_dipole and self._electric_interactions:
                 dipole_electric_momenta_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).electric_dipole_momentum_matrices(stop_state=self._magnetic_centers[key][1][1], rotation=self._magnetic_centers[key][2]).eval().conj() for key in self._magnetic_centers.keys()}
                 result = self._add_dipole_interaction(dipole_electric_momenta_dict, n, E_PI_A_AU, result)
 
@@ -647,6 +657,14 @@ class SltHamiltonian():
                     op2 = spin_dict[key2][m]
                     ops = [op1 if k == key1 else op2 if k == key2 else spin_dict[k].shape[1] for k in range(n)]
                     result += _kron_mult(ops)
+        
+        result_tmp = result.copy()
+        energy_dict = {key: SltGroup(self._hdf5, self._magnetic_centers[key][0]).states_energies_au(stop_state=self._magnetic_centers[key][1][1]).eval().astype(result.dtype) for key in self._magnetic_centers.keys()}
+        for i in range(n):
+            ops = [diag(energy_dict[k]) if k == i else energy_dict[k].shape[0] for k in range(n)]
+            result_tmp += _kron_mult(ops)
+        eigenvalues = eigvalsh(result_tmp, driver="evr", check_finite=False, overwrite_a=True, overwrite_b=True)
+        _subtract_const_diagonal(result, eigenvalues[0])
 
         #TODO: hyperfine interactions and different types of interactions (J,L???)
         return result

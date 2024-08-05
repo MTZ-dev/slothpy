@@ -33,6 +33,6 @@ H_CM_1 = 219474.6  # Atomic units (Hartree) to wavenumbers
 MU_B_CM_3 = 0.5584938904  # Conversion factor from Bohr magneton to cm3 for chi
 U_PI_T_A_AU = 435974.82 # Vacuum magnetic permeability / 4pi in T^2 * A^3 / a.u.
 U_PI_A_AU = 7.891042874134896e-06 # Vacuum magnetic permeability / 4pi in A^3 / a.u.
-E_PI_A_AU = 0.01179216466 # 1 / Vacuum electric permittivity / 4pi in a.u. * A^3
+E_PI_A_AU = 0.148184534295668233 # 1 / Vacuum electric permittivity / 4pi in a.u. * A^3
 B_AU_T = 2.35051757077e5 # Magnetic field in a.u. to T
 F_AU_VM = 5.14220675112e11 # Electric field in a.u. to V / m

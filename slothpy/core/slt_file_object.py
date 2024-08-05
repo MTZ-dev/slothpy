@@ -290,8 +290,9 @@ class SltFile():
             del file[key]
     
     @slothpy_exc("SltFileError")
-    def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str): # in magnetic_centers dict values must be list (mutable) not tuples!!!
-        r"""Creates a custom, user-defined SlothPy exchange Hamiltonian and
+    def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str, magnetic_dipole_interactions: bool = False, electric_dipole_interactions: bool = False): # in magnetic_centers dict values must be list (mutable) not tuples!!!
+        r"""
+        Creates a custom, user-defined SlothPy exchange Hamiltonian and
         saves it as a group in the corresponding .slt file to be used for
         subsequent calculations.
 
@@ -346,15 +347,25 @@ class SltFile():
             Name of the group to which the Hamiltonian will be saved.
             The user can use this name for every available method, the same as 
             any other Hamiltonian groups.
+        magnetic_dipole_interactions: bool, optional
+            Turns on the inclusion of magnetic dipole interactions between
+            centers if coordinates for all of them are given in the
+            magnetic_centers dictionary., by default False
+        electric_dipole_interactions: bool, optional
+            Turns on the inclusion of electric dipole interactions between
+            centers if coordinates for all of them are given in the
+            magnetic_centers dictionary and all electric dipole momenta matrix
+            elements are accessible., by default False
         
         Examples
         --------
         >>> import slothpy as slt
         >>> Dy = slt.hamiltonian_from_molcas('.', 'DyCo_bas3', '.', 'example', 'Dy')
         >>> Dy.hamiltonian({0:['Dy', [30,16,16], None, [0,0,0], None], 1:['Dy', [30,16,16], None, [2,2,2], None], 2:['Dy', [30,16,16], None, [4,4,4], None]},
-          {(0,1):[[1,2,3],[1,2,3],[1,2,3]], (0,2):[[1,2,3],[1,2,3],[1,2,3]], (1,2):[[1,2,3],[1,2,3],[1,2,3]]}, 'Dy3_exchange')
+          {(0,1):[[1,2,3],[1,2,3],[1,2,3]], (0,2):[[1,2,3],[1,2,3],[1,2,3]], (1,2):[[1,2,3],[1,2,3],[1,2,3]]}, 'Dy3_exchange', True)
         (3x Dy centers in a line with 16x16x16 exchange basis and higher term included as 'local' states)
         """
+
         states, contains_electric_dipole_momenta = _parse_hamiltonian_dicts(self, magnetic_centers, exchange_interactions)
         with File(self._hdf5, 'a') as file:
             group = file.create_group(slt_save)
@@ -364,7 +375,10 @@ class SltFile():
             group.attrs["Description"] = f"A custom exchange Hamiltonian created by the user."
             if contains_electric_dipole_momenta:
                 group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
-            
+            interactions = "mp" if electric_dipole_interactions and magnetic_dipole_interactions else "m" if magnetic_dipole_interactions else "p" if electric_dipole_interactions else None
+            if interactions is not None:
+                group.attrs["Interactions"] = interactions
+
             def save_dict_to_group(group, data_dict, subgroup_name):
                 subgroup = group.create_group(subgroup_name)
                 for key, value in data_dict.items():

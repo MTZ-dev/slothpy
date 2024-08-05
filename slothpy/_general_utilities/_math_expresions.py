@@ -60,6 +60,24 @@ def _add_diagonal(matrix, diagonal):
         matrix[k, k] += diagonal[k]
 
 
+@jit(
+    [
+        (types.Array(complex64, 2, 'C', False), float32),
+        (types.Array(complex128, 2, 'C', False), float64)
+    ],
+nopython=True,
+nogil=True,
+cache=True,
+fastmath=True,
+inline="always",
+parallel=True,
+)
+def _subtract_const_diagonal(matrix, const):
+
+    for k in prange(matrix.shape[0]):
+        matrix[k, k] -= const
+
+
 @jit("float64(float64, float64)", nopython=True, cache=True, nogil=True)
 def _binom(n, k):
     if k > n - k:

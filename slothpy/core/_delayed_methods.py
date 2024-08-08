@@ -564,7 +564,7 @@ class SltZeemanSplitting(_MultiProcessed):
         self._hyperfine = hyperfine
         self._args = (number_of_states, electric_field_vector)
         self._executor_proxy = _zeeman_splitting_proxy
-        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine)
+        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False)
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
     
     def _load_args_arrays(self):
@@ -640,7 +640,7 @@ class SltMagnetisation(_MultiProcessed):
         self._hyperfine = hyperfine
         self._args = (electric_field_vector,)
         self._executor_proxy = _magnetisation_proxy
-        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine)
+        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, True)
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
     
     def _load_args_arrays(self):

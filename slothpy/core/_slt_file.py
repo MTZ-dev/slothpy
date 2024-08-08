@@ -304,7 +304,7 @@ class SltGroup:
     def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesMagneticDipoleMomenta:
         return SltStatesMagneticDipoleMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
     
-    def _retrieve_hamiltonian_dict(self, states_cutoff=[0,0], rotation=None, hyperfine=None, coordinates=None):
+    def _retrieve_hamiltonian_dict(self, states_cutoff=[0,0], rotation=None, hyperfine=None, coordinates=None, local_states=True):
         states = self.attributes["States"]
         electric_dipole = False
         magnetic_interactions = False
@@ -343,16 +343,19 @@ class SltGroup:
                     return data_dict
                 
                 magnetic_centers = load_dict_from_group(group, "MAGNETIC_CENTERS")
+                if not local_states:
+                    for center in magnetic_centers.values():
+                        center[1][0] = center[1][1]
                 exchange_interactions = load_dict_from_group(group, "EXCHANGE_INTERACTIONS")
         else:
             magnetic_centers = {0:(self._group_name, (states_cutoff[0],0,states_cutoff[1]), rotation, coordinates, hyperfine)}
             exchange_interactions = None
         
-        return magnetic_centers, exchange_interactions, states, electric_dipole, magnetic_interactions, electric_interactions
+        return magnetic_centers, exchange_interactions, states, electric_dipole, magnetic_interactions, electric_interactions, local_states
     
     @validate_input("HAMILTONIAN", only_hamiltonian_check=True)
-    def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None):
-            return SltHamiltonian(self, states_cutoff, rotation, hyperfine)
+    def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True):
+            return SltHamiltonian(self, states_cutoff, rotation, hyperfine, local_states)
     
     @validate_input("HAMILTONIAN")
     def zeeman_splitting(
@@ -586,11 +589,11 @@ class SltDatasetJM():
 
 class SltHamiltonian():
 
-    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode"]
+    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
 
-    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None) -> None:
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None:
         self._hdf5: str = slt_group._hdf5
-        self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole, self._magnetic_interactions, self._electric_interactions = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine)
+        self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole, self._magnetic_interactions, self._electric_interactions, self._local_states = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine, local_states)
         self._mode: str = None # "eslpjm"
     
     @property
@@ -701,6 +704,6 @@ class SltHamiltonian():
         info_list = []
         for i in range(len(self._magnetic_centers.keys())):
             info_list.append(self._magnetic_centers[i][1])
-        return (self._mode, info_list)
+        return (self._mode, info_list, self._local_states)
 
 

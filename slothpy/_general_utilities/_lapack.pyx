@@ -8,7 +8,7 @@ from cython cimport boundscheck, wraparound
 
 cimport numpy as np
 import numpy as np
-from scipy.linalg.cython_blas cimport zaxpy, zhemm, zdotc, caxpy, chemm, cdotc
+from scipy.linalg.cython_blas cimport zaxpy, zgemm, zhemm, zdotc, caxpy, cgemm, chemm, cdotc
 from scipy.linalg.cython_lapack cimport zheevr, cheevr
 
 # SlothPy
@@ -139,6 +139,27 @@ def _zheevr(np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a, int lwork, in
         return w[:m], z[:, :m]
     else:
         return w[:m]
+
+
+@boundscheck(False)
+@wraparound(False)
+def _zutmu(np.ndarray[np.complex128_t, ndim=2, mode="fortran"] U,
+                          np.ndarray[np.complex128_t, ndim=2, mode="fortran"] M) -> np.ndarray[np.complex128_t]:
+    cdef int m = U.shape[0]
+    cdef int n = U.shape[1]
+    cdef np.npy_intp *dims = [m, n]
+    cdef np.npy_intp *dim = [n, n]
+    cdef np.ndarray[np.complex128_t, ndim=2, mode="fortran"] C = np.PyArray_EMPTY(2, dim, np.NPY_COMPLEX128, 1)
+    cdef np.ndarray[np.complex128_t, ndim=2, mode="fortran"] B = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX128, 1)
+
+    cdef np.complex128_t alpha = 1.0 + 0.0j
+    cdef np.complex128_t beta = 0.0 + 0.0j
+
+    with nogil:
+        zhemm(b"L", b"U", &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
+        zgemm(b"C", b"N", &n, &n, &m, &alpha, &U[0, 0], &m, &B[0, 0], &m, &beta, &C[0, 0], &n)
+
+    return C
 
 
 @boundscheck(False)
@@ -298,6 +319,29 @@ def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int
         return w[:m], z[:, :m]
     else:
         return w[:m]
+
+
+@boundscheck(False)
+@wraparound(False)
+def _cutmu(np.ndarray[np.complex64_t, ndim=2, mode="fortran"] U,
+                          np.ndarray[np.complex64_t, ndim=2, mode="fortran"] M) -> np.ndarray[np.complex64_t]:
+    cdef int m = U.shape[0]
+    cdef int n = U.shape[1]
+    cdef np.npy_intp *dims = [m, n]
+    cdef np.npy_intp *dim = [n, n]
+    cdef np.ndarray[np.complex64_t, ndim=2, mode="fortran"] C = np.PyArray_EMPTY(2, dim, np.NPY_COMPLEX64, 1)
+    cdef np.ndarray[np.complex64_t, ndim=2, mode="fortran"] B = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX64, 1)
+
+    cdef int i
+    cdef np.complex64_t alpha = 1.0 + 0.0j
+    cdef np.complex64_t beta = 0.0 + 0.0j
+    cdef int one = 1
+
+    with nogil:
+        chemm(b"L", b"U", &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
+        cgemm(b"C", b"N", &n, &n, &m, &alpha, &U[0, 0], &m, &B[0, 0], &m, &beta, &C[0, 0], &n)
+
+    return C
 
 
 @boundscheck(False)

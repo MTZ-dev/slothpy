@@ -147,7 +147,7 @@ def _magnetic_moment_partition_function(energies, states_momenta, temperature):
     z = 0
     m = 0
     for i in prange(energies.shape[0]):
-        e = exp(-energies[i] / factor)
+        e = exp(energies[0] - energies[i] / factor)
         z += e
         m += e * states_momenta[i]
 
@@ -185,7 +185,7 @@ def _momenta_partition_functions_multi_center_av(momenta_array, partition_functi
 
 
 def _magnetisation_proxy(slt_hamiltonian_info, sm_arrays_info_list: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, returns: bool = False):
-    hamiltonian = Hamiltonian(sm_arrays_info_list, slt_hamiltonian_info[0], slt_hamiltonian_info[1])
+    hamiltonian = Hamiltonian(sm_arrays_info_list, slt_hamiltonian_info)
     sm, arrays = _load_shared_memory_arrays(sm_arrays_info_list[hamiltonian._shared_memory_index:])
     if returns:
         return _magnetisation_average(hamiltonian, *arrays, *args_list, process_index, start, end)
@@ -240,7 +240,7 @@ def _magnetisation_average(
             magnetisation_index += 1
             previous_field_index = current_field_index
         hamiltonian._magnetic_field = magnetic_fields[current_field_index] * orientations[orientation_index, :3]
-        energies, states_momenta = hamiltonian.slpjm_under_fields("m", orientations[orientation_index, :3])
+        energies, states_momenta = hamiltonian.e_slpjm_under_fields("m", orientations[orientation_index, :3])
         if isinstance(energies, list):
             momenta = zeros((len(energies), temperatures.shape[0]), dtype=temperatures.dtype, order='C')
             partition_functions = zeros((len(energies), temperatures.shape[0]), dtype=temperatures.dtype, order='C')

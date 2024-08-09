@@ -600,46 +600,46 @@ class SltHamiltonian():
     def e(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).states_energies_au(stop_state=center[1][0]).eval())
+            data.append(SltStatesEnergiesAu(SltGroup(self._hdf5, center[0]), stop_state=center[1][0]).eval())
         return data
 
     @property
     def s(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).spin_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj()) #return conj of hermitian matrix in c-order to prepare it already for lapack f-order using .T
+            data.append(SltSpinMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
         
     @property
     def l(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).angular_momentum_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj())
+            data.append(SltAngularMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
     
     @property
     def p(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).electric_dipole_momentum_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj())
+            data.append(SltElectricDipoleMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
 
     @property
     def j(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).total_angular_momentum_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj())
+            data.append(SltTotalAngularMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
 
     @property
     def m(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltGroup(self._hdf5, center[0]).magnetic_dipole_momentum_matrices(stop_state=center[1][0], rotation=center[2]).eval().conj())
+            data.append(SltMagneticDipoleMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
         return data
 
     @property
-    def interaction_matrix(self): # you will have to move implementation of this somewhere else not to import linalg and numpy etc. and tha same with everything because slt file is used everywhere 
+    def interaction_matrix(self):
         result = zeros((self._states, self._states), dtype=settings.complex)
         n = len(self._magnetic_centers.keys())
         if not any(value[3] is None for value in self._magnetic_centers.values()) and self._magnetic_interactions:

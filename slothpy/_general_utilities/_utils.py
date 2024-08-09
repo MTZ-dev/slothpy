@@ -93,3 +93,23 @@ def slpjm_components_driver(slt_group, kind: Literal["diagonal", "full"], which:
         if kind == "full":
             return _rotate_and_return_components(slt_group, which, xyz, start_state, stop_state, rotation)
 
+
+def _convert_seconds_dd_hh_mm_ss(seconds):
+    days = seconds // 86400
+    hours = (seconds % 86400) // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    
+    result = []
+    
+    if days > 0:
+        result.append(f"{days:.0f} day{'s' if days > 1 else ''}")
+    if hours > 0:
+        result.append(f"{hours:.0f} hour{'s' if hours > 1 else ''}")
+    if minutes > 0:
+        result.append(f"{minutes:.0f} minute{'s' if minutes > 1 else ''}")
+
+    result.append(f"{seconds:.2f} second{'s' if seconds != 1 else ''}")
+    
+    return ', '.join(result)
+

@@ -32,6 +32,7 @@ from slothpy.core._slothpy_exceptions import slothpy_exc_methods as slothpy_exc
 from slothpy._general_utilities._system import SltProcessPool, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array, _dummy
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, YELLOW, PURPLE, RESET
 from slothpy._general_utilities._io import _save_data_to_slt
+from slothpy._general_utilities._utils import _convert_seconds_dd_hh_mm_ss
 from slothpy._gui._monitor_gui import _run_monitor_gui
 
 def ensure_ready(func):
@@ -225,7 +226,7 @@ class _MultiProcessed(_SingleProcessed):
         return result
 
     @slothpy_exc("SltCompError")
-    def autotune(self, timeout: float = float("inf")):
+    def autotune(self, timeout: float = float("inf"), max_processes: int = 0):
         if self._is_from_file:
             print(f"The {self.__class__.__name__} object was loaded from the .slt file. There is nothing to autotune.")
             return
@@ -243,6 +244,8 @@ class _MultiProcessed(_SingleProcessed):
             self._create_shared_memory()
             for number_threads in range(min(64, self._number_cpu), 0, -1):
                 number_processes = self._number_cpu // number_threads
+                if number_processes > max_processes:
+                    break
                 if number_processes >= self._number_to_parallelize:
                     number_processes = self._number_to_parallelize
                     number_threads = self._number_cpu // number_processes
@@ -327,7 +330,7 @@ class _MultiProcessed(_SingleProcessed):
                         sm_progress.unlink()
                         raise
             time_info = f" (starting from now - [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}])" if self._autotune_from_run else ''
-            print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}." + (f"\nThe calculation time{time_info} is estimated to be at least: {GREEN}{best_time/1e9:.2f} s{RESET}." if best_time != float("inf") else ""))
+            print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}." + (f"\nThe calculation time{time_info} is estimated to take at least: {GREEN}{_convert_seconds_dd_hh_mm_ss(best_time/1e9)}{RESET}." if best_time != float("inf") else ""))
             self._number_processes, self._number_threads = final_number_of_processes, final_number_of_threads
             if self._ready:
                 self._result = result_tmp

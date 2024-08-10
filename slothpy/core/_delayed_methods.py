@@ -599,8 +599,7 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
         self._orientations = self._slt_group["ORIENTATIONS"][:]
 
     def _plot(self, **kwargs):
-        from slothpy._general_utilities._ploting_utilities import _plot_zeeman_splitting
-        _plot_zeeman_splitting(self._, self._result, self._magnetic_fields, **kwargs)
+        pass
  
     def _to_data_frame(self):
         pass

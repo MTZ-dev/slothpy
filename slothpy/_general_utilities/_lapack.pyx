@@ -56,11 +56,13 @@ def _zheevr_lwork(int n, jobz ='N', range='A', int il=0, int iu=0, np.float64_t 
         np.float64_t abs_tol = -1
 
     a = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX128, 1)
-    if range == 'I':
-        w = np.PyArray_EMPTY(1, [iu-il+1], np.NPY_FLOAT64, 1)
+    w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT64, 1)
+    if range == 'A':
+        isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+    elif range == 'I':
+        isuppz = np.PyArray_EMPTY(1, [2*(iu-il+1)], np.NPY_INT32, 1)
     else:
-        w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT64, 1)
-    isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+        isuppz = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
     if jobz == 'V':
         if range == 'I':
             z = np.PyArray_EMPTY(2, [n, iu-il+1], np.NPY_COMPLEX128, 1)
@@ -112,11 +114,13 @@ def _zheevr(np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a, int lwork, in
     if a.shape[0] != a.shape[1]:
         raise ValueError("Input matrix must be square")
 
-    if range == 'I':
-        w = np.PyArray_EMPTY(1, [iu-il+1], np.NPY_FLOAT64, 1)
+    w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT64, 1)
+    if range == 'A':
+        isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+    elif range == 'I':
+        isuppz = np.PyArray_EMPTY(1, [2*(iu-il+1)], np.NPY_INT32, 1)
     else:
-        w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT64, 1)
-    isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+        isuppz = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
     if jobz == 'V':
         if range == 'I':
             z = np.PyArray_EMPTY(2, [n, iu-il+1], np.NPY_COMPLEX128, 1)
@@ -236,11 +240,13 @@ def _cheevr_lwork(int n, jobz='N', range='A', int il=0, int iu=0, np.float32_t v
         np.float32_t abs_tol = -1
 
     a = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX64, 1)
-    if range == 'I':
-        w = np.PyArray_EMPTY(1, [iu-il+1], np.NPY_FLOAT32, 1)
+    w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT32, 1)
+    if range == 'A':
+        isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+    elif range == 'I':
+        isuppz = np.PyArray_EMPTY(1, [2*(iu-il+1)], np.NPY_INT32, 1)
     else:
-        w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT32, 1)
-    isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+        isuppz = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
     if jobz == 'V':
         if range == 'I':
             z = np.PyArray_EMPTY(2, [n, iu-il+1], np.NPY_COMPLEX64, 1)
@@ -292,11 +298,14 @@ def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int
     if a.shape[0] != a.shape[1]:
         raise ValueError("Input matrix must be square")
 
-    if range == 'I':
-        w = np.PyArray_EMPTY(1, [iu-il+1], np.NPY_FLOAT32, 1)
+
+    w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT32, 1)
+    if range == 'A':
+        isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+    elif range == 'I':
+        isuppz = np.PyArray_EMPTY(1, [2*(iu-il+1)], np.NPY_INT32, 1)
     else:
-        w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT32, 1)
-    isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+        isuppz = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
     if jobz == 'V':
         if range == 'I':
             z = np.PyArray_EMPTY(2, [n, iu-il+1], np.NPY_COMPLEX64, 1)
@@ -308,10 +317,10 @@ def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int
     work = np.PyArray_EMPTY(1, [lwork], np.NPY_COMPLEX64, 1)
     rwork = np.PyArray_EMPTY(1, [lrwork], np.NPY_FLOAT32, 1)
     iwork = np.PyArray_EMPTY(1, [liwork], np.NPY_INT32, 1)
-    
+
     with nogil:
         cheevr(&jobz_char, &range_char, &uplo, &n, &a[0,0], &lda, &vl, &vu, &il, &iu, &abs_tol, &m, &w[0], &z[0,0], &ldz, &isuppz[0], &work[0], &lwork, &rwork[0], &lrwork, &iwork[0], &liwork, &info)
-        
+
     if info != 0:
         raise ValueError(f"Error in LAPACK zheevr: info={info}")
         

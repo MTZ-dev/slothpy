@@ -373,7 +373,6 @@ def _validate_and_compute_partition_product_and_magnetisation_sum(partition_arra
     sorted_indices = argsort(partition_array, axis=0)[::-1]
     sorted_partition_array = take_along_axis(partition_array, sorted_indices, axis=0)
     sorted_momenta_array = take_along_axis(momenta_array, sorted_indices, axis=0)
-
     partition_product = ones(partition_array.shape[1], dtype=sorted_momenta_array.dtype)
     magnetisation_sum = ones(momenta_array.shape[1], dtype=sorted_momenta_array.dtype)
 

@@ -125,7 +125,7 @@ class Hamiltonian():
                         result_matrix[k,:,:] += _kron_mult(ops_result)
                         if local_states_to_add:
                             result_local[k,:] = self._utmud(eigenvectors, matrix_local.T)
-                else: 
+                else:
                     matrix_local = tensordot(getattr(self, mode)[i], orientation, axes=(0,0))
                     ops_result = [ascontiguousarray(matrix_local[:self._cutoff_info_list[i][1], :self._cutoff_info_list[i][1]]) if l == i else self._cutoff_info_list[l][1] for l in range(self._number_of_centers)]
                     result_matrix += _kron_mult(ops_result)

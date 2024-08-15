@@ -14,28 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from sys import argv
-from typing import Union
+from typing import Union, Literal
 from multiprocessing import current_process
 from pkg_resources import resource_filename
 from numpy import linspace
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.cm
-from matplotlib.backends.backend_qt5agg import (
+from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg,
     NavigationToolbar2QT as NavigationToolbar,
 )
 from matplotlib.figure import Figure
 from matplotlib.pyplot import close
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QApplication,
     QWidget,
     QMainWindow,
     QVBoxLayout,
     QVBoxLayout,
-    QAction,
     QFileDialog,
 )
-from PyQt5.QtGui import QIcon, QCloseEvent, QFont
+from PyQt6.QtGui import QIcon, QCloseEvent, QFont, QAction
 from cycler import cycler
 
 from slothpy._general_utilities._system import _is_notebook
@@ -487,3 +486,36 @@ def _custom_color_cycler(number_of_colors: int, cmap1: str, cmap2: str):
 
 def _plot_zeeman_splitting(zeeman_array, magnetic_fields, orientations, ldfkgjdflgkdjf, dklfjgdfkgj):
     pass
+
+def energy_units(unit: Literal['kj/mol', 'eh', 'hartree', 'au', 'ev', 'kcal/mol', 'wavenumber']) -> tuple[float, str]:
+    """
+    Returns tuple of (float, str) which are conversion from cm^-1 to chosen unit
+    and latex-type string of the name of this unit.
+
+    Parameters
+    ----------
+    unit : str
+    Name of the unit - one of the following: kj/mol, eh or hartree or au, ev, kcal/mol, wavenumber.
+
+    Returns
+    ----------
+    Tuple[float, str] of conversion scalar and latex-type unit name
+    """
+    unit = unit.lower()
+    unit_conversion = {'kj/mol': 0.0119627,
+                       'eh': 0.000124,
+                       'hartree': 0.000124,
+                       'au': 0.000124,
+                       'ev': 0.000123,
+                       'kcal/mol': 0.0028591,
+                       'wavenumber': 1.0,
+                       }
+    unit_label = {'kjmol': 'kJ·mol$^{-1}$',
+                        'eh': 'Hartree',
+                        'hartree': 'Hartree',
+                        'au': 'Hartree',
+                        'ev': 'eV',
+                        'kcal': 'kcal·mol$^{-1}$',
+                        'wavenumber': 'cm$^{-1}$'
+                        }
+    return (unit_conversion[unit], unit_label[unit])

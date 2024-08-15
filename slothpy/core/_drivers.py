@@ -117,7 +117,7 @@ class _SingleProcessed(ABC):
         pass
     
     @abstractmethod
-    def _plot(self):
+    def _plot(self, show=True):
         pass
 
     @slothpy_exc("SltPlotError")

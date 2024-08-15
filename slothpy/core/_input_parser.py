@@ -19,7 +19,7 @@ from functools import wraps
 from typing import Literal
 from os import cpu_count
 from warnings import warn
-from numpy import asarray, ascontiguousarray, allclose, identity, log, int64
+from numpy import ndarray, asarray, ascontiguousarray, allclose, identity, log, int64
 from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError, SltWarning, slothpy_exc
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere, fibonacci_over_hemisphere, meshgrid_over_hemisphere
 from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
@@ -35,7 +35,7 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
             bound_args = signature.bind_partial(*args, **kwargs)
             bound_args.apply_defaults()
 
-            self = bound_args.arguments["self"]
+            self = bound_args.arguments["self"] if "self" in bound_args.arguments.keys() else bound_args.arguments["slt_group"]
 
             if not self._exists:
                 raise SltFileError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' does not exist in the {GREEN}File{RESET}: '{self._hdf5}'.")
@@ -109,8 +109,11 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                             if isinstance(value, (int, int64)):
                                 value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
                             elif isinstance(value, (tuple, list)) and len(value) == 2:
-                                if not isinstance(value[1], (int, int64)):
+                                if not isinstance(value[1], (int, int64, list, ndarray)):
                                     raise ValueError("The second entry in the orientation list/tuple must contain an integer controlling the number of the grid points.")
+                                if isinstance(value[0], (list, tuple, ndarray)):
+                                    #TODO: elegancko
+                                    value = asarray(value, order='C', dtype=settings.float)
                                 if value[0] == "fibonacci":
                                     value = ["fibonacci", fibonacci_over_hemisphere(value[1], settings.precision)]
                                 if value[0] == "mesh":

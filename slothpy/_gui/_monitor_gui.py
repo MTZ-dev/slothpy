@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QProgressBar, QLabel, QScrollArea, QFrame
-from PyQt5.QtCore import QTimer, QDateTime, QTime
-from PyQt5.QtGui import QFont
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QProgressBar, QLabel, QScrollArea, QFrame
+from PyQt6.QtCore import QTimer, QDateTime, QTime
+from PyQt6.QtGui import QFont
 import sys
 from numpy import array, sum
 from multiprocessing.shared_memory import SharedMemory

@@ -87,7 +87,7 @@ class SltFileError(Exception):
         self._slt_error_type = error_type_override if error_type_override is not None else "SlothFileError"
         self.error_type = type(exception).__name__ if exception is not None else ""
         self.error_message = str(exception) if exception is not None else ""
-        self.slt_message = f"{RED}{self._slt_error_type}{RESET}, {GREEN}File{RESET} '{file}',{'' if self.error_type == '' else ' '}{YELLOW}{self.error_type}{RESET}{': ' if self.error_type != '' else ''}{self.error_message}"
+        self.slt_message = f"{RED}{self._slt_error_type}{RESET}, {GREEN}File{RESET} '{file}',{'' if self.error_type == '' else ' '}{YELLOW}{self.error_type}{RESET}{': ' if self.error_type != '' else ''}{self.error_message}{'\nConsider lowering the states\' cutoffs, setting the single precision and/or reducing the number of parallel processes to save memory.' if self.error_type == 'MemoryError' else ''}"
         self.final_message = f"{self.slt_message}{'' if self.slt_message.endswith(' ') else ' '}{message}"
         super().__init__(self.final_message)
 

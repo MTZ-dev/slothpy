@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from typing import Literal, Union
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.synchronize import Event
+
 from numpy import ndarray, zeros
 from pandas import DataFrame
 import matplotlib.pyplot as plt
@@ -530,12 +532,16 @@ class SltStatesMagneticDipoleMomenta(_SingleProcessed):
 
 class SltPropertyUnderMagneticField(_MultiProcessed):
 
-    __slots__ = _MultiProcessed.__slots__ + ["_mode", "_matrix", "_return_energies", "_direction", "_magnetic_fields", "_orientations", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
+    __slots__ = _MultiProcessed.__slots__ + ["_mode", "_matrix", "_return_energies", "_energies", "_direction", "_magnetic_fields", "_orientations", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
 
     def __repr__():
         pass # tutaj jak z SLPGroup różne rperezentacje
 
     def __init__(self, slt_group,
+        mode: Literal["s", "l", "p", "j", "m"],
+        full_matrix: bool,
+        return_energies: bool,
+        direction: Union[ndarray, Literal["xyz"]],
         magnetic_fields: ndarray,
         orientations: ndarray,
         number_of_states: int,

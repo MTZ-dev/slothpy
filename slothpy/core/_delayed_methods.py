@@ -591,12 +591,12 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
     def _save(self):
         self._metadata_dict = {
             "Type": self._method_type,
-            "Kind": "AVERAGE" if self._result.ndim == 2 else "DIRECTIONAL",
+            "Kind": "AVERAGE" if self._orientations.shape[1] == 4 else "DIRECTIONAL",
             "Precision": settings.precision.upper(),
             "Description": f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."
         }
         self._data_dict = {
-            "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._result.ndim == 2 else "[orientations, fields, energies]")),
+            "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._orientations.shape[1] == 4 else "[orientations, fields, energies]")),
             "MAGNETIC_FIELDS": (self._magnetic_fields, "Dataset containing magnetic field (T) values used in the simulation."),
             "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),
         }
@@ -666,12 +666,12 @@ class SltZeemanSplitting(_MultiProcessed):
     def _save(self):
         self._metadata_dict = {
             "Type": self._method_type,
-            "Kind": "AVERAGE" if self._result.ndim == 2 else "DIRECTIONAL",
+            "Kind": "AVERAGE" if self._orientations.shape[1] == 4 else "DIRECTIONAL",
             "Precision": settings.precision.upper(),
             "Description": f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."
         }
         self._data_dict = {
-            "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._result.ndim == 2 else "[orientations, fields, energies]")),
+            "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._orientations.shape[1] == 4 else "[orientations, fields, energies]")),
             "MAGNETIC_FIELDS": (self._magnetic_fields, "Dataset containing magnetic field (T) values used in the simulation."),
             "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),
         }
@@ -743,12 +743,12 @@ class SltMagnetisation(_MultiProcessed):
     def _save(self):
         self._metadata_dict = {
             "Type": self._method_type,
-            "Kind": "AVERAGE" if self._result.ndim == 2 else "DIRECTIONAL",
+            "Kind": "AVERAGE" if self._orientations.shape[1] == 4 else "DIRECTIONAL",
             "Precision": settings.precision.upper(),
             "Description": f"Group containing magnetisation calculated from Group '{self._group_name}'."
         }
         self._data_dict = {
-            "MAGNETISATION": (self._result, "Dataset containing magnetisation in the form {}".format("[temperatures, fields]" if self._result.ndim == 2 else "[orientations, temperatures, fields]")),
+            "MAGNETISATION": (self._result, "Dataset containing magnetisation in the form {}".format("[temperatures, fields]" if self._orientations.shape[1] == 4 else "[orientations, temperatures, fields]")),
             "MAGNETIC_FIELDS": (self._magnetic_fields, "Dataset containing magnetic field (T) values used in the simulation."),
             "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),
             "TEMPERATURES": (self._temperatures, "Dataset containing temperature (K) values used in the simulation.")

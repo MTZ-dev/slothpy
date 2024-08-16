@@ -108,12 +108,9 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                         case "orientations":
                             if isinstance(value, (int, int64)):
                                 value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
-                            elif isinstance(value, (tuple, list)) and len(value) == 2:
-                                if not isinstance(value[1], (int, int64, list, ndarray)):
+                            elif isinstance(value, (tuple, list)) and len(value) == 2 and not (isinstance(value[0], (tuple, list, ndarray)) and isinstance(value[1], (tuple, list, ndarray))):
+                                if not isinstance(value[1], (int, int64)):
                                     raise ValueError("The second entry in the orientation list/tuple must contain an integer controlling the number of the grid points.")
-                                if isinstance(value[0], (list, tuple, ndarray)):
-                                    #TODO: elegancko
-                                    value = asarray(value, order='C', dtype=settings.float)
                                 if value[0] == "fibonacci":
                                     value = ["fibonacci", fibonacci_over_hemisphere(value[1], settings.precision)]
                                 if value[0] == "mesh":
@@ -203,6 +200,12 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                         case "hyperfine":
                             if value != None:
                                 raise NotImplementedError("Hyperfine interactions have not been implemented yet. They are scheduled to be released in the 0.4 major release.")
+                        case "show":
+                            if not isinstance(value, bool):
+                                raise ValueError("Show must be a boolean (False/True). It decides if plot is shown in gui or returned as mathplotlib objects (Figure and Axis).")
+                        case "energy_unit":
+                            if value not in ['kj/mol', 'eh', 'hartree', 'au', 'ev', 'kcal/mol', 'wavenumber']:
+                                raise ValueError(f"Energy unit must be one of the following strings: kj/mol, eh, hartree, au, ev, kcal/mol, you entered {value} with type {type(value)}")
                     bound_args.arguments[name] = value
                     
             except Exception as exc:

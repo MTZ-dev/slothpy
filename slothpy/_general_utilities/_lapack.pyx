@@ -6,8 +6,7 @@
 
 from cython cimport boundscheck, wraparound
 
-cimport numpy as np
-import numpy as np
+cimport numpy as cnp
 from scipy.linalg.cython_blas cimport zaxpy, zgemm, zhemm, zdotc, caxpy, cgemm, chemm, cdotc
 from scipy.linalg.cython_lapack cimport zheevr, cheevr
 
@@ -33,7 +32,7 @@ from scipy.linalg.cython_lapack cimport zheevr, cheevr
 
 @boundscheck(False)
 @wraparound(False)
-def _zheevr_lwork(int n, jobz ='N', range='A', int il=0, int iu=0, np.float64_t vl=-1e30, np.float64_t vu=0):
+def _zheevr_lwork(int n, jobz ='N', range='A', int il=0, int iu=0, cnp.float64_t vl=-1e30, cnp.float64_t vu=0):
     cdef:
         char jobz_char = jobz.encode('ascii')[0]
         char range_char = range.encode('ascii')[0]
@@ -42,41 +41,41 @@ def _zheevr_lwork(int n, jobz ='N', range='A', int il=0, int iu=0, np.float64_t 
         int ldz = n
         int m
         int info
-        np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a
-        np.ndarray[np.complex128_t, ndim=2, mode='fortran'] z
-        np.ndarray[np.float64_t, ndim=1] w
-        np.ndarray[np.complex128_t, ndim=1] work
+        cnp.ndarray[cnp.complex128_t, ndim=2, mode='fortran'] a
+        cnp.ndarray[cnp.complex128_t, ndim=2, mode='fortran'] z
+        cnp.ndarray[cnp.float64_t, ndim=1] w
+        cnp.ndarray[cnp.complex128_t, ndim=1] work
         int lwork
-        np.ndarray[np.float64_t, ndim=1] rwork
+        cnp.ndarray[cnp.float64_t, ndim=1] rwork
         int lrwork
-        np.ndarray[int, ndim=1] iwork
+        cnp.ndarray[int, ndim=1] iwork
         int liwork
-        np.ndarray[int, ndim=1] isuppz
-        np.npy_intp *dims = [n, n]
-        np.float64_t abs_tol = -1
+        cnp.ndarray[int, ndim=1] isuppz
+        cnp.npy_intp *dims = [n, n]
+        cnp.float64_t abs_tol = -1
 
-    a = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX128, 1)
-    w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT64, 1)
+    a = cnp.PyArray_EMPTY(2, dims, cnp.NPY_COMPLEX128, 1)
+    w = cnp.PyArray_EMPTY(1, [n], cnp.NPY_FLOAT64, 1)
     if range == 'A':
-        isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [2*n], cnp.NPY_INT32, 1)
     elif range == 'I':
-        isuppz = np.PyArray_EMPTY(1, [2*(iu-il+1)], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [2*(iu-il+1)], cnp.NPY_INT32, 1)
     else:
-        isuppz = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [1], cnp.NPY_INT32, 1)
     if jobz == 'V':
         if range == 'I':
-            z = np.PyArray_EMPTY(2, [n, iu-il+1], np.NPY_COMPLEX128, 1)
+            z = cnp.PyArray_EMPTY(2, [n, iu-il+1], cnp.NPY_COMPLEX128, 1)
         else:
-            z = np.PyArray_EMPTY(2, [n, n], np.NPY_COMPLEX128, 1)
+            z = cnp.PyArray_EMPTY(2, [n, n], cnp.NPY_COMPLEX128, 1)
     else: 
-        z = np.PyArray_EMPTY(2, [1, 1], np.NPY_COMPLEX128, 1)
+        z = cnp.PyArray_EMPTY(2, [1, 1], cnp.NPY_COMPLEX128, 1)
 
     lwork = -1
     lrwork = -1
     liwork = -1
-    work = np.PyArray_EMPTY(1, [1], np.NPY_COMPLEX128, 1)
-    rwork = np.PyArray_EMPTY(1, [1], np.NPY_FLOAT64, 1)
-    iwork = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
+    work = cnp.PyArray_EMPTY(1, [1], cnp.NPY_COMPLEX128, 1)
+    rwork = cnp.PyArray_EMPTY(1, [1], cnp.NPY_FLOAT64, 1)
+    iwork = cnp.PyArray_EMPTY(1, [1], cnp.NPY_INT32, 1)
     
     with nogil:
         zheevr(&jobz_char, &range_char, &uplo, &n, &a[0,0], &lda, &vl, &vu, &il, &iu, &abs_tol, &m, &w[0], &z[0,0], &ldz, &isuppz[0], &work[0], &lwork, &rwork[0], &lrwork, &iwork[0], &liwork, &info)
@@ -93,7 +92,7 @@ def _zheevr_lwork(int n, jobz ='N', range='A', int il=0, int iu=0, np.float64_t 
 
 @boundscheck(False)
 @wraparound(False)
-def _zheevr(np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a, int lwork, int lrwork, int liwork, jobz='N', range='A', int il=0, int iu=0, np.float64_t vl=-1e30, np.float64_t vu=0):
+def _zheevr(cnp.ndarray[cnp.complex128_t, ndim=2, mode='fortran'] a, int lwork, int lrwork, int liwork, jobz='N', range='A', int il=0, int iu=0, cnp.float64_t vl=-1e30, cnp.float64_t vu=0):
     cdef:
         char jobz_char = jobz.encode('ascii')[0]
         char range_char = range.encode('ascii')[0]
@@ -103,35 +102,35 @@ def _zheevr(np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a, int lwork, in
         int ldz = n
         int m
         int info
-        np.ndarray[np.complex128_t, ndim=2, mode='fortran'] z
-        np.ndarray[np.float64_t, ndim=1] w
-        np.ndarray[np.complex128_t, ndim=1] work
-        np.ndarray[np.float64_t, ndim=1] rwork
-        np.ndarray[int, ndim=1] iwork
-        np.ndarray[int, ndim=1] isuppz
-        np.float64_t abs_tol = -1
+        cnp.ndarray[cnp.complex128_t, ndim=2, mode='fortran'] z
+        cnp.ndarray[cnp.float64_t, ndim=1] w
+        cnp.ndarray[cnp.complex128_t, ndim=1] work
+        cnp.ndarray[cnp.float64_t, ndim=1] rwork
+        cnp.ndarray[int, ndim=1] iwork
+        cnp.ndarray[int, ndim=1] isuppz
+        cnp.float64_t abs_tol = -1
 
     if a.shape[0] != a.shape[1]:
         raise ValueError("Input matrix must be square")
 
-    w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT64, 1)
+    w = cnp.PyArray_EMPTY(1, [n], cnp.NPY_FLOAT64, 1)
     if range == 'A':
-        isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [2*n], cnp.NPY_INT32, 1)
     elif range == 'I':
-        isuppz = np.PyArray_EMPTY(1, [2*(iu-il+1)], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [2*(iu-il+1)], cnp.NPY_INT32, 1)
     else:
-        isuppz = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [1], cnp.NPY_INT32, 1)
     if jobz == 'V':
         if range == 'I':
-            z = np.PyArray_EMPTY(2, [n, iu-il+1], np.NPY_COMPLEX128, 1)
+            z = cnp.PyArray_EMPTY(2, [n, iu-il+1], cnp.NPY_COMPLEX128, 1)
         else:
-            z = np.PyArray_EMPTY(2, [n, n], np.NPY_COMPLEX128, 1)
+            z = cnp.PyArray_EMPTY(2, [n, n], cnp.NPY_COMPLEX128, 1)
     else:
-        z = np.PyArray_EMPTY(2, [1, 1], np.NPY_COMPLEX128, 1)
+        z = cnp.PyArray_EMPTY(2, [1, 1], cnp.NPY_COMPLEX128, 1)
     
-    work = np.PyArray_EMPTY(1, [lwork], np.NPY_COMPLEX128, 1)
-    rwork = np.PyArray_EMPTY(1, [lrwork], np.NPY_FLOAT64, 1)
-    iwork = np.PyArray_EMPTY(1, [liwork], np.NPY_INT32, 1)
+    work = cnp.PyArray_EMPTY(1, [lwork], cnp.NPY_COMPLEX128, 1)
+    rwork = cnp.PyArray_EMPTY(1, [lrwork], cnp.NPY_FLOAT64, 1)
+    iwork = cnp.PyArray_EMPTY(1, [liwork], cnp.NPY_INT32, 1)
 
     with nogil:
         zheevr(&jobz_char, &range_char, &uplo, &n, &a[0,0], &lda, &vl, &vu, &il, &iu, &abs_tol, &m, &w[0], &z[0,0], &ldz, &isuppz[0], &work[0], &lwork, &rwork[0], &lrwork, &iwork[0], &liwork, &info)
@@ -147,43 +146,49 @@ def _zheevr(np.ndarray[np.complex128_t, ndim=2, mode='fortran'] a, int lwork, in
 
 @boundscheck(False)
 @wraparound(False)
-def _zutmu(np.ndarray[np.complex128_t, ndim=2, mode="fortran"] U,
-                          np.ndarray[np.complex128_t, ndim=2, mode="fortran"] M) -> np.ndarray[np.complex128_t]:
-    cdef int m = U.shape[0]
-    cdef int n = U.shape[1]
-    cdef np.npy_intp *dims = [m, n]
-    cdef np.npy_intp *dim = [n, n]
-    cdef np.ndarray[np.complex128_t, ndim=2, mode="fortran"] C = np.PyArray_EMPTY(2, dim, np.NPY_COMPLEX128, 1)
-    cdef np.ndarray[np.complex128_t, ndim=2, mode="fortran"] B = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX128, 1)
-
-    cdef np.complex128_t alpha = 1.0 + 0.0j
-    cdef np.complex128_t beta = 0.0 + 0.0j
+def _zutmu(cnp.ndarray[cnp.complex128_t, ndim=2, mode="fortran"] U,
+                          cnp.ndarray[cnp.complex128_t, ndim=2, mode="fortran"] M) -> cnp.ndarray[cnp.complex128_t]:
+    cdef:
+        int m = U.shape[0]
+        int n = U.shape[1]
+        cnp.npy_intp *dims = [m, n]
+        cnp.npy_intp *dim = [n, n]
+        cnp.ndarray[cnp.complex128_t, ndim=2, mode="fortran"] C = cnp.PyArray_EMPTY(2, dim, cnp.NPY_COMPLEX128, 1)
+        cnp.ndarray[cnp.complex128_t, ndim=2, mode="fortran"] B = cnp.PyArray_EMPTY(2, dims, cnp.NPY_COMPLEX128, 1)
+        cnp.complex128_t alpha = 1.0 + 0.0j
+        cnp.complex128_t beta = 0.0 + 0.0j
+        char side = b'L'[0]
+        char uplo = b'L'[0]
+        char transa = b'C'[0]
+        char transb = b'N'[0]
 
     with nogil:
-        zhemm(b"L", b"U", &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
-        zgemm(b"C", b"N", &n, &n, &m, &alpha, &U[0, 0], &m, &B[0, 0], &m, &beta, &C[0, 0], &n)
+        zhemm(&side, &uplo, &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
+        zgemm(&transa, &transb, &n, &n, &m, &alpha, &U[0, 0], &m, &B[0, 0], &m, &beta, &C[0, 0], &n)
 
     return C
 
 
 @boundscheck(False)
 @wraparound(False)
-def _zutmud(np.ndarray[np.complex128_t, ndim=2, mode="fortran"] U,
-                          np.ndarray[np.complex128_t, ndim=2, mode="fortran"] M) -> np.ndarray[np.float64_t]:
-    cdef int m = U.shape[0]
-    cdef int n = U.shape[1]
-    cdef np.npy_intp *dims = [m, n]
-    cdef np.npy_intp *dim = [n]
-    cdef np.ndarray[np.float64_t, ndim=1, mode="fortran"] C_diag = np.PyArray_EMPTY(1, dim, np.NPY_FLOAT64, 1)
-    cdef np.ndarray[np.complex128_t, ndim=2, mode="fortran"] B = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX128, 1)
-
-    cdef int i
-    cdef np.complex128_t alpha = 1.0 + 0.0j
-    cdef np.complex128_t beta = 0.0 + 0.0j
-    cdef int one = 1
+def _zutmud(cnp.ndarray[cnp.complex128_t, ndim=2, mode="fortran"] U,
+                          cnp.ndarray[cnp.complex128_t, ndim=2, mode="fortran"] M) -> cnp.ndarray[cnp.float64_t]:
+    cdef:
+        int m = U.shape[0]
+        int n = U.shape[1]
+        cnp.npy_intp *dims = [m, n]
+        cnp.npy_intp *dim = [n]
+        cnp.ndarray[cnp.float64_t, ndim=1, mode="fortran"] C_diag = cnp.PyArray_EMPTY(1, dim, cnp.NPY_FLOAT64, 1)
+        cnp.ndarray[cnp.complex128_t, ndim=2, mode="fortran"] B = cnp.PyArray_EMPTY(2, dims, cnp.NPY_COMPLEX128, 1)
+        int i
+        cnp.complex128_t alpha = 1.0 + 0.0j
+        cnp.complex128_t beta = 0.0 + 0.0j
+        int one = 1
+        char side = b'L'[0]
+        char uplo = b'L'[0]
 
     with nogil:
-        zhemm(b"L", b"U", &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
+        zhemm(&side, &uplo, &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
         for i in range(n):
                 C_diag[i] = zdotc(&n, &U[0, i], &one, &B[0, i], &one).real
 
@@ -192,17 +197,17 @@ def _zutmud(np.ndarray[np.complex128_t, ndim=2, mode="fortran"] U,
 
 @boundscheck(False)
 @wraparound(False)
-def _zdot3d(np.ndarray[np.complex128_t, ndim=3] M, np.ndarray[np.float64_t, ndim=1] V) -> np.ndarray[np.complex128_t]:
-    cdef int m = M.shape[1]
-    cdef int n = M.shape[2]
-    cdef np.npy_intp *dims = [m, n]
-    cdef np.ndarray[np.complex128_t, ndim=2] result = np.PyArray_ZEROS(2, dims, np.NPY_COMPLEX128, 0)
-
-    cdef int one = 1
-    cdef np.complex128_t alpha0 = V[0] + 0.0j
-    cdef np.complex128_t alpha1 = V[1] + 0.0j
-    cdef np.complex128_t alpha2 = V[2] + 0.0j
-    cdef int size = m * n
+def _zdot3d(cnp.ndarray[cnp.complex128_t, ndim=3] M, cnp.ndarray[cnp.float64_t, ndim=1] V) -> cnp.ndarray[cnp.complex128_t]:
+    cdef:
+        int m = M.shape[1]
+        int n = M.shape[2]
+        cnp.npy_intp *dims = [m, n]
+        cnp.ndarray[cnp.complex128_t, ndim=2] result = cnp.PyArray_ZEROS(2, dims, cnp.NPY_COMPLEX128, 0)
+        int one = 1
+        cnp.complex128_t alpha0 = V[0] + 0.0j
+        cnp.complex128_t alpha1 = V[1] + 0.0j
+        cnp.complex128_t alpha2 = V[2] + 0.0j
+        int size = m * n
 
     with nogil:
         zaxpy(&size, &alpha0, &M[0, 0, 0], &one, &result[0, 0], &one)
@@ -217,7 +222,7 @@ def _zdot3d(np.ndarray[np.complex128_t, ndim=3] M, np.ndarray[np.float64_t, ndim
 
 @boundscheck(False)
 @wraparound(False)
-def _cheevr_lwork(int n, jobz='N', range='A', int il=0, int iu=0, np.float32_t vl=-1e30, np.float32_t vu=0):
+def _cheevr_lwork(int n, jobz='N', range='A', int il=0, int iu=0, cnp.float32_t vl=-1e30, cnp.float32_t vu=0):
     cdef:
         char jobz_char = jobz.encode('ascii')[0]
         char range_char = range.encode('ascii')[0]
@@ -226,41 +231,41 @@ def _cheevr_lwork(int n, jobz='N', range='A', int il=0, int iu=0, np.float32_t v
         int ldz = n
         int m
         int info
-        np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a
-        np.ndarray[np.complex64_t, ndim=2, mode='fortran'] z
-        np.ndarray[np.float32_t, ndim=1] w
-        np.ndarray[np.complex64_t, ndim=1] work
+        cnp.ndarray[cnp.complex64_t, ndim=2, mode='fortran'] a
+        cnp.ndarray[cnp.complex64_t, ndim=2, mode='fortran'] z
+        cnp.ndarray[cnp.float32_t, ndim=1] w
+        cnp.ndarray[cnp.complex64_t, ndim=1] work
         int lwork
-        np.ndarray[np.float32_t, ndim=1] rwork
+        cnp.ndarray[cnp.float32_t, ndim=1] rwork
         int lrwork
-        np.ndarray[int, ndim=1] iwork
+        cnp.ndarray[int, ndim=1] iwork
         int liwork
-        np.ndarray[int, ndim=1] isuppz
-        np.npy_intp *dims = [n, n]
-        np.float32_t abs_tol = -1
+        cnp.ndarray[int, ndim=1] isuppz
+        cnp.npy_intp *dims = [n, n]
+        cnp.float32_t abs_tol = -1
 
-    a = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX64, 1)
-    w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT32, 1)
+    a = cnp.PyArray_EMPTY(2, dims, cnp.NPY_COMPLEX64, 1)
+    w = cnp.PyArray_EMPTY(1, [n], cnp.NPY_FLOAT32, 1)
     if range == 'A':
-        isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [2*n], cnp.NPY_INT32, 1)
     elif range == 'I':
-        isuppz = np.PyArray_EMPTY(1, [2*(iu-il+1)], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [2*(iu-il+1)], cnp.NPY_INT32, 1)
     else:
-        isuppz = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [1], cnp.NPY_INT32, 1)
     if jobz == 'V':
         if range == 'I':
-            z = np.PyArray_EMPTY(2, [n, iu-il+1], np.NPY_COMPLEX64, 1)
+            z = cnp.PyArray_EMPTY(2, [n, iu-il+1], cnp.NPY_COMPLEX64, 1)
         else:
-            z = np.PyArray_EMPTY(2, [n, n], np.NPY_COMPLEX64, 1)
+            z = cnp.PyArray_EMPTY(2, [n, n], cnp.NPY_COMPLEX64, 1)
     else:
-        z = np.PyArray_EMPTY(2, [1, 1], np.NPY_COMPLEX64, 1)
+        z = cnp.PyArray_EMPTY(2, [1, 1], cnp.NPY_COMPLEX64, 1)
     
     lwork = -1
     lrwork = -1
     liwork = -1
-    work = np.PyArray_EMPTY(1, [1], np.NPY_COMPLEX64, 1)
-    rwork = np.PyArray_EMPTY(1, [1], np.NPY_FLOAT32, 1)
-    iwork = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
+    work = cnp.PyArray_EMPTY(1, [1], cnp.NPY_COMPLEX64, 1)
+    rwork = cnp.PyArray_EMPTY(1, [1], cnp.NPY_FLOAT32, 1)
+    iwork = cnp.PyArray_EMPTY(1, [1], cnp.NPY_INT32, 1)
     
     with nogil:
         cheevr(&jobz_char, &range_char, &uplo, &n, &a[0,0], &lda, &vl, &vu, &il, &iu, &abs_tol, &m, &w[0], &z[0,0], &ldz, &isuppz[0], &work[0], &lwork, &rwork[0], &lrwork, &iwork[0], &liwork, &info)
@@ -277,7 +282,7 @@ def _cheevr_lwork(int n, jobz='N', range='A', int il=0, int iu=0, np.float32_t v
 
 @boundscheck(False)
 @wraparound(False)
-def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int lrwork, int liwork, jobz='N', range='A', int il=0, int iu=0, np.float32_t vl=-1e30, np.float32_t vu=0):
+def _cheevr(cnp.ndarray[cnp.complex64_t, ndim=2, mode='fortran'] a, int lwork, int lrwork, int liwork, jobz='N', range='A', int il=0, int iu=0, cnp.float32_t vl=-1e30, cnp.float32_t vu=0):
     cdef:
         char jobz_char = jobz.encode('ascii')[0]
         char range_char = range.encode('ascii')[0]
@@ -287,36 +292,36 @@ def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int
         int ldz = n
         int m
         int info
-        np.ndarray[np.complex64_t, ndim=2, mode='fortran'] z
-        np.ndarray[np.float32_t, ndim=1] w
-        np.ndarray[np.complex64_t, ndim=1] work
-        np.ndarray[np.float32_t, ndim=1] rwork
-        np.ndarray[int, ndim=1] iwork
-        np.ndarray[int, ndim=1] isuppz
-        np.float32_t abs_tol = -1
+        cnp.ndarray[cnp.complex64_t, ndim=2, mode='fortran'] z
+        cnp.ndarray[cnp.float32_t, ndim=1] w
+        cnp.ndarray[cnp.complex64_t, ndim=1] work
+        cnp.ndarray[cnp.float32_t, ndim=1] rwork
+        cnp.ndarray[int, ndim=1] iwork
+        cnp.ndarray[int, ndim=1] isuppz
+        cnp.float32_t abs_tol = -1
 
     if a.shape[0] != a.shape[1]:
         raise ValueError("Input matrix must be square")
 
 
-    w = np.PyArray_EMPTY(1, [n], np.NPY_FLOAT32, 1)
+    w = cnp.PyArray_EMPTY(1, [n], cnp.NPY_FLOAT32, 1)
     if range == 'A':
-        isuppz = np.PyArray_EMPTY(1, [2*n], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [2*n], cnp.NPY_INT32, 1)
     elif range == 'I':
-        isuppz = np.PyArray_EMPTY(1, [2*(iu-il+1)], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [2*(iu-il+1)], cnp.NPY_INT32, 1)
     else:
-        isuppz = np.PyArray_EMPTY(1, [1], np.NPY_INT32, 1)
+        isuppz = cnp.PyArray_EMPTY(1, [1], cnp.NPY_INT32, 1)
     if jobz == 'V':
         if range == 'I':
-            z = np.PyArray_EMPTY(2, [n, iu-il+1], np.NPY_COMPLEX64, 1)
+            z = cnp.PyArray_EMPTY(2, [n, iu-il+1], cnp.NPY_COMPLEX64, 1)
         else:
-            z = np.PyArray_EMPTY(2, [n, n], np.NPY_COMPLEX64, 1)
+            z = cnp.PyArray_EMPTY(2, [n, n], cnp.NPY_COMPLEX64, 1)
     else:
-        z = np.PyArray_EMPTY(2, [1, 1], np.NPY_COMPLEX64, 1)
+        z = cnp.PyArray_EMPTY(2, [1, 1], cnp.NPY_COMPLEX64, 1)
     
-    work = np.PyArray_EMPTY(1, [lwork], np.NPY_COMPLEX64, 1)
-    rwork = np.PyArray_EMPTY(1, [lrwork], np.NPY_FLOAT32, 1)
-    iwork = np.PyArray_EMPTY(1, [liwork], np.NPY_INT32, 1)
+    work = cnp.PyArray_EMPTY(1, [lwork], cnp.NPY_COMPLEX64, 1)
+    rwork = cnp.PyArray_EMPTY(1, [lrwork], cnp.NPY_FLOAT32, 1)
+    iwork = cnp.PyArray_EMPTY(1, [liwork], cnp.NPY_INT32, 1)
 
     with nogil:
         cheevr(&jobz_char, &range_char, &uplo, &n, &a[0,0], &lda, &vl, &vu, &il, &iu, &abs_tol, &m, &w[0], &z[0,0], &ldz, &isuppz[0], &work[0], &lwork, &rwork[0], &lrwork, &iwork[0], &liwork, &info)
@@ -332,45 +337,49 @@ def _cheevr(np.ndarray[np.complex64_t, ndim=2, mode='fortran'] a, int lwork, int
 
 @boundscheck(False)
 @wraparound(False)
-def _cutmu(np.ndarray[np.complex64_t, ndim=2, mode="fortran"] U,
-                          np.ndarray[np.complex64_t, ndim=2, mode="fortran"] M) -> np.ndarray[np.complex64_t]:
-    cdef int m = U.shape[0]
-    cdef int n = U.shape[1]
-    cdef np.npy_intp *dims = [m, n]
-    cdef np.npy_intp *dim = [n, n]
-    cdef np.ndarray[np.complex64_t, ndim=2, mode="fortran"] C = np.PyArray_EMPTY(2, dim, np.NPY_COMPLEX64, 1)
-    cdef np.ndarray[np.complex64_t, ndim=2, mode="fortran"] B = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX64, 1)
-
-    cdef int i
-    cdef np.complex64_t alpha = 1.0 + 0.0j
-    cdef np.complex64_t beta = 0.0 + 0.0j
-    cdef int one = 1
+def _cutmu(cnp.ndarray[cnp.complex64_t, ndim=2, mode="fortran"] U,
+                          cnp.ndarray[cnp.complex64_t, ndim=2, mode="fortran"] M) -> cnp.ndarray[cnp.complex64_t]:
+    cdef:
+        int m = U.shape[0]
+        int n = U.shape[1]
+        cnp.npy_intp *dims = [m, n]
+        cnp.npy_intp *dim = [n, n]
+        cnp.ndarray[cnp.complex64_t, ndim=2, mode="fortran"] C = cnp.PyArray_EMPTY(2, dim, cnp.NPY_COMPLEX64, 1)
+        cnp.ndarray[cnp.complex64_t, ndim=2, mode="fortran"] B = cnp.PyArray_EMPTY(2, dims, cnp.NPY_COMPLEX64, 1)
+        cnp.complex64_t alpha = 1.0 + 0.0j
+        cnp.complex64_t beta = 0.0 + 0.0j
+        char side = b'L'[0]
+        char uplo = b'L'[0]
+        char transa = b'C'[0]
+        char transb = b'N'[0]
 
     with nogil:
-        chemm(b"L", b"U", &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
-        cgemm(b"C", b"N", &n, &n, &m, &alpha, &U[0, 0], &m, &B[0, 0], &m, &beta, &C[0, 0], &n)
+        chemm(&side, &uplo, &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
+        cgemm(&transa, &transb, &n, &n, &m, &alpha, &U[0, 0], &m, &B[0, 0], &m, &beta, &C[0, 0], &n)
 
     return C
 
 
 @boundscheck(False)
 @wraparound(False)
-def _cutmud(np.ndarray[np.complex64_t, ndim=2, mode="fortran"] U,
-                          np.ndarray[np.complex64_t, ndim=2, mode="fortran"] M) -> np.ndarray[np.float32_t]:
-    cdef int m = U.shape[0]
-    cdef int n = U.shape[1]
-    cdef np.npy_intp *dims = [m, n]
-    cdef np.npy_intp *dim = [n]
-    cdef np.ndarray[np.float32_t, ndim=1, mode="fortran"] C_diag = np.PyArray_EMPTY(1, dim, np.NPY_FLOAT32, 1)
-    cdef np.ndarray[np.complex64_t, ndim=2, mode="fortran"] B = np.PyArray_EMPTY(2, dims, np.NPY_COMPLEX64, 1)
-
-    cdef int i
-    cdef np.complex64_t alpha = 1.0 + 0.0j
-    cdef np.complex64_t beta = 0.0 + 0.0j
-    cdef int one = 1
+def _cutmud(cnp.ndarray[cnp.complex64_t, ndim=2, mode="fortran"] U,
+                          cnp.ndarray[cnp.complex64_t, ndim=2, mode="fortran"] M) -> cnp.ndarray[cnp.float32_t]:
+    cdef:
+        int m = U.shape[0]
+        int n = U.shape[1]
+        cnp.npy_intp *dims = [m, n]
+        cnp.npy_intp *dim = [n]
+        cnp.ndarray[cnp.float32_t, ndim=1, mode="fortran"] C_diag = cnp.PyArray_EMPTY(1, dim, cnp.NPY_FLOAT32, 1)
+        cnp.ndarray[cnp.complex64_t, ndim=2, mode="fortran"] B = cnp.PyArray_EMPTY(2, dims, cnp.NPY_COMPLEX64, 1)
+        int i
+        cnp.complex64_t alpha = 1.0 + 0.0j
+        cnp.complex64_t beta = 0.0 + 0.0j
+        int one = 1
+        char side = b'L'[0]
+        char uplo = b'L'[0]
 
     with nogil:
-        chemm(b"L", b"U", &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
+        chemm(&side, &uplo, &m, &n, &alpha, &M[0, 0], &m, &U[0, 0], &m, &beta, &B[0, 0], &m)
         for i in range(n):
                 C_diag[i] = cdotc(&n, &U[0, i], &one, &B[0, i], &one).real
 
@@ -379,17 +388,17 @@ def _cutmud(np.ndarray[np.complex64_t, ndim=2, mode="fortran"] U,
 
 @boundscheck(False)
 @wraparound(False)
-def _cdot3d(np.ndarray[np.complex64_t, ndim=3] M, np.ndarray[np.float32_t, ndim=1] V) -> np.ndarray[np.complex64_t]:
-    cdef int m = M.shape[1]
-    cdef int n = M.shape[2]
-    cdef np.npy_intp *dims = [m, n]
-    cdef np.ndarray[np.complex64_t, ndim=2] result = np.PyArray_ZEROS(2, dims, np.NPY_COMPLEX64, 0)
-
-    cdef int one = 1
-    cdef np.complex64_t alpha0 = V[0] + 0.0j
-    cdef np.complex64_t alpha1 = V[1] + 0.0j
-    cdef np.complex64_t alpha2 = V[2] + 0.0j
-    cdef int size = m * n
+def _cdot3d(cnp.ndarray[cnp.complex64_t, ndim=3] M, cnp.ndarray[cnp.float32_t, ndim=1] V) -> cnp.ndarray[cnp.complex64_t]:
+    cdef:
+        int m = M.shape[1]
+        int n = M.shape[2]
+        cnp.npy_intp *dims = [m, n]
+        cnp.ndarray[cnp.complex64_t, ndim=2] result = cnp.PyArray_ZEROS(2, dims, cnp.NPY_COMPLEX64, 0)
+        int one = 1
+        cnp.complex64_t alpha0 = V[0] + 0.0j
+        cnp.complex64_t alpha1 = V[1] + 0.0j
+        cnp.complex64_t alpha2 = V[2] + 0.0j
+        int size = m * n
 
     with nogil:
         caxpy(&size, &alpha0, &M[0, 0, 0], &one, &result[0, 0], &one)

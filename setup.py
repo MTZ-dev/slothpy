@@ -9,19 +9,20 @@ extensions = [
         include_dirs=[np.get_include()],
         extra_compile_args=["-fopenmp", "-O3", "-march=native", "-ffast-math", "-funroll-loops", "-flto"],
         extra_link_args=["-fopenmp", "-flto"],
-        define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
+        define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION'), ('CYTHON_CCOMPLEX', '0')],
     )
 ]
 
 setup(
     name="slothpy",
-    version="0.2.0",
+    version="0.3.0",
     packages=find_packages(include=["slothpy", "slothpy.*"]),
-    ext_modules=cythonize(extensions, compiler_directives={
-            'boundscheck': False,
-            'wraparound': False,
-            'cdivision': True,
-            'language_level': "3",
+    setup_requires=["cython>=3.0.10"],
+    ext_modules=cythonize(extensions, language="c++", compiler_directives={
+            "boundscheck": False,
+            "wraparound": False,
+            "cdivision": True,
+            "language_level": "3",
     }
         ),
     zip_safe=False,

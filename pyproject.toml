@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling", "setuptools>=42", "wheel", "cython", "numpy"]
+requires = ["hatchling", "setuptools>=42", "wheel", "cython>=3.0.10", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "slothpy"
-version = "0.2.0"
+version = "0.3.0"
 authors = [
   { name="Mikolaj Tadeusz Zychowicz", email="mikolaj.zychowicz@uj.edu.pl" },
 ]
@@ -24,7 +24,8 @@ dependencies = [
   "setuptools>=71.1.0",
   "ipython>=8.13.2",
   "psutil>=5.9.5",
-  "docx>=1.1.2",
+  "docx>=0.2.4",
+  "python-docx>=1.1.2",
   "python-docx>=1.0.1",
   "cycler>=0.11.0",
   "PyQt6>=6.7.1"

@@ -64,7 +64,7 @@ def _to_shared_memory(smm: SharedMemoryManager, array: ndarray):
     shared_array = ndarray(array.shape, dtype=array.dtype, buffer=shm.buf)
     shared_array[:] = array
     del array
-    return SharedMemoryArrayInfo(shm.name, shared_array.shape, shared_array.dtype)
+    return SharedMemoryArrayInfo(shm.name, shared_array.shape, shared_array.dtype), shm
 
 
 def _from_shared_memory(sm_array_info: SharedMemoryArrayInfo):

@@ -190,11 +190,17 @@ class _MultiProcessed(_SingleProcessed):
 
     def _create_shared_memory(self):
         for array in self._args_arrays:
-            self._sm_arrays_info.append(_to_shared_memory(self._smm, array))
+            sm_info, sm = _to_shared_memory(self._smm, array)
+            self._sm.append(sm)
+            self._sm_arrays_info.append(sm_info)
         self._args_arrays = []
-        self._sm_progress_array_info = _to_shared_memory(self._smm, zeros((self._number_processes,), dtype=int64, order="C"))
+        sm_info, sm = _to_shared_memory(self._smm, zeros((self._number_processes,), dtype=int64, order="C"))
+        self._sm.append(sm)
+        self._sm_progress_array_info = sm_info
         if not self._returns:
-            self._sm_result_info = _to_shared_memory(self._smm, self._result)
+            sm_info, sm = _to_shared_memory(self._smm, self._result)
+            self._sm.append(sm)
+            self._sm_result_info = sm_info
             self._result = None
     
     def _retrieve_arrays_and_results_from_shared_memory(self):
@@ -226,7 +232,7 @@ class _MultiProcessed(_SingleProcessed):
         return result
 
     @slothpy_exc("SltCompError")
-    def autotune(self, timeout: float = float("inf"), max_processes: int = 0):
+    def autotune(self, timeout: float = float("inf"), max_processes: int = 4096):
         if self._is_from_file:
             print(f"The {self.__class__.__name__} object was loaded from the .slt file. There is nothing to autotune.")
             return
@@ -260,7 +266,8 @@ class _MultiProcessed(_SingleProcessed):
                     self._number_processes = number_processes
                     self._number_threads = number_threads
                     progress_array = zeros((number_processes,), dtype=int64, order="C")
-                    self._sm_progress_array_info = _to_shared_memory(self._smm, progress_array)
+                    self._sm_progress_array_info, sm = _to_shared_memory(self._smm, progress_array)
+                    self._sm.append(sm)
                     self._terminate_event = terminate_event()
                     try:
                         self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, _dummy, self._terminate_event)
@@ -384,6 +391,7 @@ class _MultiProcessed(_SingleProcessed):
     def _clean_sm_info_and_pool(self):
         self._process_pool = None
         self._sm_arrays_info = []
+        self._sm = []
         self._sm_progress_array_info = None
         self._sm_result_info = None
 

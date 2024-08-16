@@ -200,6 +200,12 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
                         case "hyperfine":
                             if value != None:
                                 raise NotImplementedError("Hyperfine interactions have not been implemented yet. They are scheduled to be released in the 0.4 major release.")
+                        case "show":
+                            if not isinstance(value, bool):
+                                raise ValueError("Show must be a boolean (False/True). It decides if plot is shown in gui or returned as mathplotlib objects (Figure and Axis).")
+                        case "energy_unit":
+                            if value not in ['kj/mol', 'eh', 'hartree', 'au', 'ev', 'kcal/mol', 'wavenumber']:
+                                raise ValueError(f"Energy unit must be one of the following strings: kj/mol, eh, hartree, au, ev, kcal/mol, you entered {value} with type {type(value)}")
                     bound_args.arguments[name] = value
                     
             except Exception as exc:

@@ -36,5 +36,11 @@ def states_energy_cm_1(slt_group, show=True):
 
     #plotting using function from _plot
     from slothpy._general_utilities._plot import _plot_energy_levels
-    _plot_energy_levels(energies._result, show)
+    fig, ax = _plot_energy_levels(energies._result)
+    from slothpy._gui._plot_gui import _display_plot
+    if show:
+        _display_plot(fig, ax)
+    else:
+        return fig, ax
+
     

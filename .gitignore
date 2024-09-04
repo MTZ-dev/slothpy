@@ -13,6 +13,7 @@
 *.so
 *.c
 *.cif
+*.pyd
 __pycache__
 .vscode
 .ipynb_checkpoints
@@ -25,7 +26,6 @@ Presentations
 benchmark
 examples
 Seminarium.ipynb
-slothPy
 seminarium
 seminarium.py
 gui
@@ -38,3 +38,4 @@ utmu.pyx
 Er.ipynb
 generate_ll_grid.py
 testy.py
+build

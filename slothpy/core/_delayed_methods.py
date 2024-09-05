@@ -63,7 +63,7 @@ class SltStatesEnergiesCm1(_SingleProcessed):
         fig, ax = _plot_energy_levels(self._result, **kwargs)
         from slothpy._gui._plot_gui import _display_plot
         if show:
-            _display_plot(self._result, 'energy_levels')
+            _display_plot(self._result, 'states_energy_cm_1')
         else:
             return fig, ax
     

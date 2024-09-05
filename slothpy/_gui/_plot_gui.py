@@ -2,7 +2,7 @@ import os
 from sys import argv
 
 from PyQt6.QtWidgets import QCheckBox, QDialog, QSpinBox, QDialogButtonBox, QLabel, QMessageBox, QWidget, QVBoxLayout, \
-    QApplication, QMainWindow, QFileDialog, QHBoxLayout, QGridLayout
+    QApplication, QMainWindow, QFileDialog, QHBoxLayout, QGridLayout, QAbstractSpinBox, QComboBox
 from PyQt6.QtGui import QAction, QCloseEvent, QIcon, QFont
 from PyQt6.QtCore import QSize, Qt
 
@@ -115,8 +115,9 @@ class PlotView(QMainWindow, ):
         self.ribbon = None
         self.data = data
         self.fig = None
+        self.canvas = None
         
-        if plot_type == 'energy_levels':
+        if plot_type == 'states_energy_cm_1':
             self.cutoff = 0
             self.energy_unit = 'wavenumber'
             self.energy_levels()
@@ -135,23 +136,33 @@ class PlotView(QMainWindow, ):
         fig = self.fig
         ax = self.ax
 
-        mpl_canvas = MplCanvas(fig, ax, self)
+        if self.canvas is None:
+            mpl_canvas = MplCanvas(fig, ax, self)
+            self.canvas = mpl_canvas
 
-        # Create toolbar, passing canvas as first parameter, parent (self, the MainWindow) as second.
-        toolbar = CustomNavigationToolbar(mpl_canvas, self)
+            # Create toolbar, passing canvas as first parameter, parent (self, the MainWindow) as second.
+            toolbar = CustomNavigationToolbar(mpl_canvas, self)
 
-        layout_main = QVBoxLayout()
-        layout_main.addWidget(toolbar)
-        layout_ribbons = QHBoxLayout()
-        self.ribbon.setParent(None)
-        layout_ribbons.addLayout(self.ribbon)
-        layout_ribbons.addWidget(mpl_canvas)
-        layout_main.addLayout(layout_ribbons)
+            layout_main = QVBoxLayout()
+            layout_main.addWidget(toolbar)
+            layout_ribbons = QHBoxLayout()
+            self.ribbon.setParent(None)
+            layout_ribbons.addLayout(self.ribbon)
+            layout_ribbons.addWidget(mpl_canvas)
+            layout_main.addLayout(layout_ribbons)
 
-        # Create a placeholder widget to hold our toolbar and canvas.
-        widget = QWidget()
-        widget.setLayout(layout_main)
-        self.setCentralWidget(widget)
+            # Create a placeholder widget to hold our toolbar and canvas.
+            widget = QWidget()
+            widget.setLayout(layout_main)
+            self.setCentralWidget(widget)
+        else:
+            self.canvas.figure = fig
+            self.canvas.figure.set_dpi(150)
+            self.canvas.figure.set_size_inches(5, 3.8)
+            self.canvas.axes = ax
+            self.canvas.figure.tight_layout()
+            self.canvas.draw()
+            #TODO: Better resize, figure should have consistent size
 
     def energy_levels(self):
 
@@ -160,11 +171,35 @@ class PlotView(QMainWindow, ):
         fig, ax = _plot_energy_levels(self.data, self.cutoff, self.energy_unit)
 
         # Create ribbon suitable for plot type
-        ribbon_layout = QGridLayout()
-        ribbon_layout.addWidget(QLabel('Number of states:'), 0, 0, alignment=Qt.AlignmentFlag.AlignCenter)
-        num_states_widged = QSpinBox(minimum=1, maximum=len(self.data))
-        num_states_widged.valueChanged.connect(self.energy_levels_cutoff)
-        ribbon_layout.addWidget(num_states_widged, 0, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+        ribbon_layout = QVBoxLayout()
+        ribbon_layout.setSpacing(0)
+        ribbon_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Widget that changes how many states are visible
+        number_states_layout = QHBoxLayout()
+        number_states_text = QLabel('Number of states:')
+        number_states_text.setFont(QFont('Helvetica', 12))
+        number_states_layout.addWidget(number_states_text, alignment=Qt.AlignmentFlag.AlignCenter)
+        number_states_widget = QSpinBox(minimum=1, maximum=len(self.data), value=len(self.data))
+        number_states_widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        number_states_widget.setMinimumWidth(55)
+        number_states_widget.setKeyboardTracking(False)
+        number_states_widget.valueChanged.connect(self.energy_levels_cutoff)
+        number_states_layout.addWidget(number_states_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        ribbon_layout.addLayout(number_states_layout)
+
+        # Widget that changes energy unit
+        energy_unit_layout = QHBoxLayout()
+        energy_unit_text = QLabel('Energy unit:')
+        energy_unit_text.setFont(QFont('Helvetica', 12))
+        energy_unit_layout.addWidget(energy_unit_text, alignment=Qt.AlignmentFlag.AlignCenter)
+        energy_unit_widget = QComboBox()
+        energy_unit_widget.addItems([r'Kj/mol', 'Hartree', 'eV', r'Kcal/mol', 'Wavenumber'])
+        energy_unit_widget.setCurrentText(self.energy_unit)
+        energy_unit_widget.setMouseTracking(False)
+        energy_unit_widget.currentTextChanged.connect(self.energy_levels_unit)
+        energy_unit_layout.addWidget(energy_unit_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        ribbon_layout.addLayout(energy_unit_layout)
 
         # Store changes
         self.fig = fig
@@ -173,7 +208,13 @@ class PlotView(QMainWindow, ):
 
     def energy_levels_cutoff(self, cutoff):
         self.cutoff = cutoff
+        self.update_energy_levels()
 
+    def energy_levels_unit(self, unit):
+        self.energy_unit = unit.lower().replace(r'/', '_')
+        self.update_energy_levels()
+
+    def update_energy_levels(self):
         from slothpy._general_utilities._plot import _plot_energy_levels
         fig, ax = _plot_energy_levels(self.data, self.cutoff, self.energy_unit)
         self.fig = fig

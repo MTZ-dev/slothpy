@@ -487,7 +487,7 @@ def _custom_color_cycler(number_of_colors: int, cmap1: str, cmap2: str):
 def _plot_zeeman_splitting(zeeman_array, magnetic_fields, orientations, ldfkgjdflgkdjf, dklfjgdfkgj):
     pass
 
-def energy_units(unit: Literal['kj/mol', 'eh', 'hartree', 'au', 'ev', 'kcal/mol', 'wavenumber']) -> tuple[float, str]:
+def energy_units(unit: Literal['kj_mol', 'eh', 'hartree', 'au', 'ev', 'kcal_mol', 'wavenumber']) -> tuple[float, str]:
     """
     Returns tuple of (float, str) which are conversion from cm^-1 to chosen unit
     and latex-type string of the name of this unit.
@@ -502,20 +502,20 @@ def energy_units(unit: Literal['kj/mol', 'eh', 'hartree', 'au', 'ev', 'kcal/mol'
     Tuple[float, str] of conversion scalar and latex-type unit name
     """
     unit = unit.lower()
-    unit_conversion = {'kj/mol': 0.0119627,
+    unit_conversion = {'kj_mol': 0.0119627,
                        'eh': 0.000124,
                        'hartree': 0.000124,
                        'au': 0.000124,
                        'ev': 0.000123,
-                       'kcal/mol': 0.0028591,
+                       'kcal_mol': 0.0028591,
                        'wavenumber': 1.0,
                        }
-    unit_label = {'kjmol': 'kJ·mol$^{-1}$',
+    unit_label = {'kj_mol': 'kJ·mol$^{-1}$',
                         'eh': 'Hartree',
                         'hartree': 'Hartree',
                         'au': 'Hartree',
                         'ev': 'eV',
-                        'kcal': 'kcal·mol$^{-1}$',
+                        'kcal_mol': 'kcal·mol$^{-1}$',
                         'wavenumber': 'cm$^{-1}$'
                         }
     return (unit_conversion[unit], unit_label[unit])

@@ -135,6 +135,9 @@ class PlotView(QMainWindow, ):
         
         fig = self.fig
         ax = self.ax
+        fig.set_dpi(100)
+        fig.set_size_inches(6, 4.8)
+        fig.tight_layout()
 
         if self.canvas is None:
             mpl_canvas = MplCanvas(fig, ax, self)
@@ -157,10 +160,7 @@ class PlotView(QMainWindow, ):
             self.setCentralWidget(widget)
         else:
             self.canvas.figure = fig
-            self.canvas.figure.set_dpi(150)
-            self.canvas.figure.set_size_inches(5, 3.8)
             self.canvas.axes = ax
-            self.canvas.figure.tight_layout()
             self.canvas.draw()
             #TODO: Better resize, figure should have consistent size
 
@@ -194,8 +194,7 @@ class PlotView(QMainWindow, ):
         energy_unit_text.setFont(QFont('Helvetica', 12))
         energy_unit_layout.addWidget(energy_unit_text, alignment=Qt.AlignmentFlag.AlignCenter)
         energy_unit_widget = QComboBox()
-        energy_unit_widget.addItems([r'Kj/mol', 'Hartree', 'eV', r'Kcal/mol', 'Wavenumber'])
-        energy_unit_widget.setCurrentText(self.energy_unit)
+        energy_unit_widget.addItems(['Wavenumber', r'Kj/mol', 'Hartree', 'eV', r'Kcal/mol'])
         energy_unit_widget.setMouseTracking(False)
         energy_unit_widget.currentTextChanged.connect(self.energy_levels_unit)
         energy_unit_layout.addWidget(energy_unit_widget, alignment=Qt.AlignmentFlag.AlignCenter)

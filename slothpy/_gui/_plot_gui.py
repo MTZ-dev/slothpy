@@ -2,9 +2,10 @@ import os
 from sys import argv
 
 from PyQt6.QtWidgets import QCheckBox, QDialog, QSpinBox, QDialogButtonBox, QLabel, QMessageBox, QWidget, QVBoxLayout, \
-    QApplication, QMainWindow, QFileDialog, QHBoxLayout, QGridLayout, QAbstractSpinBox, QComboBox
-from PyQt6.QtGui import QAction, QCloseEvent, QIcon, QFont
-from PyQt6.QtCore import QSize, Qt
+    QApplication, QMainWindow, QFileDialog, QHBoxLayout, QGridLayout, QAbstractSpinBox, QComboBox, QTabWidget, QFormLayout, \
+    QColorDialog
+from PyQt6.QtGui import QAction, QCloseEvent, QIcon, QFont, QColor
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
 
 import matplotlib as mpl  # import matplotlib after PyQt6
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
@@ -105,12 +106,94 @@ class CustomNavigationToolbar(NavigationToolbar):
 #TODO: Ribbon as a grid, for energy plot current functionalities to be implemented: removal of energy values, setting number of states shown, 
 # customization of appearance.
 
+class QColorComboBox(QComboBox):
+    ''' A drop down menu for selecting colors '''
+
+    # signal emitted if a color has been selected
+    selectedColor = pyqtSignal(QColor)
+
+    def __init__(self, parent = None, enableUserDefColors = True):
+        ''' if the user shall not be able to define colors on its own, then set enableUserDefColors=False '''
+        # init QComboBox
+        super(QColorComboBox, self).__init__(parent)
+
+        # enable the line edit to display the currently selected color
+        self.setEditable(True)
+        # read only so that there is no blinking cursor or sth editable
+        self.lineEdit().setReadOnly(True)
+
+        # text that shall be displayed for the option to pop up the QColorDialog for user defined colors
+        self._userDefEntryText = 'Custom'
+        # add the option for user defined colors
+        if (enableUserDefColors):
+            self.addItem(self._userDefEntryText)
+
+        self._currentColor = None
+
+        self.activated.connect(self._color_selected)
+        
+    # ------------------------------------------------------------------------
+    def addColors(self, colors):
+        ''' Adds colors to the QComboBox '''
+        for a_color in colors:
+            # if input is not a QColor, try to make it one
+            if (not (isinstance(a_color, QColor))):
+                a_color = QColor(a_color)
+            # avoid dublicates
+            if (self.findData(a_color) == -1):
+                # add the new color and set the background color of that item
+                self.addItem('', userData = a_color)
+                self.setItemData(self.count()-1, QColor(a_color), Qt.ItemDataRole.BackgroundRole)
+            
+    # ------------------------------------------------------------------------
+    def addColor(self, color):
+        ''' Adds the color to the QComboBox '''
+        self.addColors([color])
+
+    # ------------------------------------------------------------------------
+    def setColor(self, color):
+        ''' Adds the color to the QComboBox and selects it'''
+        self.addColor(color)
+        self._color_selected(self.findData(color), False)
+
+    # ------------------------------------------------------------------------
+    def getCurrentColor(self):
+        ''' Returns the currently selected QColor
+            Returns None if non has been selected yet
+        '''
+        return self._currentColor
+
+    # ------------------------------------------------------------------------
+    def _color_selected(self, index, emitSignal = True):
+        ''' Processes the selection of the QComboBox '''
+        # if a color is selected, emit the selectedColor signal
+        if (self.itemText(index) == ''):            
+            self._currentColor = self.itemData(index)
+            if (emitSignal):
+                self.selectedColor.emit(self._currentColor)
+                
+        # if the user wants to define a custom color
+        elif(self.itemText(index) == self._userDefEntryText):
+            # get the user defined color
+            new_color = QColorDialog.getColor(self._currentColor if self._currentColor else QColor.white)
+            if (new_color.isValid()):
+                # add the color to the QComboBox and emit the signal
+                self.addColor(new_color)
+                self._currentColor = new_color
+                if (emitSignal):
+                    self.selectedColor.emit(self._currentColor)
+        
+        # make sure that current color is displayed
+        if (self._currentColor):
+            self.setCurrentIndex(self.findData(self._currentColor))
+            self.lineEdit().setStyleSheet("background-color: "+self._currentColor.name())
 
 class PlotView(QMainWindow, ):
     def __init__(self, data, plot_type, onclose=None):
         super().__init__()
         self.setWindowTitle("SlothPy")
         self.setObjectName("MainWindow")
+        self.plot_type = plot_type
         self.onClose = onclose
         self.ribbon = None
         self.data = data
@@ -120,6 +203,9 @@ class PlotView(QMainWindow, ):
         if plot_type == 'states_energy_cm_1':
             self.cutoff = 0
             self.energy_unit = 'wavenumber'
+            self.marker_size = 500
+            self.marker_width = 2
+            self.marker_color = '#000000'
             self.energy_levels()
 
     def closeEvent(self, a0: QCloseEvent | None) -> None:
@@ -167,8 +253,7 @@ class PlotView(QMainWindow, ):
     def energy_levels(self):
 
         # Create energy levels plot
-        from slothpy._general_utilities._plot import _plot_energy_levels
-        fig, ax = _plot_energy_levels(self.data, self.cutoff, self.energy_unit)
+        self.initialize_energy_levels()
 
         # Create ribbon suitable for plot type
         ribbon_layout = QVBoxLayout()
@@ -196,14 +281,56 @@ class PlotView(QMainWindow, ):
         energy_unit_widget = QComboBox()
         energy_unit_widget.addItems(['Wavenumber', r'Kj/mol', 'Hartree', 'eV', r'Kcal/mol'])
         energy_unit_widget.setMouseTracking(False)
+        energy_unit_widget.setMinimumWidth(65)
         energy_unit_widget.currentTextChanged.connect(self.energy_levels_unit)
         energy_unit_layout.addWidget(energy_unit_widget, alignment=Qt.AlignmentFlag.AlignCenter)
         ribbon_layout.addLayout(energy_unit_layout)
 
+        # Widget that allows customization of a plot
+        tabs = QTabWidget()
+        
+        # Tab for customising the marker
+        markers_tab = QWidget()
+        markers_layout = QFormLayout()
+        markers_tab.setLayout(markers_layout)
+
+        marker_size_widget = QSpinBox(minimum=1, maximum=9999999, value=500)
+        marker_size_widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        marker_size_widget.setKeyboardTracking(False)
+        marker_size_widget.valueChanged.connect(self.marker_size_general)
+        markers_layout.addRow(QLabel('Marker size:'), marker_size_widget)
+
+        marker_width_widget = QSpinBox(minimum=0, maximum=9999999, value=2)
+        marker_width_widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        marker_width_widget.setKeyboardTracking(False)
+        marker_width_widget.valueChanged.connect(self.marker_width_general)
+        markers_layout.addRow(QLabel('Marker width:'), marker_width_widget)
+
+        marker_color_widget = QColorComboBox()
+        marker_color_widget.setColor(self.marker_color)
+        marker_color_widget.selectedColor.connect(self.marker_color_general)
+        markers_layout.addRow(QLabel('Marker color:'), marker_color_widget)
+
+        tabs.addTab(markers_tab, 'Markers')
+        ribbon_layout.addWidget(tabs)
+
         # Store changes
-        self.fig = fig
-        self.ax = ax
         self.ribbon = ribbon_layout
+
+    def marker_color_general(self, color):
+        self.marker_color = color.name()
+        if self.plot_type == 'states_energy_cm_1':
+            self.update_energy_levels()
+
+    def marker_size_general(self, value):
+        self.marker_size = value
+        if self.plot_type == 'states_energy_cm_1':
+            self.update_energy_levels()
+
+    def marker_width_general(self, value):
+        self.marker_width = value
+        if self.plot_type == 'states_energy_cm_1':
+            self.update_energy_levels()
 
     def energy_levels_cutoff(self, cutoff):
         self.cutoff = cutoff
@@ -213,14 +340,15 @@ class PlotView(QMainWindow, ):
         self.energy_unit = unit.lower().replace(r'/', '_')
         self.update_energy_levels()
 
-    def update_energy_levels(self):
+    def initialize_energy_levels(self):
         from slothpy._general_utilities._plot import _plot_energy_levels
-        fig, ax = _plot_energy_levels(self.data, self.cutoff, self.energy_unit)
+        fig, ax = _plot_energy_levels(array=self.data, cutoff=self.cutoff, energy_unit=self.energy_unit, marker_size=self.marker_size, marker_color=self.marker_color)
         self.fig = fig
         self.ax = ax
 
+    def update_energy_levels(self):
+        self.initialize_energy_levels()
         self.set_fig()
-
 
 class SlothGui(QApplication):
     def __init__(

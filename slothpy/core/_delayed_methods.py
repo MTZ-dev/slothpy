@@ -60,23 +60,14 @@ class SltStatesEnergiesCm1(_SingleProcessed):
         self._result = self._slt_group["STATES_ENERGIES_CM_1"][:]
 
     #TODO: plot
-    def _plot(self, show=True):
-        # fig, ax = plt.subplots()
-        # x_min = 0
-        # x_max = 1
-        # for energy in self._result:
-        #     ax.hlines(y=energy, xmin=x_min, xmax=x_max, colors='skyblue', linestyles='solid', linewidth=2)
-        #     ax.text(x_max + 0.1, energy, f'{energy:.1f}', va='center', ha='left')
-        # ax.set_ylabel('Energy (cm$^{-1}$)')
-        # ax.set_title('Energy Levels')
-        # ax.spines['top'].set_visible(False)
-        # ax.spines['right'].set_visible(False)
-        # ax.xaxis.set_ticks_position('none')
-        # ax.set_xticks([])
-        # plt.tight_layout()
-        # plt.show()
+    def _plot(self, show=True, **kwargs):
         from slothpy._general_utilities._plot import _plot_energy_levels
-        return _plot_energy_levels(self._result, show=show)
+        fig, ax = _plot_energy_levels(self._result, **kwargs)
+        from slothpy._gui._plot_gui import _display_plot
+        if show:
+            _display_plot(self._result, 'states_energy_cm_1')
+        else:
+            return fig, ax
     
     def _to_data_frame(self):
         self._df = DataFrame({'Energy (cm^-1)': self._result})

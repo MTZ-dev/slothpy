@@ -705,5 +705,15 @@ class SltHamiltonian():
         for i in range(len(self._magnetic_centers.keys())):
             info_list.append(self._magnetic_centers[i][1])
         return (self._mode, info_list, self._local_states)
+    
+
+class SltCrystalLattice():
+
+    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
+
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None:
+        self._hdf5: str = slt_group._hdf5
+        self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole, self._magnetic_interactions, self._electric_interactions, self._local_states = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine, local_states)
+        self._mode: str = None # "eslpjm"
 
 

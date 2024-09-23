@@ -154,7 +154,7 @@ class _SingleProcessed(ABC):
 
 class _MultiProcessed(_SingleProcessed):
 
-    __slots__ = _SingleProcessed.__slots__ + ["_slt_hamiltonian", "_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape", "_transpose_result"]
+    __slots__ = _SingleProcessed.__slots__ + ["_slt_hamiltonian", "_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape", "_transpose_result", "_additional_result", "_additional_result_shape"]
 
     @abstractmethod
     def __init__(self, slt_group, number_to_parallelize: int, number_cpu: int, number_threads: int, autotune: bool, smm: SharedMemoryManager = None, terminate_event: Event = None, slt_save: str = None) -> None:
@@ -177,6 +177,8 @@ class _MultiProcessed(_SingleProcessed):
         self._result_shape = ()
         self._transpose_result = None
         self._slt_hamiltonian = None
+        self._additional_result = False
+        self._additional_result_shape = ()
 
     @contextmanager
     def _ensure_shared_memory_manager(self):
@@ -194,14 +196,13 @@ class _MultiProcessed(_SingleProcessed):
             self._sm.append(sm)
             self._sm_arrays_info.append(sm_info)
         self._args_arrays = []
-        sm_info, sm = _to_shared_memory(self._smm, zeros((self._number_processes,), dtype=int64, order="C"))
+        self._sm_progress_array_info, sm = _to_shared_memory(self._smm, zeros((self._number_processes,), dtype=int64, order="C"))
         self._sm.append(sm)
-        self._sm_progress_array_info = sm_info
         if not self._returns:
-            sm_info, sm = _to_shared_memory(self._smm, self._result)
+            self._sm_result_info, sm = _to_shared_memory(self._smm, self._result)
             self._sm.append(sm)
-            self._sm_result_info = sm_info
             self._result = None
+        self._args_arrays = []
     
     def _retrieve_arrays_and_results_from_shared_memory(self):
         self._args_arrays = []
@@ -359,7 +360,7 @@ class _MultiProcessed(_SingleProcessed):
             with ExitStack() as stack:
                 stack.enter_context(self._ensure_shared_memory_manager())
                 self._create_shared_memory()
-                if settings.monitor:
+                if settings.monitor: # After gui will be created this has to be removed from here and monitor should be called from the main gui process providing smm to the method for progress array
                     monitor = Process(target=_run_monitor_gui, args=(self._sm_progress_array_info, self._number_to_parallelize, self._number_processes, self._method_name))
                     monitor.start()
                 result = self._executor()
@@ -372,6 +373,8 @@ class _MultiProcessed(_SingleProcessed):
                     self._result = _from_shared_memory_to_array(self._sm_result_info, reshape=(self._result_shape))
                     if self._transpose_result is not None:
                         self._result = self._result.transpose(self._transpose_result)
+                    if self._additional_result:
+                        setattr(self, self._additional_result, _from_shared_memory_to_array(self._sm_arrays_info[-1], reshape=(self._additional_result_shape)))
                 self._ready = True
         if self._slt_save is not None:
             self.save()

@@ -65,8 +65,8 @@ def hamiltonian_from_orca(
 
     Note
     ----
-    ORCA calculations have to be done with the "printlevel 3" keyword for
-    outputs to be readable by SlothPy.
+    ORCA calculations have to be done with the "printlevel 5" keyword in the
+    "rel" section for outputs to be readable by SlothPy.
     """
 
     if slt_filename.endswith(".slt"):

@@ -19,12 +19,14 @@ from typing import Literal, Union
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.synchronize import Event
 
-from numpy import ndarray, zeros
+from numpy import ndarray, zeros, empty
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 
 from slothpy.core._config import settings
-from slothpy.core._drivers import _SingleProcessed, _MultiProcessed
+from slothpy.core._slothpy_exceptions import SltCompError, SltFileError
+from slothpy.core._drivers import _SingleProcessed, _MultiProcessed, ensure_ready
+from slothpy._general_utilities._constants import RED, BLUE, GREEN, RESET
 from slothpy._general_utilities._constants import H_CM_1
 from slothpy._general_utilities._utils import slpjm_components_driver
 from slothpy._magnetism._zeeman import _zeeman_splitting_proxy
@@ -534,13 +536,10 @@ class SltStatesMagneticDipoleMomenta(_SingleProcessed):
 
 class SltPropertyUnderMagneticField(_MultiProcessed):
 
-    __slots__ = _MultiProcessed.__slots__ + ["_mode", "_matrix", "_return_energies", "_energies", "_direction", "_magnetic_fields", "_orientations", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
-
-    def __repr__():
-        pass # tutaj jak z SLPGroup różne rperezentacje
+    __slots__ = _MultiProcessed.__slots__ + ["_mode", "_matrix", "_return_energies", "_energies", "_direction", "_magnetic_fields", "_orientations", "_number_of_states", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine", "_dims"]
 
     def __init__(self, slt_group,
-        mode: Literal["s", "l", "p", "j", "m"],
+        mode: Union[Literal["s", "l", "p", "j", "m"], str],
         full_matrix: bool,
         return_energies: bool,
         direction: Union[ndarray, Literal["xyz"]],
@@ -559,52 +558,99 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
         terminate_event: Event = None,
         ) -> None:
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0], number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
-        self._method_name = "Zeeman Splitting"
-        self._method_type = "ZEEMAN_SPLITTING"
+        self._mode = mode
+        self._method_name = f"{self._mode.upper()} Under Magnetic Field"
+        self._method_type = "PROPERTY_UNDER_MAGNETIC_FIELD"
+        self._full_matrix = full_matrix
+        self._return_energies = return_energies
+        self._direction = direction
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
+        if self._orientations.shape[1] == 4:
+            self._returns = True
+        self._number_of_states = number_of_states
         self._states_cutoff = states_cutoff
         self._rotation = rotation
         self._electric_field_vector = electric_field_vector
         self._hyperfine = hyperfine
-        self._args = (number_of_states, electric_field_vector)
-        self._executor_proxy = _zeeman_splitting_proxy
+        self._args = [self._mode, self._full_matrix, self._return_energies, self._direction, self._number_of_states, self._electric_field_vector]
+        self._executor_proxy = _property_under_magnetic_field_proxy
         self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False)
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
+        for mod in self._mode:
+            if mod not in self._slt_hamiltonian._mode:
+                self._slt_hamiltonian._mode += mod
+        self._dims = [] if self._direction != "xyz" else [3]
+        self._energies = empty((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._number_of_states), dtype=settings.float, order="C") if self._return_energies and not self._returns else empty((1))
+        self._additional_result = True
+        self._additional_result_shape = (self._magnetic_fields.shape[0], self._orientations.shape[0], self._number_of_states)
+        if full_matrix:
+            self._dims += [self._number_of_states] * 2
+        else:
+            self._dims.append(self._number_of_states)
+    
+    def __repr__(self):
+        return f"<{RED}Slt{self._mode.upper()}UnderMagneticField{RESET} object from {BLUE}Group{RESET} '{self._group_name}' {GREEN}File{RESET} '{self._hdf5}'.>"
     
     def _load_args_arrays(self):
-        self._args_arrays = (*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations)
-        if self._orientations.shape[1] == 4:
-            self._returns = True
-        elif self._orientations.shape[1] == 3:
-            self._result = zeros((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._args[0]), dtype=self._magnetic_fields.dtype, order="C")
-            self._result_shape = (self._orientations.shape[0], self._magnetic_fields.shape[0], self._args[0])
+        self._args_arrays = [*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations, self._energies] # additional result must be the last
+        if not self._returns:
+            self._result = empty((len(self._mode), self._magnetic_fields.shape[0] * self._orientations.shape[0], *self._dims), dtype=settings.complex if self._full_matrix else settings.float, order="C")
+            self._result_shape = (len(self._mode), self._orientations.shape[0], self._magnetic_fields.shape[0], *self._dims)
     
     def _gather_results(self, result_queue):
-        zeeman_splitting_array = zeros((self._magnetic_fields.shape[0], self._args[0]), dtype=self._magnetic_fields.dtype)
+        property_array = zeros((len(self._mode), self._magnetic_fields.shape[0], *self._dims), dtype=settings.complex if self._full_matrix else settings.float, order="C")
+        self._energies = zeros((self._magnetic_fields.shape[0], self._number_of_states), dtype=settings.float, order="C")
         while not result_queue.empty():
-            start_field_index, end_field_index, zeeman_array = result_queue.get()
+            start_field_index, end_field_index, property_array_result, energies_array_result = result_queue.get()
             for i, j in enumerate(range(start_field_index, end_field_index)):
-                zeeman_splitting_array[j, :] += zeeman_array[i, :]
-        return zeeman_splitting_array
+                property_array[:, j] += property_array_result[:, i]
+                self._energies[j] += energies_array_result[i]
+        return property_array
 
     def _save(self):
+        mode_dict = {"s": "SPIN", "l": "ANGULAR_MOMENTA", "p": "ELECTRIC_DIPOLE_MOMENTA", "j": "TOTAL_ANGULAR_MOMENTA", "m": "MAGNETIC_DIPOLE_MOMENTA"}
+        xyz_string = 'xyz, ' if self._direction == 'xyz' else ''
+        field_orientations_format = f'[fields, {xyz_string}:]' if self._orientations.shape[1] == 4 else f'[orientations, fields, {xyz_string}:]'
         self._metadata_dict = {
             "Type": self._method_type,
             "Kind": "AVERAGE" if self._orientations.shape[1] == 4 else "DIRECTIONAL",
             "Precision": settings.precision.upper(),
-            "Description": f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."
+            "Mode": self._mode.upper(),
+            "Description": f"Group containing {self._mode.upper()} {'matrices' if self._full_matrix else ''} under magnetic field calculated from Group '{self._group_name}'."
         }
         self._data_dict = {
-            "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._orientations.shape[1] == 4 else "[orientations, fields, energies]")),
             "MAGNETIC_FIELDS": (self._magnetic_fields, "Dataset containing magnetic field (T) values used in the simulation."),
             "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),
+            "DIRECTION": (self._direction, "Dataset containing information about the direction of the calculated properties."),
         }
-
+        if self._return_energies:
+            self._data_dict["ENERGIES"] = (self._energies, f"Dataset containing energies (a.u.) of states under magnetic fields in the form {field_orientations_format[-2]} energies].")
+        for index, mode in enumerate(self._mode):
+            self._data_dict[mode_dict[mode]] = (self._result[index], f"Dataset containing {mode.upper()} {'matrices' if self._full_matrix else 'expectation values'} under magnetic fields in the form {field_orientations_format}.")
+    
     def _load_from_file(self):
-        self._result = self._slt_group["ZEEMAN_SPLITTING"][:]
+        mode_dict = {"s": "SPIN", "l": "ANGULAR_MOMENTA", "p": "ELECTRIC_DIPOLE_MOMENTA", "j": "TOTAL_ANGULAR_MOMENTA", "m": "MAGNETIC_DIPOLE_MOMENTA"}
+        self._mode = self._slt_group.attributes["Mode"]
+        dims = self._slt_group[self._mode[0]].shape
+        self._result = empty((len(self._mode), *dims), dtype=settings.complex if len(dims) == 3 else settings.float, order="C")
+        for index, mode in enumerate(self._mode):
+            self._result[index] = self._slt_group[mode_dict[mode]][:]
         self._magnetic_fields = self._slt_group["MAGNETIC_FIELDS"][:]
         self._orientations = self._slt_group["ORIENTATIONS"][:]
+        self._direction = self._slt_group["DIRECTION"][:]
+        try:
+            self._energies = self._slt_group["ENERGIES"][:]
+        except SltFileError:
+            self._return_energies = False
+    
+    @property
+    @ensure_ready
+    def energies(self):
+        if self._return_energies:
+            return self._energies
+        else:
+            raise SltCompError(self._hdf5, RuntimeError("Computation of energies was not requested. To obtain them run calculations again with return_energies = True."))
 
     def _plot(self, **kwargs):
         pass
@@ -612,11 +658,11 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
     def _to_data_frame(self):
         pass
 
-    #matrix, states, etc under field with energies returned also in input parser add to error with direct acces to properties to use property_under_magnetic_field instead!! for slothpy hamiltonians with field [0,0,0]
+    # also in input parser add to error with direct acces to properties to use property_under_magnetic_field instead!! for slothpy hamiltonians with field [0,0,0]
 
 class SltZeemanSplitting(_MultiProcessed):
 
-    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
+    __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_number_of_states", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
      
     def __init__(self, slt_group,
         magnetic_fields: ndarray,
@@ -638,22 +684,23 @@ class SltZeemanSplitting(_MultiProcessed):
         self._method_type = "ZEEMAN_SPLITTING"
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
+        self._number_of_states = number_of_states
+        if self._orientations.shape[1] == 4:
+            self._returns = True
         self._states_cutoff = states_cutoff
         self._rotation = rotation
         self._electric_field_vector = electric_field_vector
         self._hyperfine = hyperfine
-        self._args = (number_of_states, electric_field_vector)
+        self._args = [self._number_of_states, self._electric_field_vector]
         self._executor_proxy = _zeeman_splitting_proxy
         self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False)
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
     
     def _load_args_arrays(self):
-        self._args_arrays = (*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations)
-        if self._orientations.shape[1] == 4:
-            self._returns = True
-        elif self._orientations.shape[1] == 3:
-            self._result = zeros((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._args[0]), dtype=self._magnetic_fields.dtype, order="C")
-            self._result_shape = (self._orientations.shape[0], self._magnetic_fields.shape[0], self._args[0])
+        self._args_arrays = [*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations]
+        if not self._returns:
+            self._result = empty((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._number_of_states), dtype=self._magnetic_fields.dtype, order="C")
+            self._result_shape = (self._orientations.shape[0], self._magnetic_fields.shape[0], self._number_of_states)
     
     def _gather_results(self, result_queue):
         zeeman_splitting_array = zeros((self._magnetic_fields.shape[0], self._args[0]), dtype=self._magnetic_fields.dtype)
@@ -713,22 +760,22 @@ class SltMagnetisation(_MultiProcessed):
         self._method_type = "MAGNETISATION"
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
+        if self._orientations.shape[1] == 4:
+            self._returns = True
         self._temperatures = temperatures
         self._states_cutoff = states_cutoff
         self._rotation = rotation
         self._electric_field_vector = electric_field_vector
         self._hyperfine = hyperfine
-        self._args = (electric_field_vector,)
+        self._args = [self._electric_field_vector]
         self._executor_proxy = _magnetisation_proxy
         self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, True)
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
     
     def _load_args_arrays(self):
-        self._args_arrays = (*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations, self._temperatures)
-        if self._orientations.shape[1] == 4:
-            self._returns = True
-        elif self._orientations.shape[1] == 3:
-            self._result = zeros((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._temperatures.shape[0]), dtype=self._magnetic_fields.dtype, order="C")
+        self._args_arrays = [*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations, self._temperatures]
+        if not self._returns:
+            self._result = empty((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._temperatures.shape[0]), dtype=self._magnetic_fields.dtype, order="C")
             self._result_shape = (self._orientations.shape[0], self._magnetic_fields.shape[0], self._temperatures.shape[0])
             self._transpose_result = (0, 2, 1)
     

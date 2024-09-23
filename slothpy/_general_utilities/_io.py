@@ -352,12 +352,12 @@ def _molcas_spin_orbit_to_slt(
             group.attrs["Precision"] = settings.precision.upper()
             if electric_dipole_momenta:
                 group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
-            group.attrs["Description"] = "Relativistic SOC MOLCAS results."
+            group.attrs["Description"] = "Relativistic MOLCAS results."
 
             dataset_rassi = rassi["SOS_ENERGIES"][:] - min(rassi["SOS_ENERGIES"][:])
             group.attrs["States"] = dataset_rassi.shape[0]
             dataset_out = group.create_dataset("STATES_ENERGIES", shape=dataset_rassi.shape, dtype=settings.float, data=dataset_rassi.astype(settings.float), chunks=True)
-            dataset_out.attrs["Description"] = "SOC energies."
+            dataset_out.attrs["Description"] = "Energies."
 
             dataset_rassi = rassi["SOS_SPIN_REAL"][:, :, :] + 1j * rassi["SOS_SPIN_IMAG"][:, :, :]
             dataset_out = group.create_dataset("SPINS", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)

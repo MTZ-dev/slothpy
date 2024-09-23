@@ -254,7 +254,7 @@ class SltFile():
         return representation.rstrip()
 
     def __repr__(self) -> str:
-        return f"<{RED}SltSltFile{RESET} object for {GREEN}File{RESET} '{self._hdf5}'.>"
+        return f"<{RED}SltFile{RESET} object for {GREEN}File{RESET} '{self._hdf5}'.>"
 
     def _get_hdf5_groups_datasets_and_attributes(self):
         self._groups = {}

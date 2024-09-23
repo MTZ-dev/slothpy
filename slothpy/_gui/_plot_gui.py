@@ -175,7 +175,7 @@ class QColorComboBox(QComboBox):
         # if the user wants to define a custom color
         elif(self.itemText(index) == self._userDefEntryText):
             # get the user defined color
-            new_color = QColorDialog.getColor(self._currentColor if self._currentColor else QColor.white)
+            new_color = QColorDialog.getColor(self._currentColor if self._currentColor else QColor('white'))
             if (new_color.isValid()):
                 # add the color to the QComboBox and emit the signal
                 self.addColor(new_color)
@@ -199,6 +199,8 @@ class PlotView(QMainWindow, ):
         self.data = data
         self.fig = None
         self.canvas = None
+        self.frame_width = 1
+        self.frame_color = '#000000'
         
         if plot_type == 'states_energy_cm_1':
             self.cutoff = 0
@@ -206,6 +208,7 @@ class PlotView(QMainWindow, ):
             self.marker_size = 500
             self.marker_width = 2
             self.marker_color = '#000000'
+            
             self.energy_levels()
 
     def closeEvent(self, a0: QCloseEvent | None) -> None:
@@ -314,8 +317,39 @@ class PlotView(QMainWindow, ):
         tabs.addTab(markers_tab, 'Markers')
         ribbon_layout.addWidget(tabs)
 
+        # Tab for customising the frame
+        frame_tab = QWidget()
+        frame_layout = QFormLayout()
+        frame_tab.setLayout(frame_layout)
+
+        frame_width_widget = QSpinBox(minimum=0, maximum=9999999, value=2)
+        frame_width_widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        frame_width_widget.setKeyboardTracking(False)
+        frame_width_widget.valueChanged.connect(self.frame_width_general)
+        frame_layout.addRow(QLabel('Marker width:'), frame_width_widget)
+
+        frame_color_widget = QColorComboBox()
+        frame_color_widget.setColor(self.frame_color)
+        frame_color_widget.selectedColor.connect(self.frame_color_general)
+        frame_layout.addRow(QLabel('Marker color:'), frame_color_widget)
+
+        tabs.addTab(frame_tab, 'Frame')
+        ribbon_layout.addWidget(tabs)
+
+        # Tab for customising ticks
+
         # Store changes
         self.ribbon = ribbon_layout
+    
+    def frame_color_general(self, color):
+        self.frame_color = color.name()
+        if self.plot_type == 'states_energy_cm_1':
+            self.update_energy_levels()
+
+    def frame_width_general(self, value):
+        self.frame_width = value
+        if self.plot_type == 'states_energy_cm_1':
+            self.update_energy_levels()
 
     def marker_color_general(self, color):
         self.marker_color = color.name()
@@ -342,9 +376,10 @@ class PlotView(QMainWindow, ):
 
     def initialize_energy_levels(self):
         from slothpy._general_utilities._plot import _plot_energy_levels
-        fig, ax = _plot_energy_levels(array=self.data, cutoff=self.cutoff, energy_unit=self.energy_unit, marker_size=self.marker_size, marker_color=self.marker_color)
+        fig, ax = _plot_energy_levels(array=self.data, cutoff=self.cutoff, energy_unit=self.energy_unit, marker_size=self.marker_size, marker_color=self.marker_color, frame_width=self.frame_width, frame_color=self.frame_color)
         self.fig = fig
         self.ax = ax
+        
 
     def update_energy_levels(self):
         self.initialize_energy_levels()

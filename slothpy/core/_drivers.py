@@ -27,6 +27,7 @@ from datetime import datetime
 
 from numpy import array, zeros, any, all, median, int64
 
+from slothpy.core._registry import MethodTypeMeta
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import slothpy_exc_methods as slothpy_exc
 from slothpy._general_utilities._system import SltProcessPool, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array, _dummy
@@ -43,16 +44,14 @@ def ensure_ready(func):
     
     return wrapper
 
-class _SingleProcessed(ABC):
+class _SingleProcessed(ABC, metaclass=MethodTypeMeta):
 
-    __slots__ = ["_method_name", "_method_type", "_slt_group", "_hdf5", "_group_name", "_result", "_ready", "_slt_save", "_df", "_metadata_dict", "_data_dict", "_is_from_file"]
+    __slots__ = ["_slt_group", "_hdf5", "_group_name", "_result", "_ready", "_slt_save", "_df", "_metadata_dict", "_data_dict", "_is_from_file"]
 
     @abstractmethod
     def __init__(self, slt_group, slt_save: str = None) -> None:
         super().__init__()
         from slothpy.core._slt_file import SltGroup
-        self._method_name = None
-        self._method_type = None
         self._slt_group: SltGroup  = slt_group
         self._hdf5 = slt_group._hdf5
         self._group_name = slt_group._group_name
@@ -68,7 +67,7 @@ class _SingleProcessed(ABC):
         return f"<{RED}{self.__class__.__name__}{RESET} object from {BLUE}Group{RESET} '{self._group_name}' {GREEN}File{RESET} '{self._hdf5}'.>"
     
     @classmethod
-    def _from_file(cls, slt_group) -> _SingleProcessed:
+    def _from_slt_file(cls, slt_group) -> _SingleProcessed:
         instance = cls.__new__(cls)
         instance._slt_group = slt_group
         instance._hdf5 = slt_group._hdf5
@@ -76,7 +75,7 @@ class _SingleProcessed(ABC):
         instance._result = None
         instance._slt_save = None
         instance._df = None
-        instance._load_from_file()
+        instance._load_from_slt_file()
         instance._ready = True
         instance._is_from_file = True
 
@@ -113,7 +112,7 @@ class _SingleProcessed(ABC):
         _save_data_to_slt(self._hdf5, self._slt_save, self._data_dict, self._metadata_dict)
 
     @abstractmethod
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         pass
     
     @abstractmethod

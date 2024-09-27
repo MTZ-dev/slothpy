@@ -18,6 +18,8 @@ from .creation_functions import (
     hamiltonian_from_molcas,
     hamiltonian_from_orca,
     slt_file,
+    xyz,
+    unit_cell,
 )
 
 from .slt_file_object import SltFile
@@ -37,6 +39,9 @@ __all__ = [
     "slt_file",
     "hamiltonian_from_molcas",
     "hamiltonian_from_orca",
+    "xyz",
+    "unit_cell",
+    "crystal_lattice",
     "SltFile",
     "settings",
     "turn_on_monitor",

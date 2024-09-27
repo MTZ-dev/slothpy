@@ -17,6 +17,7 @@
 from typing import Union
 import warnings
 from ast import literal_eval
+from functools import wraps
 
 from h5py import File, Group, Dataset
 from numpy import ndarray, array, empty, float32, float64, tensordot, abs, diag
@@ -25,8 +26,9 @@ from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
 from scipy.linalg import eigvalsh
 
-from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError
+from slothpy.core._registry import MethodTypeMeta, type_registry
 from slothpy.core._config import settings
+from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError, SltReadError
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
@@ -67,7 +69,12 @@ class SltAttributes:
             dict_str = f"{RED}Attributes{RESET}: " + ', '.join([f"{YELLOW}{key}{RESET}: {value}" for key, value in item.attrs.items()])
             formatted_str = f"{{{dict_str}}}".rstrip()
             return formatted_str
-
+    
+    @slothpy_exc("SltFileError")
+    def __delitem__(self, attr_name):
+        with File(self._hdf5, 'r+') as file:
+            item = file[self._item_path]
+            del item.attrs[attr_name]
 
 class SltGroup:
     def __init__(self, hdf5_file, group_name):
@@ -123,7 +130,6 @@ class SltGroup:
         else:
             raise RuntimeError("This is a {BLUE}Proxy Group{RESET} and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
 
-
     @slothpy_exc("SltFileError")
     def __delitem__(self, key):
         with File(self._hdf5, 'r+') as file:
@@ -131,6 +137,45 @@ class SltGroup:
             if key not in group:
                 raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' does not exist in the {BLUE}Group{RESET} '{self._group_name}'.")
             del group[key]
+
+    def _delegate_method_to_slt_group(method):
+        @wraps(method)
+        def wrapper(self, *args, **kwargs):
+            if not self._exists:
+                raise SltFileError(self._hdf5, IOError(f"{BLUE}Group{RESET} '{self._group_name}' does not exist in the .slt file.")) from None
+            obj = type_registry.get(self.type)
+            if hasattr(obj, '_from_slt_file'):
+                obj = obj._from_slt_file(self)
+            else:
+                obj = obj(self)
+            delegated_method = getattr(obj, method.__name__, None)
+            if delegated_method is None:
+                raise AttributeError(
+                    f"'{obj.__class__.__name__}' object has no method '{method.__name__}'."
+                )
+            return delegated_method(*args, **kwargs)
+        
+        return wrapper
+
+    @_delegate_method_to_slt_group
+    def plot(self, *args, **kwargs):
+        pass
+    
+    @_delegate_method_to_slt_group
+    def to_numpy_array(self, *args, **kwargs):
+        pass
+    
+    @_delegate_method_to_slt_group
+    def to_data_frame(self, *args, **kwargs):
+        pass
+    
+    @_delegate_method_to_slt_group
+    def to_csv(self, *args, **kwargs):
+        pass
+
+    @_delegate_method_to_slt_group
+    def to_xyz(self, *args, **kwargs):
+        pass
         
     @property
     def attr(self):
@@ -138,6 +183,13 @@ class SltGroup:
         Property to mimic h5py's attribute access convention.
         """
         return self.attributes
+    
+    @property
+    def type(self):
+        try:
+            return self.attributes["Type"]
+        except SltFileError as exc:
+            raise SltReadError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' is not a valid SlothPy group and has no type.") from None
     
     @property
     @validate_input("HAMILTONIAN", True)
@@ -587,7 +639,8 @@ class SltDatasetJM():
                 raise ValueError("The only supported options are 'J' for total angular momenta or 'M' for magnetic dipole momenta.")
             
 
-class SltHamiltonian():
+class SltHamiltonian(metaclass=MethodTypeMeta):
+    _method_type = "HAMILTONIAN"
 
     __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
 
@@ -707,7 +760,8 @@ class SltHamiltonian():
         return (self._mode, info_list, self._local_states)
     
 
-class SltCrystalLattice():
+class SltCrystalLattice(metaclass=MethodTypeMeta):
+    _method_type = "CRYSTAL_LATTICE"
 
     __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
 

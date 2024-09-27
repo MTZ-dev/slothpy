@@ -17,29 +17,12 @@
 from os import remove
 from os.path import join
 from re import compile, search
-from h5py import File
-from numpy import (
-    ndarray,
-    dtype,
-    array,
-    ascontiguousarray,
-    zeros,
-    empty,
-    any,
-    diagonal,
-    min,
-    int64,
-    float64,
-    complex128,
-)
+from h5py import File, string_dtype
+from numpy import ndarray, dtype, array, ascontiguousarray, zeros, empty, any, diagonal, min, int64, float64, complex128
 from numpy.linalg import eigh, eigvalsh
 from typing import Tuple
-from slothpy._general_utilities._constants import YELLOW, RESET, H_CM_1
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
 from slothpy._angular_momentum._rotation import _rotate_vector_operator
-# from slothpy._general_utilities._math_expresions import (
-#     _total_angular_momenta_from_angular_momenta,
-# )
 from slothpy.core._config import settings
 
 def _grep_to_file(
@@ -333,20 +316,13 @@ def _orca_spin_orbit_to_slt(
     output.close()
 
 
-def _molcas_spin_orbit_to_slt(
-    path_molcas: str,
-    inp_molcas: str,
-    path_out: str,
-    hdf5_output: str,
-    group_name: str,
-    electric_dipole_momenta: bool = False,
-) -> None:
-    rassi_path_name = join(path_molcas, inp_molcas)
-    hdf5_file = join(path_out, hdf5_output)
+def _molcas_to_slt(molcas_filepath: str, slt_filepath: str, group_name: str, electric_dipole_momenta: bool = False) -> None:
+    if not molcas_filepath.endswith(".rassi.h5"):
+        slt_filepath += ".rassi.h5"
 
-    with File(f"{rassi_path_name}.rassi.h5", "r") as rassi:
-        with File(f"{hdf5_file}.slt", "a") as output:
-            group = output.create_group(group_name)
+    with File(f"{molcas_filepath}", "r") as rassi:
+        with File(f"{slt_filepath}", "a") as slt:
+            group = slt.create_group(group_name)
             group.attrs["Type"] = "HAMILTONIAN"
             group.attrs["Kind"] = "MOLCAS"
             group.attrs["Precision"] = settings.precision.upper()
@@ -357,7 +333,7 @@ def _molcas_spin_orbit_to_slt(
             dataset_rassi = rassi["SOS_ENERGIES"][:] - min(rassi["SOS_ENERGIES"][:])
             group.attrs["States"] = dataset_rassi.shape[0]
             dataset_out = group.create_dataset("STATES_ENERGIES", shape=dataset_rassi.shape, dtype=settings.float, data=dataset_rassi.astype(settings.float), chunks=True)
-            dataset_out.attrs["Description"] = "Energies."
+            dataset_out.attrs["Description"] = "SOC energies."
 
             dataset_rassi = rassi["SOS_SPIN_REAL"][:, :, :] + 1j * rassi["SOS_SPIN_IMAG"][:, :, :]
             dataset_out = group.create_dataset("SPINS", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
@@ -371,6 +347,20 @@ def _molcas_spin_orbit_to_slt(
                 dataset_rassi = rassi["SOS_EDIPMOM_REAL"][:, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][:, :, :]
                 dataset_out = group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
                 dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
+
+
+def _xyz_to_slt(slt_filepath, group_name, elements, positions):
+    with File(slt_filepath, 'a') as slt:
+        group = slt.create_group(group_name)
+        group.attrs["Type"] = "XYZ"
+        group.attrs["Number_of_atoms"] = len(elements)
+        group.attrs["Precision"] = settings.precision.upper()
+        group.attrs["Description"] = "XYZ file."
+        dt = string_dtype(encoding='utf-8')
+        dataset = group.create_dataset('ELEMENTS', data=array(elements, dtype='S'), dtype=dt)
+        dataset.attrs["Description"] = "List of elements from the XYZ file."
+        dataset = group.create_dataset('COORDINATES', data=positions, dtype=settings.float)
+        dataset.attrs["Description"] = "List of elements coordinates from the XYZ file."
 
 
 def _load_orca_hdf5(filename, group, rotation):

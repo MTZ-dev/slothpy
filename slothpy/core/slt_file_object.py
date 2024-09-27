@@ -128,7 +128,7 @@ class SltFile():
     __slots__ = ["_hdf5", "_groups", "_datasets", "_groups_and_datasets"]
 
     @classmethod
-    def _new(cls, filepath: str, filename: str):
+    def _new(cls, filepath: str):
         """
         This is a private method for initializing the SltFile object that
         should be only used by the creation_functions.
@@ -148,10 +148,10 @@ class SltFile():
             An instance of the SltFile class.
         """
 
-        filename += ".slt"
-        hdf5_file = path.join(filepath, filename)
+        if not filepath.endswith(".slt"):
+            filepath += ".slt"
         obj = super().__new__(cls)
-        obj._hdf5 = hdf5_file
+        obj._hdf5 = filepath
         obj._get_hdf5_groups_datasets_and_attributes()
 
         return obj

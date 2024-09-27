@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Module for stroing conastants used by other Sloth modules."""
+"""Module for storing conastants used by other Sloth modules."""
 
 # ANSI escape codes for text colors
 RED = "\033[31m"

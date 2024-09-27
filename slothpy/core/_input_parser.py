@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import inspect 
+import inspect
 from functools import wraps
-from typing import Literal
 from os import cpu_count
 from warnings import warn
 from numpy import ndarray, asarray, ascontiguousarray, allclose, identity, log, int64
@@ -27,7 +26,7 @@ from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1
 from slothpy._general_utilities._io import _group_exists
 from slothpy.core._config import settings
 
-def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = False, only_hamiltonian_check: bool = False):
+def validate_input(group_type: list[str] = None, direct_acces: bool = False, only_hamiltonian_check: bool = False):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -38,15 +37,9 @@ def validate_input(group_type: Literal["HAMILTONIAN"], direct_acces: bool = Fals
             self = bound_args.arguments["self"] if "self" in bound_args.arguments.keys() else bound_args.arguments["slt_group"]
 
             if not self._exists:
-                raise SltFileError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' does not exist in the {GREEN}File{RESET}: '{self._hdf5}'.")
+                raise SltFileError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' does not exist in the .slt file.")
 
-            try:
-                self.attributes["Type"]
-                self.attributes["States"]
-            except SltFileError as exc:
-                raise SltReadError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' is not a valid SlothPy group.") from None
-
-            if self.attributes["Type"] != group_type:
+            if group_type and self.type not in group_type:
                 raise SltReadError(self._hdf5, None, f"Wrong group type: '{self.attributes['Type']}' of {BLUE}Group{RESET}: '{self._group_name}' from the {GREEN}File{RESET}: '{self._hdf5}'. Expected '{group_type}' type.")
 
             if self.attributes["Type"] == "HAMILTONIAN" and direct_acces:

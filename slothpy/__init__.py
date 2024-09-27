@@ -33,6 +33,8 @@ from multiprocessing import current_process
 
 from .core import (
     slt_file,
+    xyz,
+    unit_cell,
     hamiltonian_from_molcas,
     hamiltonian_from_orca,
     settings,
@@ -56,6 +58,8 @@ from . import export
 
 __all__ = [
     "slt_file",
+    "xyz",
+    "unit_cell",
     "hamiltonian_from_molcas",
     "hamiltonian_from_orca",
     "SltFile",

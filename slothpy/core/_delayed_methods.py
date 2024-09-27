@@ -33,13 +33,13 @@ from slothpy._magnetism._zeeman import _zeeman_splitting_proxy
 from slothpy._magnetism._magnetisation import _magnetisation_proxy
 
 class SltStatesEnergiesCm1(_SingleProcessed):
+    _method_name = "States' Energies in cm-1"
+    _method_type = "STATES_ENERGIES_CM1"
 
     __slots__ = _SingleProcessed.__slots__ + ["_start_state", "_stop_state"]
      
     def __init__(self, slt_group, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' Energies in cm-1"
-        self._method_type = "STATES_ENERGIES"
         self._start_state = start_state
         self._stop_state = stop_state
 
@@ -56,7 +56,7 @@ class SltStatesEnergiesCm1(_SingleProcessed):
         }
         self._data_dict = {"STATES_ENERGIES_CM_1": (self._result,  "States' energies in cm-1.")}
 
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["STATES_ENERGIES_CM_1"][:]
 
     #TODO: plot
@@ -76,13 +76,13 @@ class SltStatesEnergiesCm1(_SingleProcessed):
 
 
 class SltStatesEnergiesAu(_SingleProcessed):
+    _method_name = "States' Energies in a.u."
+    _method_type = "STATES_ENERGIES_AU"
 
     __slots__ = _SingleProcessed.__slots__ + ["_start_state", "_stop_state"]
      
     def __init__(self, slt_group, start_state: int = 0, stop_state: int = 0, slt_save: str = None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' Energies in a.u."
-        self._method_type = "STATES_ENERGIES"
         self._start_state = start_state
         self._stop_state = stop_state
 
@@ -99,7 +99,7 @@ class SltStatesEnergiesAu(_SingleProcessed):
         }
         self._data_dict = {"STATES_ENERGIES_AU": (self._result, "States' energies in cm-1.")}
 
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["STATES_ENERGIES_AU"][:]
 
     #TODO: plot
@@ -126,13 +126,13 @@ class SltStatesEnergiesAu(_SingleProcessed):
 
 
 class SltSpinMatrices(_SingleProcessed):
+    _method_name = "Spin matrices"
+    _method_type = "SPINS"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "Spin matrices"
-        self._method_type = "SPINS"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -153,7 +153,7 @@ class SltSpinMatrices(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["SPIN_MATRICES"][:]
 
     #TODO: plot
@@ -166,13 +166,13 @@ class SltSpinMatrices(_SingleProcessed):
 
 
 class SltStatesSpins(_SingleProcessed):
+    _method_name = "States' spins"
+    _method_type = "STATES_SPINS"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' spins"
-        self._method_type = "STATES_SPINS"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -193,7 +193,7 @@ class SltStatesSpins(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the spin components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["STATES_SPINS"][:]
 
     #TODO: plot
@@ -206,13 +206,13 @@ class SltStatesSpins(_SingleProcessed):
 
 
 class SltAngularMomentumMatrices(_SingleProcessed):
+    _method_name = "Angular momentum matrices"
+    _method_type = "ANGULAR_MOMENTA"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "Angular momentum matrices"
-        self._method_type = "ANGULAR_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -233,7 +233,7 @@ class SltAngularMomentumMatrices(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the angular momentum components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["ANGULAR_MOMENTUM_MATRICES"][:]
 
     #TODO: plot
@@ -246,13 +246,13 @@ class SltAngularMomentumMatrices(_SingleProcessed):
 
 
 class SltStatesAngularMomenta(_SingleProcessed):
+    _method_name = "States' angular momenta"
+    _method_type = "STATES_ANGULAR_MOMENTA"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' angular momenta"
-        self._method_type = "STATES_ANGULAR_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -273,7 +273,7 @@ class SltStatesAngularMomenta(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the angular momentum components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["STATES_ANGULAR_MOMENTA"][:]
 
     #TODO: plot
@@ -286,13 +286,13 @@ class SltStatesAngularMomenta(_SingleProcessed):
 
 
 class SltElectricDipoleMomentumMatrices(_SingleProcessed):
+    _method_name = "Electric dipole momentum matrices"
+    _method_type = "ELECTRIC_DIPOLE_MOMENTA"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "Electric dipole momentum matrices"
-        self._method_type = "ELECTRIC_DIPOLE_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -313,7 +313,7 @@ class SltElectricDipoleMomentumMatrices(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the electric dipole momentum components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["ELECTRIC_DIPOLE_MOMENTUM_MATRICES"][:]
 
     #TODO: plot
@@ -326,13 +326,13 @@ class SltElectricDipoleMomentumMatrices(_SingleProcessed):
 
 
 class SltStatesElectricDipoleMomenta(_SingleProcessed):
+    _method_name = "States' electric dipole momenta"
+    _method_type = "STATES_ELECTRIC_DIPOLE_MOMENTA"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' electric dipole momenta"
-        self._method_type = "STATES_ELECTRIC_DIPOLE_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -353,7 +353,7 @@ class SltStatesElectricDipoleMomenta(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the electric dipole momentum components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["STATES_ELECTRIC_DIPOLE_MOMENTA"][:]
 
     #TODO: plot
@@ -366,13 +366,13 @@ class SltStatesElectricDipoleMomenta(_SingleProcessed):
 
 
 class SltTotalAngularMomentumMatrices(_SingleProcessed):
+    _method_name = "Total angular momentum matrices"
+    _method_type = "TOTAL_ANGULAR_MOMENTA"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "Total angular momentum matrices"
-        self._method_type = "TOTAL_ANGULAR_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -393,7 +393,7 @@ class SltTotalAngularMomentumMatrices(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the total angular momentum components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["TOTAL_ANGULAR_MOMENTUM_MATRICES"][:]
 
     #TODO: plot
@@ -406,13 +406,13 @@ class SltTotalAngularMomentumMatrices(_SingleProcessed):
 
 
 class SltStatesTotalAngularMomenta(_SingleProcessed):
+    _method_name = "States' total angular momenta"
+    _method_type = "STATES_TOTAL_ANGULAR_MOMENTA"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' total angular momenta"
-        self._method_type = "STATES_TOTAL_ANGULAR_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -433,7 +433,7 @@ class SltStatesTotalAngularMomenta(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the total angular momentum components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["STATES_TOTAL_ANGULAR_MOMENTA"][:]
 
     #TODO: plot
@@ -446,13 +446,13 @@ class SltStatesTotalAngularMomenta(_SingleProcessed):
 
 
 class SltMagneticDipoleMomentumMatrices(_SingleProcessed):
+    _method_name = "Magnetic dipole momentum matrices"
+    _method_type = "MAGNETIC_DIPOLE_MOMENTA"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "Magnetic dipole momentum matrices"
-        self._method_type = "MAGNETIC_DIPOLE_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -473,7 +473,7 @@ class SltMagneticDipoleMomentumMatrices(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the magnetic dipole momentum components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["MAGNETIC_DIPOLE_MOMENTUM_MATRICES"][:]
 
     #TODO: plot
@@ -486,13 +486,13 @@ class SltMagneticDipoleMomentumMatrices(_SingleProcessed):
 
 
 class SltStatesMagneticDipoleMomenta(_SingleProcessed):
+    _method_name = "States' magnetic dipole momenta"
+    _method_type = "STATES_MAGNETIC_DIPOLE_MOMENTA"
 
     __slots__ = _SingleProcessed.__slots__ + ["_xyz", "_start_state", "_stop_state", "_rotation"]
      
     def __init__(self, slt_group, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> None:
         super().__init__(slt_group, slt_save)
-        self._method_name = "States' magnetic dipole momenta"
-        self._method_type = "STATES_MAGNETIC_DIPOLE_MOMENTA"
         self._xyz = xyz
         self._start_state = start_state
         self._stop_state = stop_state
@@ -513,7 +513,7 @@ class SltStatesMagneticDipoleMomenta(_SingleProcessed):
         if self._rotation is not None:
             self._data_dict["ROTATION"] = (self._rotation, "Rotation used to rotate the magnetic dipole momentum components.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["STATES_MAGNETIC_DIPOLE_MOMENTA"][:]
 
     #TODO: plot
@@ -526,6 +526,7 @@ class SltStatesMagneticDipoleMomenta(_SingleProcessed):
 
 
 class SltPropertyUnderMagneticField(_MultiProcessed):
+    _method_type = "PROPERTY_UNDER_MAGNETIC_FIELD"
 
     __slots__ = _MultiProcessed.__slots__ + ["_mode", "_matrix", "_return_energies", "_energies", "_direction", "_magnetic_fields", "_orientations", "_number_of_states", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine", "_dims"]
 
@@ -551,7 +552,6 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0], number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
         self._mode = mode
         self._method_name = f"{self._mode.upper()} Under Magnetic Field"
-        self._method_type = "PROPERTY_UNDER_MAGNETIC_FIELD"
         self._full_matrix = full_matrix
         self._return_energies = return_energies
         self._direction = direction
@@ -620,7 +620,7 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
         for index, mode in enumerate(self._mode):
             self._data_dict[mode_dict[mode]] = (self._result[index], f"Dataset containing {mode.upper()} {'matrices' if self._full_matrix else 'expectation values'} under magnetic fields in the form {field_orientations_format}.")
     
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         mode_dict = {"s": "SPIN", "l": "ANGULAR_MOMENTA", "p": "ELECTRIC_DIPOLE_MOMENTA", "j": "TOTAL_ANGULAR_MOMENTA", "m": "MAGNETIC_DIPOLE_MOMENTA"}
         self._mode = self._slt_group.attributes["Mode"]
         dims = self._slt_group[self._mode[0]].shape
@@ -652,6 +652,8 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
     # also in input parser add to error with direct acces to properties to use property_under_magnetic_field instead!! for slothpy hamiltonians with field [0,0,0]
 
 class SltZeemanSplitting(_MultiProcessed):
+    _method_name = "Zeeman Splitting"
+    _method_type = "ZEEMAN_SPLITTING"
 
     __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_number_of_states", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
      
@@ -671,8 +673,6 @@ class SltZeemanSplitting(_MultiProcessed):
         terminate_event: Event = None,
         ) -> None:
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0], number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
-        self._method_name = "Zeeman Splitting"
-        self._method_type = "ZEEMAN_SPLITTING"
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
         self._number_of_states = number_of_states
@@ -714,7 +714,7 @@ class SltZeemanSplitting(_MultiProcessed):
             "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),
         }
 
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["ZEEMAN_SPLITTING"][:]
         self._magnetic_fields = self._slt_group["MAGNETIC_FIELDS"][:]
         self._orientations = self._slt_group["ORIENTATIONS"][:]
@@ -728,6 +728,8 @@ class SltZeemanSplitting(_MultiProcessed):
 
 
 class SltMagnetisation(_MultiProcessed):
+    _method_name = "Magnetisation"
+    _method_type = "MAGNETISATION"
 
     __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_temperatures", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
      
@@ -747,8 +749,6 @@ class SltMagnetisation(_MultiProcessed):
         terminate_event: Event = None,
         ) -> None:
         super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0] , number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
-        self._method_name = "Magnetisation"
-        self._method_type = "MAGNETISATION"
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
         if self._orientations.shape[1] == 4:
@@ -792,7 +792,7 @@ class SltMagnetisation(_MultiProcessed):
             "TEMPERATURES": (self._temperatures, "Dataset containing temperature (K) values used in the simulation.")
         }
 
-    def _load_from_file(self):
+    def _load_from_slt_file(self):
         self._result = self._slt_group["MAGNETISATION"][:]
         self._magnetic_fields = self._slt_group["MAGNETIC_FIELDS"][:]
         self._orientations = self._slt_group["ORIENTATIONS"][:]

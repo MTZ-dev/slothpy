@@ -14,13 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Union, List
+from typing import Union, Optional, Iterator, List
 import warnings
 from ast import literal_eval
 from functools import wraps
+from os import makedirs
+from os.path import join
 
 from h5py import File, Group, Dataset, string_dtype
-from numpy import ndarray, array, empty, float32, float64, tensordot, abs, diag
+from numpy import ndarray, array, empty, int32, int64, float32, float64, tensordot, abs, diag
 from numpy.exceptions import ComplexWarning
 from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
@@ -36,7 +38,7 @@ from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
-from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists
+from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _xyz_to_slt
 from slothpy._general_utilities._constants import U_PI_A_AU, E_PI_A_AU
 from slothpy._general_utilities._direct_product_space import _kron_mult
 from slothpy._general_utilities._math_expresions import _subtract_const_diagonal
@@ -336,7 +338,7 @@ class SltGroup:
     def to_xyz(self, xyz_filepath: str, *args, **kwargs):
         pass
 
-    @delegate_method_to_slt_group  #### This can go with input parser addin atom_indecies and new_symbols there?
+    @delegate_method_to_slt_group
     def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
         """
         Replaces atoms at specified indices with new element symbols and updates the HDF5 group.
@@ -356,6 +358,91 @@ class SltGroup:
         IndexError:
             If any atom index is out of bounds.
         """
+        pass
+
+    @delegate_method_to_slt_group
+    def generate_finite_stencil_displacement(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+        """
+        Generates finite stencil displacements for derivative calculations.
+
+        Displaces each atom along x, y, and z axes in both negative and positive directions
+        by a specified number of steps and step size.
+
+        Parameters:
+        ----------
+        displacement_number : int
+            Number of displacement steps in each direction (negative and positive).
+        step : float
+            Magnitude of each displacement step in Angstroms.
+        output_option : str, optional
+            Specifies the output mode. Options:
+            - 'xyz': Write displaced structures as .xyz files.
+            - 'iterator': Return an iterator yielding tuple of dislaced ASE
+            Atoms objects, dofs numbers and displacements numbers
+            - 'slt': Dump all displaced structures into the .slt file.
+            Default is 'xyz'.
+        custom_directory : str, optional
+            Directory path to save .xyz files. Required if output_option is 'xyz'.
+        slt_group_name : str, optional
+            Name of the SltGroup to store displaced structures. Required if output_option is 'slt'.
+
+        Returns:
+        -------
+        Iterator[Atoms] or None
+            Returns an iterator of ASE Atoms objects if output_option is 'iterator'.
+            Otherwise, returns None.
+
+        Raises:
+        ------
+        ValueError:
+            If invalid output_option is specified or required parameters are missing.
+        IOError:
+            If writing to files or HDF5 fails.
+        """
+        pass
+
+    @delegate_method_to_slt_group
+    def generate_supercell_finite_stencil_displacement(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+        """
+        Generates finite stencil displacements for a supercell by displacing atoms in the first unit cell.
+
+        Displaces each atom in the first unit cell of a supercell along x, y, and z axes in both
+        negative and positive directions by a specified number of steps and step size.
+
+        Parameters:
+        ----------
+        nx, ny, nz : int
+            Number of repetitions along the x, y, and z axes to create the supercell.
+        displacement_number : int
+            Number of displacement steps in each direction (negative and positive).
+        step : float
+            Magnitude of each displacement step in Angstroms.
+        output_option : str, optional
+            Specifies the output mode. Options:
+            - 'xyz': Write displaced structures as .xyz files.
+            - 'iterator': Return an iterator yielding tuple of dislaced ASE
+            Atoms objects, dofs numbers, displacements numbers, nx, ny, and nz.
+            - 'slt': Dump all displaced structures into the .slt file.
+            Default is 'xyz'.
+        custom_directory : str, optional
+            Directory path to save .xyz files. Required if output_option is 'xyz'.
+        slt_group_name : str, optional
+            Name of the SltGroup to store displaced structures. Required if output_option is 'slt'.
+
+        Returns:
+        -------
+        Iterator[Atoms] or None
+            Returns an iterator of ASE Atoms objects if output_option is 'iterator'.
+            Otherwise, returns None.
+
+        Raises:
+        ------
+        ValueError:
+            If invalid output_option is specified or required parameters are missing.
+        IOError:
+            If writing to files or HDF5 fails.
+        """
+        pass
 
     @validate_input("HAMILTONIAN", True)
     def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesCm1:
@@ -844,6 +931,8 @@ class SltXyz(metaclass=MethodTypeMeta):
             additional_info += f"Charge: {self._charge} "
         if self._multiplicity is not None:
             additional_info += f"Multiplicity: {self._multiplicity} "
+        if self._method_type == "UNIT_CELL":
+            additional_info += f"Cell parameters [a, b, c, alpha, beta, gamma]: {self._atoms.get_cell_lengths_and_angles()} "
         write(xyz_filepath, self._atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}'")
 
     def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
@@ -887,6 +976,91 @@ class SltXyz(metaclass=MethodTypeMeta):
             print(f"'ELEMENTS' dataset successfully updated in group '{self._slt_group._group_name}'.")
         except Exception as exc:
             raise SltFileError(self._slt_group._hdf5, exc, f"Failed to update 'ELEMENTS' dataset in the .slt group") from None
+        
+    def generate_finite_stencil_displacement(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, _supercell: bool = False, _nx: Optional[int] = None, _ny: Optional[int] = None, _nz: Optional[int] = None) -> Optional[Iterator[Atoms]]:
+        if output_option not in ['xyz', 'iterator', 'slt']:
+            raise ValueError("Invalid output_option. Choose from 'xyz', 'iterator', or 'slt'.")
+
+        if output_option == 'xyz' and not custom_directory:
+            raise ValueError("The custom_directory must be specified when output_option is 'xyz'.")
+
+        if output_option == 'slt' and not slt_group_name:
+            raise ValueError("The slt_group_name must be specified when output_option is 'slt'.")
+
+        if output_option == 'xyz':
+            makedirs(custom_directory, exist_ok=True)
+
+        num_atoms = len(self._atoms)
+        total_dofs = 3 * num_atoms
+        n_checked = False
+        if _supercell:
+            if _nx is None or _ny is None or _nz is None:
+                raise ValueError("All nx, ny and nz must be provided for supercell.")
+            for value, name in zip([_nx, _ny, _nz], ['nx', 'ny', 'nz']):
+                if not isinstance(value, (int, int32, int64)):
+                    raise TypeError(f"{name} must be an integer. Received type {type(value).__name__} instead.")
+                if value < 1:
+                    raise ValueError(f"{name} must be greater than or equal to 1. Received {value}.")
+                else:
+                    n_checked = True
+        if n_checked:
+            atoms_tmp = self._atoms.repeat((_nx, _ny, _nz))
+        else:
+            atoms_tmp = self._atoms
+
+        def displacement_generator() -> Iterator[Atoms]:
+            for dof in range(total_dofs):
+                axis = dof % 3
+                atom_idx = dof // 3
+                for multiplier in range(-displacement_number, displacement_number + 1):
+                    if multiplier == 0:
+                        continue
+                    displaced_atoms = atoms_tmp.copy()
+                    displacement = multiplier * step
+                    displaced_atoms.positions[atom_idx, axis] += displacement
+                    yield (displaced_atoms, dof, multiplier, _nx, _ny, _nz) if n_checked else (displaced_atoms, dof, multiplier)
+
+        if output_option == 'xyz':
+            for displacement_info in displacement_generator():
+                displaced_atoms, dof, multiplier = displacement_info[0], displacement_info[1], displacement_info[2]
+                xyz_file_name = f"dof_{dof}_{multiplier}.xyz"
+                xyz_file_path = join(custom_directory, xyz_file_name)
+                try:
+                    additional_info = ""
+                    if self._charge is not None:
+                        additional_info += f"Charge: {self._charge} "
+                    if self._multiplicity is not None:
+                        additional_info += f"Multiplicity: {self._multiplicity} "
+                    if n_checked:
+                        additional_info += f"Supercell Repetitions [nx, ny, nz] = {[_nx, _ny, _nz]} "
+                    if self._method_type == "UNIT_CELL":
+                        additional_info += f"Cell parameters [a, b, c, alpha, beta, gamma]: {self._atoms.get_cell_lengths_and_angles()} "
+                    displaced_atoms.write(xyz_file_path, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}", format='xyz')
+                except Exception as exc:
+                    raise IOError(f"Failed to write XYZ file '{xyz_file_path}': {exc}")
+            return None
+
+        elif output_option == 'iterator':
+            return (displacement_info for displacement_info in displacement_generator())
+
+        elif output_option == 'slt':
+            try:
+                with File(self._slt_group._hdf5, 'a') as slt:
+                    displacement_group = slt.create_group(slt_group_name)
+                    displacement_group.attrs["Type"] = "DISPLACEMENTS_XYZ" if not n_checked else "DISPLACEMENTs_SUPERCELL"
+                    displacement_group.attrs["Description"] = "Group containing displaced XYZ coordinates groups."
+                    displacement_group.attrs["Displacement_Number"] = displacement_number
+                    displacement_group.attrs["Step_Size"] = step
+                    displacement_group.attrs["Original_Group"] = self._slt_group._group_name
+                    if n_checked:
+                        displacement_group.attrs["Supercell_Repetitions"] = [_nx, _ny, _nz]
+                for displacement_info in displacement_generator():
+                    displaced_atoms, dof, multiplier = displacement_info[0], displacement_info[1], displacement_info[2]
+                    subgroup_name = f"{slt_group_name}/dof_{dof}_{multiplier}"
+                    _xyz_to_slt(self._slt_group._hdf5, subgroup_name, displaced_atoms.get_chemical_symbols(), displaced_atoms.get_positions(), self._charge, self._multiplicity)
+            except Exception as exc:
+                raise SltFileError(self._slt_group._hdf5, exc, f"Failed to write displacement Group '{slt_group_name}' to the .slt file") from None
+            return None
 
 
 class SltUnitCell(SltXyz):
@@ -900,6 +1074,9 @@ class SltUnitCell(SltXyz):
 
     def cell_object(self):
         return self._atoms.get_cell()
+    
+    def generate_supercell_finite_stencil_displacement(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+        return self.generate_finite_stencil_displacement(displacement_number, step, output_option, custom_directory, slt_group_name, True, nx, ny, nz)
 
 
 class SltHessian(SltUnitCell):

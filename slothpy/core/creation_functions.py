@@ -15,11 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from os.path import join, splitext
-from math import cos, sin, radians, sqrt
+from numpy import ndarray, array, int64, int32
 from ase.io import read
+from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import SltFileError, SltInputError
 from slothpy.core.slt_file_object import SltFile
-from slothpy._general_utilities._io import _orca_spin_orbit_to_slt, _molcas_to_slt, _xyz_to_slt
+from slothpy._general_utilities._io import _orca_spin_orbit_to_slt, _molcas_to_slt, _xyz_to_slt, _unit_cell_to_slt
 
 
 def hamiltonian_from_orca(
@@ -107,7 +108,7 @@ def hamiltonian_from_molcas(molcas_filepath: str, slt_filepath: str, group_name:
     group_name : str
         Name of a group to which results of relativistic ab initio calculations
         will be saved.
-    edipmom : bool
+    edipmom : bool, optional
         If set to True, electric dipole moment integrals will be read from
         the MOLCAS .rassi.h5 file for simulations of spectroscopic properties.
 
@@ -174,10 +175,9 @@ def slt_file(slt_filepath: str) -> SltFile:
         raise SltFileError(slt_filepath, exc, message="Failed to load SltFIle from the .slt file.") from None
 
 
-def xyz(input_filepath: str, slt_filepath: str, group_name: str) -> SltFile:
+def xyz(input_filepath: str, slt_filepath: str, group_name: str, charge: int = None, multiplicity: int = None) -> SltFile:
     """
-    Reads a .xyz or .cif file along with cell parameters and saves the data
-    as a xyz group in a .slt file.
+    Reads a .xyz or .cif file and saves the data as a xyz group in a .slt file.
 
     Parameters:
     ----------
@@ -188,7 +188,10 @@ def xyz(input_filepath: str, slt_filepath: str, group_name: str) -> SltFile:
         be saved.
     group_name : str
         Name of a group to which unit cell will be saved.
-
+    charge : int, optional
+        Charge of the chemical species., by default None
+    multiplicity : int, optional
+        Multiplicity given as 2S+1 of the chemical species., by default None
     Raises:
     ------
     SltInputError:
@@ -201,6 +204,10 @@ def xyz(input_filepath: str, slt_filepath: str, group_name: str) -> SltFile:
         slt_filepath += ".slt"
 
     try:
+        if charge is not None and not isinstance(charge, (int, int64, int32)):
+            raise ValueError("Charge must be an integer or None.")
+        if multiplicity is not None and (not isinstance(multiplicity, (int, int64, int32)) or multiplicity <= 0):
+            raise ValueError("Multiplicity must be an integer greater than 0 or None.")
         _, ext = splitext(input_filepath)
         ext = ext.lower()
         if ext not in ['.xyz', '.cif']:
@@ -211,11 +218,12 @@ def xyz(input_filepath: str, slt_filepath: str, group_name: str) -> SltFile:
             positions = atoms.get_positions()
         except Exception as exc:
             raise IOError(f"Error reading the input file '{input_filepath}': {exc}")
+        
     except Exception as exc:
         raise SltInputError(exc, message="Failed to save xyz to .slt file.") from None
     
     try:
-        _xyz_to_slt(slt_filepath, group_name, elements, positions)
+        _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplicity)
 
         return SltFile._new(slt_filepath)
     
@@ -223,29 +231,39 @@ def xyz(input_filepath: str, slt_filepath: str, group_name: str) -> SltFile:
         raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
 
 
-def unit_cell(input_file, slt_file, group_name, cell_vectors=None, cell_params=None):
+def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vectors: ndarray = None, cell_params: ndarray = None, cell_from_cif_path: str = None):
     """
     Reads a .cif or .xyz file along with cell parameters and saves the data
     as a unit cell group in a .slt file.
 
     Parameters:
     ----------
-    input_file : str
+    input_filepath : str
         Path to the input .cif or .xyz file.
-    slt_file : str
+    slt_filepath : str
         Path of the existing or new .slt file to which the results will
         be saved.
     group_name : str
         Name of a group to which unit cell will be saved.
     cell_vectors : list or ndarray, optional
         A 3x3 list or NumPy array (ArrayLike structure) representing the unit
-        cell vectors. Required if input_file is a .xyz file and cell_params is
-        not provided.
-    cell_params : list, tuple, or ndarray optional
+        cell vectors. Required if input_file is a .xyz file and cell_params and
+        cell_from_cif_path are not provided. If provided along with a .cif
+        input file, the cell parameters will be overwritten by those from
+        cell_vectors, by default None
+    cell_params : list, tuple, or ndarray, optional
         An ArrayLike structure containing [a, b, c, alpha, beta, gamma],
         where a, b, c are the unit cell lengths and alpha, beta, gamma are the
         unit cell angles in degrees. Required if input_file is a .xyz file
-        and cell_vectors is not provided.
+        and cell_vectors and cell_from_cif_path are not provided. If provided
+        along with a .cif input file, the cell parameters will be overwritten
+        by those from cell_params, by default None
+    cell_from_cif_path : str, optional
+        Path to the input .cif from which the unit cell parameters will be
+        extracted. Required if input_file is a .xyz file and cell_params and
+        cell_vectors are not provided. If provided along with a .cif input
+        file, the cell parameters will be overwritten by those from 
+        cell_from_cif_path, by default None
 
     Raises:
     ------
@@ -255,100 +273,50 @@ def unit_cell(input_file, slt_file, group_name, cell_vectors=None, cell_params=N
     SltFileError:
         If there are issues reading the input file or writing to the .slt file.
     """
-    # try:
-    #     _, ext = splitext(input_file)
-    #     ext = ext.lower()
-    #     if ext not in ['.cif', '.xyz']:
-    #         raise ValueError("Unsupported file extension. Only .cif and .xyz files are supported.")
-
-    #     try:
-    #         atoms = read(input_file)
-    #     except Exception as exc:
-    #         raise IOError(f"Error reading the input file '{input_file}': {exc}")
-
-    #     cell = None
-
-    #     if ext == '.cif':
-    #         cell = atoms.get_cell().array
-    #     elif ext == '.xyz':
-    #         if cell_params is not None:
-    #             if len(cell_params) != 6:
-    #                 raise ValueError("The lattice_params must contain exactly six values: [a, b, c, alpha, beta, gamma].")
-    #             a, b, c, alpha_deg, beta_deg, gamma_deg = cell_params
-    #             alpha = radians(alpha_deg)
-    #             beta = radians(beta_deg)
-    #             gamma = radians(gamma_deg)
-
-    #             cell = np.zeros((3, 3), dtype=np.float64)
-    #             cell[0, 0] = a
-    #             cell[0, 1] = 0.0
-    #             cell[0, 2] = 0.0
-
-    #             cell[1, 0] = b * cos(gamma)
-    #             cell[1, 1] = b * sin(gamma)
-    #             cell[1, 2] = 0.0
-
-    #             # Calculate the z-component of the third cell vector
-    #             c_x = c * cos(beta)
-    #             c_y = c * (cos(alpha) - cos(beta) * cos(gamma)) / sin(gamma)
-    #             c_z_squared = c**2 - c_x**2 - c_y**2
-    #             if c_z_squared < 0:
-    #                 raise ValueError("Invalid lattice parameters leading to a negative z-component squared.")
-    #             c_z = sqrt(c_z_squared)
-    #             cell[2, 0] = c_x
-    #             cell[2, 1] = c_y
-    #             cell[2, 2] = c_z
-    #         elif cell_params is not None:
-    #             cell = np.array(cell_params, dtype=np.float64)
-    #             if cell.shape != (3, 3):
-    #                 raise ValueError("cell_params must be a 3x3 matrix.")
-    #         else:
-    #             raise ValueError("For .xyz files, either cell_params or lattice_params must be provided.")
-    #     else:
-    #         # This should not happen due to earlier check
-    #         raise ValueError("Unsupported file extension.")
-
-    #     if cell is None:
-    #         raise ValueError("Unit cell parameters could not be determined.")
-
-    #     # Extract atomic information
-    #     elements = atoms.get_chemical_symbols()
-    #     positions = atoms.get_positions()  # Nx3 array
-
-    # except Exception as exc:
-    #     raise SltInputError(exc, message="Failed to save unit cell to .slt file.") from None
     
-    # # Create or open the HDF5 file
-    # try:
-    #     with h5py.File(output_hdf, 'a') as hdf:
-    #         # Create the group if it doesn't exist
-    #         if group_name in hdf:
-    #             print(f"Group '{group_name}' already exists in '{output_hdf}'. Overwriting datasets.")
-    #             grp = hdf[group_name]
-    #         else:
-    #             grp = hdf.create_group(group_name)
+    if not slt_filepath.endswith(".slt"):
+        slt_filepath += ".slt"
 
-    #         # Save cell parameters
-    #         if 'cell' in grp:
-    #             print("Dataset 'cell' already exists. Overwriting.")
-    #             del grp['cell']
-    #         grp.create_dataset('cell', data=cell, dtype='f8')
+    try:
+        if sum(param is None for param in [cell_vectors, cell_params, cell_from_cif_path]) < 2:
+            raise ValueError("Only one parameter from: cell_vectors, cell_params, cell_from_cif_path can be provided.")
+        _, ext = splitext(input_filepath)
+        ext = ext.lower()
+        if ext not in ['.xyz', '.cif']:
+            raise ValueError("Unsupported file extension. Only .cif and .xyz files are supported.")
+        try:
+            atoms = read(input_filepath)
+            elements = atoms.get_chemical_symbols()
+            positions = atoms.get_positions()
+            cell = None
+            if cell_vectors is not None:
+                cell = array(cell_vectors, dtype=settings.float)
+                if cell.shape != (3, 3):
+                    raise ValueError("The cell_params must be a 3x3 matrix.")
+            elif cell_params is not None:
+                if len(cell_params) != 6:
+                    raise ValueError("The cell_params must contain exactly six values: [a, b, c, alpha, beta, gamma].")
+                cell = array(cell_params, dtype=settings.float)
+            elif cell_from_cif_path is not None:
+                if not cell_from_cif_path.endswith(".cif"):
+                    raise ValueError("The cell_from_cif_path must have .cif extension.")
+                cell = read(cell_from_cif_path).get_cell().array
+            if cell is not None:
+                atoms.set_cell(cell)
+                cell = atoms.get_cell().array
+            else:
+                cell = atoms.get_cell().array
 
-    #         # Save elements
-    #         if 'elements' in grp:
-    #             print("Dataset 'elements' already exists. Overwriting.")
-    #             del grp['elements']
-    #         dt = h5py.string_dtype(encoding='utf-8')
-    #         grp.create_dataset('elements', data=np.array(elements, dtype='S'), dtype=dt)
+        except Exception as exc:
+            raise IOError(f"Error reading the input file '{input_filepath}': {exc}")
+        
+    except Exception as exc:
+        raise SltInputError(exc, message="Failed to save unit cell to .slt file.") from None
+    
+    try:
+        _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell)
 
-    #         # Save positions
-    #         if 'positions' in grp:
-    #             print("Dataset 'positions' already exists. Overwriting.")
-    #             del grp['positions']
-    #         grp.create_dataset('positions', data=positions, dtype='f8')
-
-    #         print(f"Unit cell data successfully saved to group '{group_name}' in '{output_hdf}'.")
-
-    # except Exception as exc:
-    #     raise SltFileError(slt_file, exc, message="Failed to save unit cell to .slt file.") from None
-    pass
+        return SltFile._new(slt_filepath)
+    
+    except Exception as exc:
+        raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None

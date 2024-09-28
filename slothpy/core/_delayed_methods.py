@@ -59,7 +59,6 @@ class SltStatesEnergiesCm1(_SingleProcessed):
     def _load_from_slt_file(self):
         self._result = self._slt_group["STATES_ENERGIES_CM_1"][:]
 
-    #TODO: plot
     def _plot(self, show=True, **kwargs):
         from slothpy._general_utilities._plot import _plot_energy_levels
         fig, ax = _plot_energy_levels(self._result, **kwargs)

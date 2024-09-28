@@ -349,7 +349,7 @@ def _molcas_to_slt(molcas_filepath: str, slt_filepath: str, group_name: str, ele
                 dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
 
-def _xyz_to_slt(slt_filepath, group_name, elements, positions):
+def _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplicity):
     with File(slt_filepath, 'a') as slt:
         group = slt.create_group(group_name)
         group.attrs["Type"] = "XYZ"
@@ -361,6 +361,20 @@ def _xyz_to_slt(slt_filepath, group_name, elements, positions):
         dataset.attrs["Description"] = "List of elements from the XYZ file."
         dataset = group.create_dataset('COORDINATES', data=positions, dtype=settings.float)
         dataset.attrs["Description"] = "List of elements coordinates from the XYZ file."
+        if charge is not None:
+            group.attrs["Charge"] = charge
+        if multiplicity is not None:
+            group.attrs["Multiplicity"] = multiplicity
+
+
+def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell):
+    _xyz_to_slt(slt_filepath, group_name, elements, positions, None, None)
+    with File(slt_filepath, 'a') as slt:
+        group = slt[group_name]
+        group.attrs["Type"] = "UNIT_CELL"
+        group.attrs["Description"] = "Unit cell group containing xyz coordinates and unit cell vectors."
+        dataset = group.create_dataset('CELL', data=cell, dtype=settings.float)
+        dataset.attrs["Description"] = "Unit cell vectors as 3x3 matrix (with vectors in rows)."
 
 
 def _load_orca_hdf5(filename, group, rotation):

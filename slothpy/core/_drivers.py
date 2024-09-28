@@ -138,10 +138,12 @@ class _SingleProcessed(ABC, metaclass=MethodTypeMeta):
         return self._to_data_frame()
     
     @slothpy_exc("SltSaveError")
-    def to_csv(self, file_path=".", file_name="states_energies_cm_1.csv", separator=","):
+    def to_csv(self, filepath: str, separator: str = ","):
+        if not filepath.endswith(".csv"):
+            filepath += ".csv"
         if self._df is None:
             self.to_data_frame()
-        self._df.to_csv(join(file_path, file_name), sep=separator)
+        self._df.to_csv(filepath, sep=separator)
     
     @slothpy_exc("SltSaveError")
     @ensure_ready

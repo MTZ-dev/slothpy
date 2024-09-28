@@ -14,21 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Union
+from typing import Union, List
 import warnings
 from ast import literal_eval
 from functools import wraps
 
-from h5py import File, Group, Dataset
+from h5py import File, Group, Dataset, string_dtype
 from numpy import ndarray, array, empty, float32, float64, tensordot, abs, diag
 from numpy.exceptions import ComplexWarning
 from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
 from scipy.linalg import eigvalsh
+from ase import Atoms
+from ase.io import write
+from ase.data import atomic_numbers
+from ase.cell import Cell
 
 from slothpy.core._registry import MethodTypeMeta, type_registry
 from slothpy.core._config import settings
-from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError, SltReadError
+from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError, SltReadError, SltInputError
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
@@ -75,6 +79,12 @@ class SltAttributes:
         with File(self._hdf5, 'r+') as file:
             item = file[self._item_path]
             del item.attrs[attr_name]
+
+    @slothpy_exc("SltFileError")
+    def __contains__(self, item):
+        with File(self._hdf5, 'r') as file:
+            file_item = file[self._item_path]
+            return item in file_item.attrs
 
 class SltGroup:
     def __init__(self, hdf5_file, group_name):
@@ -138,7 +148,7 @@ class SltGroup:
                 raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' does not exist in the {BLUE}Group{RESET} '{self._group_name}'.")
             del group[key]
 
-    def _delegate_method_to_slt_group(method):
+    def delegate_method_to_slt_group(method):
         @wraps(method)
         def wrapper(self, *args, **kwargs):
             if not self._exists:
@@ -150,31 +160,29 @@ class SltGroup:
                 obj = obj(self)
             delegated_method = getattr(obj, method.__name__, None)
             if delegated_method is None:
-                raise AttributeError(
-                    f"'{obj.__class__.__name__}' object has no method '{method.__name__}'."
-                )
+                raise SltInputError(AttributeError(f"'{obj.__class__.__name__}' object has no method '{method.__name__}'.")) from None
             return delegated_method(*args, **kwargs)
         
         return wrapper
 
-    @_delegate_method_to_slt_group
-    def plot(self, *args, **kwargs):
-        pass
-    
-    @_delegate_method_to_slt_group
-    def to_numpy_array(self, *args, **kwargs):
-        pass
-    
-    @_delegate_method_to_slt_group
-    def to_data_frame(self, *args, **kwargs):
-        pass
-    
-    @_delegate_method_to_slt_group
-    def to_csv(self, *args, **kwargs):
+    @property
+    @delegate_method_to_slt_group
+    def atoms_object(self) -> Atoms: 
         pass
 
-    @_delegate_method_to_slt_group
-    def to_xyz(self, *args, **kwargs):
+    @property
+    @delegate_method_to_slt_group
+    def cell_object(self) -> Cell: 
+        pass
+    
+    @property
+    @delegate_method_to_slt_group
+    def charge(self) -> int:
+        pass
+    
+    @property
+    @delegate_method_to_slt_group
+    def multiplicity(self) -> int:
         pass
         
     @property
@@ -307,6 +315,47 @@ class SltGroup:
     @validate_input("HAMILTONIAN", True)
     def mz(self):
         return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 2)
+    
+    @delegate_method_to_slt_group
+    def plot(self, *args, **kwargs):
+        pass
+    
+    @delegate_method_to_slt_group
+    def to_numpy_array(self, *args, **kwargs):
+        pass
+    
+    @delegate_method_to_slt_group
+    def to_data_frame(self, *args, **kwargs):
+        pass
+    
+    @delegate_method_to_slt_group
+    def to_csv(self, csv_filepath: str, *args, separator: str = ",", **kwargs):
+        pass
+
+    @delegate_method_to_slt_group
+    def to_xyz(self, xyz_filepath: str, *args, **kwargs):
+        pass
+
+    @delegate_method_to_slt_group  #### This can go with input parser addin atom_indecies and new_symbols there?
+    def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
+        """
+        Replaces atoms at specified indices with new element symbols and updates the HDF5 group.
+        
+        Parameters:
+        ----------
+        atom_indices : List[int]
+            List of 0-based atom indices to be replaced.
+        new_symbols : List[str]
+            List of new element symbols corresponding to each atom index.
+        
+        Raises:
+        ------
+        ValueError:
+            If the lengths of atom_indices and new_symbols do not match.
+            If any new symbol is invalid or not recognized.
+        IndexError:
+            If any atom index is out of bounds.
+        """
 
     @validate_input("HAMILTONIAN", True)
     def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesCm1:
@@ -405,7 +454,7 @@ class SltGroup:
         
         return magnetic_centers, exchange_interactions, states, electric_dipole, magnetic_interactions, electric_interactions, local_states
     
-    @validate_input("HAMILTONIAN", only_hamiltonian_check=True)
+    @validate_input("HAMILTONIAN", only_group_check=True)
     def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True):
             return SltHamiltonian(self, states_cutoff, rotation, hyperfine, local_states)
     
@@ -758,8 +807,119 @@ class SltHamiltonian(metaclass=MethodTypeMeta):
         for i in range(len(self._magnetic_centers.keys())):
             info_list.append(self._magnetic_centers[i][1])
         return (self._mode, info_list, self._local_states)
-    
 
+
+class SltXyz(metaclass=MethodTypeMeta):
+    _method_type = "XYZ"
+
+    __slots__ = ["_hdf5", "_slt_group", "_atoms", "_charge", "_multiplicity"]
+
+    def __init__(self, slt_group: SltGroup) -> None:
+        self._slt_group = slt_group
+        elements = slt_group["ELEMENTS"][:]
+        if isinstance(elements[0], bytes):
+            elements = [elem.decode('utf-8') for elem in elements]
+        self._atoms = Atoms(elements, slt_group["COORDINATES"][:])
+        self._charge = None
+        self._multiplicity = None
+        if "Charge" in slt_group.attributes:
+            self._charge = slt_group.attributes["Charge"]
+        if "Multiplicity" in slt_group.attributes:
+            self._multiplicity = slt_group.attributes["Multiplicity"]
+
+    def atoms_object(self):
+        return self._atoms
+    
+    def charge(self):
+        return self._charge
+    
+    def multiplicity(self):
+        return self._multiplicity
+
+    def to_xyz(self, xyz_filepath: str):
+        if not xyz_filepath.endswith(".xyz"):
+            xyz_filepath += ".xyz"
+        additional_info = ""
+        if self._charge is not None:
+            additional_info += f"Charge: {self._charge} "
+        if self._multiplicity is not None:
+            additional_info += f"Multiplicity: {self._multiplicity} "
+        write(xyz_filepath, self._atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}'")
+
+    def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
+        if len(atom_indices) != len(new_symbols):
+            raise ValueError("The lists 'atom_indices' and 'new_symbols' must have the same length.")
+        
+        num_atoms = len(self._atoms)
+        
+        for idx in atom_indices:
+            if not (0 <= idx < num_atoms):
+                raise IndexError(f"Atom index {idx} is out of bounds for a structure with {num_atoms} atoms.")
+        
+        for symbol in new_symbols:
+            if symbol not in atomic_numbers:
+                raise ValueError(f"Invalid element symbol: '{symbol}'. Please provide valid chemical element symbols.")
+
+        current_symbols = self._atoms.get_chemical_symbols()
+        for idx, new_sym in zip(atom_indices, new_symbols):
+            print(f"Replacing atom at index {idx} ({current_symbols[idx]}) with '{new_sym}'.")
+            current_symbols[idx] = new_sym
+        self._atoms.set_chemical_symbols(current_symbols)
+        
+        try:
+            elements_ds = self._slt_group["ELEMENTS"]
+            elements = elements_ds[:]
+
+            if isinstance(elements[0], bytes):
+                elements = [elem.decode('utf-8') for elem in elements]
+            else:
+                elements = list(elements)
+
+            for idx, new_sym in zip(atom_indices, new_symbols):
+                elements[idx] = new_sym
+            
+            if isinstance(elements_ds.dtype, type(string_dtype(encoding='utf-8'))):
+                elements_encoded = array(elements, dtype='S')
+            else:
+                elements_encoded = array(elements, dtype=elements_ds.dtype)
+
+            elements_ds[:] = elements_encoded
+            print(f"'ELEMENTS' dataset successfully updated in group '{self._slt_group._group_name}'.")
+        except Exception as exc:
+            raise SltFileError(self._slt_group._hdf5, exc, f"Failed to update 'ELEMENTS' dataset in the .slt group") from None
+
+
+class SltUnitCell(SltXyz):
+    _method_type = "UNIT_CELL"
+
+    __slots__ = SltXyz.__slots__
+
+    def __init__(self, slt_group) -> None:
+        super().__init__(slt_group)
+        self._atoms.set_cell(slt_group["CELL"][:])
+
+    def cell_object(self):
+        return self._atoms.get_cell()
+
+
+class SltHessian(SltUnitCell):
+    _method_type = "HESSIAN"
+
+    __slots__ = SltXyz.__slots__
+
+    def __init__(self, slt_group) -> None:
+        super().__init__(slt_group)
+
+
+class SltPropertyCoordinateDerivative(SltXyz):
+    _method_type = "PROPERTY_DERIVATIVE"
+
+    __slots__ = SltXyz.__slots__
+
+    def __init__(self, slt_group) -> None:
+        super().__init__(slt_group)
+
+ 
 class SltCrystalLattice(metaclass=MethodTypeMeta):
     _method_type = "CRYSTAL_LATTICE"
 

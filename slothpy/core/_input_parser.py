@@ -26,7 +26,7 @@ from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1
 from slothpy._general_utilities._io import _group_exists
 from slothpy.core._config import settings
 
-def validate_input(group_type: list[str] = None, direct_acces: bool = False, only_hamiltonian_check: bool = False):
+def validate_input(group_type: list[str] = None, direct_acces: bool = False, only_group_check: bool = False):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -46,7 +46,7 @@ def validate_input(group_type: list[str] = None, direct_acces: bool = False, onl
                 if self.attributes["Kind"] == "SLOTHPY":
                     raise SltFileError(self._hdf5, None, "Custom SlothPy Hamiltonians do not support direct access to their properties and they cannot be used to construct other SlothPy Hamiltonians. For all the supported methods, use them as input in place of the slt_group argument.")
             
-            if only_hamiltonian_check:
+            if only_group_check:
                 return func(**bound_args.arguments)
             
             if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:

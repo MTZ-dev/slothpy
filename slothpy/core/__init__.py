@@ -33,6 +33,7 @@ from ._config import (
     set_double_precision,
     set_single_precision,
     set_log_level,
+    set_print_level,
 )
 
 __all__ = [
@@ -51,4 +52,5 @@ __all__ = [
     "set_double_precision",
     "set_single_precision",
     "set_log_level",
+    "set_print_level",
 ]

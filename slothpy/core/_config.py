@@ -18,7 +18,7 @@ import sys
 from os import cpu_count
 from importlib import resources, resources as pkg_resources
 from configparser import ConfigParser
-from importlib import resources
+from pkg_resources import resource_filename
 from typing import Literal
 from IPython import get_ipython
 from numpy import int32, float32, complex64, int64, float64, complex128
@@ -37,9 +37,10 @@ class SltSettings:
             "monitor": False,
             "traceback": False,
             "log_level": 0,
+            "print_level": 0,
         }
         config = ConfigParser()
-        with resources.open_text("slothpy", "settings.ini") as file:
+        with open(resource_filename("slothpy", "settings.ini")) as file:
             config.read_file(file)
 
         # Update integer setting
@@ -145,6 +146,19 @@ class SltSettings:
         else:
             raise SltInputError(
                 ValueError("Log level setter accepts only integers.")
+            )
+        
+    @property
+    def print_level(self):
+        return self._settings["print_level"]
+
+    @print_level.setter
+    def print_level(self, value):
+        if isinstance(value, int):
+            self._settings["print_level"] = value
+        else:
+            raise SltInputError(
+                ValueError("Print level setter accepts only integers.")
             )
         
     @property
@@ -311,10 +325,23 @@ def set_single_precision(permanent: bool = False) -> None:
 
 def set_log_level(value: int = 0, permanent: bool = False) -> None:
     """
-    Run this to set the logging level (float64, complex128) in SlotphPy.
+    Run this to set the logging level in SlotphPy.
     Set permanent = True to save the settings permanently in the .ini file.
     """
 
     settings.log_level = value
+    if permanent:
+        settings.save_settings()
+
+
+def set_print_level(value: int = 0, permanent: bool = False) -> None:
+    """
+    Run this to set the print level in SlotphPy. If greater than 0
+    print(SltFile) displays all file contents not only up to Group/Dataset
+    hierachy which can become unreadable preatty quickly. Set permanent = True
+    to save the settings permanently in the .ini file.
+    """
+
+    settings.print_level = value
     if permanent:
         settings.save_settings()

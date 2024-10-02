@@ -119,6 +119,7 @@ from slothpy._general_utilities._grids_over_sphere import (
 )
 from slothpy.core._input_parser import _parse_hamiltonian_dicts
 from slothpy.core._slt_file import SltGroup, SltDataset
+from slothpy.core._config import settings
 
 class SltFile():
     """
@@ -263,11 +264,17 @@ class SltFile():
 
         def collect_groups(name, obj):
             if isinstance(obj, Group):
-                self._groups[name] = dict(obj.attrs)
+                if settings.print_level < 1 and "/" in name:
+                    return
+                else:
+                    self._groups[name] = dict(obj.attrs)
 
         def collect_groups_datasets_atributes(name, obj):
             if isinstance(obj, Dataset):
                 parts = name.split('/')
+                if settings.print_level < 1:
+                    if len(parts) > 2:
+                        return
                 if parts[0] in self._groups.keys():
                     if parts[0] not in self._groups_and_datasets.keys():
                         self._groups_and_datasets[parts[0]] = {parts[1]: dict(obj.attrs)}

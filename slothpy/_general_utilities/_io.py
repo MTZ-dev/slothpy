@@ -349,17 +349,17 @@ def _molcas_to_slt(molcas_filepath: str, slt_filepath: str, group_name: str, ele
                 dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
 
 
-def _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplicity):
+def _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplicity, group_type = "XYZ", description = "XYZ file."):
     with File(slt_filepath, 'a') as slt:
         group = slt.create_group(group_name)
-        group.attrs["Type"] = "XYZ"
+        group.attrs["Type"] = group_type
         group.attrs["Number_of_atoms"] = len(elements)
         group.attrs["Precision"] = settings.precision.upper()
-        group.attrs["Description"] = "XYZ file."
+        group.attrs["Description"] = description
         dt = string_dtype(encoding='utf-8')
-        dataset = group.create_dataset('ELEMENTS', data=array(elements, dtype='S'), dtype=dt)
+        dataset = group.create_dataset('ELEMENTS', data=array(elements, dtype='S'), dtype=dt, chunks=True)
         dataset.attrs["Description"] = "List of elements from the XYZ file."
-        dataset = group.create_dataset('COORDINATES', data=positions, dtype=settings.float)
+        dataset = group.create_dataset('COORDINATES', data=positions, dtype=settings.float, chunks=True)
         dataset.attrs["Description"] = "List of elements coordinates from the XYZ file."
         if charge is not None:
             group.attrs["Charge"] = charge
@@ -367,14 +367,23 @@ def _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplic
             group.attrs["Multiplicity"] = multiplicity
 
 
-def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell):
-    _xyz_to_slt(slt_filepath, group_name, elements, positions, None, None)
+def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, group_type = "UNIT_CELL", description = "Unit cell group containing xyz coordinates and unit cell vectors."):
+    _xyz_to_slt(slt_filepath, group_name, elements, positions, None, None, group_type, description)
     with File(slt_filepath, 'a') as slt:
         group = slt[group_name]
-        group.attrs["Type"] = "UNIT_CELL"
-        group.attrs["Description"] = "Unit cell group containing xyz coordinates and unit cell vectors."
-        dataset = group.create_dataset('CELL', data=cell, dtype=settings.float)
+        dataset = group.create_dataset('CELL', data=cell, dtype=settings.float, chunks=True)
         dataset.attrs["Description"] = "Unit cell vectors as 3x3 matrix (with vectors in rows)."
+
+
+def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, hessian, nx, ny, nz, born_charges = False):
+    _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, "HESSIAN", "Hessian group containing force constants and supercell parameters.")
+    with File(slt_filepath, 'a') as slt:
+        group = slt[group_name]
+        dataset = group.create_dataset('HESSIAN', data=hessian, dtype=settings.float, chunks=True)
+        dataset.attrs["Description"] = "Hessian matrix" ## Decide how to store it and fill the description
+        dataset.attrs["Supercell_Repetitions"] = [nx, ny, nz]
+        if born_charges:
+            pass ### Decide how to store Born charges
 
 
 def _load_orca_hdf5(filename, group, rotation):

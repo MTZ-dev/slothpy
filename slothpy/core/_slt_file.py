@@ -35,13 +35,14 @@ from ase.cell import Cell
 from slothpy.core._registry import MethodTypeMeta, type_registry
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError, SltReadError, SltInputError
-from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy.core._input_parser import validate_input
+from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
-from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _xyz_to_slt
+from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _xyz_to_slt, _hessian_to_slt
 from slothpy._general_utilities._constants import U_PI_A_AU, E_PI_A_AU
 from slothpy._general_utilities._direct_product_space import _kron_mult
 from slothpy._general_utilities._math_expresions import _subtract_const_diagonal
+from slothpy._general_utilities._utils import _check_n
 from slothpy.core._delayed_methods import *
 
 
@@ -361,7 +362,7 @@ class SltGroup:
         pass
 
     @delegate_method_to_slt_group
-    def generate_finite_stencil_displacement(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+    def generate_finite_stencil_displacements(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
         """
         Generates finite stencil displacements for derivative calculations.
 
@@ -402,7 +403,7 @@ class SltGroup:
         pass
 
     @delegate_method_to_slt_group
-    def generate_supercell_finite_stencil_displacement(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+    def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
         """
         Generates finite stencil displacements for a supercell by displacing atoms in the first unit cell.
 
@@ -977,7 +978,7 @@ class SltXyz(metaclass=MethodTypeMeta):
         except Exception as exc:
             raise SltFileError(self._slt_group._hdf5, exc, f"Failed to update 'ELEMENTS' dataset in the .slt group") from None
         
-    def generate_finite_stencil_displacement(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, _supercell: bool = False, _nx: Optional[int] = None, _ny: Optional[int] = None, _nz: Optional[int] = None) -> Optional[Iterator[Atoms]]:
+    def generate_finite_stencil_displacements(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, _supercell: bool = False, _nx: Optional[int] = None, _ny: Optional[int] = None, _nz: Optional[int] = None) -> Optional[Iterator[Atoms]]:
         if output_option not in ['xyz', 'iterator', 'slt']:
             raise ValueError("Invalid output_option. Choose from 'xyz', 'iterator', or 'slt'.")
 
@@ -994,45 +995,42 @@ class SltXyz(metaclass=MethodTypeMeta):
         total_dofs = 3 * num_atoms
         n_checked = False
         if _supercell:
-            if _nx is None or _ny is None or _nz is None:
-                raise ValueError("All nx, ny and nz must be provided for supercell.")
-            for value, name in zip([_nx, _ny, _nz], ['nx', 'ny', 'nz']):
-                if not isinstance(value, (int, int32, int64)):
-                    raise TypeError(f"{name} must be an integer. Received type {type(value).__name__} instead.")
-                if value < 1:
-                    raise ValueError(f"{name} must be greater than or equal to 1. Received {value}.")
-                else:
-                    n_checked = True
+            n_checked = _check_n(_nx, _ny, _nz)
         if n_checked:
             atoms_tmp = self._atoms.repeat((_nx, _ny, _nz))
         else:
             atoms_tmp = self._atoms
 
         def displacement_generator() -> Iterator[Atoms]:
+            zero_geometry_flag = False
             for dof in range(total_dofs):
                 axis = dof % 3
                 atom_idx = dof // 3
                 for multiplier in range(-displacement_number, displacement_number + 1):
-                    if multiplier == 0:
+                    if multiplier == 0 and zero_geometry_flag:
+                        continue
+                    elif multiplier == 0:
+                        zero_geometry_flag = True
+                        yield (atoms_tmp, dof, multiplier, _nx, _ny, _nz) if n_checked else (atoms_tmp, dof, multiplier)
                         continue
                     displaced_atoms = atoms_tmp.copy()
                     displacement = multiplier * step
                     displaced_atoms.positions[atom_idx, axis] += displacement
-                    yield (displaced_atoms, dof, multiplier, _nx, _ny, _nz) if n_checked else (displaced_atoms, dof, multiplier)
+                    yield (displaced_atoms, dof, multiplier, step, _nx, _ny, _nz) if n_checked else (displaced_atoms, dof, multiplier, step)
 
         if output_option == 'xyz':
             for displacement_info in displacement_generator():
                 displaced_atoms, dof, multiplier = displacement_info[0], displacement_info[1], displacement_info[2]
-                xyz_file_name = f"dof_{dof}_{multiplier}.xyz"
+                xyz_file_name = f"dof_{dof}_disp_{multiplier}.xyz"
                 xyz_file_path = join(custom_directory, xyz_file_name)
                 try:
-                    additional_info = ""
+                    additional_info = f"Step: {step} Displacement_Number: {displacement_number}"
                     if self._charge is not None:
                         additional_info += f"Charge: {self._charge} "
                     if self._multiplicity is not None:
                         additional_info += f"Multiplicity: {self._multiplicity} "
                     if n_checked:
-                        additional_info += f"Supercell Repetitions [nx, ny, nz] = {[_nx, _ny, _nz]} "
+                        additional_info += f"Supercell_Repetitions [nx, ny, nz] = {[_nx, _ny, _nz]} "
                     if self._method_type == "UNIT_CELL":
                         additional_info += f"Cell parameters [a, b, c, alpha, beta, gamma]: {self._atoms.get_cell_lengths_and_angles()} "
                     displaced_atoms.write(xyz_file_path, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}", format='xyz')
@@ -1050,13 +1048,13 @@ class SltXyz(metaclass=MethodTypeMeta):
                     displacement_group.attrs["Type"] = "DISPLACEMENTS_XYZ" if not n_checked else "DISPLACEMENTs_SUPERCELL"
                     displacement_group.attrs["Description"] = "Group containing displaced XYZ coordinates groups."
                     displacement_group.attrs["Displacement_Number"] = displacement_number
-                    displacement_group.attrs["Step_Size"] = step
+                    displacement_group.attrs["Step"] = step
                     displacement_group.attrs["Original_Group"] = self._slt_group._group_name
                     if n_checked:
                         displacement_group.attrs["Supercell_Repetitions"] = [_nx, _ny, _nz]
                 for displacement_info in displacement_generator():
                     displaced_atoms, dof, multiplier = displacement_info[0], displacement_info[1], displacement_info[2]
-                    subgroup_name = f"{slt_group_name}/dof_{dof}_{multiplier}"
+                    subgroup_name = f"{slt_group_name}/dof_{dof}_disp_{multiplier}"
                     _xyz_to_slt(self._slt_group._hdf5, subgroup_name, displaced_atoms.get_chemical_symbols(), displaced_atoms.get_positions(), self._charge, self._multiplicity)
             except Exception as exc:
                 raise SltFileError(self._slt_group._hdf5, exc, f"Failed to write displacement Group '{slt_group_name}' to the .slt file") from None
@@ -1075,17 +1073,30 @@ class SltUnitCell(SltXyz):
     def cell_object(self):
         return self._atoms.get_cell()
     
-    def generate_supercell_finite_stencil_displacement(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
-        return self.generate_finite_stencil_displacement(displacement_number, step, output_option, custom_directory, slt_group_name, True, nx, ny, nz)
+    def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+        return self.generate_finite_stencil_displacements(displacement_number, step, output_option, custom_directory, slt_group_name, True, nx, ny, nz)
+
+    def hessian_from_finite_displacements(self, dirpath: str, group_name: str, nx: int = None, ny: int = None, nz: int = None, displacement_number: int = None, step: float = None): #### Add this method to SltGroup
+        if not found_info:
+            _check_n(nx, ny, nz)
+        _hessian_to_slt(self._slt_group._hdf5, )
 
 
 class SltHessian(SltUnitCell):
     _method_type = "HESSIAN"
 
-    __slots__ = SltXyz.__slots__
+    __slots__ = SltXyz.__slots__ + ["_hessian"]
 
     def __init__(self, slt_group) -> None:
         super().__init__(slt_group)
+        self._hessian = slt_group["HESSIAN"]
+    
+    @property
+    def hessian(self): #### From here add methods to SltGroup
+        return self._hessian
+    
+    def phonons(): #### This to slt group as delayed methoo with input parser
+        pass
 
 
 class SltPropertyCoordinateDerivative(SltXyz):
@@ -1097,7 +1108,7 @@ class SltPropertyCoordinateDerivative(SltXyz):
         super().__init__(slt_group)
 
  
-class SltCrystalLattice(metaclass=MethodTypeMeta):
+class SltCrystalLattice(SltHessian):
     _method_type = "CRYSTAL_LATTICE"
 
     __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Literal
 
-from numpy import ndarray
+from numpy import ndarray, int32, int64
 
 from slothpy._angular_momentum._rotation import _rotate_vector_operator, _rotate_vector_operator_component, _rotate_vector_operator_orintation
 from slothpy._general_utilities._math_expresions import _3d_dot
@@ -92,6 +92,20 @@ def slpjm_components_driver(slt_group, kind: Literal["diagonal", "full"], which:
             return _rotate_and_return_components_diag(slt_group, which, xyz, start_state, stop_state, rotation)
         if kind == "full":
             return _rotate_and_return_components(slt_group, which, xyz, start_state, stop_state, rotation)
+
+
+def _check_n(nx, ny, nz):
+    n_checked = False
+    if nx is None or ny is None or nz is None:
+        raise ValueError("All nx, ny and nz must be provided for supercell.")
+    for value, name in zip([nx, ny, nz], ['nx', 'ny', 'nz']):
+        if not isinstance(value, (int, int32, int64)):
+            raise TypeError(f"{name} must be an integer. Received type {type(value).__name__} instead.")
+        if value < 1:
+            raise ValueError(f"{name} must be greater than or equal to 1. Received {value}.")
+        else:
+            n_checked = True
+    return n_checked
 
 
 def _convert_seconds_dd_hh_mm_ss(seconds):

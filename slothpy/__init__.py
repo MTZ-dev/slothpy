@@ -45,6 +45,7 @@ from .core import (
     set_double_precision,
     set_single_precision,
     set_log_level,
+    set_print_level,
 )
 from ._general_utilities import (
     lebedev_laikov_grid_over_hemisphere,
@@ -71,6 +72,7 @@ __all__ = [
     "set_double_precision",
     "set_single_precision",
     "set_log_level",
+    "set_print_level",
     "lebedev_laikov_grid_over_hemisphere",
     "fibonacci_over_hemisphere",
     "meshgrid_over_hemisphere",

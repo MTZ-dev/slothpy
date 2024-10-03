@@ -14,9 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Optional
 from os.path import join, splitext
+
 from numpy import ndarray, array, int64, int32
 from ase.io import read
+
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import SltFileError, SltInputError
 from slothpy.core.slt_file_object import SltFile
@@ -175,7 +178,7 @@ def slt_file(slt_filepath: str) -> SltFile:
         raise SltFileError(slt_filepath, exc, message="Failed to load SltFIle from the .slt file.") from None
 
 
-def xyz(input_filepath: str, slt_filepath: str, group_name: str, charge: int = None, multiplicity: int = None) -> SltFile:
+def xyz(input_filepath: str, slt_filepath: str, group_name: str, charge: Optional[int] = None, multiplicity: Optional[int] = None) -> SltFile:
     """
     Reads a .xyz or .cif file and saves the data as a xyz group in a .slt file.
 
@@ -231,7 +234,7 @@ def xyz(input_filepath: str, slt_filepath: str, group_name: str, charge: int = N
         raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
 
 
-def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vectors: ndarray = None, cell_params: ndarray = None, cell_from_cif_path: str = None):
+def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vectors: Optional[ndarray] = None, cell_params: Optional[ndarray] = None, cell_from_cif_path: Optional[str] = None):
     """
     Reads a .cif or .xyz file along with cell parameters and saves the data
     as a unit cell group in a .slt file.

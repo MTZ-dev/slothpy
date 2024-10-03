@@ -17,6 +17,7 @@ from typing import Literal
 
 from numpy import ndarray, int32, int64
 
+from slothpy.core._slothpy_exceptions import SltInputError
 from slothpy._angular_momentum._rotation import _rotate_vector_operator, _rotate_vector_operator_component, _rotate_vector_operator_orintation
 from slothpy._general_utilities._math_expresions import _3d_dot
 
@@ -97,12 +98,12 @@ def slpjm_components_driver(slt_group, kind: Literal["diagonal", "full"], which:
 def _check_n(nx, ny, nz):
     n_checked = False
     if nx is None or ny is None or nz is None:
-        raise ValueError("All nx, ny and nz must be provided for supercell.")
+        raise SltInputError(ValueError("All nx, ny and nz must be provided for supercell.")) from None
     for value, name in zip([nx, ny, nz], ['nx', 'ny', 'nz']):
         if not isinstance(value, (int, int32, int64)):
-            raise TypeError(f"{name} must be an integer. Received type {type(value).__name__} instead.")
+            raise SltInputError(TypeError(f"{name} must be an integer. Received type {type(value).__name__} instead.")) from None
         if value < 1:
-            raise ValueError(f"{name} must be greater than or equal to 1. Received {value}.")
+            raise SltInputError(ValueError(f"{name} must be greater than or equal to 1. Received {value}.")) from None
         else:
             n_checked = True
     return n_checked

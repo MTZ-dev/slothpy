@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from math import factorial
-from numpy import ndarray, array, zeros, ascontiguousarray, arange, tile, ones, argsort, take_along_axis, abs, mod, sqrt, min, max, power, float64, int64, min as np_min
+from numpy import ndarray, array, zeros, ascontiguousarray, arange, tile, ones, argsort, take_along_axis, abs, mod, sqrt, min, max, power, float64 as np_float64, int64 as np_int64, min as np_min
 from numpy.linalg import eigh, inv
 from numba import jit, prange, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import GE, MU_B_AU
@@ -156,30 +156,13 @@ def _Wigner_3j(j1, j2, j3, m1, m2, m3):
     )
 
 
-def _finite_diff_stencil(diff_order: int, num_of_points: int, step: float):
+def _central_finite_difference_stencil(diff_order: int, num_of_points: int, step: float):
     stencil_len = 2 * num_of_points + 1
 
     if diff_order >= stencil_len:
-        raise SltInputError(
-            ValueError(
-                f"Insufficient number of points to evaluate coefficients."
-                f" Provide number of points greater than (derivative order -"
-                f" 1) / 2."
-            )
-        )
+        raise SltInputError(ValueError(f"Insufficient number of points to evaluate coefficients. Provide a number of points greater than (derivative order - 1) / 2."))
 
-    stencil_matrix = tile(
-        arange(-num_of_points, num_of_points + 1).astype(int64),
-        (stencil_len, 1),
-    )
-    stencil_matrix = stencil_matrix ** arange(0, stencil_len).reshape(-1, 1)
-
-    order_vector = zeros(stencil_len)
-    order_vector[diff_order] = factorial(diff_order) / power(step, diff_order)
-
-    stencil_coeff = inv(stencil_matrix) @ order_vector.T
-
-    return stencil_coeff
+    return inv(tile(arange(-num_of_points, num_of_points + 1).astype(np_int64),(stencil_len, 1)) ** arange(0, stencil_len).reshape(-1, 1))[:, diff_order] * factorial(diff_order) / power(step, diff_order)
 
 
 @jit(
@@ -189,7 +172,7 @@ def _finite_diff_stencil(diff_order: int, num_of_points: int, step: float):
     nogil=True,
     fastmath=True,
 )
-def _hermitian_x_in_basis_of_hermitian_y(x_matrix, y_matrix):
+def _hermitian_x_in_basis_of_hermitian_y(x_matrix, y_matrix): ## That can be used for the ORCA import or lapack
     x_matrix = ascontiguousarray(x_matrix)
     _, eigenvectors = eigh(y_matrix)
 

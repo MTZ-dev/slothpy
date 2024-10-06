@@ -17,13 +17,17 @@
 from os import remove
 from os.path import join
 from re import compile, search, findall
+
 from h5py import File, string_dtype
 from numpy import ndarray, dtype, array, ascontiguousarray, zeros, empty, any, diagonal, min, int64, float64, complex128
-from numpy.linalg import eigh, eigvalsh
+from scipy.linalg import eigh, eigvalsh
 from typing import Tuple
+
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
 from slothpy._angular_momentum._rotation import _rotate_vector_operator
 from slothpy.core._config import settings
+
+##### I get regex warinngs with invalid escape sequences!
 
 def _grep_to_file(
     path_inp: str,
@@ -703,6 +707,7 @@ def _save_data_to_slt(file_path, group_name, data_dict, metadata_dict):
         for key, value in metadata_dict.items():
             group.attrs[key] = value
 
+
 def _get_orca_blocks_size_new(orca_filepath: str) -> tuple[int, int, int]:
     
     with open(orca_filepath, "r") as file:
@@ -719,9 +724,6 @@ def _get_orca_blocks_size_new(orca_filepath: str) -> tuple[int, int, int]:
                         break
                 break
 
-
- 
-
     num_blocks = so_dim // 6
     num_of_whole_blocks = num_blocks
     remaining_columns = so_dim % 6
@@ -729,16 +731,11 @@ def _get_orca_blocks_size_new(orca_filepath: str) -> tuple[int, int, int]:
     if remaining_columns != 0:
         num_blocks += 1 
 
-
     return so_dim, num_of_whole_blocks, remaining_columns
 
-def _orca_reader(
-    so_dim: int,
-    num_of_whole_blocks: int,
-    remaining_columns: int,
-    file, #passing the open file
-) -> array:
-    matrix = empty((so_dim, so_dim), dtype=float64)
+
+def _orca_reader(so_dim: int, num_of_whole_blocks: int, remaining_columns: int, file) -> ndarray:
+    matrix = empty((so_dim, so_dim), dtype=settings.float)
     l = 0
     for _ in range(num_of_whole_blocks):
         file.readline()  # Skip a line before each block of 6 columns
@@ -746,7 +743,7 @@ def _orca_reader(
             line = file.readline()
             elements = findall(r'[-+]?\d*\.\d+', line)
             for j in range(6):       
-                matrix[i, l + j] = float64(elements[j])
+                matrix[i, l + j] = settings.float((elements[j]))
         l += 6
         
     if remaining_columns > 0:
@@ -761,9 +758,8 @@ def _orca_reader(
     
 def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electric_dipole_momenta: bool, SSC: bool, pt2: bool) -> None:
     
-    
     # Retrieve dimensions and block sizes for spin-orbit calculations
-    (so_dim, num_of_whole_blocks, remaining_columns) = _get_orca_blocks_size_new(orca_filepath)
+    so_dim, num_of_whole_blocks, remaining_columns = _get_orca_blocks_size_new(orca_filepath)
     
     # Create HDF5 file and ORCA group
     with File(f"{slt_filepath}", "a") as slt:
@@ -776,7 +772,7 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
             group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
         group.attrs["Description"] = "Relativistic ORCA results."
     
-    
+
         if SSC:
             regex = compile("SOC and SSC MATRIX \(A\.U\.\)\n")
             with open(f"{orca_filepath}", "r") as file:
@@ -817,7 +813,7 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
             ssc_energies, eigenvectors = eigh(ssc_matrix)
             
             # Create a dataset in HDF5 file for SSC matrix
-            dataset = group.create_dataset("SSC", shape = ssc_energies.shape, data = ssc_energies, dtype=float64)
+            dataset = group.create_dataset("SSC", shape = ssc_energies.shape, data = ssc_energies, dtype=float64, chunks=True)
             dataset.attrs["Description"] = "SSC energies"
         
         
@@ -871,6 +867,7 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
         matrices = ["SX", "SY", "SZ", "LX", "LY", "LZ"]
         
         patterns = ["SX MATRIX IN CI BASIS\n", "SY MATRIX IN CI BASIS\n", "SZ MATRIX IN CI BASIS\n","LX MATRIX IN CI BASIS\n", "LY MATRIX IN CI BASIS\n", "LZ MATRIX IN CI BASIS\n",]    
+        
         
         for matrix_name, pattern in zip(matrices, patterns):
             regex = compile(pattern)

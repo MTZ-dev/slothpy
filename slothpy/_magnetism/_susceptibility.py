@@ -30,7 +30,7 @@ from numpy import (
     pi,
 )
 from slothpy._magnetism._magnetisation import _mth, _mag_3d
-from slothpy._general_utilities._math_expresions import _finite_diff_stencil
+from slothpy._general_utilities._math_expresions import _central_finite_difference_stencil
 from slothpy._general_utilities._constants import MU_B_CM_3
 
 
@@ -96,7 +96,7 @@ def _chitht(
             num_threads,
         )
 
-        stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)
+        stencil_coeff = _central_finite_difference_stencil(1, num_of_points, delta_h)
 
         mth_array = mth_array.reshape(
             (temperatures.size, fields.size, stencil_coeff.size)
@@ -174,7 +174,7 @@ def _chitht_tensor(
             rotation,
         )
 
-        stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)
+        stencil_coeff = _central_finite_difference_stencil(1, num_of_points, delta_h)
 
         mht_tensor_array = mht_tensor_array.reshape(
             (fields.size, stencil_coeff.size, temperatures.size, 3, 3)
@@ -267,7 +267,7 @@ def _chit_3d(
             True,
         )
 
-        stencil_coeff = _finite_diff_stencil(1, num_of_points, delta_h)
+        stencil_coeff = _central_finite_difference_stencil(1, num_of_points, delta_h)
 
         if grid_type == "mesh":
             mag_3d_array = mag_3d.reshape(

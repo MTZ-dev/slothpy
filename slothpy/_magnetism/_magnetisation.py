@@ -153,6 +153,7 @@ def _magnetic_moment_partition_function(energies, states_momenta, temperature):
 
     return m, z
 
+
 @jit([(types.Array(float32, 1, 'C', False), types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True), types.Array(float32, 1, 'C', True), float32),
       (types.Array(float64, 1, 'C', False), types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True), types.Array(float64, 1, 'C', True), float64),
     ],

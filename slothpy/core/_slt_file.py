@@ -1003,7 +1003,7 @@ class SltXyz(metaclass=MethodTypeMeta):
         if output_option == 'xyz':
             makedirs(custom_directory, exist_ok=True)
 
-        num_atoms = len(self._atoms)
+        num_atoms = len(self._atoms) ### Here len self._atoms_first_unit_cell if self._method_type == "SUPERCELL"
         total_dofs = 3 * num_atoms
         n_checked = False
         if _supercell:
@@ -1095,6 +1095,7 @@ class SltUnitCell(SltXyz):
         _check_n(nx, ny, nz)
 
         atoms: Atoms = self._atoms.repeat((nx, ny, nz))
+
         if output_option == "xyz":
             additional_info = f"Supercell parameters [a, b, c, alpha, beta, gamma]: {atoms.get_cell_lengths_and_angles()} "
             write(xyz_filepath, self._atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}'")
@@ -1116,7 +1117,7 @@ class SltUnitCell(SltXyz):
             except Exception as exc:
                 raise SltInputError(exc, "Invalid step provided.") from None
 
-        hessian, born_charges = _read_fc2_born_charges(self, dirpath, nx, ny, nz, displacement_number, step)
+        hessian, born_charges = _read_fc2_born_charges(self, dirpath, calculator, nx, ny, nz, displacement_number, step)
         _hessian_to_slt(self._slt_group._hdf5, slt_group_name, self._atoms.get_chemical_symbols(), self._atoms.get_positions(), self._atoms.get_cell.array, hessian, nx, ny, nz, born_charges)
         return SltGroup(self._hdf5, slt_group_name)
 

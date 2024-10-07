@@ -763,209 +763,72 @@ def _orca_reader(so_dim: int, num_of_whole_blocks: int, remaining_columns: int, 
 
     return matrix
     
-def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electric_dipole_momenta: bool, SSC: bool, pt2: bool) -> None:
+def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electric_dipole_momenta: bool, ssc: bool, pt2: bool) -> None:
     
     # Retrieve dimensions and block sizes for spin-orbit calculations
-    so_dim, num_of_whole_blocks, remaining_columns = _get_orca_blocks_size_new(orca_filepath)
+    (so_dim, num_of_whole_blocks, remaining_columns) = _get_orca_blocks_size_new(orca_filepath)
     
     # Create HDF5 file and ORCA group
     with File(f"{slt_filepath}", "a") as slt:
         group = slt.create_group(group_name)
         group.attrs["Type"] = "HAMILTONIAN"
         group.attrs["Kind"] = "ORCA"
-        if SSC:
-            group.attrs["Additional"] = "SSC_ENERGIES"
+        if ssc:
+            group.attrs["Energies"] = "SSC_ENERGIES"
+        else:
+            group.attrs["Energies"] = "SOC_ENERGIES" 
         if electric_dipole_momenta:
             group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
         group.attrs["Description"] = "Relativistic ORCA results."
-    
 
-        if SSC:
-            regex = compile("SOC and SSC MATRIX \(A\.U\.\)\n")
-            with open(f"{orca_filepath}", "r") as file:
-                matrix_number = 0
-                for line in file:
-                    if pt2:
-                        if regex.search(line):
-                            matrix_number += 1
-                            if matrix_number == 2:
-                                for _ in range(3):
-                                    file.readline() # Skip the first 3 lines
-                                matrix_real = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-                                
-                                for _ in range(2):
-                                    file.readline()  # Skip 2 lines separating real and imaginary part
-                                matrix_imag = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-                                
-                                break
-                    
-                    else:
-                        matrix_number = 0
-                        for line in file:
-                            if regex.search(line):
-                                matrix_number += 1
-                                if matrix_number == 1:
-                                    for _ in range(3):
-                                        file.readline()  # Skip the first 3 lines
-                                    matrix_real = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-        
-                                    for _ in range(2):
-                                        file.readline()  # Skip 2 lines separating real and imaginary part
-                                    matrix_imag = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-                         
-                                    break
-                    
-            #SSC matrix diagonalization       
-            ssc_matrix =  array(matrix_real + 1j * matrix_imag, dtype=complex128)
-            ssc_energies, eigenvectors = eigh(ssc_matrix)
-            
-            # Create a dataset in HDF5 file for SSC matrix
-            dataset = group.create_dataset("SSC", shape = ssc_energies.shape, data = ssc_energies, dtype=float64, chunks=True)
-            dataset.attrs["Description"] = "SSC energies"
-        
-        
-        else:
-            regex = compile("SOC MATRIX \(A\.U\.\)\n")
-            with open(f"{orca_filepath}", "r") as file:
-                matrix_number = 0
-                for line in file:
-                    if pt2:
-                        if regex.search(line):
-                            matrix_number += 1
-                            if matrix_number == 2:
-                                for _ in range(3):
-                                    file.readline()  # Skip the first 3 lines
-                                matrix_real = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-             
-                                for _ in range(2):
-                                    file.readline()  # Skip 2 lines separating real and imaginary part
-                                matrix_imag = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-                           
-                                break
-                        
-                    else:
-                        matrix_number = 0
-                        for line in file:
-                            if regex.search(line):
-                                matrix_number += 1
-                                if matrix_number == 1:
-                                    for _ in range(3):
-                                        file.readline()  # Skip the first 3 lines
-                                    matrix_real = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-                                    
-                                    for _ in range(2):
-                                        file.readline()  # Skip 2 lines separating real and imaginary part
-                                    matrix_imag = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
+        # Extract and process matrices
+        pattern_type = [["SOC and SSC MATRIX\s*\(A\.U\.\)\s*"]] if ssc else [["SOC MATRIX\s*\(A\.U\.\)\s*"]]
+        pattern_type += [["SX MATRIX IN CI BASIS\n", "SY MATRIX IN CI BASIS\n", "SZ MATRIX IN CI BASIS\n"], ["LX MATRIX IN CI BASIS\n", "LY MATRIX IN CI BASIS\n", "LZ MATRIX IN CI BASIS\n"]]
+        matrix_type = ["STATES_ENERGIES", "SPINS", "ANGULAR_MOMENTA"]
+        descriptions = ["States energies.", "Sx, Sy, and Sz spin matrices in the SOC basis [(x-0, y-1, z-2), :, :].", "Lx, Ly, and Lz angular momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."]
 
-                                    break
-                
-            #SOC matrix diagonalization 
-            soc_matrix =  array(matrix_real + 1j * matrix_imag, dtype=complex128)
-            soc_energies, eigenvectors = eigh(soc_matrix)
-            
-            # Create a dataset in HDF5 file for SOC matrix
-            dataset = group.create_dataset("SOC", shape = soc_energies.shape, data = soc_energies, dtype=float64)
-            dataset.attrs["Description"] = "SOC energies"
-        
-         
-              
-        
-        # Extract and process matrices (SX, SY, SZ, LX, LY, LZ)
-        matrices = ["SX", "SY", "SZ", "LX", "LY", "LZ"]
-        
-        patterns = ["SX MATRIX IN CI BASIS\n", "SY MATRIX IN CI BASIS\n", "SZ MATRIX IN CI BASIS\n","LX MATRIX IN CI BASIS\n", "LY MATRIX IN CI BASIS\n", "LZ MATRIX IN CI BASIS\n",]    
-        
-        
-        for matrix_name, pattern in zip(matrices, patterns):
-            regex = compile(pattern)
-            with open(f"{orca_filepath}", "r") as file:
-                matrix_number = 0
-                if pt2:
-                    for line in file:
-                        if regex.search(line):
-                            matrix_number += 1
-                            if matrix_number == 2:
-                                for _ in range(3):
-                                    file.readline() # Skip the first 3 lines
-                                matrix = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-                                
-                                break                                        
-                                    
-            
-                else:
-                    matrix_number = 0
-                    for line in file:
-                        if regex.search(line):
-                            matrix_number += 1
-                            if matrix_number == 1:
-                                for _ in range(3):
-                                    file.readline() # Skip the first 3 lines
-                                matrix = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-
-                                break
-                                
-            if SSC:
-                
-                #transformation from CI basis to SSC basis
-                matrix_ssc = (eigenvectors.conj().T @ matrix @ eigenvectors)
-                
-                # Create dataset in HDF5 file and assign the matrix
-                dataset = group.create_dataset(f"{matrix_name}", shape=(so_dim, so_dim), data = matrix_ssc, dtype=complex128)
-                dataset.attrs["Description"] = (f"{matrix_name}" " matrix in SSC basis")
-            
-            else:
-                #transformation from CI basis to SOC basis
-                matrix_soc = (eigenvectors.conj().T @ matrix @ eigenvectors)
-                
-                # Create dataset in HDF5 file and assign the matrix
-                dataset = group.create_dataset(f"{matrix_name}", shape=(so_dim, so_dim), data = matrix_soc, dtype=complex128)
-                dataset.attrs["Description"] = (f"{matrix_name}" " matrix in SOC basis")
-                
-          
-        
-                    
-        
         if electric_dipole_momenta:
-            matrices = ["EDX", "EDY", "EDZ"]
-            patterns = ["Matrix EDX in CI Basis\n", "Matrix EDY in CI Basis\n", "Matrix EDZ in CI Basis\n"]
-        
-            for matrix_name, pattern in zip(matrices, patterns):
+            pattern_type.append(["Matrix EDX in CI Basis\n", "Matrix EDY in CI Basis\n", "Matrix EDZ in CI Basis\n"])
+            matrix_type.append("ELECTRIC_DIPOLE_MOMENTA")
+            descriptions.append("Px, Py, and Pz electric dipole momentum")
+            
+        final_number = (3 if ssc else 1) + (1 if pt2 else 0)
+        energy_final_number = 2 if pt2 else 1
+
+        for matrix, patterns, description in zip(matrix_type, pattern_type, descriptions):
+            if matrix == "STATES_ENERGIES":
+                dataset = group.create_dataset(f"{matrix}", shape = so_dim, dtype = settings.float, chunks = True)
+            else:
+                dataset = group.create_dataset(f"{matrix}", shape = (3, so_dim, so_dim), dtype = settings.complex, chunks = True)
+            
+            dataset.attrs["Description"] = description
+
+            for index, pattern in enumerate(patterns):
                 regex = compile(pattern)
+          
                 with open(f"{orca_filepath}", "r") as file:
                     matrix_number = 0
-                    if pt2:
-                        for line in file:
-                            if regex.search(line):
-                                matrix_number += 1
-                                if matrix_number == 2:
-                                    matrix = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-                                    
-                                    break                                        
-                                        
-                    else:
-                        matrix_number = 0
-                        for line in file:
-                            if regex.search(line):
-                                matrix_number += 1
-                                if matrix_number == 1:         
-                                    matrix = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-    
-                                    break 
+                    for line in file:
+                        if regex.search(line):
+                            matrix_number += 1
+                            if matrix == "STATES_ENERGIES":
+                                final_number =  energy_final_number  
+                            if matrix_number == final_number:
+                                if matrix != "ELECTRIC_DIPOLE_MOMENTA":
+                                    for _ in range(3):
+                                        file.readline()  # Skip the first 3 lines if not electric dipole momenta
+                                data = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
+                                if matrix == "STATES_ENERGIES":
+                                    for _ in range(2):
+                                        file.readline()  # Skip 2 lines separating real and imaginary part
+                                    data_imag = _orca_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
+                                    energy_matrix = array(data + 1j * data_imag, dtype=settings.complex)
+                                    energies, eigenvectors = eigh(energy_matrix)
+                                    dataset[:] = energies - min(energies)  # Assign energies to the dataset
+                                else:
+                                    transformed_data = (eigenvectors.conj().T @ data @ eigenvectors)
+                                    dataset[index] = transformed_data[:]# Assign transformed matrix
+
+                                break
+
             
-                
-                if SSC:
-                    #transformation from CI basis to SSC basis
-                    matrix_ssc = (eigenvectors.conj().T @ matrix @ eigenvectors)
-                
-                    # Create dataset in HDF5 file and assign the matrix
-                    dataset = group.create_dataset(f"{matrix_name}", shape=(so_dim, so_dim), data = matrix_ssc, dtype=complex128)
-                    dataset.attrs["Description"] = (f"{matrix_name}" " matrix in SSC basis")
-                   
-                
-                else:
-                    #transformation from CI basis to SOC basis
-                    matrix_soc = (eigenvectors.conj().T @ matrix @ eigenvectors)
-                    
-                    # Create dataset in HDF5 file and assign the matrix
-                    dataset = group.create_dataset(f"{matrix_name}", shape=(so_dim, so_dim), data =  matrix_soc, dtype=complex128)
-                    dataset.attrs["Description"] = (f"{matrix_name}" " matrix in SOC basis")  

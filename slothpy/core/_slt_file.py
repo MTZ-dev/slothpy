@@ -805,35 +805,45 @@ class SltHamiltonian(metaclass=MethodTypeMeta):
     def s(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltSpinMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
+            arr = SltSpinMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
+            arr.conj(out=arr)
+            data.append(arr)
         return data
         
     @property
     def l(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltAngularMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
+            arr = SltAngularMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
+            arr.conj(out=arr)
+            data.append(arr)
         return data
     
     @property
     def p(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltElectricDipoleMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
+            arr = SltElectricDipoleMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
+            arr.conj(out=arr)
+            data.append(arr)
         return data
 
     @property
     def j(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltTotalAngularMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
+            arr = SltTotalAngularMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
+            arr.conj(out=arr)
+            data.append(arr)
         return data
 
     @property
     def m(self):
         data = []
         for center in self._magnetic_centers.values():
-            data.append(SltMagneticDipoleMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval().conj())
+            arr = SltMagneticDipoleMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
+            arr.conj(out=arr)
+            data.append(arr)
         return data
 
     @property
@@ -1036,7 +1046,7 @@ class SltXyz(metaclass=MethodTypeMeta):
                 xyz_file_name = f"dof_{dof}_disp_{multiplier}.xyz"
                 xyz_file_path = join(custom_directory, xyz_file_name)
                 try:
-                    additional_info = f"Step: {step} Displacement_Number: {displacement_number}"
+                    additional_info = f"Step: {step} Displacement_Number: {displacement_number} "
                     if self._charge is not None:
                         additional_info += f"Charge: {self._charge} "
                     if self._multiplicity is not None:
@@ -1044,7 +1054,7 @@ class SltXyz(metaclass=MethodTypeMeta):
                     if n_checked:
                         additional_info += f"Supercell_Repetitions [nx, ny, nz] = {[_nx, _ny, _nz]} "
                     if self._method_type == "UNIT_CELL":
-                        additional_info += f"Cell parameters [a, b, c, alpha, beta, gamma]: {atoms_tmp.get_cell_lengths_and_angles()} "
+                        additional_info += f"Cell parameters [a, b, c, alpha, beta, gamma]: {atoms_tmp.get_cell_lengths_and_angles().tolist()} "
                     displaced_atoms.write(xyz_file_path, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}", format='xyz')
                 except Exception as exc:
                     raise IOError(f"Failed to write XYZ file '{xyz_file_path}': {exc}")

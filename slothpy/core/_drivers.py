@@ -25,7 +25,8 @@ from os.path import join
 from time import perf_counter_ns, sleep
 from datetime import datetime
 
-from numpy import array, zeros, any, all, median, int64
+from numpy import ndarray, array, zeros, any, all, median, int64
+from pandas import DataFrame
 
 from slothpy.core._registry import MethodTypeMeta
 from slothpy.core._config import settings
@@ -94,7 +95,7 @@ class _SingleProcessed(ABC, metaclass=MethodTypeMeta):
             self.save()
     
     @ensure_ready
-    def eval(self):
+    def eval(self) -> ndarray:
         return self._result
 
     @abstractmethod
@@ -125,11 +126,11 @@ class _SingleProcessed(ABC, metaclass=MethodTypeMeta):
         self._plot(*args, **kwargs)
     
     @ensure_ready
-    def to_numpy_array(self):
+    def to_numpy_array(self) -> ndarray:
         return self._result
     
     @abstractmethod
-    def _to_data_frame(self):
+    def _to_data_frame(self) -> DataFrame:
         pass
     
     @slothpy_exc("SltReadError")

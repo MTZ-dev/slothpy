@@ -28,6 +28,13 @@ from slothpy._angular_momentum._rotation import _rotate_vector_operator
 from slothpy.core._config import settings
 
 ##### I get regex warinngs with invalid escape sequences!
+# /home/mikolaj/Sloth/Sloth/slothpy/_general_utilities/_io.py:715: SyntaxWarning: invalid escape sequence '\('
+#   regex = compile("SOC MATRIX \(A\.U\.\)\n")
+# /home/mikolaj/Sloth/Sloth/slothpy/_general_utilities/_io.py:778: SyntaxWarning: invalid escape sequence '\('
+#   regex = compile("SOC and SSC MATRIX \(A\.U\.\)\n")
+# /home/mikolaj/Sloth/Sloth/slothpy/_general_utilities/_io.py:822: SyntaxWarning: invalid escape sequence '\('
+#   regex = compile("SOC MATRIX \(A\.U\.\)\n")
+##### Use asarray no copy (or here it is unnecessary at all)
 
 def _grep_to_file(
     path_inp: str,

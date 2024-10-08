@@ -3,10 +3,7 @@
       EPS_SCF 5E-9
       MAX_SCF 30 #50 or without outer_scf 500
       IGNORE_CONVERGENCE_FAILURE T
-
-###########smearing for metals and small band gap systems######
-
-############ Orbital transformation ########################      
+     
       &OT T # this or DIAGONALIZATION
         MINIMIZER CG
         PRECONDITIONER FULL_ALL #FULL_KINETIC
@@ -26,7 +23,7 @@
       &OUTER_SCF  T
          OPTIMIZER  SD #DIIS
          EPS_SCF     5E-9
-         MAX_SCF  60
+         MAX_SCF  50
       &END OUTER_SCF
 
       &PRINT

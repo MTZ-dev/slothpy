@@ -378,21 +378,27 @@ def _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplic
             group.attrs["Multiplicity"] = multiplicity
 
 
-def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, group_type = "UNIT_CELL", description = "Unit cell group containing xyz coordinates and unit cell vectors."):
+def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, group_type = "UNIT_CELL", description = "Unit cell group containing xyz coordinates and unit cell vectors.", description_cell = "Unit cell vectors as 3x3 matrix (with vectors in rows)."):
     _xyz_to_slt(slt_filepath, group_name, elements, positions, None, None, group_type, description)
     with File(slt_filepath, 'a') as slt:
         group = slt[group_name]
         dataset = group.create_dataset('CELL', data=cell, dtype=settings.float, chunks=True)
-        dataset.attrs["Description"] = "Unit cell vectors as 3x3 matrix (with vectors in rows)."
+        dataset.attrs["Description"] = description_cell
 
 
-def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, hessian, nx, ny, nz, born_charges = False):
-    _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, "HESSIAN", "Hessian group containing force constants and supercell parameters.")
+def _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, group_type = "SUPERCELL", description = "Supercell group containing xyz coordinates and supercell vectors.", description_cell = "Supercell vectors as 3x3 matrix (with vectors in rows)."):
+    _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, group_type, description, description_cell)
+    with File(slt_filepath, 'a') as slt:
+        group = slt[group_name]
+        group.attrs["Supercell_Repetitions"] = [nx, ny, nz]
+
+
+def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, hessian, born_charges = False):
+    _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, "HESSIAN", "Hessian group containing force constants and supercell parameters.")
     with File(slt_filepath, 'a') as slt:
         group = slt[group_name]
         dataset = group.create_dataset('HESSIAN', data=hessian, dtype=settings.float, chunks=True)
         dataset.attrs["Description"] = "Hessian matrix" ## Decide how to store it and fill the description
-        dataset.attrs["Supercell_Repetitions"] = [nx, ny, nz]
         if born_charges:
             pass ### Decide how to store Born charges
 

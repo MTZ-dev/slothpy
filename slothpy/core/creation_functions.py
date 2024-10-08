@@ -23,7 +23,8 @@ from ase.io import read
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import SltFileError, SltInputError
 from slothpy.core.slt_file_object import SltFile
-from slothpy._general_utilities._io import _orca_spin_orbit_to_slt, _molcas_to_slt, _xyz_to_slt, _unit_cell_to_slt
+from slothpy._general_utilities._io import _orca_spin_orbit_to_slt, _molcas_to_slt, _xyz_to_slt, _unit_cell_to_slt, _supercell_to_slt
+from slothpy._general_utilities._utils import _check_n
 
 
 def hamiltonian_from_orca(
@@ -111,7 +112,7 @@ def hamiltonian_from_molcas(molcas_filepath: str, slt_filepath: str, group_name:
     group_name : str
         Name of a group to which results of relativistic ab initio calculations
         will be saved.
-    edipmom : bool, optional
+    electric_dipole_momenta : bool, optional
         If set to True, electric dipole moment integrals will be read from
         the MOLCAS .rassi.h5 file for simulations of spectroscopic properties.
 
@@ -187,10 +188,10 @@ def xyz(input_filepath: str, slt_filepath: str, group_name: str, charge: Optiona
     input_filepath : str
         Path to the input .xyz or .cif file.
     slt_filepath : str
-        Path of the existing or new .slt file to which the results will
+        Path of the existing or new .slt file to which the XYZ will
         be saved.
     group_name : str
-        Name of a group to which unit cell will be saved.
+        Name of a group to which the XYZ will be saved.
     charge : int, optional
         Charge of the chemical species., by default None
     multiplicity : int, optional
@@ -244,16 +245,16 @@ def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vect
     input_filepath : str
         Path to the input .cif or .xyz file.
     slt_filepath : str
-        Path of the existing or new .slt file to which the results will
+        Path of the existing or new .slt file to which the unit cell will
         be saved.
     group_name : str
-        Name of a group to which unit cell will be saved.
+        Name of a group to which the unit cell will be saved.
     cell_vectors : list or ndarray, optional
-        A 3x3 list or NumPy array (ArrayLike structure) representing the unit
-        cell vectors. Required if input_file is a .xyz file and cell_params and
-        cell_from_cif_path are not provided. If provided along with a .cif
-        input file, the cell parameters will be overwritten by those from
-        cell_vectors, by default None
+        A 3x3 list or NumPy array (ArrayLike structure) in the form [abc, :]
+        representing the unit cell vectors. Required if input_file is a .xyz
+        file and cell_params and cell_from_cif_path are not provided. If
+        provided along with a .cif input file, the cell parameters will be
+        overwritten by those from cell_vectors, by default None
     cell_params : list, tuple, or ndarray, optional
         An ArrayLike structure containing [a, b, c, alpha, beta, gamma],
         where a, b, c are the unit cell lengths and alpha, beta, gamma are the
@@ -318,6 +319,100 @@ def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vect
     
     try:
         _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell)
+
+        return SltFile._new(slt_filepath)
+    
+    except Exception as exc:
+        raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
+    
+
+def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny: int, nz: int, supercell_vectors: Optional[ndarray] = None, supercell_params: Optional[ndarray] = None):
+    """
+    Reads a .xyz file along with supercell parameters and saves the data
+    as a supercell group in a .slt file.
+
+    Parameters:
+    ----------
+    xyz_filepath : str
+        Path to the input .xyz file.
+    slt_filepath : str
+        Path of the existing or new .slt file to which the supercell will
+        be saved.
+    group_name : str
+        Name of a group to which the supercell will be saved.
+    nx, ny, nz : int
+        Number of repetitions along the x, y, and z axes of a unit cell within
+        the provided supercell. Note that the supercell coordinates must be in
+        order of repeating unit cells where .xyz file starts with coordinates
+        of cell for nx = ny = nz = 0 and then the slowest varying index is nx
+        while the fastest is nz.
+    supercell_vectors : list or ndarray, optional
+        A 3x3 list or NumPy array (ArrayLike structure) in the form [abc, :]
+        representing the supercell vectors. Required if supercell_params are
+        not provided., by default None
+    cell_params : list, tuple, or ndarray, optional
+        An ArrayLike structure containing [a, b, c, alpha, beta, gamma],
+        where a, b, c are the supercell lengths and alpha, beta, gamma are the
+        supercell angles in degrees. Required if supercell_vectors are not
+        provided., by default None
+
+    Raises:
+    ------
+    SltInputError:
+        If input_file has an unsupported extension or required cell parameters
+        are not provided for .xyz files.
+    SltFileError:
+        If there are issues reading the input file or writing to the .slt file.
+
+    Note
+    -----
+    To create a supercell group from a .cif file, first create a unit_cell and
+    then pass it to or use its supercell method directly with
+    output_option = 'slt'.
+    """
+    
+    if not slt_filepath.endswith(".slt"):
+        slt_filepath += ".slt"
+
+    _check_n(nx, ny, nz)
+
+    try:
+        check_sum = sum(param is None for param in [supercell_vectors, supercell_params])
+        if check_sum != 1:
+            raise ValueError("Provide one and only one parameter from: supercell_vectors, supercell_params.")
+        _, ext = splitext(xyz_filepath)
+        ext = ext.lower()
+        if ext != '.xyz':
+            raise ValueError("Unsupported file extension. Only .xyz files are supported.")
+        try:
+            atoms = read(xyz_filepath)
+            elements = atoms.get_chemical_symbols()
+            positions = atoms.get_positions()
+            if len(atoms) % (nx * ny * nz) != 0:
+                raise ValueError("Inconsistent number of atoms and unit cell repetitions for the provided nx, ny, nz, and the .xyz file.")
+            supercell = None
+            if supercell_vectors is not None:
+                supercell = array(supercell_vectors, dtype=settings.float)
+                if supercell.shape != (3, 3):
+                    raise ValueError("The supercell_params must be a 3x3 matrix.")
+            elif supercell_params is not None:
+                if len(supercell_params) != 6:
+                    raise ValueError("The supercell_params must contain exactly six values: [a, b, c, alpha, beta, gamma].")
+                supercell = array(supercell_params, dtype=settings.float)
+            if supercell is not None:
+                atoms.set_cell(supercell)
+                supercell = atoms.get_cell().array
+            else:
+                raise RuntimeError("Failed to obtain and set supercell parameters.")
+
+        except Exception as exc:
+            raise IOError(f"Error reading the input file '{xyz_filepath}': {exc}")
+        
+    except Exception as exc:
+        raise SltInputError(exc, message="Failed to save supercell to .slt file.") from None
+    
+    try:
+        _supercell_to_slt(slt_filepath, group_name, elements, positions, supercell, nx, ny, nz)
 
         return SltFile._new(slt_filepath)
     

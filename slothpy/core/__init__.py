@@ -20,6 +20,7 @@ from .creation_functions import (
     slt_file,
     xyz,
     unit_cell,
+    supercell,
 )
 
 from .slt_file_object import SltFile
@@ -42,7 +43,7 @@ __all__ = [
     "hamiltonian_from_orca",
     "xyz",
     "unit_cell",
-    "crystal_lattice",
+    "supercell",
     "SltFile",
     "settings",
     "turn_on_monitor",

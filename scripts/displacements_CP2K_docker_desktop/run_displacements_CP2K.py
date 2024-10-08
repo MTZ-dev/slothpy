@@ -1,26 +1,44 @@
 #!/usr/bin/env python3
 
+# SlothPy
+# Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ)
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import os
 import sys
 import argparse
 import glob
 import re
 import docker
-import signal
+import datetime
+import uuid
 from multiprocessing import Pool
 
-def generate_input_file(dof_number, disp_number):
+import docker.errors
+
+def generate_input_file(dof_number, disp_number, wfn_start = None):
     project_name = f'dof_{dof_number}_disp_{disp_number}'
     input_filename = f'{project_name}.inp'
     xyz_filename = f'dof_{dof_number}_disp_{disp_number}.xyz'
 
     if dof_number == 0 and disp_number == 0:
-        restart_wfn_line = ''
+        restart_wfn_line = '' if wfn_start is None else f"WFN_RESTART_FILE_NAME {wfn_start}"
     else:
         restart_wfn_line = '    WFN_RESTART_FILE_NAME dof_0_disp_0-RESTART.wfn'
 
     input_template = """
-############################This section is for DFT######################
 &FORCE_EVAL
   METHOD QS
   STRESS_TENSOR  ANALYTICAL
@@ -98,9 +116,13 @@ def generate_input_file(dof_number, disp_number):
 
     return input_filename
 
-def run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version, container_list):
+def run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version):
     client = docker.from_env()
     container = None
+
+    # Generate a unique container name
+    container_name = f'cp2k_{input_file}_{uuid.uuid4().hex}'
+
     try:
         volumes = {
             os.getcwd(): {
@@ -121,22 +143,26 @@ def run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version, cont
             '-i', input_file
         ]
 
+        try:
+            existing_container = client.containers.get(container_name)
+            print(f"Removing existing container with name {container_name}")
+            existing_container.remove(force=True)
+        except docker.errors.NotFound:
+            pass  # No existing container, proceed
+
         # Run the container
         container = client.containers.run(
-            image=f'cp2k/cp2k:{cp2k_version}',
+            image=f'cp2k/cp2k:{cp2k_version}', ###!!! Replace that with your format if different than cp2k/cp2k:{cp2k_version} !!!###
             command=command,
             volumes=volumes,
             user=user,
             working_dir='/mnt',
             detach=True,
             shm_size='4g',
-            name=f'cp2k_{input_file}',
+            name=container_name,
             stdout=True,
             stderr=True
         )
-
-        # Add container to the list for cleanup
-        container_list.append(container)
 
         # Stream logs to the output file
         with open(output_file, 'wb') as outfile:
@@ -151,18 +177,16 @@ def run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version, cont
             raise Exception(f"Container error with exit code {exit_code}")
 
     except KeyboardInterrupt:
-        print(f"\nKeyboardInterrupt caught in run_cp2k for {input_file}")
-        if container:
-            container.kill()
+        print(f"\nKeyboardInterrupt caught in run_cp2k for {input_file} closing docker container and client...")
+        try:
             container.remove(force=True)
+        except Exception as e:
+            print(f"Error stopping container: {e}. Stop it and all the others manually e.g. using task manager.")
         raise
     finally:
-        if container in container_list:
-            container_list.remove(container)
         client.close()
 
-def process_dof_disp(args_tuple):
-    dof_disp, container_list = args_tuple
+def process_dof_disp(dof_disp):
     dof_number, disp_number = dof_disp
     project_name = f'dof_{dof_number}_disp_{disp_number}'
     input_file = generate_input_file(dof_number, disp_number)
@@ -171,9 +195,9 @@ def process_dof_disp(args_tuple):
     mpi_processes = (args.cpus // args.processes) // threads_per_process
     cp2k_version = args.version
     try:
-        run_cp2k(input_file, output_file, mpi_processes, threads_per_process, cp2k_version, container_list)
+        run_cp2k(input_file, output_file, mpi_processes, threads_per_process, cp2k_version)
     except KeyboardInterrupt:
-        print(f"KeyboardInterrupt caught in process_dof_disp for {project_name}")
+        print(f"Terminating process and container for dof {dof_number} disp {disp_number}...")
         raise  # Re-raise to propagate the exception
 
     # Remove temporary files except for dof_0_disp_0
@@ -184,30 +208,15 @@ def process_dof_disp(args_tuple):
                 os.remove(f)
     print(f'Completed calculation for {project_name}')
 
-def signal_handler(sig, frame):
-    print("\nKeyboardInterrupt caught, terminating all containers...")
-    for container in global_container_list:
-        try:
-            container.kill()
-            container.remove(force=True)
-        except Exception as e:
-            print(f"Error stopping container: {e}")
-    sys.exit(1)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run CP2K calculations in Docker containers.')
     parser.add_argument('--cpus', type=int, default=16, help='Total number of CPUs to use.')
     parser.add_argument('--processes', type=int, default=1, help='Number of concurrent processes (containers).')
     parser.add_argument('--threads', type=int, default=2, help='Number of OMP threads per process.')
     parser.add_argument('--version', type=str, required=True, help='CP2K Docker image version to use.')
+    parser.add_argument('--wfn_start', type=str, default=None, help='Optional CP2K -RESTART.wfn file with starting guess for the relaxed geometry.')
 
     args = parser.parse_args()
-
-    # Global container list to keep track of running containers
-    global_container_list = []
-
-    # Register signal handler
-    signal.signal(signal.SIGINT, signal_handler)
 
     # Get list of xyz files
     xyz_files = glob.glob('dof_*_disp_*.xyz')
@@ -230,16 +239,17 @@ if __name__ == '__main__':
 
     # Process dof_0_disp_0 first
     try:
+        print(f"Job started {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
         print('Processing dof_0_disp_0...')
-        input_file = generate_input_file(0, 0)
+        input_file = generate_input_file(0, 0, args.wfn_start)
         output_file = 'dof_0_disp_0.out'
         threads = args.threads
         mpi_processes = args.cpus // threads  # Use allocated CPUs
         cp2k_version = args.version
-        run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version, global_container_list)
-        print('Completed calculation for dof_0_disp_0')
+        run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version)
+        print('Completed calculation for dof 0 disp 0')
     except KeyboardInterrupt:
-        print("KeyboardInterrupt caught during dof_0_disp_0 processing.")
+        print("Terminating process and container for dof 0 disp 0...")
         sys.exit(1)
 
     # Process remaining dof and disp in parallel
@@ -247,22 +257,14 @@ if __name__ == '__main__':
         print('Processing remaining calculations in parallel...')
         try:
             # Prepare arguments for multiprocessing
-            container_lists = [[] for _ in range(args.processes)]
-            pool_args = [((dof_disp_list[i], container_lists[i % args.processes])) for i in range(len(dof_disp_list))]
+            pool_args = [dof_disp_list[i] for i in range(len(dof_disp_list))]
 
             with Pool(processes=args.processes) as pool:
                 pool.map(process_dof_disp, pool_args)
         except KeyboardInterrupt:
-            print("\nKeyboardInterrupt caught, terminating pool and containers...")
+            print("\nTerminating pool...")
             pool.terminate()
             pool.join()
-            for container_list in container_lists:
-                for container in container_list:
-                    try:
-                        container.kill()
-                        container.remove(force=True)
-                    except Exception as e:
-                        print(f"Error stopping container: {e}")
             sys.exit(1)
     else:
         print('No other dof_disp combinations to process.')

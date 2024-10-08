@@ -38,7 +38,7 @@ from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
-from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _unit_cell_to_slt, _xyz_to_slt, _hessian_to_slt
+from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _xyz_to_slt, _supercell_to_slt, _hessian_to_slt
 from slothpy._general_utilities._constants import U_PI_A_AU, E_PI_A_AU
 from slothpy._general_utilities._direct_product_space import _kron_mult
 from slothpy._general_utilities._math_expresions import _subtract_const_diagonal
@@ -189,7 +189,7 @@ class SltGroup:
         pass
         
     @property
-    def attr(self):
+    def attrs(self):
         """
         Property to mimic h5py's attribute access convention.
         """
@@ -342,7 +342,8 @@ class SltGroup:
     @delegate_method_to_slt_group
     def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
         """
-        Replaces atoms at specified indices with new element symbols and updates the HDF5 group.
+        Replaces atoms at specified indices with new element symbols and updates
+        the HDF5 group.
         
         Parameters:
         ----------
@@ -366,8 +367,11 @@ class SltGroup:
         """
         Generates finite stencil displacements for derivative calculations.
 
-        Displaces each atom along x, y, and z axes in both negative and positive directions
-        by a specified number of steps and step size.
+        Displaces each atom along x, y, and z axes in both negative and
+        positive directions by a specified number of steps and step size.
+
+        If this is used for supercells it only displaces each atom in the first
+        unit cell.
 
         Parameters:
         ----------
@@ -385,7 +389,8 @@ class SltGroup:
         custom_directory : str, optional
             Directory path to save .xyz files. Required if output_option is 'xyz'.
         slt_group_name : str, optional
-            Name of the SltGroup to store displaced structures. Required if output_option is 'slt'.
+            Name of the SltGroup to store displaced structures. Required if
+            output_option is 'slt'.
 
         Returns:
         -------
@@ -404,15 +409,56 @@ class SltGroup:
 
     @delegate_method_to_slt_group
     def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> None:
+        """
+        Generates a supercell by repeating the unit cell along x, y, and z axes.
+
+        Repeats the unit cell `nx`, `ny`, and `nz` times along the x, y, and z
+        axes respectively to create a supercell where cordinates are such that
+        they start with unit cell for nx = ny = nz = 0 and then the slowest
+        varying index is nx while the fastest is nz.
+
+        Parameters:
+        ----------
+        nx, ny, nz : int
+            Number of repetitions along the x, y, and z-axis.
+        output_option : str, optional
+            Specifies the output mode. Options:
+            - 'xyz': Write the supercell structure as a `.xyz` file.
+            - 'slt': Save the supercell structure in the `.slt` file.
+            Default is 'xyz'.
+        xyz_filepath : str, optional
+            File path to save the `.xyz` file. Required if `output_option` is 'xyz'.
+        slt_group_name : str, optional
+            Name of the `SltGroup` to store the supercell structure. Required if
+            `output_option` is 'slt'.
+
+        Returns:
+        -------
+        None
+
+        Raises:
+        ------
+        ValueError:
+            If an invalid `output_option` is specified or required parameters are missing.
+        IOError:
+            If writing to files or HDF5 fails.
+
+        Notes:
+        -----
+        - If the object is already a supercell, a warning will be issued indicating
+        that a mega-cell will be created by multiplying the current parameters.
+        """
         pass
 
     @delegate_method_to_slt_group
     def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
         """
-        Generates finite stencil displacements for a supercell by displacing atoms in the first unit cell.
+        Generates a new supercell and finite stencil displacements for it by
+        displacing atoms in the first unit cell.
 
-        Displaces each atom in the first unit cell of a supercell along x, y, and z axes in both
-        negative and positive directions by a specified number of steps and step size.
+        Displaces each atom in the first unit cell of a supercell along x, y,
+        and z axes in both negative and positive directions by a specified
+        number of steps and step size.
 
         Parameters:
         ----------
@@ -432,7 +478,8 @@ class SltGroup:
         custom_directory : str, optional
             Directory path to save .xyz files. Required if output_option is 'xyz'.
         slt_group_name : str, optional
-            Name of the SltGroup to store displaced structures. Required if output_option is 'slt'.
+            Name of the SltGroup to store displaced structures. Required if
+            output_option is 'slt'.
 
         Returns:
         -------
@@ -446,6 +493,11 @@ class SltGroup:
             If invalid output_option is specified or required parameters are missing.
         IOError:
             If writing to files or HDF5 fails.
+
+        Note:
+        -----
+        For a supercell, use generate_finite_stencil_displacements if you do
+        not wish to repeat it further with new nx, ny, and nz.
         """
         pass
 
@@ -632,7 +684,7 @@ class SltDataset:
             return representation.rstrip()
         
     @property
-    def attr(self):
+    def attrs(self):
         """
         Property to mimic h5py's attribute access convention.
         """
@@ -950,9 +1002,10 @@ class SltXyz(metaclass=MethodTypeMeta):
             additional_info += f"Charge: {self._charge} "
         if self._multiplicity is not None:
             additional_info += f"Multiplicity: {self._multiplicity} "
-        if self._method_type == "UNIT_CELL":
-            additional_info += f"Cell parameters [a, b, c, alpha, beta, gamma]: {self._atoms.get_cell_lengths_and_angles()} "
-        write(xyz_filepath, self._atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}'")
+        if self._method_type in ["UNIT_CELL", "SUPERCELL"]:
+            additional_info += f"{"Cell" if self._method_type == "UNIT_CELL" else "Supercell"} parameters [a, b, c, alpha, beta, gamma]: {self._atoms.get_cell_lengths_and_angles()} "
+        if self._method_type == "SUPERCELL":
+            additional_info += f"Supercell_Repetitions [nx, ny, nz] = {self._nxnynz.tolist()} "
 
     def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
         if len(atom_indices) != len(new_symbols):
@@ -1013,7 +1066,11 @@ class SltXyz(metaclass=MethodTypeMeta):
         if output_option == 'xyz':
             makedirs(custom_directory, exist_ok=True)
 
-        num_atoms = len(self._atoms) ### Here len self._atoms_first_unit_cell if self._method_type == "SUPERCELL"
+        if self._method_type == "SUPERCELL":
+            num_atoms = len(self._atoms) // self._nxnynz.prod()
+        else:
+            num_atoms = len(self._atoms)
+
         total_dofs = 3 * num_atoms
         n_checked = False
         if _supercell:
@@ -1022,6 +1079,11 @@ class SltXyz(metaclass=MethodTypeMeta):
             atoms_tmp = self._atoms.repeat((_nx, _ny, _nz))
         else:
             atoms_tmp = self._atoms
+
+        if self._method_type == "SUPERCELL":
+            _nx, _ny, _nz = self._nxnynz
+            _nx, _ny, _nz = int(_nx), int(_ny), int(_nz)
+            n_checked = True
 
         def displacement_generator() -> Iterator[Atoms]:
             zero_geometry_flag = False
@@ -1053,8 +1115,8 @@ class SltXyz(metaclass=MethodTypeMeta):
                         additional_info += f"Multiplicity: {self._multiplicity} "
                     if n_checked:
                         additional_info += f"Supercell_Repetitions [nx, ny, nz] = {[_nx, _ny, _nz]} "
-                    if self._method_type == "UNIT_CELL":
-                        additional_info += f"Cell parameters [a, b, c, alpha, beta, gamma]: {atoms_tmp.get_cell_lengths_and_angles().tolist()} "
+                    if self._method_type in ["UNIT_CELL", "SUPERCELL"]:
+                        additional_info += f"{"Cell" if self._method_type == "UNIT_CELL" and not _supercell else "Supercell"} parameters [a, b, c, alpha, beta, gamma]: {atoms_tmp.get_cell_lengths_and_angles().tolist()} "
                     displaced_atoms.write(xyz_file_path, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}", format='xyz')
                 except Exception as exc:
                     raise IOError(f"Failed to write XYZ file '{xyz_file_path}': {exc}")
@@ -1088,7 +1150,7 @@ class SltUnitCell(SltXyz):
 
     __slots__ = SltXyz.__slots__
 
-    def __init__(self, slt_group) -> None:
+    def __init__(self, slt_group: SltGroup) -> None:
         super().__init__(slt_group)
         self._atoms.set_cell(slt_group["CELL"][:])
 
@@ -1096,6 +1158,8 @@ class SltUnitCell(SltXyz):
         return self._atoms.get_cell()
     
     def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> None:
+        if self._method_type == "SUPERCELL":
+            warnings.warn("You are trying to construct a supercell out of another supercell, creating a ... mega-cell with all parameters multiplied!")
         if output_option not in ['xyz', 'slt']:
             raise SltInputError(ValueError("Invalid output_option. Choose from 'xyz' or 'slt'.")) from None
         if output_option == 'xyz' and not xyz_filepath:
@@ -1110,10 +1174,12 @@ class SltUnitCell(SltXyz):
             additional_info = f"Supercell parameters [a, b, c, alpha, beta, gamma]: {atoms.get_cell_lengths_and_angles()} "
             write(xyz_filepath, self._atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}'")
         else:
-            _unit_cell_to_slt(self._hdf5, slt_group_name, atoms.get_chemical_symbols(), atoms.get_positions(), atoms.get_cell().array, description="Unit cell (supercell) group containing xyz coordinates and and supercell vectors.")
+            _supercell_to_slt(self._hdf5, slt_group_name, atoms.get_chemical_symbols(), atoms.get_positions(), atoms.get_cell().array, nx, ny, nz)
             return SltGroup(self._hdf5, slt_group_name)
 
     def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+        if self._method_type == "SUPERCELL":
+            warnings.warn("You are trying to construct a supercell for finite displacements out of another supercell, creating a ... mega-cell with all parameters multiplied! If you wish to make displacements within a given supercell, use generate_finite_stencil_displacements instead.")
         return self.generate_finite_stencil_displacements(displacement_number, step, output_option, custom_directory, slt_group_name, True, nx, ny, nz)
 
     def hessian_from_finite_displacements(self, dirpath: str, slt_group_name: str, born_charges: bool = False, nx: Optional[int] = None, ny: Optional[int] = None, nz: Optional[int] = None, displacement_number: Optional[int] = None, step: Optional[float] = None):
@@ -1132,7 +1198,18 @@ class SltUnitCell(SltXyz):
         return SltGroup(self._hdf5, slt_group_name)
 
 
-class SltHessian(SltUnitCell):
+class SltSuperCell(SltUnitCell):
+    _method_type = "SUPERCELL"
+
+    __slots__ = SltUnitCell.__slots__ + ["_nxnynz"]
+
+    def __init__(self, slt_group: SltGroup) -> None:
+        super().__init__(slt_group)
+        self._atoms.set_cell(slt_group["CELL"][:])
+        self._nxnynz = slt_group.attributes["Supercell_Repetitions"]
+
+
+class SltHessian(SltSuperCell):
     _method_type = "HESSIAN"
 
     __slots__ = SltXyz.__slots__ + ["_hessian"]

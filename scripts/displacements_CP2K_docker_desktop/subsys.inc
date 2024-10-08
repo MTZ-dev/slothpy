@@ -1,12 +1,10 @@
      &CELL
-       #give the unit cell para
        ABC 22.663134149075237 22.663134149075233 25.14851428466812
-       ALPHA_BETA_GAMMA 90.      90.     120.
+       ALPHA_BETA_GAMMA 90.0 90.0 120.0
        MULTIPLE_UNIT_CELL  1 1 1
        SYMMETRY HEXAGONAL_GAMMA_120
      &END CELL
 
-# you have to whole basis set according to your sys
     &KIND Co
        BASIS_SET TZVP-MOLOPT-PBE-GTH-q17
        POTENTIAL GTH-PBE-q17

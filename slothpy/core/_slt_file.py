@@ -451,7 +451,7 @@ class SltGroup:
         pass
 
     @delegate_method_to_slt_group
-    def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+    def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, save_supercell_to_slt: Optional[str] = None) -> Optional[Iterator[Atoms]]:
         """
         Generates a new supercell and finite stencil displacements for it by
         displacing atoms in the first unit cell.
@@ -480,6 +480,10 @@ class SltGroup:
         slt_group_name : str, optional
             Name of the SltGroup to store displaced structures. Required if
             output_option is 'slt'.
+        save_supercell_to_slt: str, optional
+            When provided, the created supercell is saved to the group of this
+            name in the .slt file and can be used for further processing, e.g.
+            creating Hessian after finite displacement calculations
 
         Returns:
         -------
@@ -1142,7 +1146,7 @@ class SltXyz(metaclass=MethodTypeMeta):
                     _xyz_to_slt(self._slt_group._hdf5, subgroup_name, displaced_atoms.get_chemical_symbols(), displaced_atoms.get_positions(), self._charge, self._multiplicity)
             except Exception as exc:
                 raise SltFileError(self._slt_group._hdf5, exc, f"Failed to write displacement Group '{slt_group_name}' to the .slt file") from None
-            return None
+            return SltGroup(self._slt_group._hdf5, slt_group_name)
 
 
 class SltUnitCell(SltXyz):
@@ -1157,7 +1161,7 @@ class SltUnitCell(SltXyz):
     def cell_object(self):
         return self._atoms.get_cell()
     
-    def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> None:
+    def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[SltGroup]:
         if self._method_type == "SUPERCELL":
             warnings.warn("You are trying to construct a supercell out of another supercell, creating a ... mega-cell with all parameters multiplied!")
         if output_option not in ['xyz', 'slt']:
@@ -1177,9 +1181,11 @@ class SltUnitCell(SltXyz):
             _supercell_to_slt(self._hdf5, slt_group_name, atoms.get_chemical_symbols(), atoms.get_positions(), atoms.get_cell().array, nx, ny, nz)
             return SltGroup(self._hdf5, slt_group_name)
 
-    def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+    def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, save_supercell_to_slt: Optional[str] = None) -> Optional[Iterator[Atoms]]:
         if self._method_type == "SUPERCELL":
             warnings.warn("You are trying to construct a supercell for finite displacements out of another supercell, creating a ... mega-cell with all parameters multiplied! If you wish to make displacements within a given supercell, use generate_finite_stencil_displacements instead.")
+        if save_supercell_to_slt:
+            self.supercell(nx, ny, nz, 'slt', slt_group_name=save_supercell_to_slt)
         return self.generate_finite_stencil_displacements(displacement_number, step, output_option, custom_directory, slt_group_name, True, nx, ny, nz)
 
     def hessian_from_finite_displacements(self, dirpath: str, slt_group_name: str, born_charges: bool = False, nx: Optional[int] = None, ny: Optional[int] = None, nz: Optional[int] = None, displacement_number: Optional[int] = None, step: Optional[float] = None):

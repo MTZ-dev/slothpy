@@ -18,6 +18,7 @@
 
 import os
 import sys
+import signal
 import argparse
 import glob
 import re
@@ -116,75 +117,81 @@ def generate_input_file(dof_number, disp_number, wfn_start = None):
 
     return input_filename
 
-def run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version):
+def run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version, dof_number, disp_number, main_process = False):
+
+    image = f'cp2k/cp2k:{cp2k_version}' ###!!!### Replace that with your format if it's different than cp2k/cp2k:{cp2k_version} ###!!!###
+
     client = docker.from_env()
     container = None
 
     # Generate a unique container name
     container_name = f'cp2k_{input_file}_{uuid.uuid4().hex}'
 
-    try:
-        volumes = {
-            os.getcwd(): {
-                'bind': '/mnt',
-                'mode': 'rw'
-            }
+    volumes = {
+        os.getcwd(): {
+            'bind': '/mnt',
+            'mode': 'rw'
         }
+    }
 
-        user = f"{os.getuid()}:{os.getgid()}"
+    user = f"{os.getuid()}:{os.getgid()}"
 
-        # Prepare the command to run inside the container
-        command = [
-            'mpirun',
-            '-bind-to', 'none',
-            '-np', str(mpi_processes),
-            '-x', f'OMP_NUM_THREADS={threads}',
-            'cp2k',
-            '-i', input_file
-        ]
+    # Prepare the command to run inside the container
+    command = [
+        'mpirun',
+        '-bind-to', 'none',
+        '-np', str(mpi_processes),
+        '-x', f'OMP_NUM_THREADS={threads}',
+        'cp2k',
+        '-i', input_file
+    ]
 
-        try:
-            existing_container = client.containers.get(container_name)
-            print(f"Removing existing container with name {container_name}")
-            existing_container.remove(force=True)
-        except docker.errors.NotFound:
-            pass  # No existing container, proceed
+    try:
+        existing_container = client.containers.get(container_name)
+        print(f"Removing existing container with name {container_name}")
+        existing_container.remove(force=True)
+    except docker.errors.NotFound:
+        pass  # No existing container, proceed
+    
+    print(f"Starting container for {input_file}...")
 
-        # Run the container
-        container = client.containers.run(
-            image=f'cp2k/cp2k:{cp2k_version}', ###!!! Replace that with your format if different than cp2k/cp2k:{cp2k_version} !!!###
-            command=command,
-            volumes=volumes,
-            user=user,
-            working_dir='/mnt',
-            detach=True,
-            shm_size='4g',
-            name=container_name,
-            stdout=True,
-            stderr=True
-        )
+    container = client.containers.create(
+        image=image,
+        command=command,
+        volumes=volumes,
+        user=user,
+        working_dir='/mnt',
+        detach=True,
+        shm_size='4g',
+        name=container_name,
+    )   
 
-        # Stream logs to the output file
-        with open(output_file, 'wb') as outfile:
-            for log in container.logs(stream=True):
-                outfile.write(log)
-                outfile.flush()
-
-        exit_code = container.wait()['StatusCode']
-
-        if exit_code != 0:
-            print(f"Container exited with code {exit_code} for {input_file}")
-            raise Exception(f"Container error with exit code {exit_code}")
-
-    except KeyboardInterrupt:
-        print(f"\nKeyboardInterrupt caught in run_cp2k for {input_file} closing docker container and client...")
+    def handle_sigterm(signum, frame):
+        print(f"KeyboardInterrupt caught in run_cp2k for {input_file} closing docker container and client...")
         try:
             container.remove(force=True)
+            client.close()
         except Exception as e:
-            print(f"Error stopping container: {e}. Stop it and all the others manually e.g. using task manager.")
-        raise
-    finally:
-        client.close()
+            print(f"Error stopping container or client: {e}. Stop it and all the others manually e.g. using task manager.")
+        print(f"Terminating process and container for dof {dof_number} disp {disp_number}...")
+        sys.exit(1)
+
+    signal.signal(signal.SIGTERM, handle_sigterm)
+    signal.signal(signal.SIGINT, handle_sigterm)
+
+    container.start()
+    # Stream logs to the output file
+    with open(output_file, 'wb') as outfile:
+        for log in container.logs(stream=True):
+            outfile.write(log)
+            outfile.flush()
+
+    exit_code = container.wait()['StatusCode']
+
+    if exit_code != 0:
+        print(f"Container exited with code {exit_code} for {input_file}")
+        raise Exception(f"Container error with exit code {exit_code}")
+
 
 def process_dof_disp(dof_disp):
     dof_number, disp_number = dof_disp
@@ -194,11 +201,7 @@ def process_dof_disp(dof_disp):
     threads_per_process = args.threads
     mpi_processes = (args.cpus // args.processes) // threads_per_process
     cp2k_version = args.version
-    try:
-        run_cp2k(input_file, output_file, mpi_processes, threads_per_process, cp2k_version)
-    except KeyboardInterrupt:
-        print(f"Terminating process and container for dof {dof_number} disp {disp_number}...")
-        raise  # Re-raise to propagate the exception
+    run_cp2k(input_file, output_file, mpi_processes, threads_per_process, cp2k_version, dof_number, disp_number)
 
     # Remove temporary files except for dof_0_disp_0
     if not (dof_number == 0 and disp_number == 0):
@@ -211,8 +214,8 @@ def process_dof_disp(dof_disp):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run CP2K calculations in Docker containers.')
     parser.add_argument('--cpus', type=int, default=16, help='Total number of CPUs to use.')
-    parser.add_argument('--processes', type=int, default=1, help='Number of concurrent processes (containers).')
-    parser.add_argument('--threads', type=int, default=2, help='Number of OMP threads per process.')
+    parser.add_argument('--processes', type=int, default=1, help='Number of concurrent processes (containers) where (cups//processes)//threads mpi processes will be used per container.')
+    parser.add_argument('--threads', type=int, default=2, help='Number of OMP threads per each mpi process within container.')
     parser.add_argument('--version', type=str, required=True, help='CP2K Docker image version to use.')
     parser.add_argument('--wfn_start', type=str, default=None, help='Optional CP2K -RESTART.wfn file with starting guess for the relaxed geometry.')
 
@@ -238,19 +241,15 @@ if __name__ == '__main__':
     dof_disp_list.remove((0, 0))
 
     # Process dof_0_disp_0 first
-    try:
-        print(f"Job started {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
-        print('Processing dof_0_disp_0...')
-        input_file = generate_input_file(0, 0, args.wfn_start)
-        output_file = 'dof_0_disp_0.out'
-        threads = args.threads
-        mpi_processes = args.cpus // threads  # Use allocated CPUs
-        cp2k_version = args.version
-        run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version)
-        print('Completed calculation for dof 0 disp 0')
-    except KeyboardInterrupt:
-        print("Terminating process and container for dof 0 disp 0...")
-        sys.exit(1)
+    print(f"Job started {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+    print('Processing dof_0_disp_0...')
+    input_file = generate_input_file(0, 0, args.wfn_start)
+    output_file = 'dof_0_disp_0.out'
+    threads = args.threads
+    mpi_processes = args.cpus // threads  # Use allocated CPUs
+    cp2k_version = args.version
+    run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version, 0, 0, True)
+    print('Completed calculation for dof 0 disp 0')
 
     # Process remaining dof and disp in parallel
     if dof_disp_list:

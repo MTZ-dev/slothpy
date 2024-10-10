@@ -20,13 +20,14 @@ from os.path import join
 from re import compile, search, findall
 
 from h5py import File, string_dtype
-from numpy import ndarray, dtype, array, ascontiguousarray, zeros, empty, any, diagonal, loadtxt, min, int64, float64, complex128
+from numpy import ndarray, dtype, array, ascontiguousarray, zeros, empty, any, diagonal, loadtxt, sum, reshape, mean, arange, transpose, newaxis, min, int64, float64, complex128
 from scipy.linalg import eigh, eigvalsh
 
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
 from slothpy._angular_momentum._rotation import _rotate_vector_operator
 from slothpy.core._config import settings
 from slothpy._general_utilities._math_expresions import _central_finite_difference_stencil
+from slothpy._general_utilities._constants import A_BOHR
 
 ##### I get regex warinngs with invalid escape sequences!
 # /home/mikolaj/Sloth/Sloth/slothpy/_general_utilities/_io.py:715: SyntaxWarning: invalid escape sequence '\('
@@ -394,14 +395,15 @@ def _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, n
         group.attrs["Supercell_Repetitions"] = [nx, ny, nz]
 
 
-def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, hessian, born_charges = False):
-    _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, "HESSIAN", "Hessian group containing force constants and supercell parameters.")
+def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, multiplicity, hessian, born_charges = None):
+    _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, multiplicity, "HESSIAN", "Hessian group containing force constants and supercell parameters.")
     with File(slt_filepath, 'a') as slt:
         group = slt[group_name]
         dataset = group.create_dataset('HESSIAN', data=hessian, dtype=settings.float, chunks=True)
-        dataset.attrs["Description"] = "Hessian matrix (2nd order force constants) in the form [dof_unit_cell, cell, atom_unit_cell, xyz]" ## Decide how to store it and fill the description
-        if born_charges:
-            pass ### Decide how to store Born charges
+        dataset.attrs["Description"] = "Hessian matrix (2nd order force constants) a.u. / Bohr**2 in the form [nx, ny, nz, dof_number, dof_number] where the last index is for the unit cell at the origin."
+        if born_charges is not None:
+            dataset = group.create_dataset('BORN_CHARGES', data=born_charges, dtype=settings.float, chunks=True)
+            dataset.attrs["Description"] = "Born charges in the form [dof_number, 3] where the last index is for xyz polarization."
 
 
 def _read_forces_cp2k(filepath, dof_number):
@@ -434,44 +436,61 @@ def _read_dipole_momenta_cp2k(file_path):
 
     raise ValueError('Dipole moment line not found in file')
 
-def _read_hessian_from_dir(dirpath, format, dof_number, cell_number, displacement_number, step, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", dipole_momenta = True, force_files_suffix = None, dipole_momenta_files_suffix = None):
-    atoms_in_file = cell_number * dof_number / 3
-    hessian = zeros(shape=(dof_number, cell_number, dof_number / 3, 3), order="C", dtype = settings.float)
-    finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step)
+
+def _read_hessian_born_charges_from_dir(dirpath, format, dof_number, nx, ny, nz, displacement_number, step, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", dipole_momenta = True, force_files_suffix = None, dipole_momenta_files_suffix = None):
+    atoms_in_file = nx * ny * nz * dof_number // 3
+    hessian = zeros(shape=(dof_number, atoms_in_file, 3), order="C", dtype = settings.float)
+    finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step * A_BOHR)
 
     if dipole_momenta:
         dipole_momenta_array = zeros(shape=(dof_number, 3), order="C", dtype = settings.float)
 
-    if format == "CP2K":
-        read_forces = _read_forces_cp2k
-        read_dipole_momenta = _read_dipole_momenta_cp2k
-        default_force_suffix = "-1_0.xyz"
-        default_dipole_momenta_suffix = "-moments-1_0.dat"
-    else:
-        raise ValueError("The only suported format is 'CP2K'.")
+    try:
+        if format == "CP2K":
+            read_forces = _read_forces_cp2k
+            read_dipole_momenta = _read_dipole_momenta_cp2k
+            default_force_suffix = "-1_0.xyz"
+            default_dipole_momenta_suffix = "-moments-1_0.dat"
+        else:
+            raise ValueError("The only suported format is 'CP2K'.")
 
-    for dof in range(dof_number):
-        stencil_index = -1
-        for disp in range(-displacement_number, displacement_number + 1, 1):
-            stencil_index += 1
-            if disp == 0:
-                continue
-            file_preffix = join(dirpath, f"dof_{dof}_disp_{disp}")
-            force_filepath = file_preffix + force_files_suffix if force_files_suffix else default_force_suffix
-            hessian[dof, :, :, :] += read_forces(force_filepath, atoms_in_file) * finite_difference_stencil[stencil_index]
-            if dipole_momenta:
-                dipole_momenta_filepath = file_preffix + dipole_momenta_files_suffix if dipole_momenta_files_suffix else default_dipole_momenta_suffix
-                dipole_momenta_array[dof, :] += read_dipole_momenta(dipole_momenta_filepath) * finite_difference_stencil[stencil_index]
-    
-    if accoustic_sum_rule == "symmetric":
-        pass
-    elif accoustic_sum_rule == "self_term":
-        pass
+        for dof in range(dof_number):
+            stencil_index = -1
+            for disp in range(-displacement_number, displacement_number + 1, 1):
+                stencil_index += 1
+                if disp == 0:
+                    continue
+                file_preffix = join(dirpath, f"dof_{dof}_disp_{disp}")
+                force_filepath = file_preffix + (force_files_suffix if force_files_suffix else default_force_suffix)
+                hessian[dof, :, :] += read_forces(force_filepath, atoms_in_file) * finite_difference_stencil[stencil_index]
+                if dipole_momenta:
+                    dipole_momenta_filepath = file_preffix + (dipole_momenta_files_suffix if dipole_momenta_files_suffix else default_dipole_momenta_suffix)
+                    dipole_momenta_array[dof, :] += read_dipole_momenta(dipole_momenta_filepath) * finite_difference_stencil[stencil_index]
+    except Exception as exc:
+        raise SltReadError(file_preffix, exc, f"Failed to load Hessian from directory '{dirpath}'")
 
     if dipole_momenta:
-        return hessian, dipole_momenta
+        dipole_momenta_array = reshape(dipole_momenta_array, (-1, 3, 3), order="C")
+    
+    if accoustic_sum_rule == "symmetric":
+        hessian -= mean(hessian, axis=1, keepdims=True)
+        if dipole_momenta:
+            dipole_momenta_array -= mean(dipole_momenta_array, axis=0, keepdims=True)
+    elif accoustic_sum_rule == "self_term":
+        self_term = sum(hessian, axis=1)
+        indices = arange(dof_number)
+        hessian[indices, indices, :] -= self_term[indices, :]
+        if dipole_momenta:
+            dipole_self_term = sum(dipole_momenta_array, axis=0)
+            dipole_momenta_array[0] -= dipole_self_term
+
+    hessian = reshape(hessian, (dof_number, nx, ny, nz, dof_number))
+    hessian = transpose(hessian, (1, 2, 3, 4, 0))
+    if dipole_momenta:
+        dipole_momenta_array = reshape(dipole_momenta_array, (-1,3), order="C")
+        return hessian, dipole_momenta_array
     else:
-        return hessian
+        return hessian, None
 
 
 def _load_orca_hdf5(filename, group, rotation):

@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from typing import Union, Optional, Iterator, List
 import warnings
 from ast import literal_eval
@@ -22,7 +24,7 @@ from os import makedirs
 from os.path import join
 
 from h5py import File, Group, Dataset, string_dtype
-from numpy import ndarray, array, empty, int32, int64, float32, float64, tensordot, abs, diag
+from numpy import ndarray, array, empty, int32, int64, float32, float64, tensordot, abs, diag, prod
 from numpy.exceptions import ComplexWarning
 from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
@@ -38,7 +40,7 @@ from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
-from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _xyz_to_slt, _supercell_to_slt, _hessian_to_slt
+from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _xyz_to_slt, _supercell_to_slt, _hessian_to_slt, _read_hessian_born_charges_from_dir
 from slothpy._general_utilities._constants import U_PI_A_AU, E_PI_A_AU
 from slothpy._general_utilities._direct_product_space import _kron_mult
 from slothpy._general_utilities._math_expresions import _subtract_const_diagonal
@@ -186,6 +188,11 @@ class SltGroup:
     @property
     @delegate_method_to_slt_group
     def multiplicity(self) -> int:
+        pass
+
+    @property
+    @delegate_method_to_slt_group
+    def hessian(self) -> ndarray:
         pass
         
     @property
@@ -408,7 +415,7 @@ class SltGroup:
         pass
 
     @delegate_method_to_slt_group
-    def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> None:
+    def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> SltGroup:
         """
         Generates a supercell by repeating the unit cell along x, y, and z axes.
 
@@ -506,7 +513,7 @@ class SltGroup:
         pass
 
     @delegate_method_to_slt_group
-    def hessian_from_finite_displacements(self, dirpath: str, slt_group_name: str, nx: Optional[int] = None, ny: Optional[int] = None, nz: Optional[int] = None, displacement_number: Optional[int] = None, step: Optional[float] = None):
+    def hessian_from_finite_displacements(self, dirpath: str, format: Literal["CP2K"], slt_group_name: str, displacement_number: int, step: float, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", born_charges: bool = False, force_files_suffix: Optional[str] = None, dipole_momenta_files_suffix: Optional[str] = None) -> SltGroup:
         pass
 
     @validate_input("HAMILTONIAN", True)
@@ -1211,7 +1218,7 @@ class SltSuperCell(SltUnitCell):
         self._nxnynz = slt_group.attributes["Supercell_Repetitions"]
 
     def hessian_from_finite_displacements(self, dirpath: str, format: Literal["CP2K"], slt_group_name: str, displacement_number: int, step: float, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", born_charges: bool = False, force_files_suffix: Optional[str] = None, dipole_momenta_files_suffix: Optional[str] = None):
-        ### Add info to displacements to xyz, parse info here, ask gpt for docs to this and supercell, implement
+
         if not isinstance(displacement_number, (int, int32, int64)) or displacement_number < 0:
             raise SltInputError(ValueError("The displacement_number must be a nonnegative integer.")) from None
         try:
@@ -1219,9 +1226,11 @@ class SltSuperCell(SltUnitCell):
         except Exception as exc:
             raise SltInputError(exc, "Invalid step provided.") from None
 
-        hessian, born_charges = _read_fc2_born_charges(self, dirpath, calculator, nx, ny, nz, displacement_number, step)
-        _hessian_to_slt(self._slt_group._hdf5, slt_group_name, self._atoms.get_chemical_symbols(), self._atoms.get_positions(), self._atoms.get_cell.array, hessian, nx, ny, nz, born_charges)
-        return SltGroup(self._hdf5, slt_group_name)
+        dof_number = 3 * len(self._atoms) // self._nxnynz.prod()
+        hessian, born_charges = _read_hessian_born_charges_from_dir(dirpath, format, dof_number, self._nxnynz[0], self._nxnynz[1], self._nxnynz[2], displacement_number, step, accoustic_sum_rule, born_charges, force_files_suffix, dipole_momenta_files_suffix)
+        _hessian_to_slt(self._slt_group._hdf5, slt_group_name, self._atoms.get_chemical_symbols(), self._atoms.get_positions(), self._atoms.get_cell().array, self._nxnynz[0], self._nxnynz[1], self._nxnynz[2], self._multiplicity, hessian, born_charges)
+        
+        return SltGroup(self._slt_group._hdf5, slt_group_name)
 
 
 class SltHessian(SltSuperCell):
@@ -1232,10 +1241,9 @@ class SltHessian(SltSuperCell):
     def __init__(self, slt_group) -> None:
         super().__init__(slt_group)
         self._hessian = slt_group["HESSIAN"]
-    
-    @property
-    def hessian(self): #### From here add methods to SltGroup
-        return self._hessian
+
+    def hessian(self) -> ndarray: #### From here add methods to SltGroup
+        return self._hessian[:]
     
     def phonons(): #### This to slt group as delayed methoo with input parser
         pass

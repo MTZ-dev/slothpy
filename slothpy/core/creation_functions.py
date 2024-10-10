@@ -195,7 +195,7 @@ def xyz(input_filepath: str, slt_filepath: str, group_name: str, charge: Optiona
     charge : int, optional
         Charge of the chemical species., by default None
     multiplicity : int, optional
-        Multiplicity given as 2S+1 of the chemical species., by default None
+        Multiplicity of the chemical species given as 2S+1., by default None
     Raises:
     ------
     SltInputError:
@@ -235,7 +235,7 @@ def xyz(input_filepath: str, slt_filepath: str, group_name: str, charge: Optiona
         raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
 
 
-def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vectors: Optional[ndarray] = None, cell_params: Optional[ndarray] = None, cell_from_cif_path: Optional[str] = None):
+def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vectors: Optional[ndarray] = None, cell_params: Optional[ndarray] = None, cell_from_cif_path: Optional[str] = None, multiplicity: Optional[int] = None) -> SltFile:
     """
     Reads a .cif or .xyz file along with cell parameters and saves the data
     as a unit cell group in a .slt file.
@@ -268,6 +268,8 @@ def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vect
         cell_vectors are not provided. If provided along with a .cif input
         file, the cell parameters will be overwritten by those from 
         cell_from_cif_path, by default None
+    multiplicity : int, optional
+        Multiplicity of the unit cell given as 2S+1., by default None
 
     Raises:
     ------
@@ -318,7 +320,7 @@ def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vect
         raise SltInputError(exc, message="Failed to save unit cell to .slt file.") from None
     
     try:
-        _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell)
+        _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, multiplicity)
 
         return SltFile._new(slt_filepath)
     
@@ -326,7 +328,7 @@ def unit_cell(input_filepath: str, slt_filepath: str, group_name: str, cell_vect
         raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
     
 
-def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny: int, nz: int, supercell_vectors: Optional[ndarray] = None, supercell_params: Optional[ndarray] = None):
+def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny: int, nz: int, supercell_vectors: Optional[ndarray] = None, supercell_params: Optional[ndarray] = None, multiplicity: Optional[int] = None) -> SltFile:
     """
     Reads a .xyz file along with supercell parameters and saves the data
     as a supercell group in a .slt file.
@@ -355,6 +357,8 @@ def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny
         where a, b, c are the supercell lengths and alpha, beta, gamma are the
         supercell angles in degrees. Required if supercell_vectors are not
         provided., by default None
+    multiplicity : int, optional
+        Multiplicity of the supercell given as 2S+1., by default None
 
     Raises:
     ------
@@ -412,7 +416,7 @@ def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny
         raise SltInputError(exc, message="Failed to save supercell to .slt file.") from None
     
     try:
-        _supercell_to_slt(slt_filepath, group_name, elements, positions, supercell, nx, ny, nz)
+        _supercell_to_slt(slt_filepath, group_name, elements, positions, supercell, nx, ny, nz, multiplicity)
 
         return SltFile._new(slt_filepath)
     

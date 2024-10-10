@@ -971,6 +971,9 @@ class SltHamiltonian(metaclass=MethodTypeMeta):
         return (self._mode, info_list, self._local_states)
 
 
+#TODO From here consider using the input parser on top of the methods and move parts with validation to it
+
+
 class SltXyz(metaclass=MethodTypeMeta):
     _method_type = "XYZ"
 
@@ -1010,6 +1013,8 @@ class SltXyz(metaclass=MethodTypeMeta):
             additional_info += f"{"Cell" if self._method_type == "UNIT_CELL" else "Supercell"} parameters [a, b, c, alpha, beta, gamma]: {self._atoms.get_cell_lengths_and_angles()} "
         if self._method_type == "SUPERCELL":
             additional_info += f"Supercell_Repetitions [nx, ny, nz] = {self._nxnynz.tolist()} "
+        
+        write(xyz_filepath, self._atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}'")
 
     def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
         if len(atom_indices) != len(new_symbols):
@@ -1052,6 +1057,8 @@ class SltXyz(metaclass=MethodTypeMeta):
             print(f"'ELEMENTS' dataset successfully updated in group '{self._slt_group._group_name}'.")
         except Exception as exc:
             raise SltFileError(self._slt_group._hdf5, exc, f"Failed to update 'ELEMENTS' dataset in the .slt group") from None
+        
+        return self._slt_group
         
     def generate_finite_stencil_displacements(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, _supercell: bool = False, _nx: Optional[int] = None, _ny: Optional[int] = None, _nz: Optional[int] = None) -> Optional[Iterator[Atoms]]:
         if output_option not in ['xyz', 'iterator', 'slt']:
@@ -1121,7 +1128,7 @@ class SltXyz(metaclass=MethodTypeMeta):
                         additional_info += f"Supercell_Repetitions [nx, ny, nz] = {[_nx, _ny, _nz]} "
                     if self._method_type in ["UNIT_CELL", "SUPERCELL"]:
                         additional_info += f"{"Cell" if self._method_type == "UNIT_CELL" and not _supercell else "Supercell"} parameters [a, b, c, alpha, beta, gamma]: {atoms_tmp.get_cell_lengths_and_angles().tolist()} "
-                    displaced_atoms.write(xyz_file_path, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}", format='xyz')
+                    write(xyz_file_path, displaced_atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}")
                 except Exception as exc:
                     raise IOError(f"Failed to write XYZ file '{xyz_file_path}': {exc}")
             return None
@@ -1161,7 +1168,7 @@ class SltUnitCell(SltXyz):
     def cell_object(self):
         return self._atoms.get_cell()
     
-    def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[SltGroup]:
+    def supercell(self, nx: int, ny: int, nz: int, output_option: Literal["xyz", "slt"] = "slt", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[SltGroup]:
         if self._method_type == "SUPERCELL":
             warnings.warn("You are trying to construct a supercell out of another supercell, creating a ... mega-cell with all parameters multiplied!")
         if output_option not in ['xyz', 'slt']:
@@ -1174,11 +1181,15 @@ class SltUnitCell(SltXyz):
 
         atoms: Atoms = self._atoms.repeat((nx, ny, nz))
 
+        multiplicity = None
+        if self._multiplicity:
+            multiplicity = ((self._multiplicity - 1) * nx * ny * nz) + 1
+
         if output_option == "xyz":
             additional_info = f"Supercell parameters [a, b, c, alpha, beta, gamma]: {atoms.get_cell_lengths_and_angles()} "
             write(xyz_filepath, self._atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}'")
         else:
-            _supercell_to_slt(self._hdf5, slt_group_name, atoms.get_chemical_symbols(), atoms.get_positions(), atoms.get_cell().array, nx, ny, nz)
+            _supercell_to_slt(self._hdf5, slt_group_name, atoms.get_chemical_symbols(), atoms.get_positions(), atoms.get_cell().array, nx, ny, nz, multiplicity)
             return SltGroup(self._hdf5, slt_group_name)
 
     def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, save_supercell_to_slt: Optional[str] = None) -> Optional[Iterator[Atoms]]:
@@ -1187,21 +1198,6 @@ class SltUnitCell(SltXyz):
         if save_supercell_to_slt:
             self.supercell(nx, ny, nz, 'slt', slt_group_name=save_supercell_to_slt)
         return self.generate_finite_stencil_displacements(displacement_number, step, output_option, custom_directory, slt_group_name, True, nx, ny, nz)
-
-    def hessian_from_finite_displacements(self, dirpath: str, slt_group_name: str, born_charges: bool = False, nx: Optional[int] = None, ny: Optional[int] = None, nz: Optional[int] = None, displacement_number: Optional[int] = None, step: Optional[float] = None):
-        ### Add info to displacements to xyz, parse info here, ask gpt for docs to this and supercell, implement
-        if not found_info:
-            _check_n(nx, ny, nz)
-            if not isinstance(displacement_number, (int, int32, int64)) or displacement_number < 0:
-                raise SltInputError(ValueError("The displacement_number must be a nonnegative integer.")) from None
-            try:
-                float(step)
-            except Exception as exc:
-                raise SltInputError(exc, "Invalid step provided.") from None
-
-        hessian, born_charges = _read_fc2_born_charges(self, dirpath, calculator, nx, ny, nz, displacement_number, step)
-        _hessian_to_slt(self._slt_group._hdf5, slt_group_name, self._atoms.get_chemical_symbols(), self._atoms.get_positions(), self._atoms.get_cell.array, hessian, nx, ny, nz, born_charges)
-        return SltGroup(self._hdf5, slt_group_name)
 
 
 class SltSuperCell(SltUnitCell):
@@ -1213,6 +1209,19 @@ class SltSuperCell(SltUnitCell):
         super().__init__(slt_group)
         self._atoms.set_cell(slt_group["CELL"][:])
         self._nxnynz = slt_group.attributes["Supercell_Repetitions"]
+
+    def hessian_from_finite_displacements(self, dirpath: str, format: Literal["CP2K"], slt_group_name: str, displacement_number: int, step: float, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", born_charges: bool = False, force_files_suffix: Optional[str] = None, dipole_momenta_files_suffix: Optional[str] = None):
+        ### Add info to displacements to xyz, parse info here, ask gpt for docs to this and supercell, implement
+        if not isinstance(displacement_number, (int, int32, int64)) or displacement_number < 0:
+            raise SltInputError(ValueError("The displacement_number must be a nonnegative integer.")) from None
+        try:
+            float(step)
+        except Exception as exc:
+            raise SltInputError(exc, "Invalid step provided.") from None
+
+        hessian, born_charges = _read_fc2_born_charges(self, dirpath, calculator, nx, ny, nz, displacement_number, step)
+        _hessian_to_slt(self._slt_group._hdf5, slt_group_name, self._atoms.get_chemical_symbols(), self._atoms.get_positions(), self._atoms.get_cell.array, hessian, nx, ny, nz, born_charges)
+        return SltGroup(self._hdf5, slt_group_name)
 
 
 class SltHessian(SltSuperCell):

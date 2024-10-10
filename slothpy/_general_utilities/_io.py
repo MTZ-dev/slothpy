@@ -14,18 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Tuple, Literal
 from os import remove
 from os.path import join
 from re import compile, search, findall
 
 from h5py import File, string_dtype
-from numpy import ndarray, dtype, array, ascontiguousarray, zeros, empty, any, diagonal, min, int64, float64, complex128
+from numpy import ndarray, dtype, array, ascontiguousarray, zeros, empty, any, diagonal, loadtxt, min, int64, float64, complex128
 from scipy.linalg import eigh, eigvalsh
-from typing import Tuple
 
 from slothpy.core._slothpy_exceptions import SltFileError, SltReadError
 from slothpy._angular_momentum._rotation import _rotate_vector_operator
 from slothpy.core._config import settings
+from slothpy._general_utilities._math_expresions import _central_finite_difference_stencil
 
 ##### I get regex warinngs with invalid escape sequences!
 # /home/mikolaj/Sloth/Sloth/slothpy/_general_utilities/_io.py:715: SyntaxWarning: invalid escape sequence '\('
@@ -378,16 +379,16 @@ def _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplic
             group.attrs["Multiplicity"] = multiplicity
 
 
-def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, group_type = "UNIT_CELL", description = "Unit cell group containing xyz coordinates and unit cell vectors.", description_cell = "Unit cell vectors as 3x3 matrix (with vectors in rows)."):
-    _xyz_to_slt(slt_filepath, group_name, elements, positions, None, None, group_type, description)
+def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, multiplicity, group_type = "UNIT_CELL", description = "Unit cell group containing xyz coordinates and unit cell vectors.", description_cell = "Unit cell vectors as 3x3 matrix (with vectors in rows)."):
+    _xyz_to_slt(slt_filepath, group_name, elements, positions, None, multiplicity, group_type, description)
     with File(slt_filepath, 'a') as slt:
         group = slt[group_name]
         dataset = group.create_dataset('CELL', data=cell, dtype=settings.float, chunks=True)
         dataset.attrs["Description"] = description_cell
 
 
-def _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, group_type = "SUPERCELL", description = "Supercell group containing xyz coordinates and supercell vectors.", description_cell = "Supercell vectors as 3x3 matrix (with vectors in rows)."):
-    _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, group_type, description, description_cell)
+def _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, multiplicity, group_type = "SUPERCELL", description = "Supercell group containing xyz coordinates and supercell vectors.", description_cell = "Supercell vectors as 3x3 matrix (with vectors in rows)."):
+    _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, multiplicity, group_type, description, description_cell)
     with File(slt_filepath, 'a') as slt:
         group = slt[group_name]
         group.attrs["Supercell_Repetitions"] = [nx, ny, nz]
@@ -398,9 +399,79 @@ def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny,
     with File(slt_filepath, 'a') as slt:
         group = slt[group_name]
         dataset = group.create_dataset('HESSIAN', data=hessian, dtype=settings.float, chunks=True)
-        dataset.attrs["Description"] = "Hessian matrix" ## Decide how to store it and fill the description
+        dataset.attrs["Description"] = "Hessian matrix (2nd order force constants) in the form [dof_unit_cell, cell, atom_unit_cell, xyz]" ## Decide how to store it and fill the description
         if born_charges:
             pass ### Decide how to store Born charges
+
+
+def _read_forces_cp2k(filepath, dof_number):
+    return loadtxt(filepath, dtype = settings.float, skiprows=4, usecols=(3,4,5), max_rows=dof_number)
+
+
+def _read_dipole_momenta_cp2k(file_path):
+    with open(file_path, 'rb') as f:
+        f.seek(0, 2)
+        file_size = f.tell()
+        block_size = 512
+        if file_size < block_size:
+            f.seek(0)
+        else:
+            f.seek(-block_size, 2)
+        data = f.read()
+    data = data.decode('utf-8', errors='ignore')
+    lines = data.split('\n')
+    lines = lines[::-1]
+    dipole_pattern = r'X=\s*([^\s]+)\s+Y=\s*([^\s]+)\s+Z=\s*([^\s]+)'
+
+    for line in lines:
+        if 'X=' in line:
+            match = search(dipole_pattern, line)
+            if match:
+                x = settings.float(match.group(1))
+                y = settings.float(match.group(2))
+                z = settings.float(match.group(3))
+                return array([x, y, z], dtype=settings.float)
+
+    raise ValueError('Dipole moment line not found in file')
+
+def _read_hessian_from_dir(dirpath, format, dof_number, cell_number, displacement_number, step, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", dipole_momenta = True, force_files_suffix = None, dipole_momenta_files_suffix = None):
+    atoms_in_file = cell_number * dof_number / 3
+    hessian = zeros(shape=(dof_number, cell_number, dof_number / 3, 3), order="C", dtype = settings.float)
+    finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step)
+
+    if dipole_momenta:
+        dipole_momenta_array = zeros(shape=(dof_number, 3), order="C", dtype = settings.float)
+
+    if format == "CP2K":
+        read_forces = _read_forces_cp2k
+        read_dipole_momenta = _read_dipole_momenta_cp2k
+        default_force_suffix = "-1_0.xyz"
+        default_dipole_momenta_suffix = "-moments-1_0.dat"
+    else:
+        raise ValueError("The only suported format is 'CP2K'.")
+
+    for dof in range(dof_number):
+        stencil_index = -1
+        for disp in range(-displacement_number, displacement_number + 1, 1):
+            stencil_index += 1
+            if disp == 0:
+                continue
+            file_preffix = join(dirpath, f"dof_{dof}_disp_{disp}")
+            force_filepath = file_preffix + force_files_suffix if force_files_suffix else default_force_suffix
+            hessian[dof, :, :, :] += read_forces(force_filepath, atoms_in_file) * finite_difference_stencil[stencil_index]
+            if dipole_momenta:
+                dipole_momenta_filepath = file_preffix + dipole_momenta_files_suffix if dipole_momenta_files_suffix else default_dipole_momenta_suffix
+                dipole_momenta_array[dof, :] += read_dipole_momenta(dipole_momenta_filepath) * finite_difference_stencil[stencil_index]
+    
+    if accoustic_sum_rule == "symmetric":
+        pass
+    elif accoustic_sum_rule == "self_term":
+        pass
+
+    if dipole_momenta:
+        return hessian, dipole_momenta
+    else:
+        return hessian
 
 
 def _load_orca_hdf5(filename, group, rotation):

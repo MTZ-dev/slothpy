@@ -35,11 +35,20 @@ def generate_input_file(dof_number, disp_number, wfn_start = None):
     xyz_filename = f'dof_{dof_number}_disp_{disp_number}.xyz'
 
     if dof_number == 0 and disp_number == 0:
-        restart_wfn_line = '' if wfn_start is None else f"WFN_RESTART_FILE_NAME {wfn_start}"
+        restart_wfn_line = '' if wfn_start is None else f"    WFN_RESTART_FILE_NAME {wfn_start}"
     else:
         restart_wfn_line = '    WFN_RESTART_FILE_NAME dof_0_disp_0-RESTART.wfn'
 
     input_template = """
+
+&GLOBAL
+  PROJECT {project_name}
+  RUN_TYPE ENERGY_FORCE
+  PRINT_LEVEL MEDIUM
+  WALLTIME 255000
+  # PREFERRED_DIAG_LIBRARY ScaLAPACK
+&END GLOBAL
+
 &FORCE_EVAL
   METHOD QS
   STRESS_TENSOR  ANALYTICAL
@@ -63,8 +72,11 @@ def generate_input_file(dof_number, disp_number, wfn_start = None):
     &END POISSON
 
     &QS
+      EPS_DEFAULT 1.0E-10
       METHOD GAPW
       EXTRAPOLATION_ORDER  4
+      # MIN_PAIR_LIST_RADIUS -1 # Set this for hybrids: see https://www.cp2k.org/faq:hfx_eps_warning
+      # EPS_PGF_ORB 1.0E-14
     &END QS
 
     &SCF
@@ -103,13 +115,6 @@ def generate_input_file(dof_number, disp_number, wfn_start = None):
    &END
 
 &END FORCE_EVAL
-
-&GLOBAL
-  PROJECT {project_name}
-  RUN_TYPE ENERGY_FORCE
-  PRINT_LEVEL MEDIUM
-  WALLTIME 255000
-&END GLOBAL
 """
 
     with open(input_filename, 'w') as f:

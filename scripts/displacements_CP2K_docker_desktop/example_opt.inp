@@ -1,0 +1,127 @@
+@SET project_name            YCo
+@SET RESTART                 FALSE
+
+
+&GLOBAL
+  PROJECT ${project_name}
+  RUN_TYPE CELL_OPT
+  PRINT_LEVEL MEDIUM
+  WALLTIME 25500000
+  # PREFERRED_DIAG_LIBRARY ScaLAPACK
+&END GLOBAL
+
+
+&FORCE_EVAL
+  METHOD QS
+  STRESS_TENSOR  ANALYTICAL
+
+   &DFT
+    BASIS_SET_FILE_NAME   BASIS_MOLOPT_UZH
+    POTENTIAL_FILE_NAME   POTENTIAL_UZH
+    WFN_RESTART_FILE_NAME ${project_name}-RESTART.wfn
+    CHARGE  0      
+    MULTIPLICITY 1
+    UKS  F
+
+    &POISSON
+      PERIODIC XYZ
+    &END POISSON
+
+    &MGRID
+      CUTOFF 1800
+      NGRIDS 5
+      REL_CUTOFF 80
+    &END MGRID
+
+    &QS
+      EPS_DEFAULT 1.0E-10
+      METHOD GAPW
+      EXTRAPOLATION_ORDER  4
+      # MIN_PAIR_LIST_RADIUS -1 # Set this for hybrids: see https://www.cp2k.org/faq:hfx_eps_warning
+      # EPS_PGF_ORB 1.0E-14
+    &END QS
+
+    &SCF
+     @INCLUDE scf.inc
+    &END SCF
+
+    &XC
+     @INCLUDE XC.inc
+    &END XC
+  &END DFT
+
+  &SUBSYS
+   @INCLUDE subsys.inc
+
+    &TOPOLOGY
+       COORD_FILE_NAME YCo.xyz
+       COORD_FILE_FORMAT  XYZ
+       NUMBER_OF_ATOMS  28   
+       MULTIPLE_UNIT_CELL  1 1 1
+     &END TOPOLOGY
+
+  &END SUBSYS
+
+&END FORCE_EVAL
+
+
+&MOTION
+  &GEO_OPT
+     MAX_ITER  5000
+     MAX_DR     2E-07
+     MAX_FORCE  5E-08
+     RMS_DR     1E-07
+     OPTIMIZER BFGS # CG
+     KEEP_SPACE_GROUP F
+     EPS_SYMMETRY 1E-3
+
+  @if ${RESTART} == TRUE
+   &BFGS
+    RESTART_HESSIAN .TRUE.
+    RESTART_FILE_NAME ${project_name}-BFGS.Hessian
+   &END BFGS
+  @endif
+
+   &END GEO_OPT
+
+   &CELL_OPT
+     MAX_ITER  5000
+     MAX_DR     2E-07
+     MAX_FORCE  5E-08
+     KEEP_SYMMETRY T
+     KEEP_SPACE_GROUP F # T
+     EPS_SYMMETRY 1E-3
+     OPTIMIZER BFGS # CG
+     TYPE DIRECT_CELL_OPT # GEO_OPT MD
+     # STEP_START_VAL  300
+
+   @if ${RESTART} == TRUE
+    &BFGS
+     RESTART_HESSIAN .TRUE.
+     RESTART_FILE_NAME ${project_name}-BFGS.Hessian
+    &END BFGS
+   @endif
+
+   &END CELL_OPT
+
+  &PRINT
+    &RESTART SILENT
+        &EACH
+          MD 1
+        &END EACH
+    &END RESTART
+
+    &TRAJECTORY SILENT
+    &END TRAJECTORY
+  &END PRINT
+&END MOTION
+
+
+@if ${RESTART} == TRUE
+&EXT_RESTART
+    RESTART_FILE_NAME ${project_name}-1.restart
+    RESTART_POS T
+    RESTART_VEL T
+&END EXT_RESTART
+@endif
+

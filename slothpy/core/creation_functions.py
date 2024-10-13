@@ -424,7 +424,7 @@ def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny
         raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
     
 
-def hamiltonian_from_orca_new(orca_filepath: str, slt_filepath: str, group_name: str, pt2: bool = False, electric_dipole_momenta: bool = False ssc: bool = False) -> SltFile:
+def hamiltonian_from_orca_new(orca_filepath: str, slt_filepath: str, group_name: str, pt2: bool = False, electric_dipole_momenta: bool = False, ssc: bool = False) -> SltFile:
 
     """
     Create or append data to a SltFile from ORCA output file.

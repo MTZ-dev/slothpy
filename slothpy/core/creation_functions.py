@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Optional
-from os.path import join, splitext
+from os.path import splitext
 
 from numpy import ndarray, array, int64, int32
 from ase.io import read
@@ -23,131 +23,8 @@ from ase.io import read
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import SltFileError, SltInputError
 from slothpy.core.slt_file_object import SltFile
-from slothpy._general_utilities._io import _orca_spin_orbit_to_slt, _molcas_to_slt, _xyz_to_slt, _unit_cell_to_slt, _supercell_to_slt
+from slothpy._general_utilities._io import _xyz_to_slt, _unit_cell_to_slt, _supercell_to_slt, _orca_to_slt, _molcas_to_slt
 from slothpy._general_utilities._utils import _check_n
-
-
-def hamiltonian_from_orca(
-    orca_filepath: str,
-    orca_filename: str,
-    slt_filepath: str,
-    slt_filename: str,
-    group_name: str,
-    pt2: bool = False,
-) -> SltFile:
-    """
-    Create or append data to a SltFile from ORCA output file.
-
-    Parameters
-    ----------
-    orca_filepath : str
-        Path to the ORCA output file.
-    orca_filename : str
-        Name of the ORCA output file.
-    slt_filepath : str
-        Path of the existing or new .slt file to which the results will
-        be saved.
-    slt_filename : str
-        Name of the .slt file to be created/accessed.
-    group_name : str
-        Name of a group to which results of relativistic ab initio calculations
-        will be saved.
-    pt2 : bool, optional
-        If True the results of CASPT2/NEVPT2 second-order perturbative
-        corrections will be loaded to the file., by default False
-
-    Returns
-    -------
-    SltFile
-        An instance of SltFile class associated with the given .slt file, that
-        serves as an user interface, holding all the available methods.
-
-    Raises
-    ------
-    SltFileError
-        If the program is unable to create a SltFile from given files.
-
-    Note
-    ----
-    ORCA calculations have to be done with the "printlevel 5" keyword in the
-    "rel" section for outputs to be readable by SlothPy.
-    """
-
-    if slt_filename.endswith(".slt"):
-        slt_filename = slt_filename[:-4]
-    if not isinstance(group_name, str):
-        raise SltInputError(f"The group name has to be a string not {type(group_name)}.")
-    try:
-        _orca_spin_orbit_to_slt(
-            orca_filepath,
-            orca_filename,
-            slt_filepath,
-            slt_filename,
-            group_name,
-            pt2,
-        )
-
-        return SltFile._new(slt_filepath, slt_filename)
-    
-    except Exception as exc:
-        file = join(slt_filepath, slt_filename)
-        raise SltFileError(
-            file,
-            exc,
-            message="Failed to create a .slt file from the ORCA output file",
-        ) from None
-
-
-def hamiltonian_from_molcas(molcas_filepath: str, slt_filepath: str, group_name: str, electric_dipole_momenta: bool = False) -> SltFile:
-    """
-    Create a SltFile from MOLCAS rassi.h5 file.
-
-    Parameters
-    ----------
-    molcas_filepath : str
-        Path to the MOLCAS .rassi.h5 file.
-    slt_filepath : str
-        Path of the existing or new .slt file to which the results will
-        be saved.
-    group_name : str
-        Name of a group to which results of relativistic ab initio calculations
-        will be saved.
-    electric_dipole_momenta : bool, optional
-        If set to True, electric dipole moment integrals will be read from
-        the MOLCAS .rassi.h5 file for simulations of spectroscopic properties.
-
-    Returns
-    -------
-    SltFile
-        An instance of SltFile class associated with the given .slt file, that
-        serves as an user interface, holding all the available methods.
-
-    Raises
-    ------
-    SltFileError
-        If the program is unable to create a SltFile from given files.
-
-    Note
-    ----
-    MOLCAS calculations have to be done with the "MESO" keyword within the
-    RASSI section and the installation has to support HDF5 files for .rassi.h5
-    files to be readable by SlothPy.
-    """
-
-    if not slt_filepath.endswith(".slt"):
-        slt_filepath += ".slt"
-
-    if not molcas_filepath.endswith(".rassi.h5"):
-        raise SltInputError(ValueError("The molcas file to be loaded must have a .rassi.h5 extension."))
-    if not isinstance(group_name, str):
-        raise SltInputError(ValueError(f"The group name has to be a string not {type(group_name)}."))
-    try:
-        _molcas_to_slt(molcas_filepath, slt_filepath, group_name, electric_dipole_momenta)
-
-        return SltFile._new(slt_filepath)
-    
-    except Exception as exc:
-        raise SltFileError(slt_filepath, exc, message=("Failed to create a .slt file from the MOLCAS rassi.h5 file")) from None
 
 
 def slt_file(slt_filepath: str) -> SltFile:
@@ -424,10 +301,10 @@ def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny
         raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
     
 
-def hamiltonian_from_orca_new(orca_filepath: str, slt_filepath: str, group_name: str, pt2: bool = False, electric_dipole_momenta: bool = False, ssc: bool = False) -> SltFile:
+def hamiltonian_from_orca(orca_filepath: str, slt_filepath: str, group_name: str, pt2: bool = False, electric_dipole_momenta: bool = False, ssc: bool = False) -> SltFile:
 
     """
-    Create or append data to a SltFile from ORCA output file.
+    Create or append data to an SltFile from the ORCA output file.
 
     Parameters
     ----------
@@ -444,7 +321,8 @@ def hamiltonian_from_orca_new(orca_filepath: str, slt_filepath: str, group_name:
         corrections will be loaded to the file., by default False.
     electric_dipole_momenta : bool, optional
         If set to True, electric dipole moment integrals will be read from
-        the ORCA file for simulations of spectroscopic properties, by default False.
+        the ORCA file for simulations of spectroscopic properties.,
+        by default False.
     ssc : bool, optional
         If set to True, SSC energies will be read from
         the ORCA instead of SOC energies, by default False.        
@@ -466,8 +344,8 @@ def hamiltonian_from_orca_new(orca_filepath: str, slt_filepath: str, group_name:
     "rel" section for outputs to be readable by SlothPy.
     """
 
-    if slt_filename.endswith(".slt"):
-        slt_filename = slt_filename[:-4]
+    if slt_filepath.endswith(".slt"):
+        slt_filepath = slt_filepath[:-4]
     if not isinstance(group_name, str):
         raise SltInputError(f"The group name has to be a string not {type(group_name)}.")
     try:
@@ -477,3 +355,55 @@ def hamiltonian_from_orca_new(orca_filepath: str, slt_filepath: str, group_name:
 
     except Exception as exc:
         raise SltFileError(slt_filepath, exc, message=("Failed to create a .slt file from the ORCA output file")) from None
+
+
+def hamiltonian_from_molcas(molcas_filepath: str, slt_filepath: str, group_name: str, electric_dipole_momenta: bool = False) -> SltFile:
+    """
+    Create or append data to an SltFile from the MOLCAS rassi.h5 file.
+
+    Parameters
+    ----------
+    molcas_filepath : str
+        Path to the MOLCAS .rassi.h5 file.
+    slt_filepath : str
+        Path of the existing or new .slt file to which the results will
+        be saved.
+    group_name : str
+        Name of a group to which results of relativistic ab initio calculations
+        will be saved.
+    electric_dipole_momenta : bool, optional
+        If set to True, electric dipole moment integrals will be read from
+        the MOLCAS .rassi.h5 file for simulations of spectroscopic properties.
+
+    Returns
+    -------
+    SltFile
+        An instance of SltFile class associated with the given .slt file, that
+        serves as an user interface, holding all the available methods.
+
+    Raises
+    ------
+    SltFileError
+        If the program is unable to create a SltFile from given files.
+
+    Note
+    ----
+    MOLCAS calculations have to be done with the "MESO" keyword within the
+    RASSI section and the installation has to support HDF5 files for .rassi.h5
+    files to be readable by SlothPy.
+    """
+
+    if not slt_filepath.endswith(".slt"):
+        slt_filepath += ".slt"
+
+    if not molcas_filepath.endswith(".rassi.h5"):
+        raise SltInputError(ValueError("The molcas file to be loaded must have a .rassi.h5 extension."))
+    if not isinstance(group_name, str):
+        raise SltInputError(ValueError(f"The group name has to be a string not {type(group_name)}."))
+    try:
+        _molcas_to_slt(molcas_filepath, slt_filepath, group_name, electric_dipole_momenta)
+
+        return SltFile._new(slt_filepath)
+    
+    except Exception as exc:
+        raise SltFileError(slt_filepath, exc, message=("Failed to create a .slt file from the MOLCAS rassi.h5 file")) from None

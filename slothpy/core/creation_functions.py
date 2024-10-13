@@ -422,3 +422,58 @@ def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny
     
     except Exception as exc:
         raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
+    
+
+def hamiltonian_from_orca_new(orca_filepath: str, slt_filepath: str, group_name: str, pt2: bool = False, electric_dipole_momenta: bool = False ssc: bool = False) -> SltFile:
+
+    """
+    Create or append data to a SltFile from ORCA output file.
+
+    Parameters
+    ----------
+    orca_filepath : str
+        Path to the ORCA output file.
+    slt_filepath : str
+        Path of the existing or new .slt file to which the results will
+        be saved.
+    group_name : str
+        Name of a group to which results of relativistic ab initio calculations
+        will be saved.
+    pt2 : bool, optional
+        If True the results of CASPT2/NEVPT2 second-order perturbative
+        corrections will be loaded to the file., by default False.
+    electric_dipole_momenta : bool, optional
+        If set to True, electric dipole moment integrals will be read from
+        the ORCA file for simulations of spectroscopic properties, by default False.
+    ssc : bool, optional
+        If set to True, SSC energies will be read from
+        the ORCA instead of SOC energies, by default False.        
+
+    Returns
+    -------
+    SltFile
+        An instance of SltFile class associated with the given .slt file, that
+        serves as an user interface, holding all the available methods.
+
+    Raises
+    ------
+    SltFileError
+        If the program is unable to create a SltFile from given files.
+
+    Note
+    ----
+    ORCA calculations have to be done with the "printlevel 5" keyword in the
+    "rel" section for outputs to be readable by SlothPy.
+    """
+
+    if slt_filename.endswith(".slt"):
+        slt_filename = slt_filename[:-4]
+    if not isinstance(group_name, str):
+        raise SltInputError(f"The group name has to be a string not {type(group_name)}.")
+    try:
+        _orca_to_slt(orca_filepath, slt_filepath, group_name, pt2, electric_dipole_momenta, ssc)
+
+        return SltFile._new(slt_filepath)
+
+    except Exception as exc:
+        raise SltFileError(slt_filepath, exc, message=("Failed to create a .slt file from the ORCA output file")) from None

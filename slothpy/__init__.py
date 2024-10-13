@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from signal import signal, SIGINT
+from slothpy._general_utilities._system import exit_handler
+
+# Set KeyboardInterrupt to exit
+signal(SIGINT, exit_handler)
+
 from multiprocessing import current_process, set_start_method
 
 if current_process().name == 'MainProcess':
@@ -27,14 +33,11 @@ import os
 os.environ['NUMBA_OPT'] = 'max'
 os.environ['NUMBA_LOOP_VECTORIZE'] = '1'
 os.environ['NUMBA_ENABLE_AVX'] = '1'
+
+# Set for the compilation debug
 # os.environ['NUMBA_DEBUG'] = '1'
 
 from multiprocessing import current_process
-
-from signal import signal, SIGINT
-from slothpy._general_utilities._system import exit_handler
-
-signal(SIGINT, exit_handler)
 
 from .core import (
     slt_file,
@@ -115,9 +118,9 @@ if current_process().name == "MainProcess":
         + BLUE
         + "                 / ___|| | ___ | |_| |__ "
         + YELLOW
-        + "|  _ \ _   _\n"
+        + "|  _ \\ _   _\n"
         + BLUE
-        + "                 \___ \| |/ _ \| __| '_ \\"
+        + "                 \\___ \\| |/ _ \\| __| '_ \\"
         + YELLOW
         + "| |_) | | | |\n"
         + BLUE
@@ -125,14 +128,15 @@ if current_process().name == "MainProcess":
         + YELLOW
         + "|  __/| |_| |\n"
         + BLUE
-        + "                 |____/|_|\___/ \__|_| |_"
+        + "                 |____/|_|\\___/ \\__|_| |_"
         + YELLOW
-        + "|_|    \__, |\n"
+        + "|_|    \\__, |\n"
         + "                                                |___/"
         + GREEN
         + "  by MTZ \n"
         + RESET
     )
+
     print(
         "SlothPy Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ).\nThis"
         " program comes with ABSOLUTELY NO WARRANTY.\nThis is free software,"
@@ -143,5 +147,6 @@ if current_process().name == "MainProcess":
         " slt.turn_on_monitor()."
     )
 
+# Set no traceback for nice printing
 if settings.traceback == False:
     set_plain_error_reporting_mode()

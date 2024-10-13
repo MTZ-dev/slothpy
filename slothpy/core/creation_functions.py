@@ -33,7 +33,7 @@ from slothpy._general_utilities._utils import _check_n
 
 def slt_file(slt_filepath: str) -> SltFile:
     """
-    Create a SltFile object from the existing .slt file.
+    Create an SltFile object from the existing .slt file.
 
     Parameters
     ----------

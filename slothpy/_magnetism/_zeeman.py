@@ -46,9 +46,9 @@ from slothpy._general_utilities._system import (
     _get_num_of_processes,
     _distribute_chunks,
 )
-from slothpy._general_utilities._io import (
-    _get_soc_magnetic_momenta_and_energies_from_hdf5,
-)
+# from slothpy._general_utilities._io import (
+#     _get_soc_magnetic_momenta_and_energies_from_hdf5,
+# )
 from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
     _meshgrid_over_sphere,
@@ -138,33 +138,34 @@ def _get_zeeman_matrix(
     orientations: ndarray,
     rotation: ndarray = None,
 ) -> ndarray:
-    (
-        magnetic_momenta,
-        states_energies,
-    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff, rotation
-    )
+    pass
+    # (
+    #     magnetic_momenta,
+    #     states_energies,
+    # ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+    #     filename, group, states_cutoff, rotation
+    # )
 
-    zeeman_matrix = zeros(
-        (
-            fields.shape[0],
-            orientations.shape[0],
-            magnetic_momenta.shape[1],
-            magnetic_momenta.shape[2],
-        ),
-        dtype=complex128,
-    )
+    # zeeman_matrix = zeros(
+    #     (
+    #         fields.shape[0],
+    #         orientations.shape[0],
+    #         magnetic_momenta.shape[1],
+    #         magnetic_momenta.shape[2],
+    #     ),
+    #     dtype=complex128,
+    # )
 
-    for f, field in enumerate(fields):
-        for o, orientation in enumerate(orientations):
-            zeeman_matrix[f, o, :, :] = _calculate_zeeman_matrix(
-                magnetic_momenta,
-                states_energies,
-                field,
-                orientation,
-            )
+    # for f, field in enumerate(fields):
+    #     for o, orientation in enumerate(orientations):
+    #         zeeman_matrix[f, o, :, :] = _calculate_zeeman_matrix(
+    #             magnetic_momenta,
+    #             states_energies,
+    #             field,
+    #             orientation,
+    #         )
 
-    return zeeman_matrix
+    # return zeeman_matrix
 
 
 @jit(
@@ -523,96 +524,97 @@ def _eth(
     num_cpu: int,
     num_threads: int,
 ) -> ndarray:
-    # Read data from HDF5 file
-    (
-        magnetic_momenta,
-        states_energies,
-    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff
-    )
+    pass
+    # # Read data from HDF5 file
+    # (
+    #     magnetic_momenta,
+    #     states_energies,
+    # ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+    #     filename, group, states_cutoff
+    # )
 
-    # Get number of parallel proceses to be used
-    num_process, num_threads = _get_num_of_processes(
-        num_cpu, num_threads, fields.shape[0]
-    )
+    # # Get number of parallel proceses to be used
+    # num_process, num_threads = _get_num_of_processes(
+    #     num_cpu, num_threads, fields.shape[0]
+    # )
 
-    # Get magnetic field in a.u. and allocate arrays as contiguous
-    fields = ascontiguousarray(fields)
-    temperatures = ascontiguousarray(temperatures)
-    grid = ascontiguousarray(grid)
+    # # Get magnetic field in a.u. and allocate arrays as contiguous
+    # fields = ascontiguousarray(fields)
+    # temperatures = ascontiguousarray(temperatures)
+    # grid = ascontiguousarray(grid)
 
-    with SharedMemoryManager() as smm:
-        # Create shared memory for arrays
-        magnetic_momenta_shared = smm.SharedMemory(
-            size=magnetic_momenta.nbytes
-        )
-        states_energies_shared = smm.SharedMemory(size=states_energies.nbytes)
-        fields_shared = smm.SharedMemory(size=fields.nbytes)
-        grid_shared = smm.SharedMemory(size=grid.nbytes)
-        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
+    # with SharedMemoryManager() as smm:
+    #     # Create shared memory for arrays
+    #     magnetic_momenta_shared = smm.SharedMemory(
+    #         size=magnetic_momenta.nbytes
+    #     )
+    #     states_energies_shared = smm.SharedMemory(size=states_energies.nbytes)
+    #     fields_shared = smm.SharedMemory(size=fields.nbytes)
+    #     grid_shared = smm.SharedMemory(size=grid.nbytes)
+    #     temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
 
-        # Copy data to shared memory
-        magnetic_momenta_shared_arr = ndarray(
-            magnetic_momenta.shape,
-            dtype=magnetic_momenta.dtype,
-            buffer=magnetic_momenta_shared.buf,
-        )
-        states_energies_shared_arr = ndarray(
-            states_energies.shape,
-            dtype=states_energies.dtype,
-            buffer=states_energies_shared.buf,
-        )
-        fields_shared_arr = ndarray(
-            fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
-        )
-        grid_shared_arr = ndarray(
-            grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
-        )
-        temperatures_shared_arr = ndarray(
-            temperatures.shape,
-            dtype=temperatures.dtype,
-            buffer=temperatures_shared.buf,
-        )
+    #     # Copy data to shared memory
+    #     magnetic_momenta_shared_arr = ndarray(
+    #         magnetic_momenta.shape,
+    #         dtype=magnetic_momenta.dtype,
+    #         buffer=magnetic_momenta_shared.buf,
+    #     )
+    #     states_energies_shared_arr = ndarray(
+    #         states_energies.shape,
+    #         dtype=states_energies.dtype,
+    #         buffer=states_energies_shared.buf,
+    #     )
+    #     fields_shared_arr = ndarray(
+    #         fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
+    #     )
+    #     grid_shared_arr = ndarray(
+    #         grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
+    #     )
+    #     temperatures_shared_arr = ndarray(
+    #         temperatures.shape,
+    #         dtype=temperatures.dtype,
+    #         buffer=temperatures_shared.buf,
+    #     )
 
-        magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
-        states_energies_shared_arr[:] = states_energies[:]
-        fields_shared_arr[:] = fields[:]
-        grid_shared_arr[:] = grid[:]
-        temperatures_shared_arr[:] = temperatures[:]
+    #     magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
+    #     states_energies_shared_arr[:] = states_energies[:]
+    #     fields_shared_arr[:] = fields[:]
+    #     grid_shared_arr[:] = grid[:]
+    #     temperatures_shared_arr[:] = temperatures[:]
 
-        del magnetic_momenta
-        del states_energies
-        del fields
-        del grid
-        del temperatures
+    #     del magnetic_momenta
+    #     del states_energies
+    #     del fields
+    #     del grid
+    #     del temperatures
 
-        with threadpool_limits(limits=num_threads, user_api="blas"):
-            with threadpool_limits(limits=num_threads, user_api="openmp"):
-                set_num_threads(num_threads)
-                with Pool(num_process) as p:
-                    eht = p.map(
-                        _calculate_eht_wrapper,
-                        _arg_iter_eht(
-                            magnetic_momenta_shared.name,
-                            states_energies_shared.name,
-                            fields_shared.name,
-                            grid_shared.name,
-                            temperatures_shared.name,
-                            magnetic_momenta_shared_arr.shape,
-                            states_energies_shared_arr.shape,
-                            grid_shared_arr.shape,
-                            temperatures_shared_arr.shape,
-                            _distribute_chunks(
-                                fields_shared_arr.shape[0], num_process
-                            ),
-                            energy_type,
-                        ),
-                    )
+    #     with threadpool_limits(limits=num_threads, user_api="blas"):
+    #         with threadpool_limits(limits=num_threads, user_api="openmp"):
+    #             set_num_threads(num_threads)
+    #             with Pool(num_process) as p:
+    #                 eht = p.map(
+    #                     _calculate_eht_wrapper,
+    #                     _arg_iter_eht(
+    #                         magnetic_momenta_shared.name,
+    #                         states_energies_shared.name,
+    #                         fields_shared.name,
+    #                         grid_shared.name,
+    #                         temperatures_shared.name,
+    #                         magnetic_momenta_shared_arr.shape,
+    #                         states_energies_shared_arr.shape,
+    #                         grid_shared_arr.shape,
+    #                         temperatures_shared_arr.shape,
+    #                         _distribute_chunks(
+    #                             fields_shared_arr.shape[0], num_process
+    #                         ),
+    #                         energy_type,
+    #                     ),
+    #                 )
 
-    # Collecting results in plotting-friendly convention as for the M(H)
-    eth_array = concatenate(eht).T
+    # # Collecting results in plotting-friendly convention as for the M(H)
+    # eth_array = concatenate(eht).T
 
-    return eth_array  # Returning values in cm-1
+    # return eth_array  # Returning values in cm-1
 
 
 def _arg_iter_eght(
@@ -723,126 +725,127 @@ def _energy_3d(
     num_threads: int,
     rotation: ndarray = None,
 ) -> ndarray:
-    if grid_type != "mesh" and grid_type != "fibonacci":
-        raise ValueError(
-            'The only allowed grid types are "mesh" or "fibonacci".'
-        ) from None
-    if grid_type == "mesh":
-        grid = _meshgrid_over_sphere_flatten(grid_number)
-        num_points = 2 * grid_number**2
-    elif grid_type == "fibonacci":
-        grid = _fibonacci_over_sphere(grid_number)
-        num_points = grid_number
-    else:
-        raise (
-            ValueError('Grid type can only be set to "mesh" or "fibonacci".')
-        )
-    # Get number of parallel proceses to be used
-    num_process, num_threads = _get_num_of_processes(
-        num_cpu, num_threads, num_points
-    )
+    pass
+    # if grid_type != "mesh" and grid_type != "fibonacci":
+    #     raise ValueError(
+    #         'The only allowed grid types are "mesh" or "fibonacci".'
+    #     ) from None
+    # if grid_type == "mesh":
+    #     grid = _meshgrid_over_sphere_flatten(grid_number)
+    #     num_points = 2 * grid_number**2
+    # elif grid_type == "fibonacci":
+    #     grid = _fibonacci_over_sphere(grid_number)
+    #     num_points = grid_number
+    # else:
+    #     raise (
+    #         ValueError('Grid type can only be set to "mesh" or "fibonacci".')
+    #     )
+    # # Get number of parallel proceses to be used
+    # num_process, num_threads = _get_num_of_processes(
+    #     num_cpu, num_threads, num_points
+    # )
 
-    # Read data from HDF5 file
-    (
-        magnetic_momenta,
-        states_energies,
-    ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
-        filename, group, states_cutoff, rotation
-    )
+    # # Read data from HDF5 file
+    # (
+    #     magnetic_momenta,
+    #     states_energies,
+    # ) = _get_soc_magnetic_momenta_and_energies_from_hdf5(
+    #     filename, group, states_cutoff, rotation
+    # )
 
-    fields = ascontiguousarray(fields, dtype=float64)
-    temperatures = ascontiguousarray(temperatures, dtype=float64)
-    grid = ascontiguousarray(grid, dtype=float64)
+    # fields = ascontiguousarray(fields, dtype=float64)
+    # temperatures = ascontiguousarray(temperatures, dtype=float64)
+    # grid = ascontiguousarray(grid, dtype=float64)
 
-    with SharedMemoryManager() as smm:
-        # Create shared memory for arrays
-        magnetic_momenta_shared = smm.SharedMemory(
-            size=magnetic_momenta.nbytes
-        )
-        states_energies_shared = smm.SharedMemory(size=states_energies.nbytes)
-        fields_shared = smm.SharedMemory(size=fields.nbytes)
-        grid_shared = smm.SharedMemory(size=grid.nbytes)
-        temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
+    # with SharedMemoryManager() as smm:
+    #     # Create shared memory for arrays
+    #     magnetic_momenta_shared = smm.SharedMemory(
+    #         size=magnetic_momenta.nbytes
+    #     )
+    #     states_energies_shared = smm.SharedMemory(size=states_energies.nbytes)
+    #     fields_shared = smm.SharedMemory(size=fields.nbytes)
+    #     grid_shared = smm.SharedMemory(size=grid.nbytes)
+    #     temperatures_shared = smm.SharedMemory(size=temperatures.nbytes)
 
-        # Copy data to shared memory
-        magnetic_momenta_shared_arr = ndarray(
-            magnetic_momenta.shape,
-            dtype=magnetic_momenta.dtype,
-            buffer=magnetic_momenta_shared.buf,
-        )
-        states_energies_shared_arr = ndarray(
-            states_energies.shape,
-            dtype=states_energies.dtype,
-            buffer=states_energies_shared.buf,
-        )
-        fields_shared_arr = ndarray(
-            fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
-        )
-        grid_shared_arr = ndarray(
-            grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
-        )
-        temperatures_shared_arr = ndarray(
-            temperatures.shape,
-            dtype=temperatures.dtype,
-            buffer=temperatures_shared.buf,
-        )
+    #     # Copy data to shared memory
+    #     magnetic_momenta_shared_arr = ndarray(
+    #         magnetic_momenta.shape,
+    #         dtype=magnetic_momenta.dtype,
+    #         buffer=magnetic_momenta_shared.buf,
+    #     )
+    #     states_energies_shared_arr = ndarray(
+    #         states_energies.shape,
+    #         dtype=states_energies.dtype,
+    #         buffer=states_energies_shared.buf,
+    #     )
+    #     fields_shared_arr = ndarray(
+    #         fields.shape, dtype=fields.dtype, buffer=fields_shared.buf
+    #     )
+    #     grid_shared_arr = ndarray(
+    #         grid.shape, dtype=grid.dtype, buffer=grid_shared.buf
+    #     )
+    #     temperatures_shared_arr = ndarray(
+    #         temperatures.shape,
+    #         dtype=temperatures.dtype,
+    #         buffer=temperatures_shared.buf,
+    #     )
 
-        magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
-        states_energies_shared_arr[:] = states_energies[:]
-        fields_shared_arr[:] = fields[:]
-        grid_shared_arr[:] = grid[:]
-        temperatures_shared_arr[:] = temperatures[:]
+    #     magnetic_momenta_shared_arr[:] = magnetic_momenta[:]
+    #     states_energies_shared_arr[:] = states_energies[:]
+    #     fields_shared_arr[:] = fields[:]
+    #     grid_shared_arr[:] = grid[:]
+    #     temperatures_shared_arr[:] = temperatures[:]
 
-        del magnetic_momenta
-        del states_energies
-        del fields
-        del grid
-        del temperatures
+    #     del magnetic_momenta
+    #     del states_energies
+    #     del fields
+    #     del grid
+    #     del temperatures
 
-        with threadpool_limits(limits=num_threads, user_api="blas"):
-            with threadpool_limits(limits=num_threads, user_api="openmp"):
-                set_num_threads(num_threads)
-                # Parallel M(T,H) calculation over different grid points
-                with Pool(num_process) as p:
-                    eght = p.map(
-                        _calculate_eght_wrapper,
-                        _arg_iter_eght(
-                            magnetic_momenta_shared.name,
-                            states_energies_shared.name,
-                            fields_shared.name,
-                            grid_shared.name,
-                            temperatures_shared.name,
-                            magnetic_momenta_shared_arr.shape,
-                            states_energies_shared_arr.shape,
-                            fields_shared_arr.shape,
-                            temperatures_shared_arr.shape,
-                            _distribute_chunks(
-                                grid_shared_arr.shape[0], num_process
-                            ),
-                            energy_type,
-                        ),
-                    )
+    #     with threadpool_limits(limits=num_threads, user_api="blas"):
+    #         with threadpool_limits(limits=num_threads, user_api="openmp"):
+    #             set_num_threads(num_threads)
+    #             # Parallel M(T,H) calculation over different grid points
+    #             with Pool(num_process) as p:
+    #                 eght = p.map(
+    #                     _calculate_eght_wrapper,
+    #                     _arg_iter_eght(
+    #                         magnetic_momenta_shared.name,
+    #                         states_energies_shared.name,
+    #                         fields_shared.name,
+    #                         grid_shared.name,
+    #                         temperatures_shared.name,
+    #                         magnetic_momenta_shared_arr.shape,
+    #                         states_energies_shared_arr.shape,
+    #                         fields_shared_arr.shape,
+    #                         temperatures_shared_arr.shape,
+    #                         _distribute_chunks(
+    #                             grid_shared_arr.shape[0], num_process
+    #                         ),
+    #                         energy_type,
+    #                     ),
+    #                 )
 
-        eght = concatenate(eght)
-        grid = grid_shared_arr[:].copy()
-        fields_shape = fields_shared_arr.shape[0]
-        temperatures_shape = temperatures_shared_arr.shape[0]
+    #     eght = concatenate(eght)
+    #     grid = grid_shared_arr[:].copy()
+    #     fields_shape = fields_shared_arr.shape[0]
+    #     temperatures_shape = temperatures_shared_arr.shape[0]
 
-    if grid_type == "mesh":
-        energy_3d = eght.reshape(
-            (
-                grid_number,
-                grid_number * 2,
-                fields_shape,
-                temperatures_shape,
-            )
-        )
-        energy_3d = energy_3d.transpose((2, 3, 0, 1))
-        grid = grid.reshape(grid_number, grid_number * 2, 3)
-        grid = grid.transpose((2, 0, 1))
-        energy_3d_array = grid[:, newaxis, newaxis, :, :] * energy_3d
-    elif grid_type == "fibonacci":
-        energy_3d_array = grid[:, :, newaxis, newaxis] * eght[:, newaxis, :, :]
-        energy_3d_array = energy_3d_array.transpose((2, 3, 0, 1))
+    # if grid_type == "mesh":
+    #     energy_3d = eght.reshape(
+    #         (
+    #             grid_number,
+    #             grid_number * 2,
+    #             fields_shape,
+    #             temperatures_shape,
+    #         )
+    #     )
+    #     energy_3d = energy_3d.transpose((2, 3, 0, 1))
+    #     grid = grid.reshape(grid_number, grid_number * 2, 3)
+    #     grid = grid.transpose((2, 0, 1))
+    #     energy_3d_array = grid[:, newaxis, newaxis, :, :] * energy_3d
+    # elif grid_type == "fibonacci":
+    #     energy_3d_array = grid[:, :, newaxis, newaxis] * eght[:, newaxis, :, :]
+    #     energy_3d_array = energy_3d_array.transpose((2, 3, 0, 1))
 
-    return energy_3d_array
+    # return energy_3d_array

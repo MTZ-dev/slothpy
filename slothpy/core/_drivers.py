@@ -371,7 +371,7 @@ class _MultiProcessed(_SingleProcessed):
             with ExitStack() as stack:
                 stack.enter_context(self._ensure_shared_memory_manager())
                 self._create_shared_memory()
-                if settings.monitor: # After gui will be created this has to be removed from here and monitor should be called from the main gui process providing smm to the method for progress array
+                if settings.monitor: # After gui is created this has to be removed from here and monitor should be called from the main gui process providing smm to the method for progress array
                     self._monitor = Process(target=_run_monitor_gui, args=(self._sm_progress_array_info, self._number_to_parallelize, self._number_processes, self._method_name))
                     self._monitor.start()
                 with SltTemporarySignalHandler([SIGTERM, SIGINT], self._terminate_and_clear_monitor):

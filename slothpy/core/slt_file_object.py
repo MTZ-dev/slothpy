@@ -85,14 +85,14 @@ from slothpy._magnetism._zeeman import (
     _eth,
     _energy_3d,
 )
-from slothpy._general_utilities._io import (
-    _group_exists,
-    _get_soc_energies_cm_1,
-    _get_states_magnetic_momenta,
-    _get_states_total_angular_momenta,
-    _get_total_angular_momneta_matrix,
-    _get_magnetic_momenta_matrix,
-)
+# from slothpy._general_utilities._io import (
+#     _group_exists,
+#     _get_soc_energies_cm_1,
+#     _get_states_magnetic_momenta,
+#     _get_states_total_angular_momenta,
+#     _get_total_angular_momneta_matrix,
+#     _get_magnetic_momenta_matrix,
+# )
 from slothpy._angular_momentum._pseudo_spin_ito import (
     _get_decomposition_in_z_pseudo_spin_basis,
     _ito_real_decomp_matrix,

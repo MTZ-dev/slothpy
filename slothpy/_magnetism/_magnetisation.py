@@ -46,9 +46,9 @@ from slothpy._general_utilities._system import (
     _get_num_of_processes,
     _distribute_chunks,
 )
-from slothpy._general_utilities._io import (
-    _get_soc_magnetic_momenta_and_energies_from_hdf5,
-)
+# from slothpy._general_utilities._io import (
+#     _get_soc_magnetic_momenta_and_energies_from_hdf5)
+
 from slothpy._general_utilities._grids_over_sphere import (
     _fibonacci_over_sphere,
     _meshgrid_over_sphere,

@@ -33,10 +33,10 @@ from numpy import (
     mean,
 )
 from numba import jit
-from slothpy._general_utilities._io import (
-    _get_soc_magnetic_momenta_and_energies_from_hdf5,
-    _get_soc_total_angular_momenta_and_energies_from_hdf5,
-)
+# from slothpy._general_utilities._io import (
+#     _get_soc_magnetic_momenta_and_energies_from_hdf5,
+#     _get_soc_total_angular_momenta_and_energies_from_hdf5,
+# )
 from slothpy._general_utilities._math_expresions import (
     _decomposition_of_hermitian_matrix,
     _Wigner_3j,

@@ -19,7 +19,7 @@ from os.path import join
 from re import compile, search, findall
 
 from h5py import File, string_dtype
-from numpy import ndarray, dtype, array, zeros, empty, loadtxt, sum, reshape, mean, arange, transpose, min
+from numpy import ndarray, dtype, asarray, zeros, empty, loadtxt, sum, reshape, mean, arange, transpose, min
 from scipy.linalg import eigh
 
 from slothpy.core._slothpy_exceptions import SltReadError
@@ -27,9 +27,9 @@ from slothpy.core._config import settings
 from slothpy._general_utilities._math_expresions import _central_finite_difference_stencil
 from slothpy._general_utilities._constants import A_BOHR
 
-##########################
-# Helper SltFile functions
-##########################
+#####################
+# Helpers for SltFile
+#####################
 
 
 def _group_exists(hdf5_file, group_name: str):
@@ -72,9 +72,42 @@ def _save_data_to_slt(file_path, group_name, data_dict, metadata_dict):
             group.attrs[key] = value
 
 
-###########################
-# Helper creation functions
-###########################
+################################
+# Helpers for creation functions
+################################
+
+
+def _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplicity, group_type = "XYZ", description = "XYZ file."):
+    with File(slt_filepath, 'a') as slt:
+        group = slt.create_group(group_name)
+        group.attrs["Type"] = group_type
+        group.attrs["Number_of_atoms"] = len(elements)
+        group.attrs["Precision"] = settings.precision.upper()
+        group.attrs["Description"] = description
+        dt = string_dtype(encoding='utf-8')
+        dataset = group.create_dataset('ELEMENTS', data=asarray(elements, dtype='S'), dtype=dt, chunks=True)
+        dataset.attrs["Description"] = "List of elements from the XYZ file."
+        dataset = group.create_dataset('COORDINATES', data=positions, dtype=settings.float, chunks=True)
+        dataset.attrs["Description"] = "List of elements coordinates from the XYZ file."
+        if charge is not None:
+            group.attrs["Charge"] = charge
+        if multiplicity is not None:
+            group.attrs["Multiplicity"] = multiplicity
+
+
+def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, multiplicity, group_type = "UNIT_CELL", description = "Unit cell group containing xyz coordinates and unit cell vectors.", description_cell = "Unit cell vectors as 3x3 matrix (with vectors in rows)."):
+    _xyz_to_slt(slt_filepath, group_name, elements, positions, None, multiplicity, group_type, description)
+    with File(slt_filepath, 'a') as slt:
+        group = slt[group_name]
+        dataset = group.create_dataset('CELL', data=cell, dtype=settings.float, chunks=True)
+        dataset.attrs["Description"] = description_cell
+
+
+def _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, multiplicity, group_type = "SUPERCELL", description = "Supercell group containing xyz coordinates and supercell vectors.", description_cell = "Supercell vectors as 3x3 matrix (with vectors in rows)."):
+    _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, multiplicity, group_type, description, description_cell)
+    with File(slt_filepath, 'a') as slt:
+        group = slt[group_name]
+        group.attrs["Supercell_Repetitions"] = [nx, ny, nz]
 
 
 def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electric_dipole_momenta: bool, ssc: bool, pt2: bool) -> None:
@@ -87,10 +120,11 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
         group = slt.create_group(group_name)
         group.attrs["Type"] = "HAMILTONIAN"
         group.attrs["Kind"] = "ORCA"
+        group.attrs["Precision"] = settings.precision.upper()
         if ssc:
-            group.attrs["Energies"] = "SSC_ENERGIES"
+            group.attrs["Energies_type"] = "SSC"
         else:
-            group.attrs["Energies"] = "SOC_ENERGIES" 
+            group.attrs["Energies_type"] = "SOC" 
         if electric_dipole_momenta:
             group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
         group.attrs["Description"] = "Relativistic ORCA results."
@@ -99,12 +133,12 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
         pattern_type = [[r"SOC and SSC MATRIX \(A\.U\.\)\n"]] if ssc else [[r"SOC MATRIX \(A\.U\.\)\n"]]
         pattern_type += [[r"SX MATRIX IN CI BASIS\n", r"SY MATRIX IN CI BASIS\n", r"SZ MATRIX IN CI BASIS\n"], [r"LX MATRIX IN CI BASIS\n", r"LY MATRIX IN CI BASIS\n", r"LZ MATRIX IN CI BASIS\n"]]
         matrix_type = ["STATES_ENERGIES", "SPINS", "ANGULAR_MOMENTA"]
-        descriptions = ["States energies.", "Sx, Sy, and Sz spin matrices in the SOC basis [(x-0, y-1, z-2), :, :].", "Lx, Ly, and Lz angular momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."]
+        descriptions = ["States energies.", "Sx, Sy, and Sz spin matrices [(x-0, y-1, z-2), :, :].", "Lx, Ly, and Lz angular momentum matrices [(x-0, y-1, z-2), :, :]."]
 
         if electric_dipole_momenta:
             pattern_type.append([r"Matrix EDX in CI Basis\n", r"Matrix EDY in CI Basis\n", r"Matrix EDZ in CI Basis\n"])
             matrix_type.append("ELECTRIC_DIPOLE_MOMENTA")
-            descriptions.append("Px, Py, and Pz electric dipole momentum")
+            descriptions.append("Px, Py, and Pz electric dipole momentum [(x-0, y-1, z-2), :, :].")
             
         final_number = (3 if ssc else 1) + (1 if pt2 else 0)
         energy_final_number = 2 if pt2 else 1
@@ -130,19 +164,18 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
                             if matrix_number == final_number:
                                 if matrix != "ELECTRIC_DIPOLE_MOMENTA":
                                     for _ in range(3):
-                                        file.readline()  # Skip the first 3 lines if not electric dipole momenta
+                                        file.readline() # Skip the first 3 lines if not electric dipole momenta
                                 data = _orca_matrix_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
                                 if matrix == "STATES_ENERGIES":
                                     for _ in range(2):
-                                        file.readline()  # Skip 2 lines separating real and imaginary part
+                                        file.readline() # Skip 2 lines separating real and imaginary part
                                     data_imag = _orca_matrix_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
-                                    energy_matrix = array(data + 1j * data_imag, dtype=settings.complex)
+                                    energy_matrix = asarray(data + 1j * data_imag, dtype=settings.complex, order="C")
                                     energies, eigenvectors = eigh(energy_matrix)
                                     dataset[:] = energies - min(energies)  # Assign energies to the dataset
                                 else:
                                     transformed_data = (eigenvectors.conj().T @ data @ eigenvectors)
-                                    dataset[index] = transformed_data[:]# Assign transformed matrix
-
+                                    dataset[index] = transformed_data[:] # Assign transformed matrix
                                 break
 
 
@@ -156,6 +189,7 @@ def _molcas_to_slt(molcas_filepath: str, slt_filepath: str, group_name: str, ele
             group.attrs["Type"] = "HAMILTONIAN"
             group.attrs["Kind"] = "MOLCAS"
             group.attrs["Precision"] = settings.precision.upper()
+            group.attrs["Energies_type"] = "SOC"
             if electric_dipole_momenta:
                 group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
             group.attrs["Description"] = "Relativistic MOLCAS results."
@@ -167,49 +201,21 @@ def _molcas_to_slt(molcas_filepath: str, slt_filepath: str, group_name: str, ele
 
             dataset_rassi = rassi["SOS_SPIN_REAL"][:, :, :] + 1j * rassi["SOS_SPIN_IMAG"][:, :, :]
             dataset_out = group.create_dataset("SPINS", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Sx, Sy, and Sz spin matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
+            dataset_out.attrs["Description"] = "Sx, Sy, and Sz spin matrices [(x-0, y-1, z-2), :, :]."
 
             dataset_rassi = 1j * rassi["SOS_ANGMOM_REAL"][:, :, :] - rassi["SOS_ANGMOM_IMAG"][:, :, :]
             dataset_out = group.create_dataset("ANGULAR_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-            dataset_out.attrs["Description"] = "Lx, Ly, and, Lz angular momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
+            dataset_out.attrs["Description"] = "Lx, Ly, and, Lz angular momentum matrices [(x-0, y-1, z-2), :, :]."
 
             if electric_dipole_momenta:
                 dataset_rassi = rassi["SOS_EDIPMOM_REAL"][:, :, :] + 1j * rassi["SOS_EDIPMOM_REAL"][:, :, :]
                 dataset_out = group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", shape=dataset_rassi.shape, dtype=settings.complex, data=dataset_rassi.astype(settings.complex), chunks=True)
-                dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."
+                dataset_out.attrs["Description"] = "Px, Py, and Pz electric dipole momentum matrices [(x-0, y-1, z-2), :, :]."
 
 
-def _xyz_to_slt(slt_filepath, group_name, elements, positions, charge, multiplicity, group_type = "XYZ", description = "XYZ file."):
-    with File(slt_filepath, 'a') as slt:
-        group = slt.create_group(group_name)
-        group.attrs["Type"] = group_type
-        group.attrs["Number_of_atoms"] = len(elements)
-        group.attrs["Precision"] = settings.precision.upper()
-        group.attrs["Description"] = description
-        dt = string_dtype(encoding='utf-8')
-        dataset = group.create_dataset('ELEMENTS', data=array(elements, dtype='S'), dtype=dt, chunks=True)
-        dataset.attrs["Description"] = "List of elements from the XYZ file."
-        dataset = group.create_dataset('COORDINATES', data=positions, dtype=settings.float, chunks=True)
-        dataset.attrs["Description"] = "List of elements coordinates from the XYZ file."
-        if charge is not None:
-            group.attrs["Charge"] = charge
-        if multiplicity is not None:
-            group.attrs["Multiplicity"] = multiplicity
-
-
-def _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, multiplicity, group_type = "UNIT_CELL", description = "Unit cell group containing xyz coordinates and unit cell vectors.", description_cell = "Unit cell vectors as 3x3 matrix (with vectors in rows)."):
-    _xyz_to_slt(slt_filepath, group_name, elements, positions, None, multiplicity, group_type, description)
-    with File(slt_filepath, 'a') as slt:
-        group = slt[group_name]
-        dataset = group.create_dataset('CELL', data=cell, dtype=settings.float, chunks=True)
-        dataset.attrs["Description"] = description_cell
-
-
-def _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, multiplicity, group_type = "SUPERCELL", description = "Supercell group containing xyz coordinates and supercell vectors.", description_cell = "Supercell vectors as 3x3 matrix (with vectors in rows)."):
-    _unit_cell_to_slt(slt_filepath, group_name, elements, positions, cell, multiplicity, group_type, description, description_cell)
-    with File(slt_filepath, 'a') as slt:
-        group = slt[group_name]
-        group.attrs["Supercell_Repetitions"] = [nx, ny, nz]
+#########################################
+# Helpers for internal creation functions
+#########################################
 
 
 def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, multiplicity, hessian, born_charges = None):
@@ -223,9 +229,9 @@ def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny,
             dataset.attrs["Description"] = "Born charges in the form [dof_number, 3] where the last index is for xyz polarization."
 
 
-#########################
-# Helper import functions
-#########################
+##############################
+# Helpers for import functions
+##############################
 
 
 def _get_orca_blocks_size(orca_filepath: str) -> tuple[int, int, int]:
@@ -255,7 +261,7 @@ def _get_orca_blocks_size(orca_filepath: str) -> tuple[int, int, int]:
 
 
 def _orca_matrix_reader(so_dim: int, num_of_whole_blocks: int, remaining_columns: int, file) -> ndarray:
-    matrix = empty((so_dim, so_dim), dtype=settings.float)
+    matrix = empty((so_dim, so_dim), dtype=settings.float, order="C")
     l = 0
     for _ in range(num_of_whole_blocks):
         file.readline()  # Skip a line before each block of 6 columns
@@ -303,7 +309,7 @@ def _read_dipole_momenta_cp2k(file_path):
                 x = settings.float(match.group(1))
                 y = settings.float(match.group(2))
                 z = settings.float(match.group(3))
-                return array([x, y, z], dtype=settings.float)
+                return asarray([x, y, z], dtype=settings.float)
 
     raise ValueError('Dipole moment line not found in file')
 

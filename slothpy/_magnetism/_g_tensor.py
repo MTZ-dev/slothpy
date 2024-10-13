@@ -26,9 +26,9 @@ from numpy import (
 )
 from numpy.linalg import eigh, det
 from numba import jit
-from slothpy._general_utilities._io import (
-    _get_soc_energies_and_soc_angular_momenta_from_hdf5,
-)
+# from slothpy._general_utilities._io import (
+#     _get_soc_energies_and_soc_angular_momenta_from_hdf5,
+# )
 # from slothpy._general_utilities._math_expresions import (
 #     _magnetic_momenta_from_angular_momenta,
 # )
@@ -84,10 +84,11 @@ def _calculate_g_tensor_and_axes_doublet(angular_momenta, doublets):
 def _g_tensor_and_axes_doublet(
     filename: str, group: str, doublets: ndarray[int64]
 ):
-    doublets = array(doublets, dtype=int64)
+    pass
+#     doublets = array(doublets, dtype=int64)
 
-    _, angular_momenta = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
-        filename, group
-    )
+#     _, angular_momenta = _get_soc_energies_and_soc_angular_momenta_from_hdf5(
+#         filename, group
+#     )
 
-    return _calculate_g_tensor_and_axes_doublet(angular_momenta, doublets)
+#     return _calculate_g_tensor_and_axes_doublet(angular_momenta, doublets)

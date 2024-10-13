@@ -878,13 +878,13 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
         group.attrs["Description"] = "Relativistic ORCA results."
 
         # Extract and process matrices
-        pattern_type = [["SOC and SSC MATRIX\s*\(A\.U\.\)\s*"]] if ssc else [["SOC MATRIX\s*\(A\.U\.\)\s*"]]
-        pattern_type += [["SX MATRIX IN CI BASIS\n", "SY MATRIX IN CI BASIS\n", "SZ MATRIX IN CI BASIS\n"], ["LX MATRIX IN CI BASIS\n", "LY MATRIX IN CI BASIS\n", "LZ MATRIX IN CI BASIS\n"]]
+        pattern_type = [[r"SOC and SSC MATRIX \(A\.U\.\)\n"]] if ssc else [[r"SOC MATRIX \(A\.U\.\)\n"]]
+        pattern_type += [[r"SX MATRIX IN CI BASIS\n", r"SY MATRIX IN CI BASIS\n", r"SZ MATRIX IN CI BASIS\n"], [r"LX MATRIX IN CI BASIS\n", r"LY MATRIX IN CI BASIS\n", r"LZ MATRIX IN CI BASIS\n"]]
         matrix_type = ["STATES_ENERGIES", "SPINS", "ANGULAR_MOMENTA"]
         descriptions = ["States energies.", "Sx, Sy, and Sz spin matrices in the SOC basis [(x-0, y-1, z-2), :, :].", "Lx, Ly, and Lz angular momentum matrices in the SOC basis [(x-0, y-1, z-2), :, :]."]
 
         if electric_dipole_momenta:
-            pattern_type.append(["Matrix EDX in CI Basis\n", "Matrix EDY in CI Basis\n", "Matrix EDZ in CI Basis\n"])
+            pattern_type.append([r"Matrix EDX in CI Basis\n", r"Matrix EDY in CI Basis\n", r"Matrix EDZ in CI Basis\n"])
             matrix_type.append("ELECTRIC_DIPOLE_MOMENTA")
             descriptions.append("Px, Py, and Pz electric dipole momentum")
             

@@ -26,6 +26,10 @@ from slothpy.core.slt_file_object import SltFile
 from slothpy._general_utilities._io import _xyz_to_slt, _unit_cell_to_slt, _supercell_to_slt, _orca_to_slt, _molcas_to_slt
 from slothpy._general_utilities._utils import _check_n
 
+###########################
+# SltFile creation function
+###########################
+
 
 def slt_file(slt_filepath: str) -> SltFile:
     """
@@ -54,6 +58,11 @@ def slt_file(slt_filepath: str) -> SltFile:
         return SltFile._new(slt_filepath)
     except Exception as exc:
         raise SltFileError(slt_filepath, exc, message="Failed to load SltFIle from the .slt file.") from None
+
+
+#############################
+# Topology creation functions
+#############################
 
 
 def xyz(input_filepath: str, slt_filepath: str, group_name: str, charge: Optional[int] = None, multiplicity: Optional[int] = None) -> SltFile:
@@ -299,7 +308,12 @@ def supercell(xyz_filepath: str, slt_filepath: str, group_name: str, nx: int, ny
     
     except Exception as exc:
         raise SltFileError(slt_filepath, exc, message="Failed to save unit cell to .slt file.") from None
-    
+
+
+################################
+# Hamiltonian creation functions
+################################
+
 
 def hamiltonian_from_orca(orca_filepath: str, slt_filepath: str, group_name: str, pt2: bool = False, electric_dipole_momenta: bool = False, ssc: bool = False) -> SltFile:
 

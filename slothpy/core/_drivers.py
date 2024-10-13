@@ -21,9 +21,9 @@ from multiprocessing.synchronize import Event
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing import Process
 from multiprocessing import Event as terminate_event
-from os.path import join
 from time import perf_counter_ns, sleep
 from datetime import datetime
+from signal import SIGINT, SIGTERM
 
 from numpy import ndarray, array, zeros, any, all, median, int64
 from pandas import DataFrame
@@ -31,7 +31,7 @@ from pandas import DataFrame
 from slothpy.core._registry import MethodTypeMeta
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import slothpy_exc_methods as slothpy_exc
-from slothpy._general_utilities._system import SltProcessPool, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array, _dummy
+from slothpy._general_utilities._system import SltProcessPool, SltTemporarySignalHandler, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array, _dummy
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, YELLOW, PURPLE, RESET
 from slothpy._general_utilities._io import _save_data_to_slt
 from slothpy._general_utilities._utils import _convert_seconds_dd_hh_mm_ss
@@ -156,7 +156,7 @@ class _SingleProcessed(ABC, metaclass=MethodTypeMeta):
 
 class _MultiProcessed(_SingleProcessed):
 
-    __slots__ = _SingleProcessed.__slots__ + ["_slt_hamiltonian", "_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape", "_transpose_result", "_additional_result", "_additional_result_shape"]
+    __slots__ = _SingleProcessed.__slots__ + ["_slt_hamiltonian", "_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape", "_transpose_result", "_additional_result", "_additional_result_shape", "_benchmark_process", "_monitor"]
 
     @abstractmethod
     def __init__(self, slt_group, number_to_parallelize: int, number_cpu: int, number_threads: int, autotune: bool, smm: SharedMemoryManager = None, terminate_event: Event = None, slt_save: str = None) -> None:
@@ -181,14 +181,18 @@ class _MultiProcessed(_SingleProcessed):
         self._slt_hamiltonian = None
         self._additional_result = False
         self._additional_result_shape = ()
+        self._benchmark_process = None
+        self._monitor = None # It is here only until the GUI is ready
 
     @contextmanager
     def _ensure_shared_memory_manager(self):
         if self._smm is None:
             with SharedMemoryManager() as smm:
                 self._smm = smm
-                yield
-                self._smm = None
+                try:
+                    yield
+                finally:
+                    self._smm = None
         else:
             yield
 
@@ -233,6 +237,26 @@ class _MultiProcessed(_SingleProcessed):
         result = self._process_pool.start_and_collect()
         self._process_pool = None
         return result
+    
+    def _terminate_and_clear_benchmark_process(self, signum = None, frame = None, keep_smm = False):
+        self._terminate_event.set()
+        if self._benchmark_process is not None:
+            self._benchmark_process.join()
+            self._benchmark_process.close()
+            self._benchmark_process = None
+        if not keep_smm:
+            self._smm = None
+            exit(1)
+
+    def _terminate_and_clear_monitor(self, signum = None, frame = None, keep_smm = False): # Only until GUI
+        if self._monitor is not None:
+            self._monitor.terminate()
+            self._monitor.join()
+            self._monitor.close()
+            self._monitor = None
+        if not keep_smm:
+            self._smm = None
+            exit(1)
 
     @slothpy_exc("SltCompError")
     def autotune(self, timeout: float = float("inf"), max_processes: int = 4096):
@@ -272,11 +296,12 @@ class _MultiProcessed(_SingleProcessed):
                     self._sm_progress_array_info, sm = _to_shared_memory(self._smm, progress_array)
                     self._sm.append(sm)
                     self._terminate_event = terminate_event()
-                    try:
-                        self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, _dummy, self._terminate_event)
-                        benchmark_process = Process(target=self._process_pool.start_and_collect)
-                        sm_progress, progress_array = _from_shared_memory(self._sm_progress_array_info)
-                        benchmark_process.start()
+                    self._process_pool = SltProcessPool(self._executor_proxy, self._create_jobs(), self._number_threads, self._returns, _dummy, self._terminate_event)
+                    self._benchmark_process = Process(target=self._process_pool.start_and_collect)
+                    sm_progress, progress_array = _from_shared_memory(self._sm_progress_array_info)
+                    self._sm.append(sm_progress)
+                    with SltTemporarySignalHandler([SIGTERM, SIGINT], self._terminate_and_clear_benchmark_process):
+                        self._benchmark_process.start()
                         timeout_reached = False
                         start_time_timeout = perf_counter_ns()
                         while any(progress_array <= 1):
@@ -287,10 +312,7 @@ class _MultiProcessed(_SingleProcessed):
                         if timeout_reached:
                             print("Autotune timeout has been reached. Quitting here.")
                             self._terminate_event.set()
-                            benchmark_process.join()
-                            benchmark_process.close()
-                            sm_progress.close()
-                            sm_progress.unlink()
+                            self._terminate_and_clear_benchmark_process()
                             break
                         start_time = perf_counter_ns()
                         start_progress = progress_array.copy()
@@ -300,21 +322,15 @@ class _MultiProcessed(_SingleProcessed):
                             stop_time = perf_counter_ns()
                             final_progress = progress_array.copy()
                             sleep(0.01)
-                        self._terminate_event.set()
+                        self._terminate_and_clear_benchmark_process(keep_smm=True)
                         overall_time = stop_time - start_time
                         progress = final_progress - start_progress
                         if any(progress <= 1) or overall_time == 0:
                             print(f"Jobs iterations for {number_processes} {BLUE}Processes{RESET} and {number_threads} {PURPLE}Threads{RESET} are too fast to be reliably autotuned! Quitting here.")
-                            benchmark_process.join()
-                            benchmark_process.close()
-                            sm_progress.close()
-                            sm_progress.unlink()
                             break
                         current_estimated_time = overall_time * (max_tasks_per_process/progress)
                         current_estimated_time.sort()
                         current_estimated_time = median(current_estimated_time[(len(current_estimated_time)//2):]) if len(current_estimated_time) > 1 else current_estimated_time[0]
-                        benchmark_process.join()
-                        benchmark_process.close()
                         info = f"{BLUE}Processes{RESET}: {number_processes}, {PURPLE}Threads{RESET}: {number_threads}. Estimated execution time of the main loop: "
                         if current_estimated_time < best_time:
                             best_time = current_estimated_time
@@ -328,17 +344,10 @@ class _MultiProcessed(_SingleProcessed):
                         if worse_counter > 3:
                             info += f" The best time: {GREEN}{best_time/1e9:.2f}{RESET} s."
                             print(info)
-                            sm_progress.close()
-                            sm_progress.unlink()
                             break
                         info += f" The best time: {GREEN}{best_time/1e9:.2f}{RESET} s."
                         print(info)
-                        sm_progress.close()
-                        sm_progress.unlink()
-                    except KeyboardInterrupt:
-                        sm_progress.close()
-                        sm_progress.unlink()
-                        raise
+
             time_info = f" (starting from now - [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}])" if self._autotune_from_run else ''
             print(f"Job will run using{YELLOW} {final_number_of_processes * final_number_of_threads}{RESET} logical{YELLOW} CPU(s){RESET} with{BLUE} {final_number_of_processes}{RESET} parallel{BLUE} Processe(s){RESET} each utilizing{PURPLE} {final_number_of_threads} Thread(s){RESET}." + (f"\nThe calculation time{time_info} is estimated to take at least: {GREEN}{_convert_seconds_dd_hh_mm_ss(best_time/1e9)}{RESET}." if best_time != float("inf") else ""))
             self._number_processes, self._number_threads = final_number_of_processes, final_number_of_threads
@@ -363,21 +372,22 @@ class _MultiProcessed(_SingleProcessed):
                 stack.enter_context(self._ensure_shared_memory_manager())
                 self._create_shared_memory()
                 if settings.monitor: # After gui will be created this has to be removed from here and monitor should be called from the main gui process providing smm to the method for progress array
-                    monitor = Process(target=_run_monitor_gui, args=(self._sm_progress_array_info, self._number_to_parallelize, self._number_processes, self._method_name))
-                    monitor.start()
-                result = self._executor()
-                if settings.monitor and monitor is not None:
-                    monitor.join()
-                    monitor.close()
-                if self._returns:
-                    self._result = result
-                else:
-                    self._result = _from_shared_memory_to_array(self._sm_result_info, reshape=(self._result_shape))
-                    if self._transpose_result is not None:
-                        self._result = self._result.transpose(self._transpose_result)
-                    if self._additional_result:
-                        setattr(self, self._additional_result, _from_shared_memory_to_array(self._sm_arrays_info[-1], reshape=(self._additional_result_shape)))
-                self._ready = True
+                    self._monitor = Process(target=_run_monitor_gui, args=(self._sm_progress_array_info, self._number_to_parallelize, self._number_processes, self._method_name))
+                    self._monitor.start()
+                with SltTemporarySignalHandler([SIGTERM, SIGINT], self._terminate_and_clear_monitor):
+                    result = self._executor()
+                    if self._monitor is not None:
+                        self._terminate_and_clear_monitor(keep_smm=True)
+                    if self._returns:
+                        self._result = result
+                    else:
+                        self._result = _from_shared_memory_to_array(self._sm_result_info, reshape=(self._result_shape))
+                        if self._transpose_result is not None:
+                            self._result = self._result.transpose(self._transpose_result)
+                        if self._additional_result:
+                            setattr(self, self._additional_result, _from_shared_memory_to_array(self._sm_arrays_info[-1], reshape=(self._additional_result_shape)))
+                    self._ready = True
+
         if self._slt_save is not None:
             self.save()
         self._clean_sm_info_and_pool()

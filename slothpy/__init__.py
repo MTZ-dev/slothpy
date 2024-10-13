@@ -31,6 +31,11 @@ os.environ['NUMBA_ENABLE_AVX'] = '1'
 
 from multiprocessing import current_process
 
+from signal import signal, SIGINT
+from slothpy._general_utilities._system import exit_handler
+
+signal(SIGINT, exit_handler)
+
 from .core import (
     slt_file,
     xyz,

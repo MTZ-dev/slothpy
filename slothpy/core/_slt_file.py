@@ -24,7 +24,7 @@ from os import makedirs
 from os.path import join
 
 from h5py import File, Group, Dataset, string_dtype
-from numpy import ndarray, array, empty, int32, int64, float32, float64, tensordot, abs, diag, prod
+from numpy import ndarray, array, empty, int32, int64, float32, float64, tensordot, abs, diag, prod, conjugate
 from numpy.exceptions import ComplexWarning
 from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
@@ -40,7 +40,7 @@ from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError
 from slothpy.core._input_parser import validate_input
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, PURPLE, YELLOW, RESET
 from slothpy._general_utilities._math_expresions import _magnetic_dipole_momenta_from_spins_angular_momenta, _total_angular_momenta_from_spins_angular_momenta
-from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _xyz_to_slt, _supercell_to_slt, _hessian_to_slt, _read_hessian_born_charges_from_dir
+from slothpy._general_utilities._io import _get_dataset_slt_dtype, _group_exists, _dataset_exists, _xyz_to_slt, _supercell_to_slt, _hessian_to_slt, _read_hessian_born_charges_from_dir
 from slothpy._general_utilities._constants import U_PI_A_AU, E_PI_A_AU
 from slothpy._general_utilities._direct_product_space import _kron_mult
 from slothpy._general_utilities._math_expresions import _subtract_const_diagonal
@@ -193,6 +193,11 @@ class SltGroup:
     @property
     @delegate_method_to_slt_group
     def hessian(self) -> ndarray:
+        pass
+
+    @property
+    @delegate_method_to_slt_group
+    def born_charges(self) -> ndarray:
         pass
         
     @property
@@ -848,15 +853,24 @@ class SltDatasetJM():
             
 
 class SltHamiltonian(metaclass=MethodTypeMeta):
-    _method_type = "HAMILTONIAN"
+    _method_type = "HAMILTONIAN"    ######################################################### Register this as slothpy hamiltonian or custom then move methods from group to a new SltHamiltonian(metaclass=MethodTypeMeta)
+    ################################################################### Then move input_parser and
 
     __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
 
-    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None:
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None: ##### Here those other options are not needed probably
         self._hdf5: str = slt_group._hdf5
         self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole, self._magnetic_interactions, self._electric_interactions, self._local_states = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine, local_states)
         self._mode: str = None # "eslpjm"
     
+    def _compute_data(self, matrix_class):
+        data = []
+        for center in self._magnetic_centers.values():
+            arr = matrix_class(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
+            conjugate(arr, out=arr)
+            data.append(arr)
+        return data
+
     @property
     def e(self):
         data = []
@@ -866,48 +880,23 @@ class SltHamiltonian(metaclass=MethodTypeMeta):
 
     @property
     def s(self):
-        data = []
-        for center in self._magnetic_centers.values():
-            arr = SltSpinMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
-            arr.conj(out=arr)
-            data.append(arr)
-        return data
-        
+        return self._compute_data(SltSpinMatrices)
+
     @property
     def l(self):
-        data = []
-        for center in self._magnetic_centers.values():
-            arr = SltAngularMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
-            arr.conj(out=arr)
-            data.append(arr)
-        return data
-    
+        return self._compute_data(SltAngularMomentumMatrices)
+
     @property
     def p(self):
-        data = []
-        for center in self._magnetic_centers.values():
-            arr = SltElectricDipoleMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
-            arr.conj(out=arr)
-            data.append(arr)
-        return data
+        return self._compute_data(SltElectricDipoleMomentumMatrices)
 
     @property
     def j(self):
-        data = []
-        for center in self._magnetic_centers.values():
-            arr = SltTotalAngularMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
-            arr.conj(out=arr)
-            data.append(arr)
-        return data
+        return self._compute_data(SltTotalAngularMomentumMatrices)
 
     @property
     def m(self):
-        data = []
-        for center in self._magnetic_centers.values():
-            arr = SltMagneticDipoleMomentumMatrices(SltGroup(self._hdf5, center[0]), stop_state=center[1][0], rotation=center[2]).eval()
-            arr.conj(out=arr)
-            data.append(arr)
-        return data
+        return self._compute_data(SltMagneticDipoleMomentumMatrices)
 
     @property
     def interaction_matrix(self):
@@ -1236,14 +1225,19 @@ class SltSuperCell(SltUnitCell):
 class SltHessian(SltSuperCell):
     _method_type = "HESSIAN"
 
-    __slots__ = SltXyz.__slots__ + ["_hessian"]
+    __slots__ = SltXyz.__slots__ + ["_hessian", "_born_charges"]
 
     def __init__(self, slt_group) -> None:
         super().__init__(slt_group)
-        self._hessian = slt_group["HESSIAN"]
+        self._hessian = self._slt_group["HESSIAN"]
+        if _dataset_exists(self._slt_group._hdf5, self._slt_group._group_name, "BORN_CHARGES"):
+            self._born_charges = self._slt_group["BORN_CHARGES"]
 
-    def hessian(self) -> ndarray: #### From here add methods to SltGroup
-        return self._hessian[:]
+    def hessian(self) -> ndarray:
+        return self._hessian
+    
+    def born_charges(self) -> ndarray: #### From here add methods to SltGroup
+        return self._born_charges
     
     def phonons(): #### This to slt group as delayed methoo with input parser
         pass

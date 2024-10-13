@@ -172,7 +172,7 @@ def run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version, dof_
     )   
 
     def handle_sigterm(signum, frame):
-        print(f"KeyboardInterrupt caught in run_cp2k for {input_file} closing docker container and client...")
+        print(f"KeyboardInterrupt or termination signal caught in run_cp2k for {input_file} closing docker container and client...")
         try:
             container.remove(force=True)
             client.close()

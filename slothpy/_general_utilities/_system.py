@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
+import signal
 from time import sleep
 from os import cpu_count
 from typing import Iterable
@@ -29,6 +30,21 @@ from numpy import ndarray, dtype, array
 
 def _get_num_of_processes():
     pass #only for import compatibility
+
+class SltTemporarySignalHandler:
+    def __init__(self, signalnums, handler):
+        self.signalnums = signalnums
+        self.handler = handler
+        self.original_handlers = {}
+
+    def __enter__(self):
+        for sig in self.signalnums:
+            self.original_handlers[sig] = signal.getsignal(sig)
+            signal.signal(sig, self.handler)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        for sig in self.signalnums:
+            signal.signal(sig, self.original_handlers[sig])
 
 
 def _get_number_of_processes_threads(number_cpu, number_threads, number_to_parallelize):
@@ -131,8 +147,20 @@ class SltProcessPool:
             self._gather_results = gather_results
         self._result = None
 
+    def termiante_and_close_pool(self, signum = None, frame = None, silent = False):
+        if not silent:
+            print("\nSltProcessPool interrupted. Clearing and terminating...")
+        for process in self._processes:
+            if process is not None:
+                process.terminate()
+        for process in self._processes:
+            if process is not None:
+                process.join()
+                process.close()
+        sys.exit(1)
+
     def start_and_collect(self):
-        try:
+        with SltTemporarySignalHandler([signal.SIGTERM, signal.SIGINT], self.termiante_and_close_pool):
             for job_args in self._jobs:
                 if self._returns:
                     process = Process(target=_worker_wrapper, args=(self._worker, job_args, self._number_threads, self._result_queue))
@@ -144,35 +172,24 @@ class SltProcessPool:
             if self._terminate_event:
                 while True:
                     if self._terminate_event.is_set():
-                        for process in self._processes:
-                            if process is not None:
-                                process.terminate()
+                        self.termiante_and_close_pool(silent=True)
                         break
-                    elif all(p is None or not p.is_alive() for p in self._processes):
+                    if all(process is None or not process.is_alive() for process in self._processes):
                         break
-                    sleep(0.2)
-
-            for process in self._processes:
-                process.join()
-                process.close()
+                sleep(0.2)
+            else:
+                for process in self._processes:
+                    process.join()
             
             if self._returns:
                 self._result = self._gather_results(self._result_queue)
 
-            return self._result
-        
-        except KeyboardInterrupt:
-            print("\nSltProcessPool interrupted. Clearing and terminating...")
-            for process in self._processes:
-                if process is not None:
-                    process.terminate()
-            for process in self._processes:
-                if process is not None:
-                    process.join()
-            for process in self._processes:
-                if process is not None:
-                    process.close()
-            raise
+        return self._result
+
+
+def exit_handler(signum, frame):
+    print("\nSlothPy interrupted. Quitting here...")
+    exit(1)
 
 
 def _is_notebook():

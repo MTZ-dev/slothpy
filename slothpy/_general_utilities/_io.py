@@ -19,7 +19,7 @@ from os.path import join
 from re import compile, search, findall
 
 from h5py import File, string_dtype
-from numpy import ndarray, dtype, array, zeros, empty, loadtxt, sum, reshape, mean, arange, transpose, min, float64
+from numpy import ndarray, dtype, array, zeros, empty, loadtxt, sum, reshape, mean, arange, transpose, min
 from scipy.linalg import eigh
 
 from slothpy.core._slothpy_exceptions import SltReadError
@@ -272,7 +272,7 @@ def _orca_matrix_reader(so_dim: int, num_of_whole_blocks: int, remaining_columns
             line = file.readline()
             elements = findall(r'[-+]?\d*\.\d+', line)
             for j in range(remaining_columns):
-                matrix[i, l + j] = float64(elements[j])
+                matrix[i, l + j] = settings.float(elements[j])
 
     return matrix
 

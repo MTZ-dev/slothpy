@@ -188,7 +188,7 @@ class SltProcessPool:
 
 
 def exit_handler(signum, frame):
-    print(" Quitting SlothPy...")
+    print("Quitting SlothPy...")
     exit(1)
 
 

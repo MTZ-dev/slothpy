@@ -171,7 +171,7 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
                                         file.readline() # Skip 2 lines separating real and imaginary part
                                     data_imag = _orca_matrix_reader(so_dim, num_of_whole_blocks, remaining_columns, file)
                                     energy_matrix = asarray(data + 1j * data_imag, dtype=settings.complex, order="C")
-                                    energies, eigenvectors = eigh(energy_matrix)
+                                    energies, eigenvectors = eigh(energy_matrix, driver="evr", check_finite=False, overwrite_a=True, overwrite_b=True)
                                     dataset[:] = energies - min(energies)  # Assign energies to the dataset
                                 else:
                                     transformed_data = (eigenvectors.conj().T @ data @ eigenvectors)

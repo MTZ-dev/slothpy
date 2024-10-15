@@ -12,6 +12,7 @@
 *.c
 *.so
 *.pyx
+*.cif
 build
 __pycache__
 .vscode
@@ -32,3 +33,4 @@ gui
 CTM.ipynb
 test*
 Er.ipynb
+generate_ll_grid.py

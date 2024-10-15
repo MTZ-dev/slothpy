@@ -13,9 +13,9 @@ https://doi.org/your-paper-doi)
 
 SlothPy is a comprehensive package for computational molecular magnetism.
 
-- **Website:** [your-website](https://slothpy.org/)
+- **Website:** [website](https://slothpy.org/)
 - **Documentation:** [link-to-docs](https://slothpy.org/reference_manual)
-- **E-mail the author:** [your-mailing-list](mikolaj.zychowicz@uj.edu.pl)
+- **E-mail the author:** [mailing-list](mikolaj.zychowicz@uj.edu.pl)
 - **PyPI:** [PyPI Repository](https://pypi.org/project/slothpy/)
 - **Source code:** [GitHub](https://github.com/MTZ-dev/slothpy)
 - **Bug reports:** [GitHub Issues](https://github.com/MTZ-dev/slothpy/issues)
@@ -61,7 +61,7 @@ For comprehensive guides and tutorials, visit our [documentation](https://slothp
 If you use SlothPy in your research, please cite it as follows:
 
 ```
-Authors. (Year). "Title of the Paper." Journal Name, Volume(Issue), pages. DOI: DOI Number
+Zychowicz, M.; Dzielak, H.; Rzepiela, J.; & Chorazy, S. (2024). "Synergy of Experiment and Broadened Exploration of Ab Initio Calculations for Understanding of Lanthanide–Pentacyanidocobaltate Molecular Nanomagnets and Their Optical Properties." Inorganic Chemistry, 63(41), 19213-19226. DOI: 10.1021/acs.inorgchem.4c02793
 ```
 
 ## Contributing

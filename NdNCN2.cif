@@ -1,0 +1,84 @@
+
+#######################################################################
+#
+#                 Cambridge Crystallographic Data Centre
+#                                CCDC 
+#
+#######################################################################
+#
+# If this CIF has been generated from an entry in the Cambridge 
+# Structural Database, then it will include bibliographic, chemical, 
+# crystal, experimental, refinement or atomic coordinate data resulting 
+# from the CCDC's data processing and validation procedures.
+#
+#######################################################################
+
+data_Nddca_overall
+_symmetry_cell_setting           orthorhombic
+_symmetry_space_group_name_H-M   'C m c m'
+_symmetry_Int_Tables_number      63
+_space_group_name_Hall           '-C 2c 2'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 -x,y,z
+3 x,-y,1/2+z
+4 -x,-y,1/2+z
+5 -x,-y,-z
+6 x,-y,-z
+7 -x,y,1/2-z
+8 x,y,1/2-z
+9 1/2+x,1/2+y,z
+10 1/2-x,1/2+y,z
+11 1/2+x,1/2-y,1/2+z
+12 1/2-x,1/2-y,1/2+z
+13 1/2-x,1/2-y,-z
+14 1/2+x,1/2-y,-z
+15 1/2-x,1/2+y,1/2-z
+16 1/2+x,1/2+y,1/2-z
+_cell_length_a                   7.87787(34)
+_cell_length_b                   11.4459(4)
+_cell_length_c                   10.1554(4)
+_cell_angle_alpha                90.0
+_cell_angle_beta                 90.0
+_cell_angle_gamma                90.0
+_cell_volume                     915.705
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+_atom_site_thermal_displace_type
+ND1 Nd 0.0 0.28828(11) 0.25 0.0137 Uiso
+C1 C 0.1340(17) 0.5889(11) 0.25 0.0230 Uiso
+C2 C 0.1374(12) 0.1399(8) 0.5498(9) 0.0330 Uiso
+N1 N 0.0 0.5172(12) 0.25 0.0280 Uiso
+N2 N 0.2693(12) 0.6315(8) 0.25 0.0250 Uiso
+N3 N 0.0 0.1629(8) 0.4800(9) 0.0140 Uiso
+N4 N 0.2718(9) 0.1354(6) 0.5939(6) 0.0179 Uiso
+C1 C -0.1340(17) 0.5889(11) 0.25 0.0230 Uiso
+N2 N -0.2693(12) 0.6315(8) 0.25 0.0250 Uiso
+C2 C -0.1374(12) 0.1399(8) 0.5498(9) 0.0330 Uiso
+N4 N -0.2718(9) 0.1354(6) 0.5939(6) 0.0179 Uiso
+C2 C -0.1374(12) 0.1399(8) -0.0498(9) 0.0330 Uiso
+N3 N 0.0 0.1629(8) 0.0200(9) 0.0140 Uiso
+N4 N -0.2718(9) 0.1354(6) -0.0939(6) 0.0179 Uiso
+C2 C 0.1374(12) 0.1399(8) -0.0498(9) 0.0330 Uiso
+N4 N 0.2718(9) 0.1354(6) -0.0939(6) 0.0179 Uiso
+ND1 Nd -0.5 0.78828(11) 0.25 0.0137 Uiso
+ND1 Nd 0.5 0.78828(11) 0.25 0.0137 Uiso
+ND1 Nd -0.5 0.21172(11) -0.25 0.0137 Uiso
+ND1 Nd -0.5 0.21172(11) 0.75 0.0137 Uiso
+ND1 Nd 0.5 0.21172(11) -0.25 0.0137 Uiso
+ND1 Nd 0.5 0.21172(11) 0.75 0.0137 Uiso
+N2 N -0.2307(12) 0.1315(8) 0.25 0.0250 Uiso
+N2 N 0.2307(12) 0.1315(8) 0.25 0.0250 Uiso
+N4 N -0.2282(9) 0.3646(6) 0.0939(6) 0.0179 Uiso
+N4 N 0.2282(9) 0.3646(6) 0.0939(6) 0.0179 Uiso
+N4 N 0.2282(9) 0.3646(6) 0.4061(6) 0.0179 Uiso
+N4 N -0.2282(9) 0.3646(6) 0.4061(6) 0.0179 Uiso
+
+#END

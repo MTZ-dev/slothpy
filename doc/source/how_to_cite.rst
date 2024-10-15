@@ -13,7 +13,7 @@ To reference SlothPy in your research, please cite the following:
 
 .. code-block::
 
-   Authors. (Year). "Title of the Paper." *Journal Name*, Volume(Issue), pages. DOI: [DOI Number]
+   Zychowicz, M.; Dzielak, H.; Rzepiela, J.; & Chorazy, S. (2024). "Synergy of Experiment and Broadened Exploration of Ab Initio Calculations for Understanding of Lanthanide–Pentacyanidocobaltate Molecular Nanomagnets and Their Optical Properties." Inorganic Chemistry, 63(41), 19213-19226. DOI: 10.1021/acs.inorgchem.4c02793
 
 BibTeX Entry
 ------------
@@ -22,17 +22,19 @@ For those who use BibTeX for managing bibliography, here's the BibTeX entry:
 
 .. code-block::
 
-   @article{SlothPyReference,
-     title={Title of the Paper},
-     author={Authors},
-     journal={Journal Name},
-     volume={Volume},
-     number={Issue},
-     pages={Pages},
-     year={Year},
-     publisher={Publisher},
-     doi={DOI Number}
-   }
+   @article{doi:10.1021/acs.inorgchem.4c02793,
+      author = {Zychowicz, Mikolaj and Dzielak, Hubert and Rzepiela, Jan and Chorazy, Szymon},
+      title = {Synergy of Experiment and Broadened Exploration of Ab Initio Calculations for Understanding of Lanthanide–Pentacyanidocobaltate Molecular Nanomagnets and Their Optical Properties},
+      journal = {Inorganic Chemistry},
+      volume = {63},
+      number = {41},
+      pages = {19213-19226},
+      year = {2024},
+      doi = {10.1021/acs.inorgchem.4c02793},
+      note ={PMID: 39219448},
+      URL = {https://doi.org/10.1021/acs.inorgchem.4c02793},
+      eprint = {https://doi.org/10.1021/acs.inorgchem.4c02793}
+      }
 
 Acknowledgements
 ----------------

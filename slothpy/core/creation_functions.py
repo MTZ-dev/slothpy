@@ -358,8 +358,9 @@ def hamiltonian_from_orca(orca_filepath: str, slt_filepath: str, group_name: str
     "rel" section for outputs to be readable by SlothPy.
     """
 
-    if slt_filepath.endswith(".slt"):
-        slt_filepath = slt_filepath[:-4]
+    if not slt_filepath.endswith(".slt"):
+        slt_filepath += ".slt"
+
     if not isinstance(group_name, str):
         raise SltInputError(f"The group name has to be a string not {type(group_name)}.")
     try:

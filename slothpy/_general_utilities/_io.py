@@ -121,6 +121,7 @@ def _orca_to_slt(orca_filepath: str, slt_filepath: str, group_name: str, electri
         group.attrs["Type"] = "HAMILTONIAN"
         group.attrs["Kind"] = "ORCA"
         group.attrs["Precision"] = settings.precision.upper()
+        group.attrs["States"] = so_dim
         if ssc:
             group.attrs["Energies_type"] = "SSC"
         else:

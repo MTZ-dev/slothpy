@@ -19,195 +19,204 @@ from functools import wraps
 from os import cpu_count
 from warnings import warn
 from numpy import ndarray, asarray, ascontiguousarray, allclose, identity, log, int64
-from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltReadError, SltWarning, slothpy_exc
+from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltWarning, slothpy_exc
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere, fibonacci_over_hemisphere, meshgrid_over_hemisphere
 from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
 from slothpy._general_utilities._constants import GREEN, BLUE, RESET, KB, H_CM_1, B_AU_T, F_AU_VM
 from slothpy._general_utilities._io import _group_exists
 from slothpy.core._config import settings
 
-def validate_input(group_type: list[str] = None, direct_acces: bool = False, only_group_check: bool = False):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            signature = inspect.signature(func)
-            bound_args = signature.bind_partial(*args, **kwargs)
-            bound_args.apply_defaults()
 
-            self = bound_args.arguments["self"] if "self" in bound_args.arguments.keys() else bound_args.arguments["slt_group"]
+def validate_input(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        signature = inspect.signature(func)
+        bound_args = signature.bind_partial(*args, **kwargs)
+        bound_args.apply_defaults()
 
-            if not self._exists:
-                raise SltFileError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' does not exist in the .slt file.")
+        from slothpy.core._slt_file import SltGroup
+        slt_group: SltGroup = bound_args.arguments["self"] if "self" in bound_args.arguments.keys() else bound_args.arguments["slt_group"]
 
-            if group_type and self.type not in group_type:
-                raise SltReadError(self._hdf5, None, f"Wrong group type: '{self.attributes['Type']}' of {BLUE}Group{RESET}: '{self._group_name}' from the {GREEN}File{RESET}: '{self._hdf5}'. Expected '{group_type}' type.")
+        if not slt_group._exists:
+            raise SltFileError(slt_group._hdf5, None, f"{BLUE}Group{RESET}: '{slt_group._group_name}' does not exist in the .slt file.")
+        
+        if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:
+            if _group_exists(slt_group._hdf5, bound_args.arguments["slt_save"]):
+                raise SltSaveError(
+                    slt_group._hdf5,
+                    NameError(""),
+                    message=f"Unable to save the results. {BLUE}Group{RESET} '{bound_args.arguments['slt_save']}' already exists in the {GREEN}File{RESET}: '{slt_group._hdf5}'. Delete it manually.",
+                ) from None
 
-            if self.attributes["Type"] == "HAMILTONIAN" and direct_acces:
-                if self.attributes["Kind"] == "SLOTHPY":
-                    raise SltFileError(self._hdf5, None, "Custom SlothPy Hamiltonians do not support direct access to their properties and they cannot be used to construct other SlothPy Hamiltonians. For all the supported methods, use them as input in place of the slt_group argument.")
-            
-            if only_group_check:
-                return func(**bound_args.arguments)
-            
-            if "slt_save" in bound_args.arguments.keys() and bound_args.arguments["slt_save"] is not None:
-                if _group_exists(self._hdf5, bound_args.arguments["slt_save"]):
-                    raise SltSaveError(
-                        self._hdf5,
-                        NameError(""),
-                        message=f"Unable to save the results. {BLUE}Group{RESET} '{bound_args.arguments['slt_save']}' already exists in the {GREEN}File{RESET}: '{self._hdf5}'. Delete it manually.",
-                    ) from None
-
-            try:
-                for name, value in bound_args.arguments.items():
-                    match name:
-                        case "number_cpu":
-                            if value is None:
-                                value = settings.number_cpu
-                            if value == 0:
-                                value = int(cpu_count())    
-                            elif not (isinstance(value, (int, int64)) and value > 0 and value <= int(cpu_count())):
-                                raise ValueError(f"The number of CPUs must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
-                        case "number_threads":
-                            max_threads = int(cpu_count()) if bound_args.arguments['number_cpu'] == 0 else bound_args.arguments['number_cpu']
-                            if max_threads is None:
-                                max_threads = settings.number_cpu
-                            if value is None:
-                                value = settings.number_threads
-                            if value == 0:
-                                value = max_threads
-                            elif not (isinstance(value, (int, int64)) and value > 0 and value <= max_threads):
-                                raise ValueError(f"The number of threads must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
-                        case "magnetic_fields":
+        try:
+            for name, value in bound_args.arguments.items():
+                match name:
+                    case "number_cpu":
+                        if value is None:
+                            value = settings.number_cpu
+                        if value == 0:
+                            value = int(cpu_count())    
+                        elif not (isinstance(value, (int, int64)) and value > 0 and value <= int(cpu_count())):
+                            raise ValueError(f"The number of CPUs must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
+                    case "number_threads":
+                        max_threads = int(cpu_count()) if bound_args.arguments['number_cpu'] == 0 else bound_args.arguments['number_cpu']
+                        if max_threads is None:
+                            max_threads = settings.number_cpu
+                        if value is None:
+                            value = settings.number_threads
+                        if value == 0:
+                            value = max_threads
+                        elif not (isinstance(value, (int, int64)) and value > 0 and value <= max_threads):
+                            raise ValueError(f"The number of threads must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
+                    case "magnetic_fields":
+                        try:
                             value = asarray(value, order='C', dtype=settings.float) / asarray(B_AU_T, order='C', dtype=settings.numba_float)
-                            if value.ndim != 1:
-                                raise ValueError("The list of fields must be a 1D array.")
-                        case "temperatures":
+                        except Exception:
+                            raise ValueError("Magnetic fields must be an arraylike object of floats.")
+                        if value.ndim != 1:
+                            raise ValueError("The list of fields must be a 1D array.")
+                    case "temperatures":
+                        try:
                             value = asarray(value, order='C', dtype=settings.float)
-                            if value.ndim != 1:
-                                raise ValueError("The list of temperatures must be a 1D array.")
-                            if (value <= 0).any():
-                                raise ValueError("Zero or negative temperatures were detected in the input.")
-                        case "grid":
-                            if isinstance(value, (int, int64)):
-                                value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
-                            else:
+                        except Exception:
+                            raise ValueError("Temperatures must be an arraylike object of floats.")
+                        if value.ndim != 1:
+                            raise ValueError("The list of temperatures must be a 1D array.")
+                        if (value <= 0).any():
+                            raise ValueError("Zero or negative temperatures were detected in the input.")
+                    case "grid":
+                        if isinstance(value, (int, int64)):
+                            value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
+                        else:
+                            try:
                                 value = asarray(value, order='C', dtype=settings.float)
-                                if value.ndim != 2:
-                                    raise ValueError("The grid array must be a 2D array in the form [[direction_x, direction_y, direction_z, weight],...].")
-                                if value.shape[1] == 3:
-                                    value = _normalize_grid_vectors(value)
-                                else:
-                                    raise ValueError("The grid must be set to an integer from 0-11, or a custom one must be in the form [[direction_x, direction_y, direction_z, weight],...].")
-                        case "orientations":
-                            if isinstance(value, (int, int64)):
-                                value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
-                            elif isinstance(value, (tuple, list)) and len(value) == 2 and not (isinstance(value[0], (tuple, list, ndarray)) and isinstance(value[1], (tuple, list, ndarray))):
-                                if not isinstance(value[1], (int, int64)):
-                                    raise ValueError("The second entry in the orientation list/tuple must contain an integer controlling the number of the grid points.")
-                                if value[0] == "fibonacci":
-                                    value = ["fibonacci", fibonacci_over_hemisphere(value[1], settings.precision)]
-                                if value[0] == "mesh":
-                                    value = ["mesh", meshgrid_over_hemisphere(value[1], settings.precision)]
-                                if value[0] == "lebedev_laikov":
-                                    value = ["lebedev_laikov", ascontiguousarray(lebedev_laikov_grid_over_hemisphere(value[1], settings.precision)[:, :3])]
-                                else:
-                                    raise ValueError("The only orientation grids available are: 'fibonacci', 'mesh', and 'lebedev_laikov'.")
+                            except Exception:
+                                raise ValueError("Grid must be an arraylike object of floats.")
+                            if value.ndim != 2:
+                                raise ValueError("The grid array must be a 2D array in the form [[direction_x, direction_y, direction_z, weight],...].")
+                            if value.shape[1] == 3:
+                                value = _normalize_grid_vectors(value)
                             else:
+                                raise ValueError("The grid must be set to an integer from 0-11, or a custom one must be in the form [[direction_x, direction_y, direction_z, weight],...].")
+                    case "orientations":
+                        if isinstance(value, (int, int64)):
+                            value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
+                        elif isinstance(value, (tuple, list)) and len(value) == 2 and not (isinstance(value[0], (tuple, list, ndarray)) and isinstance(value[1], (tuple, list, ndarray))):
+                            if not isinstance(value[1], (int, int64)):
+                                raise ValueError("The second entry in the orientation list/tuple must contain an integer controlling the number of the grid points.")
+                            if value[0] == "fibonacci":
+                                value = ["fibonacci", fibonacci_over_hemisphere(value[1], settings.precision)]
+                            if value[0] == "mesh":
+                                value = ["mesh", meshgrid_over_hemisphere(value[1], settings.precision)]
+                            if value[0] == "lebedev_laikov":
+                                value = ["lebedev_laikov", ascontiguousarray(lebedev_laikov_grid_over_hemisphere(value[1], settings.precision)[:, :3])]
+                            else:
+                                raise ValueError("The only orientation grids available are: 'fibonacci', 'mesh', and 'lebedev_laikov'.")
+                        else:
+                            try:
                                 value = asarray(value, order='C', dtype=settings.float)
-                                if value.ndim != 2:
-                                    raise ValueError("The array of orientations must be a 2D array in the form: [[direction_x, direction_y, direction_z],...] or [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
-                                if value.shape[1] == 4:
-                                    value = _normalize_grid_vectors(value)
-                                elif value.shape[1] == 3:
-                                    value = _normalize_orientations(value)
-                                else:
-                                    raise ValueError("The orientations' array must be (n,3) in the form: [[direction_x, direction_y, direction_z],...] or (n,4) array in the form: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
-                        case "states_cutoff":
-                            if bound_args.arguments["self"].attributes["Kind"] == "SLOTHPY":
-                                if value != [0, "auto"]:
-                                    warn("State cutoff was modified, but it has no impact on the SlothPy user-defined Hamiltonian.", SltWarning)
-                                continue
-                            if not isinstance(value, list) or len(value) != 2:
-                                raise ValueError("The states' cutoff must be a Python's list of length 2.")
-                            if value[0] == 0:
-                                value[0] = int(self.attributes["States"])
-                            elif not isinstance(value[0], (int, int64)) or value[0] < 0:
-                                raise ValueError(f"The states' cutoff must be a nonnegative integer less than or equal to the overall number of available states: {self.attributes['States']} (or 0 for all the states).")
-                            elif value[0] > self.attributes["States"]:
-                                raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available states: {self.attributes['States']} (or 0 for all the states).")
-                            if value[1] == 0:
+                            except Exception:
+                                raise ValueError("Orientations must be an arraylike object of floats.")
+                            if value.ndim != 2:
+                                raise ValueError("The array of orientations must be a 2D array in the form: [[direction_x, direction_y, direction_z],...] or [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
+                            if value.shape[1] == 4:
+                                value = _normalize_grid_vectors(value)
+                            elif value.shape[1] == 3:
+                                value = _normalize_orientations(value)
+                            else:
+                                raise ValueError("The orientations' array must be (n,3) in the form: [[direction_x, direction_y, direction_z],...] or (n,4) array in the form: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
+                    case "states_cutoff":
+                        if slt_group.attributes["Kind"] == "SLOTHPY":
+                            if value != [0, "auto"]:
+                                warn("State cutoff was modified, but it has no impact on the SlothPy user-defined Hamiltonian.", SltWarning)
+                            continue
+                        if not isinstance(value, list) or len(value) != 2:
+                            raise ValueError("The states' cutoff must be a Python's list of length 2.")
+                        if value[0] == 0:
+                            value[0] = int(slt_group.attributes["States"])
+                        elif not isinstance(value[0], (int, int64)) or value[0] < 0:
+                            raise ValueError(f"The states' cutoff must be a nonnegative integer less than or equal to the overall number of available states: {slt_group.attributes['States']} (or 0 for all the states).")
+                        elif value[0] > slt_group.attributes["States"]:
+                            raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available states: {slt_group.attributes['States']} (or 0 for all the states).")
+                        if value[1] == 0:
+                            value[1] = value[0]
+                        if value[1] == "auto":
+                            if "number_of_states" in bound_args.arguments.keys() and bound_args.arguments["number_of_states"] == 0:
                                 value[1] = value[0]
-                            if value[1] == "auto":
-                                if "number_of_states" in bound_args.arguments.keys() and bound_args.arguments["number_of_states"] == 0:
-                                    value[1] = value[0]
-                                elif "number_of_states" in bound_args.arguments.keys() and isinstance(bound_args.arguments["number_of_states"], (int, int64)) and bound_args.arguments["number_of_states"] <= value[0]:
-                                    value[1] = bound_args.arguments["number_of_states"]
-                                if "temperatures" in bound_args.arguments.keys():
-                                    value[1] = settings.float(max(bound_args.arguments["temperatures"]) * KB * -log(1e-16 if settings.precision == "double" else 1e-8))
-                            elif not isinstance(value[1], (int, int64)) or value[1] < 0 or value[1] > value[0]:
-                                raise ValueError("Set the second entry of states' cutoff to a nonnegative integer less or equal to the first entry or 0 for all the states from the first entry or 'auto' to let the SlothPy decide on a suitable cutoff.")
-                        case "number_of_states":
-                            if not isinstance(value, (int, int64)) or value < 0:
-                                raise ValueError("The number of states must be a positive integer or 0 for all of the calculated states.")
-                            if not isinstance(bound_args.arguments["states_cutoff"], list) or len(bound_args.arguments["states_cutoff"]) != 2:
-                                raise ValueError("The states' cutoff must be a Python's list of length 2.")
-                            max_states = int(self.attributes["States"]) if bound_args.arguments["states_cutoff"][0] == 0 or self.attributes["Kind"] == "SLOTHPY" else bound_args.arguments["states_cutoff"][0]
-                            if isinstance(bound_args.arguments["states_cutoff"][1], (int, int64)) and (bound_args.arguments["states_cutoff"][1] > 0) and (bound_args.arguments["states_cutoff"][1] <= bound_args.arguments["states_cutoff"][0]) if isinstance(bound_args.arguments["states_cutoff"][0], (int, int64)) else False:
-                                if value == 0:
-                                    value = bound_args.arguments["states_cutoff"][1]
-                                max_states = bound_args.arguments["states_cutoff"][1]
-                            elif bound_args.arguments["states_cutoff"][1] in [0, "auto"] and value == 0:
-                                value = max_states
-                            if value > max_states:
-                                print(max_states)
-                                raise ValueError("The number of states must be less or equal to the states' cutoff or overall number of states.")
-                        case "start_state":
-                            if not (isinstance(value, (int, int64)) and value >= 0 and value < self.attributes["States"]):
-                                raise ValueError(f"The first (start) state's number must be a nonnegative integer less than or equal to the overall number of states - 1: {self.attributes['States'] - 1}.")
-                        case "stop_state":
+                            elif "number_of_states" in bound_args.arguments.keys() and isinstance(bound_args.arguments["number_of_states"], (int, int64)) and bound_args.arguments["number_of_states"] <= value[0]:
+                                value[1] = bound_args.arguments["number_of_states"]
+                            if "temperatures" in bound_args.arguments.keys():
+                                value[1] = settings.float(max(bound_args.arguments["temperatures"]) * KB * -log(1e-16 if settings.precision == "double" else 1e-8))
+                        elif not isinstance(value[1], (int, int64)) or value[1] < 0 or value[1] > value[0]:
+                            raise ValueError("Set the second entry of states' cutoff to a nonnegative integer less or equal to the first entry or 0 for all the states from the first entry or 'auto' to let the SlothPy decide on a suitable cutoff.")
+                    case "number_of_states":
+                        if not isinstance(value, (int, int64)) or value < 0:
+                            raise ValueError("The number of states must be a positive integer or 0 for all of the calculated states.")
+                        if not isinstance(bound_args.arguments["states_cutoff"], list) or len(bound_args.arguments["states_cutoff"]) != 2:
+                            raise ValueError("The states' cutoff must be a Python's list of length 2.")
+                        max_states = int(slt_group.attributes["States"]) if bound_args.arguments["states_cutoff"][0] == 0 or slt_group.attributes["Kind"] == "SLOTHPY" else bound_args.arguments["states_cutoff"][0]
+                        if isinstance(bound_args.arguments["states_cutoff"][1], (int, int64)) and (bound_args.arguments["states_cutoff"][1] > 0) and (bound_args.arguments["states_cutoff"][1] <= bound_args.arguments["states_cutoff"][0]) if isinstance(bound_args.arguments["states_cutoff"][0], (int, int64)) else False:
                             if value == 0:
-                                value = int(self.attributes["States"])
-                            if not isinstance(value, (int, int64)) or value < 0 or value > self.attributes["States"]:
-                                raise ValueError(f"The last (stop) state's number must be a nonnegative integer less than or equal to the overall number of states: {self.attributes['States']}.")
-                            if "start_state" in bound_args.arguments.keys():
-                                if isinstance(bound_args.arguments["start_state"], (int, int64)) and (bound_args.arguments["start_state"] >= 0) and bound_args.arguments["start_state"] <= self.attributes["States"] and value < bound_args.arguments["start_state"]:
-                                    raise ValueError(f"The last (stop) state's number must be equal or greater than the first (start) state's number: {bound_args.arguments['start_state']}.")
-                        case "xyz":
-                            if value not in ["xyz", "x", "y", "z"]:
+                                value = bound_args.arguments["states_cutoff"][1]
+                            max_states = bound_args.arguments["states_cutoff"][1]
+                        elif bound_args.arguments["states_cutoff"][1] in [0, "auto"] and value == 0:
+                            value = max_states
+                        if value > max_states:
+                            print(max_states)
+                            raise ValueError("The number of states must be less or equal to the states' cutoff or overall number of states.")
+                    case "start_state":
+                        if not (isinstance(value, (int, int64)) and value >= 0 and value < slt_group.attributes["States"]):
+                            raise ValueError(f"The first (start) state's number must be a nonnegative integer less than or equal to the overall number of states - 1: {slt_group.attributes['States'] - 1}.")
+                    case "stop_state":
+                        if value == 0:
+                            value = int(slt_group.attributes["States"])
+                        if not isinstance(value, (int, int64)) or value < 0 or value > slt_group.attributes["States"]:
+                            raise ValueError(f"The last (stop) state's number must be a nonnegative integer less than or equal to the overall number of states: {slt_group.attributes['States']}.")
+                        if "start_state" in bound_args.arguments.keys():
+                            if isinstance(bound_args.arguments["start_state"], (int, int64)) and (bound_args.arguments["start_state"] >= 0) and bound_args.arguments["start_state"] <= slt_group.attributes["States"] and value < bound_args.arguments["start_state"]:
+                                raise ValueError(f"The last (stop) state's number must be equal or greater than the first (start) state's number: {bound_args.arguments['start_state']}.")
+                    case "xyz":
+                        if value not in ["xyz", "x", "y", "z"]:
+                            try:
                                 value = asarray(value, order='C', dtype=settings.float)
                                 if value.ndim != 1 or value.size != 3:
-                                    raise ValueError(f"The xyz argument must be one of 'xyz', 'x', 'y', 'z' or it can be an orientation in the form [x,y,z].")
-                                value = _normalize_orientation(value)
-                        case "rotation":
-                            value = _parse_rotation(value)
-                        case "electric_field_vector":
-                            if value is not None:
+                                    raise Exception
+                            except Exception:
+                                raise ValueError(f"The xyz argument must be one of 'xyz', 'x', 'y', 'z' or it can be an orientation arraylike object of floats in the form [x,y,z].")
+                            value = _normalize_orientation(value)
+                    case "rotation":
+                        value = _parse_rotation(value)
+                    case "electric_field_vector":
+                        if value is not None:
+                            try:
+                                if slt_group.attributes["Additional"] != "ELECTRIC_DIPOLE_MOMENTA":
+                                    raise ValueError("The provided Hamiltonian gorup does not contain electric dipole momenta integrals.")
                                 try:
-                                    if self.attributes["Additional"] != "ELECTRIC_DIPOLE_MOMENTA":
-                                        raise ValueError("The provided Hamiltonian gorup does not contain electric dipole momenta integrals.")
                                     value = asarray(value, order='C', dtype=settings.float) / settings.float(F_AU_VM)
-                                    if value.ndim != 1 or value.shape[0] != 3:
-                                        raise ValueError("The electric field vector must be an array-like object in the form of [x, y, z] components.")
-                                except SltFileError:
-                                    raise ValueError(f"The provided Hamiltonian {BLUE}Group{RESET}: '{self._group_name}' does not contain electric dipole momenta to include effect of electric field vector.")
-                        case "hyperfine":
-                            if value != None:
-                                raise NotImplementedError("Hyperfine interactions have not been implemented yet. They are scheduled to be released in the 0.4 major release.")
-                        case "show":
-                            if not isinstance(value, bool):
-                                raise ValueError("Show must be a boolean (False/True). It decides if plot is shown in gui or returned as mathplotlib objects (Figure and Axis).")
-                        case "energy_unit":
-                            if value not in ['kj/mol', 'eh', 'hartree', 'au', 'ev', 'kcal/mol', 'wavenumber']:
-                                raise ValueError(f"Energy unit must be one of the following strings: kj/mol, eh, hartree, au, ev, kcal/mol, you entered {value} with type {type(value)}")
-                    bound_args.arguments[name] = value
-                    
-            except Exception as exc:
-                raise SltInputError(exc) from None
+                                except Exception:
+                                    raise ValueError("Electric field vector must be an arraylike object of floats.")
+                                if value.ndim != 1 or value.shape[0] != 3:
+                                    raise ValueError("The electric field vector must be an array-like object in the form of [x, y, z] components.")
+                            except SltFileError:
+                                raise ValueError(f"The provided Hamiltonian {BLUE}Group{RESET}: '{slt_group._group_name}' does not contain electric dipole momenta to include effect of electric field vector.")
+                    case "hyperfine":
+                        if value != None:
+                            raise NotImplementedError("Hyperfine interactions have not been implemented yet. They are scheduled to be released in the 0.4 major release.")
+                    case "show":
+                        if not isinstance(value, bool):
+                            raise ValueError("Show must be a boolean (False/True). It decides if plot is shown in gui or returned as mathplotlib objects (Figure and Axis).")
+                    case "energy_unit":
+                        if value not in ['kj/mol', 'eh', 'hartree', 'au', 'ev', 'kcal/mol', 'wavenumber']:
+                            raise ValueError(f"Energy unit must be one of the following strings: kj/mol, eh, hartree, au, ev, kcal/mol, you entered {value} with type {type(value)}")
+                bound_args.arguments[name] = value
+                
+        except Exception as exc:
+            raise SltInputError(exc) from None
 
-            return func(**bound_args.arguments)
-        
-        return wrapper
-    return decorator
+        return func(**bound_args.arguments)
+    
+    return wrapper
+
 
 @slothpy_exc("SltInputError")
 def _parse_hamiltonian_dicts(slt_file, magnetic_centers: dict, exchange_interactions: dict):

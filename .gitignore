@@ -12,6 +12,7 @@
 *.o
 *.so
 *.c
+*.cpp
 *.cif
 *.pyd
 __pycache__

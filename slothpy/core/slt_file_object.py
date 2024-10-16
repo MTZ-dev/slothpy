@@ -120,6 +120,7 @@ from slothpy._general_utilities._grids_over_sphere import (
 from slothpy.core._input_parser import _parse_hamiltonian_dicts
 from slothpy.core._slt_file import SltGroup, SltDataset
 from slothpy.core._config import settings
+from slothpy.core._delayed_methods import SltZeemanSplitting
 
 class SltFile():
     """
@@ -372,12 +373,12 @@ class SltFile():
           {(0,1):[[1,2,3],[1,2,3],[1,2,3]], (0,2):[[1,2,3],[1,2,3],[1,2,3]], (1,2):[[1,2,3],[1,2,3],[1,2,3]]}, 'Dy3_exchange', True)
         (3x Dy centers in a line with 16x16x16 exchange basis and higher term included as 'local' states)
         """
-
+        ################################################################ Move this to io to the internal creation section!!!!!
         states, contains_electric_dipole_momenta = _parse_hamiltonian_dicts(self, magnetic_centers, exchange_interactions)
         with File(self._hdf5, 'a') as file:
             group = file.create_group(slt_save)
-            group.attrs["Type"] = "HAMILTONIAN"
-            group.attrs["Kind"] = "SLOTHPY"
+            group.attrs["Type"] = "EXCHANGE_HAMILTONIAN"
+            group.attrs["Kind"] = "SLOTHPY" ################################# get rid of this since we have exchange
             group.attrs["States"] = states
             group.attrs["Description"] = f"A custom exchange Hamiltonian created by the user."
             if contains_electric_dipole_momenta:
@@ -428,7 +429,7 @@ class SltFile():
         number_threads: int = None,
         slt_save: str = None,
         autotune: bool = False,
-    ):
+    ) -> SltZeemanSplitting:
         """
         Calculates directional or powder-averaged Zeeman splitting for a given
         number of states and a list of magnetic field orientations and values.

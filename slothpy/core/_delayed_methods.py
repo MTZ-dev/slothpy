@@ -44,7 +44,7 @@ class SltStatesEnergiesCm1(_SingleProcessed):
         self._stop_state = stop_state
 
     def _executor(self):
-        return self._slt_group.energies[self._start_state:self._stop_state] * H_CM_1
+        return self._slt_group.e[self._start_state:self._stop_state] * H_CM_1
     
     def _save(self):
         self._metadata_dict = {
@@ -86,7 +86,7 @@ class SltStatesEnergiesAu(_SingleProcessed):
         self._stop_state = stop_state
 
     def _executor(self):
-        return self._slt_group.energies[self._start_state:self._stop_state]
+        return self._slt_group.e[self._start_state:self._stop_state]
 
     def _save(self):
         self._metadata_dict = {
@@ -565,7 +565,7 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
         self._hyperfine = hyperfine
         self._args = [self._mode, self._full_matrix, self._return_energies, self._direction, self._number_of_states, self._electric_field_vector]
         self._executor_proxy = _property_under_magnetic_field_proxy
-        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False)
+        self._slt_hamiltonian = self._slt_group._slt_hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False)
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
         for mod in self._mode:
             if mod not in self._slt_hamiltonian._mode:
@@ -656,7 +656,7 @@ class SltZeemanSplitting(_MultiProcessed):
 
     __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_number_of_states", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
      
-    def __init__(self, slt_group,
+    def __init__(self, slt_hamiltonian,
         magnetic_fields: ndarray,
         orientations: ndarray,
         number_of_states: int,
@@ -671,7 +671,7 @@ class SltZeemanSplitting(_MultiProcessed):
         smm: SharedMemoryManager = None,
         terminate_event: Event = None,
         ) -> None:
-        super().__init__(slt_group, magnetic_fields.shape[0] * orientations.shape[0], number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
+        super().__init__(slt_hamiltonian, magnetic_fields.shape[0] * orientations.shape[0], number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
         self._magnetic_fields = magnetic_fields
         self._orientations = orientations
         self._number_of_states = number_of_states
@@ -683,7 +683,7 @@ class SltZeemanSplitting(_MultiProcessed):
         self._hyperfine = hyperfine
         self._args = [self._number_of_states, self._electric_field_vector]
         self._executor_proxy = _zeeman_splitting_proxy
-        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False)
+        self._slt_hamiltonian = slt_hamiltonian._slt_hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False) ######## This should be at least renamed to set rotation or something like this
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
     
     def _load_args_arrays(self):
@@ -759,7 +759,7 @@ class SltMagnetisation(_MultiProcessed):
         self._hyperfine = hyperfine
         self._args = [self._electric_field_vector]
         self._executor_proxy = _magnetisation_proxy
-        self._slt_hamiltonian = self._slt_group._hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, True)
+        self._slt_hamiltonian = self._slt_group._slt_hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, True)
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
     
     def _load_args_arrays(self):

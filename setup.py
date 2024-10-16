@@ -18,7 +18,7 @@ setup(
     version="0.3.0",
     packages=find_packages(include=["slothpy", "slothpy.*"]),
     setup_requires=["cython>=3.0.10"],
-    ext_modules=cythonize(extensions, language="c++", compiler_directives={
+    ext_modules=cythonize(extensions, compiler_directives={
             "boundscheck": False,
             "wraparound": False,
             "cdivision": True,

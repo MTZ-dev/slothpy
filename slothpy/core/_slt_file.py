@@ -19,12 +19,11 @@ from __future__ import annotations
 from typing import Union, Optional, Iterator, List
 import warnings
 from ast import literal_eval
-from functools import wraps
 from os import makedirs
 from os.path import join
 
 from h5py import File, Group, Dataset, string_dtype
-from numpy import ndarray, array, empty, int32, int64, float32, float64, tensordot, abs, diag, prod, conjugate
+from numpy import ndarray, array, empty, int32, int64, float32, float64, tensordot, abs, diag, conjugate
 from numpy.exceptions import ComplexWarning
 from numpy.linalg import norm
 warnings.filterwarnings("ignore", category=ComplexWarning)
@@ -34,7 +33,7 @@ from ase.io import write
 from ase.data import atomic_numbers
 from ase.cell import Cell
 
-from slothpy.core._registry import MethodTypeMeta, type_registry
+from slothpy.core._registry import MethodTypeMeta, MethodDelegateMeta
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import slothpy_exc, KeyError, SltFileError, SltReadError, SltInputError
 from slothpy.core._input_parser import validate_input
@@ -47,8 +46,14 @@ from slothpy._general_utilities._math_expresions import _subtract_const_diagonal
 from slothpy._general_utilities._utils import _check_n
 from slothpy.core._delayed_methods import *
 
+############
+# Attributes
+############
 
 class SltAttributes:
+
+    __slots__ = ["_hdf5", "_item_path"]
+                 
     def __init__(self, hdf5_file, item_path):
         self._hdf5 = hdf5_file
         self._item_path = item_path
@@ -91,570 +96,10 @@ class SltAttributes:
             file_item = file[self._item_path]
             return item in file_item.attrs
 
-class SltGroup:
-    def __init__(self, hdf5_file, group_name):
-        self._hdf5 = hdf5_file
-        self._group_name = group_name
-        self._exists = _group_exists(hdf5_file, group_name)
-        self.attributes = SltAttributes(hdf5_file, group_name)
 
-    @slothpy_exc("SltFileError")
-    def __getitem__(self, key):
-        full_path = f"{self._group_name}/{key}"
-        with File(self._hdf5, 'r') as file:
-            if full_path in file:
-                item = file[full_path]
-                if isinstance(item, Dataset):
-                    return SltDataset(self._hdf5, full_path)
-                elif isinstance(item, Group):
-                    raise KeyError(f"Hierarchy only up to {BLUE}Group{RESET}/{PURPLE}Dataset{RESET} or standalone {PURPLE}Datasets{RESET} are supported in .slt files.")
-            else:
-                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' doesn't exist in the {BLUE}Group{RESET} '{self._group_name}'.")
-
-    @slothpy_exc("SltSaveError")        
-    def __setitem__(self, key, value):
-        with File(self._hdf5, 'r+') as file:
-            group = file.require_group(self._group_name)
-            self._exists = True
-            if key in group:
-                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' already exists within the {BLUE}Group{RESET} '{self._group_name}'. Delete it manually to ensure your data safety.")
-            group.create_dataset(key, data=array(value))
-
-    @slothpy_exc("SltFileError")
-    def __repr__(self): 
-        if self._exists:
-            return f"<{BLUE}SltGroup{RESET} '{self._group_name}' in {GREEN}File{RESET} '{self._hdf5}'.>"
-        else:
-            raise RuntimeError(f"This is a {BLUE}Proxy Group{RESET} and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
-
-    @slothpy_exc("SltFileError")
-    def __str__(self):
-        if self._exists:
-            with File(self._hdf5, 'r+') as file:
-                item = file[self._group_name]
-                representation = f"{RED}Group{RESET}: {BLUE}{self._group_name}{RESET} from File: {GREEN}{self._hdf5}{RESET}"
-                for attribute_name, attribute_text in item.attrs.items():
-                    representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
-                representation += "\nDatasets: \n"
-                for dataset_name, dataset in item.items():
-                    representation += f"{PURPLE}{dataset_name}{RESET}"
-                    for attribute_name, attribute_text in dataset.attrs.items():
-                        representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
-                    representation += "\n"
-                return representation.rstrip()
-        else:
-            raise RuntimeError("This is a {BLUE}Proxy Group{RESET} and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
-
-    @slothpy_exc("SltFileError")
-    def __delitem__(self, key):
-        with File(self._hdf5, 'r+') as file:
-            group = file[self._group_name]
-            if key not in group:
-                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' does not exist in the {BLUE}Group{RESET} '{self._group_name}'.")
-            del group[key]
-
-    def delegate_method_to_slt_group(method):
-        @wraps(method)
-        def wrapper(self, *args, **kwargs):
-            if not self._exists:
-                raise SltFileError(self._hdf5, IOError(f"{BLUE}Group{RESET} '{self._group_name}' does not exist in the .slt file.")) from None
-            obj = type_registry.get(self.type)
-            if hasattr(obj, '_from_slt_file'):
-                obj = obj._from_slt_file(self)
-            else:
-                obj = obj(self)
-            delegated_method = getattr(obj, method.__name__, None)
-            if delegated_method is None:
-                raise SltInputError(AttributeError(f"'{obj.__class__.__name__}' object has no method '{method.__name__}'.")) from None
-            return delegated_method(*args, **kwargs)
-        
-        return wrapper
-
-    @property
-    @delegate_method_to_slt_group
-    def atoms_object(self) -> Atoms: 
-        pass
-
-    @property
-    @delegate_method_to_slt_group
-    def cell_object(self) -> Cell: 
-        pass
-    
-    @property
-    @delegate_method_to_slt_group
-    def charge(self) -> int:
-        pass
-    
-    @property
-    @delegate_method_to_slt_group
-    def multiplicity(self) -> int:
-        pass
-
-    @property
-    @delegate_method_to_slt_group
-    def hessian(self) -> ndarray:
-        pass
-
-    @property
-    @delegate_method_to_slt_group
-    def born_charges(self) -> ndarray:
-        pass
-        
-    @property
-    def attrs(self):
-        """
-        Property to mimic h5py's attribute access convention.
-        """
-        return self.attributes
-    
-    @property
-    def type(self):
-        try:
-            return self.attributes["Type"]
-        except SltFileError as exc:
-            raise SltReadError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' is not a valid SlothPy group and has no type.") from None
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def energies(self):
-        return self["STATES_ENERGIES"]
-    
-    e = energies
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def spins(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S")
-    
-    s = spins
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def sx(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 0)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def sy(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 1)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def sz(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/SPINS", "S", 2)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def angular_momenta(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L")
-    
-    l = angular_momenta
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def lx(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 0)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def ly(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 1)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def lz(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ANGULAR_MOMENTA", "L", 2)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def electric_dipole_momenta(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P")
-    
-    p = electric_dipole_momenta
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def px(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 0)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def py(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 1)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def pz(self):
-        return SltDatasetSLP(self._hdf5, f"{self._group_name}/ELECTRIC_DIPOLE_MOMENTA", "P", 2)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def total_angular_momenta(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_name}", "J")
-    
-    j = total_angular_momenta
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def jx(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 0)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def jy(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 1)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def jz(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_name}", "J", 2)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def magnetic_dipole_momenta(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_name}", "M")
-    
-    m = magnetic_dipole_momenta
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def mx(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 0)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def my(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 1)
-    
-    @property
-    @validate_input("HAMILTONIAN", True)
-    def mz(self):
-        return SltDatasetJM(self._hdf5, f"{self._group_name}", "M", 2)
-    
-    @delegate_method_to_slt_group
-    def plot(self, *args, **kwargs):
-        pass
-    
-    @delegate_method_to_slt_group
-    def to_numpy_array(self, *args, **kwargs):
-        pass
-    
-    @delegate_method_to_slt_group
-    def to_data_frame(self, *args, **kwargs):
-        pass
-    
-    @delegate_method_to_slt_group
-    def to_csv(self, csv_filepath: str, *args, separator: str = ",", **kwargs):
-        pass
-
-    @delegate_method_to_slt_group
-    def to_xyz(self, xyz_filepath: str, *args, **kwargs):
-        pass
-
-    @delegate_method_to_slt_group
-    def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
-        """
-        Replaces atoms at specified indices with new element symbols and updates
-        the HDF5 group.
-        
-        Parameters:
-        ----------
-        atom_indices : List[int]
-            List of 0-based atom indices to be replaced.
-        new_symbols : List[str]
-            List of new element symbols corresponding to each atom index.
-        
-        Raises:
-        ------
-        ValueError:
-            If the lengths of atom_indices and new_symbols do not match.
-            If any new symbol is invalid or not recognized.
-        IndexError:
-            If any atom index is out of bounds.
-        """
-        pass
-
-    @delegate_method_to_slt_group
-    def generate_finite_stencil_displacements(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
-        """
-        Generates finite stencil displacements for derivative calculations.
-
-        Displaces each atom along x, y, and z axes in both negative and
-        positive directions by a specified number of steps and step size.
-
-        If this is used for supercells it only displaces each atom in the first
-        unit cell.
-
-        Parameters:
-        ----------
-        displacement_number : int
-            Number of displacement steps in each direction (negative and positive).
-        step : float
-            Magnitude of each displacement step in Angstroms.
-        output_option : str, optional
-            Specifies the output mode. Options:
-            - 'xyz': Write displaced structures as .xyz files.
-            - 'iterator': Return an iterator yielding tuple of dislaced ASE
-            Atoms objects, dofs numbers and displacements numbers
-            - 'slt': Dump all displaced structures into the .slt file.
-            Default is 'xyz'.
-        custom_directory : str, optional
-            Directory path to save .xyz files. Required if output_option is 'xyz'.
-        slt_group_name : str, optional
-            Name of the SltGroup to store displaced structures. Required if
-            output_option is 'slt'.
-
-        Returns:
-        -------
-        Iterator[Atoms] or None
-            Returns an iterator of ASE Atoms objects if output_option is 'iterator'.
-            Otherwise, returns None.
-
-        Raises:
-        ------
-        ValueError:
-            If invalid output_option is specified or required parameters are missing.
-        IOError:
-            If writing to files or HDF5 fails.
-        """
-        pass
-
-    @delegate_method_to_slt_group
-    def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> SltGroup:
-        """
-        Generates a supercell by repeating the unit cell along x, y, and z axes.
-
-        Repeats the unit cell `nx`, `ny`, and `nz` times along the x, y, and z
-        axes respectively to create a supercell where cordinates are such that
-        they start with unit cell for nx = ny = nz = 0 and then the slowest
-        varying index is nx while the fastest is nz.
-
-        Parameters:
-        ----------
-        nx, ny, nz : int
-            Number of repetitions along the x, y, and z-axis.
-        output_option : str, optional
-            Specifies the output mode. Options:
-            - 'xyz': Write the supercell structure as a `.xyz` file.
-            - 'slt': Save the supercell structure in the `.slt` file.
-            Default is 'xyz'.
-        xyz_filepath : str, optional
-            File path to save the `.xyz` file. Required if `output_option` is 'xyz'.
-        slt_group_name : str, optional
-            Name of the `SltGroup` to store the supercell structure. Required if
-            `output_option` is 'slt'.
-
-        Returns:
-        -------
-        None
-
-        Raises:
-        ------
-        ValueError:
-            If an invalid `output_option` is specified or required parameters are missing.
-        IOError:
-            If writing to files or HDF5 fails.
-
-        Notes:
-        -----
-        - If the object is already a supercell, a warning will be issued indicating
-        that a mega-cell will be created by multiplying the current parameters.
-        """
-        pass
-
-    @delegate_method_to_slt_group
-    def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, save_supercell_to_slt: Optional[str] = None) -> Optional[Iterator[Atoms]]:
-        """
-        Generates a new supercell and finite stencil displacements for it by
-        displacing atoms in the first unit cell.
-
-        Displaces each atom in the first unit cell of a supercell along x, y,
-        and z axes in both negative and positive directions by a specified
-        number of steps and step size.
-
-        Parameters:
-        ----------
-        nx, ny, nz : int
-            Number of repetitions along the x, y, and z axes to create the supercell.
-        displacement_number : int
-            Number of displacement steps in each direction (negative and positive).
-        step : float
-            Magnitude of each displacement step in Angstroms.
-        output_option : str, optional
-            Specifies the output mode. Options:
-            - 'xyz': Write displaced structures as .xyz files.
-            - 'iterator': Return an iterator yielding tuple of dislaced ASE
-            Atoms objects, dofs numbers, displacements numbers, nx, ny, and nz.
-            - 'slt': Dump all displaced structures into the .slt file.
-            Default is 'xyz'.
-        custom_directory : str, optional
-            Directory path to save .xyz files. Required if output_option is 'xyz'.
-        slt_group_name : str, optional
-            Name of the SltGroup to store displaced structures. Required if
-            output_option is 'slt'.
-        save_supercell_to_slt: str, optional
-            When provided, the created supercell is saved to the group of this
-            name in the .slt file and can be used for further processing, e.g.
-            creating Hessian after finite displacement calculations
-
-        Returns:
-        -------
-        Iterator[Atoms] or None
-            Returns an iterator of ASE Atoms objects if output_option is 'iterator'.
-            Otherwise, returns None.
-
-        Raises:
-        ------
-        ValueError:
-            If invalid output_option is specified or required parameters are missing.
-        IOError:
-            If writing to files or HDF5 fails.
-
-        Note:
-        -----
-        For a supercell, use generate_finite_stencil_displacements if you do
-        not wish to repeat it further with new nx, ny, and nz.
-        """
-        pass
-
-    @delegate_method_to_slt_group
-    def hessian_from_finite_displacements(self, dirpath: str, format: Literal["CP2K"], slt_group_name: str, displacement_number: int, step: float, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", born_charges: bool = False, force_files_suffix: Optional[str] = None, dipole_momenta_files_suffix: Optional[str] = None) -> SltGroup:
-        pass
-
-    @validate_input("HAMILTONIAN", True)
-    def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesCm1:
-        return SltStatesEnergiesCm1(self, start_state, stop_state, slt_save)
-    
-    @validate_input("HAMILTONIAN", True)
-    def states_energies_au(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesAu:
-        return SltStatesEnergiesAu(self, start_state, stop_state, slt_save)
-    
-    @validate_input("HAMILTONIAN", True)
-    def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltSpinMatrices:
-        return SltSpinMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
-    
-    @validate_input("HAMILTONIAN", True)
-    def states_spins(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesSpins:
-        return SltStatesSpins(self, xyz, start_state, stop_state, rotation, slt_save)
-    
-    @validate_input("HAMILTONIAN", True)
-    def angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltAngularMomentumMatrices:
-        return SltAngularMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
-    
-    @validate_input("HAMILTONIAN", True)
-    def states_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesAngularMomenta:
-        return SltStatesAngularMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
-
-    @validate_input("HAMILTONIAN", True)
-    def electric_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltElectricDipoleMomentumMatrices:
-        return SltElectricDipoleMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
-    
-    @validate_input("HAMILTONIAN", True)
-    def states_electric_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesElectricDipoleMomenta:
-        return SltStatesElectricDipoleMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
-
-    @validate_input("HAMILTONIAN", True)
-    def total_angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltTotalAngularMomentumMatrices:
-        return SltTotalAngularMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
-
-    @validate_input("HAMILTONIAN", True)
-    def states_total_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesTotalAngularMomenta:
-        return SltStatesTotalAngularMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
-
-    @validate_input("HAMILTONIAN", True)
-    def magnetic_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltMagneticDipoleMomentumMatrices:
-        return SltMagneticDipoleMomentumMatrices(self, xyz, start_state, stop_state, rotation, slt_save)
-
-    @validate_input("HAMILTONIAN", True)
-    def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesMagneticDipoleMomenta:
-        return SltStatesMagneticDipoleMomenta(self, xyz, start_state, stop_state, rotation, slt_save)
-    
-    def _retrieve_hamiltonian_dict(self, states_cutoff=[0,0], rotation=None, hyperfine=None, coordinates=None, local_states=True):
-        states = self.attributes["States"]
-        electric_dipole = False
-        magnetic_interactions = False
-        electric_interactions = False
-        try:
-            if self.attributes["Additional"] == "ELECTRIC_DIPOLE_MOMENTA":
-                electric_dipole = True
-        except SltFileError:
-            pass
-        try:
-            if "m" in self.attributes["Interactions"]:
-                magnetic_interactions = True
-            if "p" in self.attributes["Interactions"]:
-                electric_interactions = True
-        except SltFileError:
-            pass
-        if self.attributes["Kind"] == "SLOTHPY":
-            with File(self._hdf5, 'r') as file:
-                group = file[self._group_name]
-                
-                def load_dict_from_group(group, subgroup_name):
-                    data_dict = {}
-                    subgroup = group[subgroup_name]
-                    for key in subgroup.keys():
-                        value = subgroup[key][()]
-                        original_key = literal_eval(key.rsplit('_', 1)[0])
-                        if original_key not in data_dict.keys():
-                            data_dict[original_key] = []
-                        if isinstance(value, bytes):
-                            value = value.decode('utf-8')
-                            if value == 'None':
-                                value = None
-                        elif isinstance(value, ndarray) and value.shape == ():
-                            value = value.item()
-                        data_dict[original_key].append(value)
-                    return data_dict
-                
-                magnetic_centers = load_dict_from_group(group, "MAGNETIC_CENTERS")
-                if not local_states:
-                    for center in magnetic_centers.values():
-                        center[1][0] = center[1][1]
-                exchange_interactions = load_dict_from_group(group, "EXCHANGE_INTERACTIONS")
-        else:
-            magnetic_centers = {0:(self._group_name, (states_cutoff[0],0,states_cutoff[1]), rotation, coordinates, hyperfine)}
-            exchange_interactions = None
-        
-        return magnetic_centers, exchange_interactions, states, electric_dipole, magnetic_interactions, electric_interactions, local_states
-    
-    @validate_input("HAMILTONIAN", only_group_check=True)
-    def _hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True):
-            return SltHamiltonian(self, states_cutoff, rotation, hyperfine, local_states)
-    
-    @validate_input("HAMILTONIAN")
-    def zeeman_splitting(
-        self,
-        magnetic_fields: ndarray[Union[float32, float64]],
-        orientations: ndarray[Union[float32, float64]],
-        number_of_states: int = 0,
-        states_cutoff: int = [0, "auto"],
-        rotation: ndarray = None,
-        electric_field_vector: ndarray = None,
-        hyperfine: dict = None,
-        number_cpu: int = None,
-        number_threads: int = None,
-        slt_save: str = None,
-        autotune: bool = False,
-    ) -> SltZeemanSplitting:
-        return SltZeemanSplitting(self, magnetic_fields, orientations, number_of_states, states_cutoff, rotation, electric_field_vector, hyperfine, number_cpu, number_threads, autotune, slt_save)
-    
-    @validate_input("HAMILTONIAN")
-    def magnetisation(
-        self,
-        magnetic_fields: ndarray[Union[float32, float64]],
-        orientations: ndarray[Union[float32, float64]],
-        temperatures: ndarray[Union[float32, float64]],
-        states_cutoff: int = [0, "auto"],
-        rotation: ndarray = None,
-        electric_field_vector: ndarray = None,
-        hyperfine: dict = None,
-        number_cpu: int = None,
-        number_threads: int = None,
-        slt_save: str = None,
-        autotune: bool = False,
-    ) -> SltMagnetisation:
-        return SltMagnetisation(self, magnetic_fields, orientations, temperatures, states_cutoff, rotation, electric_field_vector, hyperfine, number_cpu, number_threads, autotune, slt_save)
+#########
+#Datasets
+#########
 
 
 class SltDataset:
@@ -724,10 +169,14 @@ class SltDataset:
 
 
 class SltDatasetSLP():
-    def __init__(self, hdf5_file_path, dataset_path, slp, xyz: int = None):
-        self._hdf5 = hdf5_file_path
-        self._dataset_path = dataset_path
+
+    __slots__ = ["_hdf5", "_dataset_path", "_slp", "_xyz", "_xyz_dict"]
+
+    def __init__(self, slt_group: SltGroup, slp: Literal["S", "L", "P"], xyz: int = None):
+        self._hdf5 = slt_group._hdf5
         self._slp = slp
+        _slp_dict = {"S": "SPINS", "L": "ANGULAR_MOMENTA", "P": "ELECTRIC_DIPOLE_MOMENTA"}
+        self._dataset_path = f"{slt_group._group_name}/{_slp_dict[self._slp]}"
         self._xyz = xyz
         self._xyz_dict = {0: "x", 1: "y", 2: "z"}
 
@@ -779,9 +228,9 @@ class SltDatasetSLP():
 
 
 class SltDatasetJM():
-    def __init__(self, hdf5_file_path, group_path, jm, xyz: int = None):
-        self._hdf5 = hdf5_file_path
-        self._group_name = group_path
+    def __init__(self, slt_group: SltGroup, jm: Literal["J", "M"], xyz: int = None):
+        self._hdf5 = slt_group._hdf5
+        self._group_name = slt_group._group_name
         self._jm = jm
         self._xyz = xyz
         self._xyz_dict = {0: "x", 1: "y", 2: "z"}
@@ -850,19 +299,543 @@ class SltDatasetJM():
                 return  _magnetic_dipole_momenta_from_spins_angular_momenta(diag_s.astype(settings.float), diag_l.astype(settings.float))
             else:
                 raise ValueError("The only supported options are 'J' for total angular momenta or 'M' for magnetic dipole momenta.")
-            
 
-class SltHamiltonian(metaclass=MethodTypeMeta):
-    _method_type = "HAMILTONIAN"    ######################################################### Register this as slothpy hamiltonian or custom then move methods from group to a new SltHamiltonian(metaclass=MethodTypeMeta)
-    ################################################################### Then move input_parser and
 
-    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
+########
+# Groups
+########
+
+
+class SltGroup(metaclass=MethodDelegateMeta):
+
+    __slots__ = ["_hdf5", "_group_name", "_exists"]
+
+    def __init__(self, hdf5_file, group_name):
+        self._hdf5 = hdf5_file
+        self._group_name = group_name
+        self._exists = _group_exists(hdf5_file, group_name)
+
+    @slothpy_exc("SltFileError")
+    def __getitem__(self, key):
+        full_path = f"{self._group_name}/{key}"
+        with File(self._hdf5, 'r') as file:
+            if full_path in file:
+                item = file[full_path]
+                if isinstance(item, Dataset):
+                    return SltDataset(self._hdf5, full_path)
+                elif isinstance(item, Group):
+                    raise KeyError(f"Hierarchy only up to {BLUE}Group{RESET}/{PURPLE}Dataset{RESET} or standalone {PURPLE}Datasets{RESET} are supported in .slt files.")
+            else:
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' doesn't exist in the {BLUE}Group{RESET} '{self._group_name}'.")
+
+    @slothpy_exc("SltSaveError")        
+    def __setitem__(self, key, value):
+        with File(self._hdf5, 'r+') as file:
+            group = file.require_group(self._group_name)
+            self._exists = True
+            if key in group:
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' already exists within the {BLUE}Group{RESET} '{self._group_name}'. Delete it manually to ensure your data safety.")
+            group.create_dataset(key, data=array(value))
+
+    @slothpy_exc("SltFileError")
+    def __repr__(self): 
+        if self._exists:
+            return f"<{BLUE}SltGroup{RESET} '{self._group_name}' in {GREEN}File{RESET} '{self._hdf5}'.>"
+        else:
+            raise RuntimeError(f"This is a {BLUE}Proxy Group{RESET} and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
+
+    @slothpy_exc("SltFileError")
+    def __str__(self):
+        if self._exists:
+            with File(self._hdf5, 'r+') as file:
+                item = file[self._group_name]
+                representation = f"{RED}Group{RESET}: {BLUE}{self._group_name}{RESET} from File: {GREEN}{self._hdf5}{RESET}"
+                for attribute_name, attribute_text in item.attrs.items():
+                    representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
+                representation += "\nDatasets: \n"
+                for dataset_name, dataset in item.items():
+                    representation += f"{PURPLE}{dataset_name}{RESET}"
+                    for attribute_name, attribute_text in dataset.attrs.items():
+                        representation += f" | {YELLOW}{attribute_name}{RESET}: {attribute_text}"
+                    representation += "\n"
+                return representation.rstrip()
+        else:
+            raise RuntimeError("This is a {BLUE}Proxy Group{RESET} and it does not exist in the .slt file yet. Initialize it by setting dataset within it - group['new_dataset'] = value.")
+
+    @slothpy_exc("SltFileError")
+    def __delitem__(self, key):
+        with File(self._hdf5, 'r+') as file:
+            group = file[self._group_name]
+            if key not in group:
+                raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' does not exist in the {BLUE}Group{RESET} '{self._group_name}'.")
+            del group[key]
+
+    @property
+    def type(self):
+        try:
+            return self.attributes["Type"]
+        except SltFileError as exc:
+            raise SltReadError(self._hdf5, None, f"{BLUE}Group{RESET}: '{self._group_name}' is not a valid SlothPy group and has no type.") from None
+
+    @property
+    def attributes(self):
+        return SltAttributes(self._hdf5, self._group_name)
+    
+    @property
+    def attrs(self):
+        """
+        Property to mimic h5py's attribute access convention.
+        """
+        return self.attributes
+
+    @property
+    def atoms_object(self) -> Atoms: pass
+
+    @property
+    def cell_object(self) -> Cell: pass
+    
+    @property
+    def charge(self) -> int: pass
+    
+    @property
+    def multiplicity(self) -> int: pass
+
+    @property
+    def hessian(self) -> ndarray: pass
+
+    @property
+    def born_charges(self) -> ndarray: pass
+    
+    @property
+    def e(self) -> SltDataset: pass
+    
+    energies = e
+    
+    @property
+    def s(self) -> SltDatasetSLP: pass
+    
+    spins = s
+    
+    @property
+    def sx(self) -> SltDatasetSLP: pass
+    
+    @property
+    def sy(self) -> SltDatasetSLP: pass
+    
+    @property
+    def sz(self) -> SltDatasetSLP: pass
+    
+    @property
+    def l(self) -> SltDatasetSLP: pass
+    
+    angular_momenta = l
+    
+    @property
+    def lx(self) -> SltDatasetSLP: pass
+    
+    @property
+    def ly(self) -> SltDatasetSLP: pass
+    
+    @property
+    def lz(self) -> SltDatasetSLP: pass
+    
+    @property
+    def p(self) -> SltDatasetSLP: pass
+    
+    electric_dipole_momenta = p
+    
+    @property
+    def px(self) -> SltDatasetSLP: pass
+    
+    @property
+    def py(self) -> SltDatasetSLP: pass
+    
+    @property
+    def pz(self) -> SltDatasetSLP: pass
+    
+    @property
+    def j(self) -> SltDatasetJM: pass
+    
+    total_angular_momenta = j
+    
+    @property
+    def jx(self) -> SltDatasetJM: pass
+    
+    @property
+    def jy(self) -> SltDatasetJM: pass
+    
+    @property
+    def jz(self) -> SltDatasetJM: pass
+    
+    @property
+    def m(self) -> SltDatasetJM: pass
+    
+    magnetic_dipole_momenta = m
+    
+    @property
+    def mx(self) -> SltDatasetJM: pass
+    
+    @property
+    def my(self) -> SltDatasetJM: pass
+    
+    @property
+    def mz(self) -> SltDatasetJM: pass
+
+    def plot(self, *args, **kwargs): pass
+    
+    def to_numpy_array(self, *args, **kwargs): pass
+
+    def to_data_frame(self, *args, **kwargs): pass
+
+    def to_csv(self, csv_filepath: str, *args, separator: str = ",", **kwargs): pass
+
+    def to_xyz(self, xyz_filepath: str, *args, **kwargs): pass
+
+    def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
+        """
+        Replaces atoms at specified indices with new element symbols and updates
+        the HDF5 group.
+        
+        Parameters:
+        ----------
+        atom_indices : List[int]
+            List of 0-based atom indices to be replaced.
+        new_symbols : List[str]
+            List of new element symbols corresponding to each atom index.
+        
+        Raises:
+        ------
+        ValueError:
+            If the lengths of atom_indices and new_symbols do not match.
+            If any new symbol is invalid or not recognized.
+        IndexError:
+            If any atom index is out of bounds.
+        """
+        pass
+
+    def generate_finite_stencil_displacements(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+        """
+        Generates finite stencil displacements for derivative calculations.
+
+        Displaces each atom along x, y, and z axes in both negative and
+        positive directions by a specified number of steps and step size.
+
+        If this is used for supercells it only displaces each atom in the first
+        unit cell.
+
+        Parameters:
+        ----------
+        displacement_number : int
+            Number of displacement steps in each direction (negative and positive).
+        step : float
+            Magnitude of each displacement step in Angstroms.
+        output_option : str, optional
+            Specifies the output mode. Options:
+            - 'xyz': Write displaced structures as .xyz files.
+            - 'iterator': Return an iterator yielding tuple of dislaced ASE
+            Atoms objects, dofs numbers and displacements numbers
+            - 'slt': Dump all displaced structures into the .slt file.
+            Default is 'xyz'.
+        custom_directory : str, optional
+            Directory path to save .xyz files. Required if output_option is 'xyz'.
+        slt_group_name : str, optional
+            Name of the SltGroup to store displaced structures. Required if
+            output_option is 'slt'.
+
+        Returns:
+        -------
+        Iterator[Atoms] or None
+            Returns an iterator of ASE Atoms objects if output_option is 'iterator'.
+            Otherwise, returns None.
+
+        Raises:
+        ------
+        ValueError:
+            If invalid output_option is specified or required parameters are missing.
+        IOError:
+            If writing to files or HDF5 fails.
+        """
+        pass
+
+    def supercell(self, nx: int, ny: int, nz: int, out, output_option: Literal["xyz", "slt"] = "xyz", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> SltGroup:
+        """
+        Generates a supercell by repeating the unit cell along x, y, and z axes.
+
+        Repeats the unit cell `nx`, `ny`, and `nz` times along the x, y, and z
+        axes respectively to create a supercell where cordinates are such that
+        they start with unit cell for nx = ny = nz = 0 and then the slowest
+        varying index is nx while the fastest is nz.
+
+        Parameters:
+        ----------
+        nx, ny, nz : int
+            Number of repetitions along the x, y, and z-axis.
+        output_option : str, optional
+            Specifies the output mode. Options:
+            - 'xyz': Write the supercell structure as a `.xyz` file.
+            - 'slt': Save the supercell structure in the `.slt` file.
+            Default is 'xyz'.
+        xyz_filepath : str, optional
+            File path to save the `.xyz` file. Required if `output_option` is 'xyz'.
+        slt_group_name : str, optional
+            Name of the `SltGroup` to store the supercell structure. Required if
+            `output_option` is 'slt'.
+
+        Returns:
+        -------
+        None
+
+        Raises:
+        ------
+        ValueError:
+            If an invalid `output_option` is specified or required parameters are missing.
+        IOError:
+            If writing to files or HDF5 fails.
+
+        Notes:
+        -----
+        - If the object is already a supercell, a warning will be issued indicating
+        that a mega-cell will be created by multiplying the current parameters.
+        """
+        pass
+
+    def generate_supercell_finite_stencil_displacements(self, nx: int, ny: int, nz: int, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, save_supercell_to_slt: Optional[str] = None) -> Optional[Iterator[Atoms]]:
+        """
+        Generates a new supercell and finite stencil displacements for it by
+        displacing atoms in the first unit cell.
+
+        Displaces each atom in the first unit cell of a supercell along x, y,
+        and z axes in both negative and positive directions by a specified
+        number of steps and step size.
+
+        Parameters:
+        ----------
+        nx, ny, nz : int
+            Number of repetitions along the x, y, and z axes to create the supercell.
+        displacement_number : int
+            Number of displacement steps in each direction (negative and positive).
+        step : float
+            Magnitude of each displacement step in Angstroms.
+        output_option : str, optional
+            Specifies the output mode. Options:
+            - 'xyz': Write displaced structures as .xyz files.
+            - 'iterator': Return an iterator yielding tuple of dislaced ASE
+            Atoms objects, dofs numbers, displacements numbers, nx, ny, and nz.
+            - 'slt': Dump all displaced structures into the .slt file.
+            Default is 'xyz'.
+        custom_directory : str, optional
+            Directory path to save .xyz files. Required if output_option is 'xyz'.
+        slt_group_name : str, optional
+            Name of the SltGroup to store displaced structures. Required if
+            output_option is 'slt'.
+        save_supercell_to_slt: str, optional
+            When provided, the created supercell is saved to the group of this
+            name in the .slt file and can be used for further processing, e.g.
+            creating Hessian after finite displacement calculations
+
+        Returns:
+        -------
+        Iterator[Atoms] or None
+            Returns an iterator of ASE Atoms objects if output_option is 'iterator'.
+            Otherwise, returns None.
+
+        Raises:
+        ------
+        ValueError:
+            If invalid output_option is specified or required parameters are missing.
+        IOError:
+            If writing to files or HDF5 fails.
+
+        Note:
+        -----
+        For a supercell, use generate_finite_stencil_displacements if you do
+        not wish to repeat it further with new nx, ny, and nz.
+        """
+        pass
+
+    def hessian_from_finite_displacements(self, dirpath: str, format: Literal["CP2K"], slt_group_name: str, displacement_number: int, step: float, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", born_charges: bool = False, force_files_suffix: Optional[str] = None, dipole_momenta_files_suffix: Optional[str] = None) -> SltGroup: pass
+
+    def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesCm1: pass
+    
+    def states_energies_au(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesAu: pass
+    
+    def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltSpinMatrices: pass
+
+    def states_spins(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesSpins: pass
+
+    def angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltAngularMomentumMatrices: pass
+    
+    def states_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesAngularMomenta: pass
+
+    def electric_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltElectricDipoleMomentumMatrices: pass
+
+    def states_electric_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesElectricDipoleMomenta: pass
+
+    def total_angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltTotalAngularMomentumMatrices: pass
+
+    def states_total_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesTotalAngularMomenta: pass
+
+    def magnetic_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltMagneticDipoleMomentumMatrices: pass
+
+    def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None) -> SltStatesMagneticDipoleMomenta: pass
+
+    def _slt_hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> SltHamiltonian : pass
+
+    def zeeman_splitting(self, magnetic_fields: ndarray[Union[float32, float64]], orientations: ndarray[Union[float32, float64]], number_of_states: int = 0, states_cutoff: int = [0, "auto"], rotation: ndarray = None, electric_field_vector: ndarray = None, hyperfine: dict = None, number_cpu: int = None, number_threads: int = None, slt_save: str = None, autotune: bool = False) -> SltZeemanSplitting: pass
+    
+    def magnetisation(self, magnetic_fields: ndarray[Union[float32, float64]], orientations: ndarray[Union[float32, float64]], temperatures: ndarray[Union[float32, float64]], states_cutoff: int = [0, "auto"], rotation: ndarray = None, electric_field_vector: ndarray = None, hyperfine: dict = None, number_cpu: int = None, number_threads: int = None, slt_save: str = None, autotune: bool = False) -> SltMagnetisation: pass
+
+
+####################
+# Hamiltonian Groups
+####################
+
+
+class SltHamiltonian(metaclass=MethodTypeMeta): # here you can only leave *args and *kwargs in arguments
+    _method_type = "HAMILTONIAN"
+
+    __slots__ = ["_slt_group", "_states"]
+
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None:
+        self._slt_group: str = slt_group
+
+    def e(self): return self._slt_group["STATES_ENERGIES"]
+
+    def s(self): return SltDatasetSLP(self._slt_group, "S")
+    
+    def sx(self): return SltDatasetSLP(self._slt_group, "S", 0)
+
+    def sy(self): return SltDatasetSLP(self._slt_group, "S", 1)
+    
+    def sz(self): return SltDatasetSLP(self._slt_group, "S", 2)
+    
+    def l(self): return SltDatasetSLP(self._slt_group, "L")
+
+    def lx(self): return SltDatasetSLP(self._slt_group, "L", 0)
+    
+    def ly(self): return SltDatasetSLP(self._slt_group, "L", 1)
+
+    def lz(self): return SltDatasetSLP(self._slt_group, "L", 2)
+    
+    def p(self): return SltDatasetSLP(self._slt_group, "P")
+    
+    def px(self): return SltDatasetSLP(self._slt_group, "P", 0)
+
+    def py(self): return SltDatasetSLP(self._slt_group, "P", 1)
+
+    def pz(self): return SltDatasetSLP(self._slt_group, "P", 2)
+    
+    def j(self): return SltDatasetJM(self._slt_group, "J")
+    
+    def jx(self): return SltDatasetJM(self._slt_group, "J", 0)
+
+    def jy(self): return SltDatasetJM(self._slt_group, "J", 1)
+
+    def jz(self): return SltDatasetJM(self._slt_group, "J", 2)
+
+    def m(self): return SltDatasetJM(self._slt_group, "M")
+
+    def mx(self): return SltDatasetJM(self._slt_group, "M", 0)
+
+    def my(self): return SltDatasetJM(self._slt_group, "M", 1)
+
+    def mz(self): return SltDatasetJM(self._slt_group, "M", 2) ## from here args kwargs
+
+    def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None): return SltStatesEnergiesCm1(self._slt_group, start_state, stop_state, slt_save)
+    
+    def states_energies_au(self, start_state=0, stop_state=0, slt_save=None): return SltStatesEnergiesAu(self._slt_group, start_state, stop_state, slt_save)
+    
+    def spin_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltSpinMatrices(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+    
+    def states_spins(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltStatesSpins(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+    
+    def angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltAngularMomentumMatrices(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+    
+    def states_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltStatesAngularMomenta(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+
+    def electric_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltElectricDipoleMomentumMatrices(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+    
+    def states_electric_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltStatesElectricDipoleMomenta(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+
+    def total_angular_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltTotalAngularMomentumMatrices(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+
+    def states_total_angular_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltStatesTotalAngularMomenta(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+
+    def magnetic_dipole_momentum_matrices(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltMagneticDipoleMomentumMatrices(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+
+    def states_magnetic_dipole_momenta(self, xyz='xyz', start_state=0, stop_state=0, rotation=None, slt_save=None): return SltStatesMagneticDipoleMomenta(self._slt_group, xyz, start_state, stop_state, rotation, slt_save)
+    
+    def zeeman_splitting(self, magnetic_fields: ndarray[Union[float32, float64]], orientations: ndarray[Union[float32, float64]], number_of_states: int = 0, states_cutoff: int = [0, "auto"], rotation: ndarray = None, electric_field_vector: ndarray = None, hyperfine: dict = None, number_cpu: int = None, number_threads: int = None, slt_save: str = None, autotune: bool = False) -> SltZeemanSplitting:
+        return SltZeemanSplitting(self._slt_group, magnetic_fields, orientations, number_of_states, states_cutoff, rotation, electric_field_vector, hyperfine, number_cpu, number_threads, autotune, slt_save)
+    
+    def magnetisation(self, magnetic_fields: ndarray[Union[float32, float64]], orientations: ndarray[Union[float32, float64]], temperatures: ndarray[Union[float32, float64]], states_cutoff: int = [0, "auto"], rotation: ndarray = None, electric_field_vector: ndarray = None, hyperfine: dict = None, number_cpu: int = None, number_threads: int = None, slt_save: str = None, autotune: bool = False) -> SltMagnetisation:
+        return SltMagnetisation(self, magnetic_fields, orientations, temperatures, states_cutoff, rotation, electric_field_vector, hyperfine, number_cpu, number_threads, autotune, slt_save)
+
+
+class SltExchangeHamiltonian(SltHamiltonian):
+    _method_type = "EXCHANGE_HAMILTONIAN"
+
+    __slots__ = ["_slt_group", "_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
 
     def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None: ##### Here those other options are not needed probably
+        self._slt_group = slt_group ### Only This has to stay
         self._hdf5: str = slt_group._hdf5
-        self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole, self._magnetic_interactions, self._electric_interactions, self._local_states = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine, local_states)
+        self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole, self._magnetic_interactions, self._electric_interactions, self._local_states = self._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine, local_states)
         self._mode: str = None # "eslpjm"
-    
+
+        ############## Here it must  have self._slt_group
+    def _retrieve_hamiltonian_dict(self, states_cutoff=[0,0], rotation=None, hyperfine=None, coordinates=None, local_states=True): ##################### here you must rotate also !!! every rotation in dict!!!!!!!!!!!!!!!!!!!
+        states = self._slt_group.attributes["States"]
+        electric_dipole = False
+        magnetic_interactions = False
+        electric_interactions = False
+        try:
+            if self._slt_group.attributes["Additional"] == "ELECTRIC_DIPOLE_MOMENTA":
+                electric_dipole = True
+        except SltFileError:
+            pass
+        try:
+            if "m" in self._slt_group.attributes["Interactions"]:
+                magnetic_interactions = True
+            if "p" in self._slt_group.attributes["Interactions"]:
+                electric_interactions = True
+        except SltFileError:
+            pass
+        if self._slt_group.attributes["Kind"] == "SLOTHPY": ######### This has to go away because we only load it as ExchangeHamiltonian now
+            with File(self._slt_group._hdf5, 'r') as file:
+                group = file[self._slt_group._group_name]
+                
+                def load_dict_from_group(group, subgroup_name):
+                    data_dict = {}
+                    subgroup = group[subgroup_name]
+                    for key in subgroup.keys():
+                        value = subgroup[key][()]
+                        original_key = literal_eval(key.rsplit('_', 1)[0])
+                        if original_key not in data_dict.keys():
+                            data_dict[original_key] = []
+                        if isinstance(value, bytes):
+                            value = value.decode('utf-8')
+                            if value == 'None':
+                                value = None
+                        elif isinstance(value, ndarray) and value.shape == ():
+                            value = value.item()
+                        data_dict[original_key].append(value)
+                    return data_dict
+                
+                magnetic_centers = load_dict_from_group(group, "MAGNETIC_CENTERS")
+                if not local_states:
+                    for center in magnetic_centers.values():
+                        center[1][0] = center[1][1]
+                exchange_interactions = load_dict_from_group(group, "EXCHANGE_INTERACTIONS")
+        else:
+            magnetic_centers = {0:(self._slt_group._group_name, (states_cutoff[0],0,states_cutoff[1]), rotation, coordinates, hyperfine)} ### no else 
+            exchange_interactions = None
+        
+        return magnetic_centers, exchange_interactions, states, electric_dipole, magnetic_interactions, electric_interactions, local_states
+
+    def _slt_hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True):
+            return SltExchangeHamiltonian(self._slt_group, states_cutoff, rotation, hyperfine, local_states)
+
     def _compute_data(self, matrix_class):
         data = []
         for center in self._magnetic_centers.values():
@@ -970,10 +943,15 @@ class SltHamiltonian(metaclass=MethodTypeMeta):
 #TODO From here consider using the input parser on top of the methods and move parts with validation to it
 
 
+#################
+# Topology Groups
+#################
+
+
 class SltXyz(metaclass=MethodTypeMeta):
     _method_type = "XYZ"
 
-    __slots__ = ["_hdf5", "_slt_group", "_atoms", "_charge", "_multiplicity"]
+    __slots__ = ["_slt_group", "_atoms", "_charge", "_multiplicity"]
 
     def __init__(self, slt_group: SltGroup) -> None:
         self._slt_group = slt_group
@@ -1222,6 +1200,11 @@ class SltSuperCell(SltUnitCell):
         return SltGroup(self._slt_group._hdf5, slt_group_name)
 
 
+###############
+# Forces Groups
+###############
+
+
 class SltHessian(SltSuperCell):
     _method_type = "HESSIAN"
 
@@ -1243,6 +1226,11 @@ class SltHessian(SltSuperCell):
         pass
 
 
+####################
+# Derivatives Groups
+####################
+
+
 class SltPropertyCoordinateDerivative(SltXyz):
     _method_type = "PROPERTY_DERIVATIVE"
 
@@ -1251,7 +1239,12 @@ class SltPropertyCoordinateDerivative(SltXyz):
     def __init__(self, slt_group) -> None:
         super().__init__(slt_group)
 
- 
+
+################
+# Complex Groups
+################
+
+
 class SltCrystalLattice(SltHessian):
     _method_type = "CRYSTAL_LATTICE"
 

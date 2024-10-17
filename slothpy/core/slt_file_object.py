@@ -85,14 +85,8 @@ from slothpy._magnetism._zeeman import (
     _eth,
     _energy_3d,
 )
-# from slothpy._general_utilities._io import (
-#     _group_exists,
-#     _get_soc_energies_cm_1,
-#     _get_states_magnetic_momenta,
-#     _get_states_total_angular_momenta,
-#     _get_total_angular_momneta_matrix,
-#     _get_magnetic_momenta_matrix,
-# )
+from slothpy._general_utilities._io import _exchange_hamiltonian_to_slt
+
 from slothpy._angular_momentum._pseudo_spin_ito import (
     _get_decomposition_in_z_pseudo_spin_basis,
     _ito_real_decomp_matrix,
@@ -298,7 +292,7 @@ class SltFile():
             del file[key]
     
     @slothpy_exc("SltFileError")
-    def hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_save: str, magnetic_dipole_interactions: bool = False, electric_dipole_interactions: bool = False): # in magnetic_centers dict values must be list (mutable) not tuples!!!
+    def exchange_hamiltonian(self, magnetic_centers: dict, exchange_interactions: dict, slt_group_name: str, magnetic_dipole_interactions: bool = False, electric_dipole_interactions: bool = False):
         r"""
         Creates a custom, user-defined SlothPy exchange Hamiltonian and
         saves it as a group in the corresponding .slt file to be used for
@@ -351,7 +345,7 @@ class SltFile():
             [Jzx, Jzy, Jzz]], ...} with exchange Hamiltonian of the form
             /sum_nm -J_nm*S_n*S_m where S_n are spin vector operators of
             corresponding magnetic centers.
-        slt_save : str
+        slt_group_name : str
             Name of the group to which the Hamiltonian will be saved.
             The user can use this name for every available method, the same as 
             any other Hamiltonian groups.
@@ -373,48 +367,12 @@ class SltFile():
           {(0,1):[[1,2,3],[1,2,3],[1,2,3]], (0,2):[[1,2,3],[1,2,3],[1,2,3]], (1,2):[[1,2,3],[1,2,3],[1,2,3]]}, 'Dy3_exchange', True)
         (3x Dy centers in a line with 16x16x16 exchange basis and higher term included as 'local' states)
         """
-        ################################################################ Move this to io to the internal creation section!!!!!
+
         states, contains_electric_dipole_momenta = _parse_hamiltonian_dicts(self, magnetic_centers, exchange_interactions)
-        with File(self._hdf5, 'a') as file:
-            group = file.create_group(slt_save)
-            group.attrs["Type"] = "EXCHANGE_HAMILTONIAN"
-            group.attrs["Kind"] = "SLOTHPY" ################################# get rid of this since we have exchange
-            group.attrs["States"] = states
-            group.attrs["Description"] = f"A custom exchange Hamiltonian created by the user."
-            if contains_electric_dipole_momenta:
-                group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
-            interactions = "mp" if electric_dipole_interactions and magnetic_dipole_interactions else "m" if magnetic_dipole_interactions else "p" if electric_dipole_interactions else None
-            if interactions is not None:
-                group.attrs["Interactions"] = interactions
-
-            def save_dict_to_group(group, data_dict, subgroup_name):
-                subgroup = group.create_group(subgroup_name)
-                for key, value in data_dict.items():
-                    key_str = str(key) if not isinstance(key, str) else f"'{key}'"
-                    if isinstance(value, (list, tuple)):
-                        for i, item in enumerate(value):
-                            item_name = f"{key_str}_{i}"
-                            self._create_dataset(subgroup, item_name, item)
-                    else:
-                        self._create_dataset(subgroup, key_str, value)
-            
-            save_dict_to_group(group, magnetic_centers, "MAGNETIC_CENTERS")
-            save_dict_to_group(group, exchange_interactions, "EXCHANGE_INTERACTIONS")
-
-    def _create_dataset(self, group, name, data):
-        if data is None:
-            data=bytes_('None')
-        elif isinstance(data, (ndarray, list)):
-            data = array(data)
-        elif isinstance(data, (int, float)):
-            data = array(data)
-        elif isinstance(data, str):
-            data = bytes_(data)
-        else:
-            raise ValueError(f"Unsupported data type: {type(data)}")
+        _exchange_hamiltonian_to_slt(self._hdf5, slt_group_name, states, magnetic_centers, exchange_interactions, contains_electric_dipole_momenta, electric_dipole_interactions, magnetic_dipole_interactions)
         
-        group.create_dataset(name, data=data)
-    
+        return self[f"{slt_group_name}"]
+
     def zeeman_splitting(
         self,
         hamiltonian_group_name: str,

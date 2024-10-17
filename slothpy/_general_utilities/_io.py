@@ -19,7 +19,7 @@ from os.path import join
 from re import compile, search, findall
 
 from h5py import File, string_dtype
-from numpy import ndarray, dtype, asarray, zeros, empty, loadtxt, sum, reshape, mean, arange, transpose, min
+from numpy import ndarray, dtype, bytes_, asarray, zeros, empty, loadtxt, sum, reshape, mean, arange, transpose, min
 from scipy.linalg import eigh
 
 from slothpy.core._slothpy_exceptions import SltReadError
@@ -228,6 +228,50 @@ def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny,
         if born_charges is not None:
             dataset = group.create_dataset('BORN_CHARGES', data=born_charges, dtype=settings.float, chunks=True)
             dataset.attrs["Description"] = "Born charges in the form [dof_number, 3] where the last index is for xyz polarization."
+
+
+def _exchange_hamiltonian_to_slt(slt_filepath: str, group_name: str, states: int, magnetic_centers: dict, exchange_interactions: dict, contains_electric_dipole_momenta: bool, electric_dipole_interactions: bool, magnetic_dipole_interactions: bool):
+    with File(slt_filepath, 'a') as file:
+        group = file.create_group(group_name)
+        group.attrs["Type"] = "EXCHANGE_HAMILTONIAN"
+        group.attrs["Kind"] = "SLOTHPY"
+        group.attrs["States"] = states
+        group.attrs["Description"] = f"A custom exchange Hamiltonian created by the user."
+        if contains_electric_dipole_momenta:
+            group.attrs["Additional"] = "ELECTRIC_DIPOLE_MOMENTA"
+        interactions = "mp" if electric_dipole_interactions and magnetic_dipole_interactions else "m" if magnetic_dipole_interactions else "p" if electric_dipole_interactions else None
+        if interactions is not None:
+            group.attrs["Interactions"] = interactions
+        
+        save_dict_to_group(group, magnetic_centers, "MAGNETIC_CENTERS")
+        save_dict_to_group(group, exchange_interactions, "EXCHANGE_INTERACTIONS")
+
+
+def _create_dataset(group, name, data):
+    if data is None:
+        data=bytes_('None')
+    elif isinstance(data, (ndarray, list)):
+        data = asarray(data)
+    elif isinstance(data, (int, float)):
+        data = asarray(data)
+    elif isinstance(data, str):
+        data = bytes_(data)
+    else:
+        raise ValueError(f"Unsupported data type: {type(data)}")
+
+    group.create_dataset(name, data=data)
+
+
+def save_dict_to_group(group, data_dict, subgroup_name):
+    subgroup = group.create_group(subgroup_name)
+    for key, value in data_dict.items():
+        key_str = str(key) if not isinstance(key, str) else f"'{key}'"
+        if isinstance(value, (list, tuple)):
+            for i, item in enumerate(value):
+                item_name = f"{key_str}_{i}"
+                _create_dataset(subgroup, item_name, item)
+        else:
+            _create_dataset(subgroup, key_str, value)
 
 
 ##############################

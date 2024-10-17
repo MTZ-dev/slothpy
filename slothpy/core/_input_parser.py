@@ -126,7 +126,7 @@ def validate_input(func):
                             else:
                                 raise ValueError("The orientations' array must be (n,3) in the form: [[direction_x, direction_y, direction_z],...] or (n,4) array in the form: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
                     case "states_cutoff":
-                        if slt_group.attributes["Kind"] == "SLOTHPY":
+                        if slt_group.attributes["Kind"] == "SLOTHPY": ################################################ 
                             if value != [0, "auto"]:
                                 warn("State cutoff was modified, but it has no impact on the SlothPy user-defined Hamiltonian.", SltWarning)
                             continue
@@ -154,7 +154,7 @@ def validate_input(func):
                             raise ValueError("The number of states must be a positive integer or 0 for all of the calculated states.")
                         if not isinstance(bound_args.arguments["states_cutoff"], list) or len(bound_args.arguments["states_cutoff"]) != 2:
                             raise ValueError("The states' cutoff must be a Python's list of length 2.")
-                        max_states = int(slt_group.attributes["States"]) if bound_args.arguments["states_cutoff"][0] == 0 or slt_group.attributes["Kind"] == "SLOTHPY" else bound_args.arguments["states_cutoff"][0]
+                        max_states = int(slt_group.attributes["States"]) if bound_args.arguments["states_cutoff"][0] == 0 or slt_group.attributes["Kind"] == "SLOTHPY" else bound_args.arguments["states_cutoff"][0] ################################################# slt_group.type == "EXCHANGE_HAMILTONIAN"
                         if isinstance(bound_args.arguments["states_cutoff"][1], (int, int64)) and (bound_args.arguments["states_cutoff"][1] > 0) and (bound_args.arguments["states_cutoff"][1] <= bound_args.arguments["states_cutoff"][0]) if isinstance(bound_args.arguments["states_cutoff"][0], (int, int64)) else False:
                             if value == 0:
                                 value = bound_args.arguments["states_cutoff"][1]
@@ -208,6 +208,13 @@ def validate_input(func):
                     case "energy_unit":
                         if value not in ['kj/mol', 'eh', 'hartree', 'au', 'ev', 'kcal/mol', 'wavenumber']:
                             raise ValueError(f"Energy unit must be one of the following strings: kj/mol, eh, hartree, au, ev, kcal/mol, you entered {value} with type {type(value)}")
+                    case "xyz_filepath":
+                        try:
+                            if not value.endswith(".xyz"):
+                                value += ".xyz"
+                        except Exception:
+                            raise ValueError("XYZ fielpath must be a string.")
+
                 bound_args.arguments[name] = value
                 
         except Exception as exc:
@@ -241,7 +248,7 @@ def _parse_hamiltonian_dicts(slt_file, magnetic_centers: dict, exchange_interact
     for value in magnetic_centers.values():
         if not isinstance(value, list):
             raise ValueError("The values of the magnetic centers dictionary must be Python's lists.")
-        if slt_file[value[0]].attributes["Type"] != "HAMILTONIAN" or slt_file[value[0]].attributes["Kind"] == "SLOTHPY":
+        if slt_file[value[0]].attributes["Type"] != "HAMILTONIAN" or slt_file[value[0]].attributes["Kind"] == "SLOTHPY": #############################################################################
             raise ValueError(f"Group {value[0]} either does not exist or has a wrong type: expected HAMILTONIAN (it cannot be a custom SlothPy Hamiltonian).")
         try:
             if slt_file[value[0]].attributes["Additional"] != "ELECTRIC_DIPOLE_MOMENTA":

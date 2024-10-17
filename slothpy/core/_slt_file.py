@@ -50,6 +50,7 @@ from slothpy.core._delayed_methods import *
 # Attributes
 ############
 
+
 class SltAttributes:
 
     __slots__ = ["_hdf5", "_item_path"]
@@ -487,9 +488,9 @@ class SltGroup(metaclass=MethodDelegateMeta):
 
     def to_data_frame(self, *args, **kwargs): pass
 
-    def to_csv(self, csv_filepath: str, *args, separator: str = ",", **kwargs): pass
+    def to_csv(self, csv_filepath: str, separator: str = ",", *args, **kwargs): pass
 
-    def to_xyz(self, xyz_filepath: str, *args, **kwargs): pass
+    def to_xyz(self, xyz_filepath: str, hese: int, *args, **kwargs): pass
 
     def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
         """
@@ -502,14 +503,7 @@ class SltGroup(metaclass=MethodDelegateMeta):
             List of 0-based atom indices to be replaced.
         new_symbols : List[str]
             List of new element symbols corresponding to each atom index.
-        
-        Raises:
-        ------
-        ValueError:
-            If the lengths of atom_indices and new_symbols do not match.
-            If any new symbol is invalid or not recognized.
-        IndexError:
-            If any atom index is out of bounds.
+
         """
         pass
 
@@ -547,13 +541,6 @@ class SltGroup(metaclass=MethodDelegateMeta):
         Iterator[Atoms] or None
             Returns an iterator of ASE Atoms objects if output_option is 'iterator'.
             Otherwise, returns None.
-
-        Raises:
-        ------
-        ValueError:
-            If invalid output_option is specified or required parameters are missing.
-        IOError:
-            If writing to files or HDF5 fails.
         """
         pass
 
@@ -584,13 +571,6 @@ class SltGroup(metaclass=MethodDelegateMeta):
         Returns:
         -------
         None
-
-        Raises:
-        ------
-        ValueError:
-            If an invalid `output_option` is specified or required parameters are missing.
-        IOError:
-            If writing to files or HDF5 fails.
 
         Notes:
         -----
@@ -639,13 +619,6 @@ class SltGroup(metaclass=MethodDelegateMeta):
             Returns an iterator of ASE Atoms objects if output_option is 'iterator'.
             Otherwise, returns None.
 
-        Raises:
-        ------
-        ValueError:
-            If invalid output_option is specified or required parameters are missing.
-        IOError:
-            If writing to files or HDF5 fails.
-
         Note:
         -----
         For a supercell, use generate_finite_stencil_displacements if you do
@@ -653,7 +626,76 @@ class SltGroup(metaclass=MethodDelegateMeta):
         """
         pass
 
-    def hessian_from_finite_displacements(self, dirpath: str, format: Literal["CP2K"], slt_group_name: str, displacement_number: int, step: float, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", born_charges: bool = False, force_files_suffix: Optional[str] = None, dipole_momenta_files_suffix: Optional[str] = None) -> SltGroup: pass
+    def hessian_from_finite_displacements(self, dirpath: str, format: Literal["CP2K"], slt_group_name: str, displacement_number: int, step: float, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", born_charges: bool = False, force_files_suffix: Optional[str] = None, dipole_momenta_files_suffix: Optional[str] = None) -> SltGroup:
+        """
+        Computes the Hessian (second-order force constants) from finite displacement
+        calculations and saves it into the .slt file.
+
+        Reads forces (and optionally dipole moments) from finite displacement
+        calculations stored in the specified directory, constructs the Hessian matrix,
+        and saves it under the given group name in the .slt file.
+
+        Parameters
+        ----------
+        dirpath : str
+            Path to the directory containing the finite displacement calculation
+            results.
+        format : str
+            Format of the finite displacement calculations. Currently, only 'CP2K'
+            is supported.
+        slt_group_name : str
+            Name of the SltGroup where the computed Hessian will be stored in the
+            .slt file.
+        displacement_number : int
+            Number of displacement steps in each direction used in the finite
+            difference stencil.
+        step : float
+            Magnitude of each displacement step in Angstroms.
+        acoustic_sum_rule : str, optional
+            Method to enforce the acoustic sum rule on the Hessian matrix. Options
+            are:
+            - 'symmetric' (default): Enforces the sum of forces to be zero
+            symmetrically.
+            - 'self_term': Subtracts the sum from the diagonal terms (self terms).
+            - 'without': Does not enforce the acoustic sum rule.
+        born_charges : bool, optional
+            If True, includes Born effective charges (dipole moment derivatives)
+            in the calculation and saves them. Default is False.
+        force_files_suffix : str, optional
+            Suffix of the force files to be read. If None, default suffix is used
+            based on the specified format.
+        dipole_momenta_files_suffix : str, optional
+            Suffix of the dipole moment files to be read. If None, default suffix
+            is used based on the specified format.
+
+        Returns
+        -------
+        SltGroup
+            Returns a new SltGroup containing the Hessian and (if applicable) the
+            Born effective charges.
+
+        Notes
+        -----
+        The method reads forces (and optionally dipole moments) from files in the
+        specified directory. The files are expected to follow a naming convention
+        of `dof_{dof}_disp_{disp}{suffix}`, exactly as produced by the
+        generate_*_finite_stencil_displacements methods where `{dof}` is the
+        degree of freedom index, `{disp}` is the displacement step number, and 
+        `{suffix}` is the file suffix (e.g., '.xyz' or '-1_0.xyz') based on the
+        specified format.
+
+        Examples
+        --------
+        >>> supercell.hessian_from_finite_displacements(
+        ...     dirpath='finite_displacements',
+        ...     format='CP2K',
+        ...     slt_group_name='HessianGroup',
+        ...     displacement_number=1,
+        ...     step=0.01,
+        ...     born_charges=True
+        ... )
+        """
+        pass
 
     def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesCm1: pass
     
@@ -698,6 +740,24 @@ class SltHamiltonian(metaclass=MethodTypeMeta): # here you can only leave *args 
 
     def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None:
         self._slt_group: str = slt_group
+    
+    def _slt_hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> SltHamiltonian : pass
+    ####################### Implement THIS!!!!!!!!!!!!!! ################### to include generation for methods and rotation (without local states or keep them to have the same calling convention in methods)
+    # then also the following methods must be implmented to return packed data for methods to shared memory
+
+    # @property
+    # def arrays_to_shared_memory(self):
+    #     arrays = [item for property in self._mode for item in getattr(self, property)]
+    #     if len(self._magnetic_centers.keys()) > 1:
+    #         arrays.append(self.interaction_matrix)
+    #     return arrays
+    
+    # @property
+    # def info(self):
+    #     info_list = []
+    #     for i in range(len(self._magnetic_centers.keys())):
+    #         info_list.append(self._magnetic_centers[i][1])
+    #     return (self._mode, info_list, self._local_states)
 
     def e(self): return self._slt_group["STATES_ENERGIES"]
 
@@ -785,6 +845,7 @@ class SltExchangeHamiltonian(SltHamiltonian):
 
         ############## Here it must  have self._slt_group
     def _retrieve_hamiltonian_dict(self, states_cutoff=[0,0], rotation=None, hyperfine=None, coordinates=None, local_states=True): ##################### here you must rotate also !!! every rotation in dict!!!!!!!!!!!!!!!!!!!
+        ################################# Up rotation ################################################
         states = self._slt_group.attributes["States"]
         electric_dipole = False
         magnetic_interactions = False
@@ -976,8 +1037,6 @@ class SltXyz(metaclass=MethodTypeMeta):
         return self._multiplicity
 
     def to_xyz(self, xyz_filepath: str):
-        if not xyz_filepath.endswith(".xyz"):
-            xyz_filepath += ".xyz"
         additional_info = ""
         if self._charge is not None:
             additional_info += f"Charge: {self._charge} "

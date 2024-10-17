@@ -16,6 +16,7 @@
 
 from abc import ABCMeta
 from functools import wraps
+from inspect import signature
 
 from slothpy._general_utilities._constants import BLUE, RESET
 from slothpy.core._slothpy_exceptions import SltFileError, SltInputError
@@ -35,7 +36,22 @@ class MethodTypeMeta(ABCMeta):
 
 def delegate_method_to_slt_group(method):
     @wraps(method)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, **kwargs):
+        pos_args = []
+        new_kwargs = {}
+        args_found = False
+        for key, value in kwargs.items():
+            if key == 'args':
+                if isinstance(value, (list, tuple)):
+                    pos_args.extend(value)
+                else:
+                    pos_args.append(value)
+                args_found = True
+            elif key == 'kwargs':
+                new_kwargs.update(value)
+            elif not args_found:
+                pos_args.append(value)
+
         if not self._exists:
             raise SltFileError(self._hdf5, IOError(f"{BLUE}Group{RESET} '{self._group_name}' does not exist in the .slt file.")) from None
         obj = type_registry.get(self.type)
@@ -46,8 +62,9 @@ def delegate_method_to_slt_group(method):
         delegated_method = getattr(obj, method.__name__, None)
         if delegated_method is None:
             raise SltInputError(AttributeError(f"'{obj._method_type}' object has no method '{method.__name__}'.")) from None
-        return delegated_method(*args, **kwargs)
-    
+
+        return delegated_method(*pos_args, **new_kwargs)
+
     return wrapper
 
 

@@ -14,12 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from signal import signal, SIGINT
-from slothpy._general_utilities._system import exit_handler
-
-# Set KeyboardInterrupt to exit
-signal(SIGINT, exit_handler)
-
 from multiprocessing import current_process, set_start_method
 
 if current_process().name == 'MainProcess':
@@ -27,6 +21,19 @@ if current_process().name == 'MainProcess':
         set_start_method('spawn')
     except RuntimeError as exc:
         pass
+
+
+from multiprocessing import current_process
+
+
+from signal import signal, SIGINT
+from slothpy.core._system import exit_handler
+from slothpy.core._config import settings
+
+if settings.sysexit:
+    # Set KeyboardInterrupt to exit
+    signal(SIGINT, exit_handler)
+
 
 import os
 
@@ -37,7 +44,10 @@ os.environ['NUMBA_ENABLE_AVX'] = '1'
 # Set for the compilation debug
 # os.environ['NUMBA_DEBUG'] = '1'
 
-from multiprocessing import current_process
+from slothpy.core._thread_controler import set_slt_number_threads
+
+set_slt_number_threads(settings.number_cpu)
+
 
 from .core import (
     slt_file,
@@ -47,6 +57,8 @@ from .core import (
     hamiltonian_from_molcas,
     hamiltonian_from_orca,
     settings,
+    set_sysexit_on_sigint,
+    set_default_on_sigint,
     turn_on_monitor,
     turn_off_monitor,
     set_plain_error_reporting_mode,
@@ -55,6 +67,8 @@ from .core import (
     set_single_precision,
     set_log_level,
     set_print_level,
+    set_number_threads,
+    set_number_cpu,
 )
 from ._general_utilities import (
     lebedev_laikov_grid_over_hemisphere,
@@ -75,6 +89,8 @@ __all__ = [
     "hamiltonian_from_orca",
     "SltFile",
     "settings",
+    "set_sysexit_on_sigint",
+    "set_default_on_sigint",
     "turn_on_monitor",
     "turn_off_monitor",
     "set_default_error_reporting_mode",
@@ -83,6 +99,8 @@ __all__ = [
     "set_single_precision",
     "set_log_level",
     "set_print_level",
+    "set_num_threads",
+    "set_number_cpu",
     "lebedev_laikov_grid_over_hemisphere",
     "fibonacci_over_hemisphere",
     "meshgrid_over_hemisphere",

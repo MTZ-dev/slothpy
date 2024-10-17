@@ -22,10 +22,6 @@ from numpy import (
 from numpy.linalg import eigh
 from numba import jit, set_num_threads
 from slothpy._general_utilities._constants import KB, MU_B
-from slothpy._general_utilities._system import (
-    _get_num_of_processes,
-    _distribute_chunks,
-)
 from slothpy._general_utilities._io import (
     _get_soc_magnetic_momenta_and_energies_from_hdf5,
 )

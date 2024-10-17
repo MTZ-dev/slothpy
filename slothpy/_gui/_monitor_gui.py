@@ -8,7 +8,7 @@ from numpy import array, sum
 from multiprocessing.shared_memory import SharedMemory
 import psutil
 
-from slothpy._general_utilities._system import SltTemporarySignalHandler, exit_handler, _from_shared_memory, _distribute_chunks
+from slothpy.core._system import SltTemporarySignalHandler, exit_handler, _from_shared_memory, _distribute_chunks
 
 class WorkerMonitorApp(QMainWindow):
     def __init__(self, progress_array_info, number_tasks_per_process, calling_function_name):

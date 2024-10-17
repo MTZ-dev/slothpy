@@ -15,16 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
+from signal import signal, SIGINT, SIG_DFL
 from os import cpu_count
-from importlib import resources, resources as pkg_resources
+from importlib import resources as pkg_resources
 from configparser import ConfigParser
 from pkg_resources import resource_filename
 from typing import Literal
+
 from IPython import get_ipython
 from numpy import int32, float32, complex64, int64, float64, complex128
+
 from slothpy.core._slothpy_exceptions import SltInputError
-from slothpy._general_utilities._system import _is_notebook
+from slothpy.core._system import _is_notebook
 from slothpy._general_utilities._constants import RED, YELLOW, BLUE, GREEN, RESET
+from slothpy.core._system import exit_handler
+from slothpy.core._thread_controler import set_slt_number_threads
 
 
 class SltSettings:
@@ -34,6 +39,7 @@ class SltSettings:
             "number_cpu": 0,
             "number_threads": 1,
             "precision": "double",
+            "sysexit": True,
             "monitor": False,
             "traceback": False,
             "log_level": 0,
@@ -49,7 +55,7 @@ class SltSettings:
                 self._settings[key] = config['DEFAULT'].getint(key)
 
         # Update boolean settings
-        for key in ["monitor", "traceback"]:
+        for key in ["sysexit", "monitor", "traceback"]:
             if key in config['DEFAULT']:
                 self._settings[key] = config['DEFAULT'].getboolean(key)
         
@@ -68,16 +74,16 @@ class SltSettings:
     
     @property
     def number_cpu(self):
-        return self._settings["number_cpu"]
+        return cpu_count() if self._settings["number_cpu"] == 0 else self._settings["number_cpu"]
 
     @number_cpu.setter
     def number_cpu(self, value):
         if isinstance(value, int) and value >= 0 and value <= int(cpu_count()):
             self._settings["number_cpu"] = value
         else:
-            raise SltInputError(
-                ValueError(f"The number of CPUs has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
-            )
+            raise SltInputError(ValueError(f"The number of CPUs has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs)."))
+
+        set_slt_number_threads(value)
         
     @property
     def number_threads(self):
@@ -88,9 +94,24 @@ class SltSettings:
         if isinstance(value, int) and value >= 0 and value <= int(cpu_count()):
             self._settings["number_threads"] = value
         else:
+            raise SltInputError(ValueError(f"The number of Threads has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs)."))
+
+    @property
+    def sysexit(self):
+        return self._settings["sysexit"]
+
+    @sysexit.setter
+    def sysexit(self, value):
+        if isinstance(value, bool):
+            self._settings["sysexit"] = value
+        else:
             raise SltInputError(
-                ValueError(f"The number of Threads has to be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
+                ValueError("Sysexit setter accepts only True or False.")
             )
+        if self._settings["sysexit"]:
+            signal(SIGINT, exit_handler)
+        else:
+            signal(SIGINT, SIG_DFL)
 
     @property
     def monitor(self):
@@ -101,9 +122,7 @@ class SltSettings:
         if isinstance(value, bool):
             self._settings["monitor"] = value
         else:
-            raise SltInputError(
-                ValueError("Monitor setter accepts only True or False.")
-            )
+            raise SltInputError(ValueError("Monitor setter accepts only True or False."))
 
     @property
     def traceback(self):
@@ -114,9 +133,7 @@ class SltSettings:
         if isinstance(value, bool):
             self._settings["traceback"] = value
         else:
-            raise SltInputError(
-                ValueError("Traceback setter accepts only True or False.")
-            )
+            raise SltInputError(ValueError("Traceback setter accepts only True or False."))
         if self._settings["traceback"]:
             _set_default_error_reporting_mode()
         else:
@@ -131,9 +148,7 @@ class SltSettings:
         if value in ["double", "single"]:
             self._settings["precision"] = value
         else:
-            raise SltInputError(
-                ValueError("Precision setter accepts only 'double' or 'single' literals.")
-            )
+            raise SltInputError(ValueError("Precision setter accepts only 'double' or 'single' literals."))
     
     @property
     def log_level(self):
@@ -144,9 +159,7 @@ class SltSettings:
         if isinstance(value, int):
             self._settings["log_level"] = value
         else:
-            raise SltInputError(
-                ValueError("Log level setter accepts only integers.")
-            )
+            raise SltInputError(ValueError("Log level setter accepts only integers."))
         
     @property
     def print_level(self):
@@ -157,9 +170,7 @@ class SltSettings:
         if isinstance(value, int):
             self._settings["print_level"] = value
         else:
-            raise SltInputError(
-                ValueError("Print level setter accepts only integers.")
-            )
+            raise SltInputError(ValueError("Print level setter accepts only integers."))
         
     @property
     def int(self):
@@ -250,11 +261,34 @@ def set_number_cpu(value: int = 0, permanent: bool = False) -> None:
 def set_number_threads(value: int = 1, permanent: bool = False) -> None:
     """
     Run this to set the number of Threads in linear algebra libraries used by
-    SlotphPy caluclations. Set permanent = True to save the settings
+    SlotphPy parallel caluclations. Set permanent = True to save the settings
     permanently in the .ini file.
     """
 
     settings.number_threads = value
+    if permanent:
+        settings.save_settings()
+
+
+def set_sysexit_on_sigint(permanent: bool = False) -> None:
+    """
+    Run this to set the signal handler of SIGINT to sys.exit(1).
+    Set permanent = True to save the settings permanently in the .ini file.
+    """
+
+    settings.sysexit = True
+    if permanent:
+        settings.save_settings()
+
+
+
+def set_default_on_sigint(permanent: bool = False) -> None:
+    """
+    Run this to set the default signal handler of SIGINT.
+    Set permanent = True to save the settings permanently in the .ini file.
+    """
+
+    settings.sysexit = False
     if permanent:
         settings.save_settings()
 

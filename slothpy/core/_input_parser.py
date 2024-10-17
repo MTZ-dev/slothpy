@@ -18,7 +18,7 @@ import inspect
 from functools import wraps
 from os import cpu_count
 from warnings import warn
-from numpy import ndarray, asarray, ascontiguousarray, allclose, identity, log, int64
+from numpy import ndarray, asarray, ascontiguousarray, allclose, identity, log, int64, int32
 from slothpy.core._slothpy_exceptions import SltInputError, SltFileError, SltSaveError, SltWarning, slothpy_exc
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere, fibonacci_over_hemisphere, meshgrid_over_hemisphere
 from slothpy._general_utilities._math_expresions import _normalize_grid_vectors, _normalize_orientations, _normalize_orientation
@@ -56,7 +56,7 @@ def validate_input(func):
                             value = settings.number_cpu
                         if value == 0:
                             value = int(cpu_count())    
-                        elif not (isinstance(value, (int, int64)) and value > 0 and value <= int(cpu_count())):
+                        elif not (isinstance(value, (int, int32, int64)) and value > 0 and value <= int(cpu_count())):
                             raise ValueError(f"The number of CPUs must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
                     case "number_threads":
                         max_threads = int(cpu_count()) if bound_args.arguments['number_cpu'] == 0 else bound_args.arguments['number_cpu']
@@ -66,7 +66,7 @@ def validate_input(func):
                             value = settings.number_threads
                         if value == 0:
                             value = max_threads
-                        elif not (isinstance(value, (int, int64)) and value > 0 and value <= max_threads):
+                        elif not (isinstance(value, (int, int32, int64)) and value > 0 and value <= max_threads):
                             raise ValueError(f"The number of threads must be a nonnegative integer less than or equal to the number of available logical CPUs: {int(cpu_count())} (0 for all the CPUs).")
                     case "magnetic_fields":
                         try:
@@ -85,7 +85,7 @@ def validate_input(func):
                         if (value <= 0).any():
                             raise ValueError("Zero or negative temperatures were detected in the input.")
                     case "grid":
-                        if isinstance(value, (int, int64)):
+                        if isinstance(value, (int, int32, int64)):
                             value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
                         else:
                             try:
@@ -99,10 +99,10 @@ def validate_input(func):
                             else:
                                 raise ValueError("The grid must be set to an integer from 0-11, or a custom one must be in the form [[direction_x, direction_y, direction_z, weight],...].")
                     case "orientations":
-                        if isinstance(value, (int, int64)):
+                        if isinstance(value, (int, int32, int64)):
                             value = lebedev_laikov_grid_over_hemisphere(value, settings.precision)
                         elif isinstance(value, (tuple, list)) and len(value) == 2 and not (isinstance(value[0], (tuple, list, ndarray)) and isinstance(value[1], (tuple, list, ndarray))):
-                            if not isinstance(value[1], (int, int64)):
+                            if not isinstance(value[1], (int, int32, int64)):
                                 raise ValueError("The second entry in the orientation list/tuple must contain an integer controlling the number of the grid points.")
                             if value[0] == "fibonacci":
                                 value = ["fibonacci", fibonacci_over_hemisphere(value[1], settings.precision)]
@@ -134,7 +134,7 @@ def validate_input(func):
                             raise ValueError("The states' cutoff must be a Python's list of length 2.")
                         if value[0] == 0:
                             value[0] = int(slt_group.attributes["States"])
-                        elif not isinstance(value[0], (int, int64)) or value[0] < 0:
+                        elif not isinstance(value[0], (int, int32, int64)) or value[0] < 0:
                             raise ValueError(f"The states' cutoff must be a nonnegative integer less than or equal to the overall number of available states: {slt_group.attributes['States']} (or 0 for all the states).")
                         elif value[0] > slt_group.attributes["States"]:
                             raise ValueError(f"Set the states' cutoff to a nonnegative integer less than or equal to the overall number of available states: {slt_group.attributes['States']} (or 0 for all the states).")
@@ -143,19 +143,19 @@ def validate_input(func):
                         if value[1] == "auto":
                             if "number_of_states" in bound_args.arguments.keys() and bound_args.arguments["number_of_states"] == 0:
                                 value[1] = value[0]
-                            elif "number_of_states" in bound_args.arguments.keys() and isinstance(bound_args.arguments["number_of_states"], (int, int64)) and bound_args.arguments["number_of_states"] <= value[0]:
+                            elif "number_of_states" in bound_args.arguments.keys() and isinstance(bound_args.arguments["number_of_states"], (int, int32, int64)) and bound_args.arguments["number_of_states"] <= value[0]:
                                 value[1] = bound_args.arguments["number_of_states"]
                             if "temperatures" in bound_args.arguments.keys():
                                 value[1] = settings.float(max(bound_args.arguments["temperatures"]) * KB * -log(1e-16 if settings.precision == "double" else 1e-8))
-                        elif not isinstance(value[1], (int, int64)) or value[1] < 0 or value[1] > value[0]:
+                        elif not isinstance(value[1], (int, int32, int64)) or value[1] < 0 or value[1] > value[0]:
                             raise ValueError("Set the second entry of states' cutoff to a nonnegative integer less or equal to the first entry or 0 for all the states from the first entry or 'auto' to let the SlothPy decide on a suitable cutoff.")
                     case "number_of_states":
-                        if not isinstance(value, (int, int64)) or value < 0:
+                        if not isinstance(value, (int, int32, int64)) or value < 0:
                             raise ValueError("The number of states must be a positive integer or 0 for all of the calculated states.")
                         if not isinstance(bound_args.arguments["states_cutoff"], list) or len(bound_args.arguments["states_cutoff"]) != 2:
                             raise ValueError("The states' cutoff must be a Python's list of length 2.")
                         max_states = int(slt_group.attributes["States"]) if bound_args.arguments["states_cutoff"][0] == 0 or slt_group.attributes["Kind"] == "SLOTHPY" else bound_args.arguments["states_cutoff"][0] ################################################# slt_group.type == "EXCHANGE_HAMILTONIAN"
-                        if isinstance(bound_args.arguments["states_cutoff"][1], (int, int64)) and (bound_args.arguments["states_cutoff"][1] > 0) and (bound_args.arguments["states_cutoff"][1] <= bound_args.arguments["states_cutoff"][0]) if isinstance(bound_args.arguments["states_cutoff"][0], (int, int64)) else False:
+                        if isinstance(bound_args.arguments["states_cutoff"][1], (int, int32, int64)) and (bound_args.arguments["states_cutoff"][1] > 0) and (bound_args.arguments["states_cutoff"][1] <= bound_args.arguments["states_cutoff"][0]) if isinstance(bound_args.arguments["states_cutoff"][0], (int, int32, int64)) else False:
                             if value == 0:
                                 value = bound_args.arguments["states_cutoff"][1]
                             max_states = bound_args.arguments["states_cutoff"][1]
@@ -165,15 +165,15 @@ def validate_input(func):
                             print(max_states)
                             raise ValueError("The number of states must be less or equal to the states' cutoff or overall number of states.")
                     case "start_state":
-                        if not (isinstance(value, (int, int64)) and value >= 0 and value < slt_group.attributes["States"]):
+                        if not (isinstance(value, (int, int32, int64)) and value >= 0 and value < slt_group.attributes["States"]):
                             raise ValueError(f"The first (start) state's number must be a nonnegative integer less than or equal to the overall number of states - 1: {slt_group.attributes['States'] - 1}.")
                     case "stop_state":
                         if value == 0:
                             value = int(slt_group.attributes["States"])
-                        if not isinstance(value, (int, int64)) or value < 0 or value > slt_group.attributes["States"]:
+                        if not isinstance(value, (int, int32, int64)) or value < 0 or value > slt_group.attributes["States"]:
                             raise ValueError(f"The last (stop) state's number must be a nonnegative integer less than or equal to the overall number of states: {slt_group.attributes['States']}.")
                         if "start_state" in bound_args.arguments.keys():
-                            if isinstance(bound_args.arguments["start_state"], (int, int64)) and (bound_args.arguments["start_state"] >= 0) and bound_args.arguments["start_state"] <= slt_group.attributes["States"] and value < bound_args.arguments["start_state"]:
+                            if isinstance(bound_args.arguments["start_state"], (int, int32, int64)) and (bound_args.arguments["start_state"] >= 0) and bound_args.arguments["start_state"] <= slt_group.attributes["States"] and value < bound_args.arguments["start_state"]:
                                 raise ValueError(f"The last (stop) state's number must be equal or greater than the first (start) state's number: {bound_args.arguments['start_state']}.")
                     case "xyz":
                         if value not in ["xyz", "x", "y", "z"]:
@@ -214,6 +214,50 @@ def validate_input(func):
                                 value += ".xyz"
                         except Exception:
                             raise ValueError("XYZ fielpath must be a string.")
+                    case "atom_indices":
+                        if len(value) != len(bound_args.arguments["new_symbols"]):
+                            raise ValueError("The lists 'atom_indices' and 'new_symbols' must have the same length.")
+                        num_atoms = slt_group.attributes["Number_of_atoms"]  
+                        for idx in value:
+                            if not (0 <= idx < num_atoms):
+                                raise IndexError(f"Atom index {idx} is out of bounds for a structure with {num_atoms} atoms.")
+                    case "new_symbols":
+                        from ase.data import chemical_symbols
+                        for symbol in value:
+                            if symbol not in chemical_symbols:
+                                raise ValueError(f"Invalid element symbol: '{symbol}'. Please provide valid chemical element symbols.")
+                    case "displacement_number":
+                        if not isinstance(value, (int, int32, int64)) or value < 0:
+                            raise ValueError("The displacement_number must be a nonnegative integer.")
+                    case "step":
+                        try:
+                            float(value)
+                        except Exception as exc:
+                            raise ValueError(exc, "Invalid step provided.")
+                    case "output_option":
+                        allowed_values = ['xyz', 'slt']
+                        xyz_output = "xyz_filepath"
+                        if func.__name__ != "supercell":
+                            allowed_values.append('iterator')
+                            xyz_output = "custom_directory"
+                        if value not in allowed_values:
+                            raise ValueError("Invalid output_option. Choose from 'xyz', 'iterator', or 'slt'.")
+                        if value == 'xyz' and (bound_args.arguments[xyz_output] is None or not isinstance(bound_args.arguments[xyz_output], str)):
+                            raise ValueError("The custom_directory must be specified as a string when output_option is 'xyz'.")
+                        if value == 'slt' and (bound_args.arguments["slt_group_name"] is None or not isinstance(bound_args.arguments["slt_group_name"], str)):
+                            raise SltInputError(ValueError("The slt_group_name must be specified when output_option is 'slt'.")) from None
+                    case "nx":
+                        from slothpy._general_utilities._utils import _check_n
+                        _check_n(value, bound_args.arguments["ny"], bound_args.arguments["nz"], True)
+                    case "format":
+                        if value != "CP2K":
+                            raise ValueError("The only suported format is 'CP2K'.")
+                    case "accoustic_sum_rule":
+                        if not value in ["symmetric", "self_term", "without"]:
+                            raise ValueError("Invalid accoustic_sum_rule option. Choose from 'symmetric', 'self_term', 'without'.")
+                    case "born_charges":
+                        if not isinstance(value, bool):
+                            raise ValueError("Set born_charges option to True or False.")
 
                 bound_args.arguments[name] = value
                 
@@ -231,7 +275,7 @@ def _parse_hamiltonian_dicts(slt_file, magnetic_centers: dict, exchange_interact
     if not isinstance(magnetic_centers, dict) or not isinstance(exchange_interactions, dict):
         raise ValueError("Magnetic centers and exchange interactions parameters must be dictionaries.")
     
-    if not all(isinstance(key, (int, int64)) for key in magnetic_centers.keys()):
+    if not all(isinstance(key, (int, int32, int64)) for key in magnetic_centers.keys()):
         raise ValueError("Magnetic centers in the dictionary must be enumerated by integers.")
     
     n = len(magnetic_centers)
@@ -255,7 +299,7 @@ def _parse_hamiltonian_dicts(slt_file, magnetic_centers: dict, exchange_interact
                 contains_electric_dipole_momenta = False
         except SltFileError:
             contains_electric_dipole_momenta = False
-        if (len(value[1]) != 3 or not all(isinstance(x, (int, int64)) for x in value[1])):
+        if (len(value[1]) != 3 or not all(isinstance(x, (int, int32, int64)) for x in value[1])):
             raise ValueError("States cutoff must be an interable of length 3 [local_cutoff, mixing_cutoff, exchange_cutoff] with integer values.")
         if value[1][0] < value[1][1] or value[1][1] < value[1][2]:
             raise ValueError("The cutoff parameters must satisfy local_cutoff >= mixing_cutoff >= exchange_cutoff.")
@@ -263,7 +307,7 @@ def _parse_hamiltonian_dicts(slt_file, magnetic_centers: dict, exchange_interact
         exchange_states *= value[1][2]
         if value[2] != None:
             value[2] = _parse_rotation(value[2])
-        if value[3] != None and (len(value[3]) != 3 or not all(isinstance(x, (int, int64, float)) for x in value[3])):
+        if value[3] != None and (len(value[3]) != 3 or not all(isinstance(x, (int, int32, int64, float)) for x in value[3])):
             raise ValueError("Coordinates must be None or iterable of length 3 with numerical values in Angstrom [x, y, z].")
        #TODO: value[4] hyperfine add checks when implemented
 
@@ -271,7 +315,7 @@ def _parse_hamiltonian_dicts(slt_file, magnetic_centers: dict, exchange_interact
         print(f"You created a custom Hamiltonian with {states}x{states} exchange space, and computations will require to find {exchange_states} eigenvalues/eigenvectors, which is considered very expensive. You must know what you are doing. All computations will be very lengthy, if possible at all.")
 
     for key, value in exchange_interactions.items():
-        if len(key) != 2 or not all(isinstance(x, (int, int64)) and 0 <= x < n for x in key):
+        if len(key) != 2 or not all(isinstance(x, (int, int32, int64)) and 0 <= x < n for x in key):
             raise ValueError("Two-center exchange interactions must be enumerated with iterables of length 2 [centerA_number, centerB_number] containing integers from 0 to the number of centers - 1.")
         value = asarray(value, order='C', dtype=settings.float) / H_CM_1
         if value.ndim != 2 or value.shape != (3,3):

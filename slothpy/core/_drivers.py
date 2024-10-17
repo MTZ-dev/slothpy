@@ -31,7 +31,8 @@ from pandas import DataFrame
 from slothpy.core._registry import MethodTypeMeta
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import slothpy_exc_methods as slothpy_exc
-from slothpy._general_utilities._system import SltProcessPool, SltTemporarySignalHandler, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array, _dummy
+from slothpy.core._system import SltTemporarySignalHandler, _get_number_of_processes_threads, _to_shared_memory, _from_shared_memory, _distribute_chunks, _from_shared_memory_to_array, _dummy
+from slothpy.core._process_pool import SltProcessPool
 from slothpy._general_utilities._constants import RED, GREEN, BLUE, YELLOW, PURPLE, RESET
 from slothpy._general_utilities._io import _save_data_to_slt
 from slothpy._general_utilities._utils import _convert_seconds_dd_hh_mm_ss

@@ -37,7 +37,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QIcon, QCloseEvent, QFont, QAction
 from cycler import cycler
 
-from slothpy._general_utilities._system import _is_notebook
+from slothpy.core._system import _is_notebook
 
 
 class CustomNavigationToolbar(NavigationToolbar):

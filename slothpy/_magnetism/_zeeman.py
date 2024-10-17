@@ -40,11 +40,9 @@ from numpy.linalg import eigvalsh
 # from scipy.linalg import eigh
 from numba import jit, set_num_threads, prange, types, int64, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import KB, H_CM_1
-from slothpy._general_utilities._system import (
+from slothpy.core._system import (
     SharedMemoryArrayInfo,
     _load_shared_memory_arrays,
-    _get_num_of_processes,
-    _distribute_chunks,
 )
 # from slothpy._general_utilities._io import (
 #     _get_soc_magnetic_momenta_and_energies_from_hdf5,

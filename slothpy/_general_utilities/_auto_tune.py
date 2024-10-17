@@ -22,7 +22,7 @@ from multiprocessing.shared_memory import SharedMemory
 from multiprocessing.managers import SharedMemoryManager
 from numpy import array, zeros, any, all, median, int64
 from slothpy._general_utilities._constants import YELLOW, BLUE, PURPLE, GREEN, RED, RESET
-from slothpy._general_utilities._system import _from_shared_memory, _to_shared_memory
+from slothpy.core._system import _from_shared_memory, _to_shared_memory
 
 
 def _autotune(number_tasks: int, number_cpu: int):

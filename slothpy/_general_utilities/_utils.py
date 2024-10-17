@@ -95,15 +95,15 @@ def slpjm_components_driver(slt_group, kind: Literal["diagonal", "full"], which:
             return _rotate_and_return_components(slt_group, which, xyz, start_state, stop_state, rotation)
 
 
-def _check_n(nx, ny, nz):
+def _check_n(nx, ny, nz, from_parser = False):
     n_checked = False
     if nx is None or ny is None or nz is None:
-        raise SltInputError(ValueError("All nx, ny and nz must be provided for supercell.")) from None
+        raise SltInputError(ValueError("All nx, ny and nz must be provided for supercell.")) if not from_parser else ValueError("All nx, ny and nz must be provided for supercell.") from None
     for value, name in zip([nx, ny, nz], ['nx', 'ny', 'nz']):
         if not isinstance(value, (int, int32, int64)):
-            raise SltInputError(TypeError(f"{name} must be an integer. Received type {type(value).__name__} instead.")) from None
+            raise SltInputError(TypeError(f"{name} must be an integer. Received type {type(value).__name__} instead.")) if not from_parser else TypeError(f"{name} must be an integer. Received type {type(value).__name__} instead.") from None
         if value < 1:
-            raise SltInputError(ValueError(f"{name} must be greater than or equal to 1. Received {value}.")) from None
+            raise SltInputError(ValueError(f"{name} must be greater than or equal to 1. Received {value}.")) if not from_parser else ValueError(f"{name} must be greater than or equal to 1. Received {value}.") from None
         else:
             n_checked = True
     return n_checked

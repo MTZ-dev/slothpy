@@ -30,7 +30,6 @@ warnings.filterwarnings("ignore", category=ComplexWarning)
 from scipy.linalg import eigvalsh
 from ase import Atoms
 from ase.io import write
-from ase.data import atomic_numbers
 from ase.cell import Cell
 
 from slothpy.core._registry import MethodTypeMeta, MethodDelegateMeta
@@ -1050,19 +1049,6 @@ class SltXyz(metaclass=MethodTypeMeta):
         write(xyz_filepath, self._atoms, comment=f"{additional_info}Created by SlothPy from File/Group '{self._slt_group._hdf5}/{self._slt_group._group_name}'")
 
     def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
-        if len(atom_indices) != len(new_symbols):
-            raise SltInputError(ValueError("The lists 'atom_indices' and 'new_symbols' must have the same length.")) from None
-        
-        num_atoms = len(self._atoms)
-        
-        for idx in atom_indices:
-            if not (0 <= idx < num_atoms):
-                raise SltInputError(IndexError(f"Atom index {idx} is out of bounds for a structure with {num_atoms} atoms.")) from None
-        
-        for symbol in new_symbols:
-            if symbol not in atomic_numbers:
-                raise SltInputError(ValueError(f"Invalid element symbol: '{symbol}'. Please provide valid chemical element symbols.")) from None
-
         current_symbols = self._atoms.get_chemical_symbols()
         for idx, new_sym in zip(atom_indices, new_symbols):
             print(f"Replacing atom at index {idx} ({current_symbols[idx]}) with '{new_sym}'.")
@@ -1094,19 +1080,6 @@ class SltXyz(metaclass=MethodTypeMeta):
         return self._slt_group
         
     def generate_finite_stencil_displacements(self, displacement_number: int, step: float, output_option: Literal["xyz", "iterator", "slt"] = "xyz", custom_directory: Optional[str] = None, slt_group_name: Optional[str] = None, _supercell: bool = False, _nx: Optional[int] = None, _ny: Optional[int] = None, _nz: Optional[int] = None) -> Optional[Iterator[Atoms]]:
-        if output_option not in ['xyz', 'iterator', 'slt']:
-            raise SltInputError(ValueError("Invalid output_option. Choose from 'xyz', 'iterator', or 'slt'.")) from None
-        if output_option == 'xyz' and not custom_directory:
-            raise SltInputError(ValueError("The custom_directory must be specified when output_option is 'xyz'.")) from None
-        if output_option == 'slt' and not slt_group_name:
-            raise SltInputError(ValueError("The slt_group_name must be specified when output_option is 'slt'.")) from None
-        if not isinstance(displacement_number, (int, int32, int64)) or displacement_number < 0:
-            raise SltInputError(ValueError("The displacement_number must be a nonnegative integer.")) from None
-        try:
-            float(step)
-        except Exception as exc:
-            raise SltInputError(exc, "Invalid step provided.") from None
-        
         if output_option == 'xyz':
             makedirs(custom_directory, exist_ok=True)
 
@@ -1204,13 +1177,6 @@ class SltUnitCell(SltXyz):
     def supercell(self, nx: int, ny: int, nz: int, output_option: Literal["xyz", "slt"] = "slt", xyz_filepath: Optional[str] = None, slt_group_name: Optional[str] = None) -> Optional[SltGroup]:
         if self._method_type == "SUPERCELL":
             warnings.warn("You are trying to construct a supercell out of another supercell, creating a ... mega-cell with all parameters multiplied!")
-        if output_option not in ['xyz', 'slt']:
-            raise SltInputError(ValueError("Invalid output_option. Choose from 'xyz' or 'slt'.")) from None
-        if output_option == 'xyz' and not xyz_filepath:
-            raise SltInputError(ValueError("The xyz_filepath must be specified when output_option is 'xyz'.")) from None
-        if output_option == 'slt' and not slt_group_name:
-            raise SltInputError(ValueError("The slt_group_name must be specified when output_option is 'slt'.")) from None
-        _check_n(nx, ny, nz)
 
         atoms: Atoms = self._atoms.repeat((nx, ny, nz))
 
@@ -1244,14 +1210,6 @@ class SltSuperCell(SltUnitCell):
         self._nxnynz = slt_group.attributes["Supercell_Repetitions"]
 
     def hessian_from_finite_displacements(self, dirpath: str, format: Literal["CP2K"], slt_group_name: str, displacement_number: int, step: float, accoustic_sum_rule: Literal["symmetric", "self_term", "without"] = "symmetric", born_charges: bool = False, force_files_suffix: Optional[str] = None, dipole_momenta_files_suffix: Optional[str] = None):
-
-        if not isinstance(displacement_number, (int, int32, int64)) or displacement_number < 0:
-            raise SltInputError(ValueError("The displacement_number must be a nonnegative integer.")) from None
-        try:
-            float(step)
-        except Exception as exc:
-            raise SltInputError(exc, "Invalid step provided.") from None
-
         dof_number = 3 * len(self._atoms) // self._nxnynz.prod()
         hessian, born_charges = _read_hessian_born_charges_from_dir(dirpath, format, dof_number, self._nxnynz[0], self._nxnynz[1], self._nxnynz[2], displacement_number, step, accoustic_sum_rule, born_charges, force_files_suffix, dipole_momenta_files_suffix)
         _hessian_to_slt(self._slt_group._hdf5, slt_group_name, self._atoms.get_chemical_symbols(), self._atoms.get_positions(), self._atoms.get_cell().array, self._nxnynz[0], self._nxnynz[1], self._nxnynz[2], self._multiplicity, hessian, born_charges)

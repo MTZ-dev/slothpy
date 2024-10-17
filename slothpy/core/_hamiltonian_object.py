@@ -17,7 +17,7 @@
 
 from numpy import ndarray, complex128, int64, ascontiguousarray, tensordot, empty, zeros_like, zeros
 
-from slothpy._general_utilities._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
+from slothpy.core._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
 from slothpy._general_utilities._math_expresions import _add_diagonal
 from slothpy._general_utilities._direct_product_space import _kron_mult
 

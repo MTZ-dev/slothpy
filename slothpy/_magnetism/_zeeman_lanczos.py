@@ -32,7 +32,7 @@ from numpy import (
 from numba import jit, set_num_threads, prange, types, float32, float64, complex64, complex128
 from slothpy._general_utilities._constants import H_CM_1
 from slothpy._general_utilities._lapack import _zheevr_lwork, _zheevr
-from slothpy._general_utilities._system import (
+from slothpy.core._system import (
     SharedMemoryArrayInfo,
     _load_shared_memory_arrays,
 )

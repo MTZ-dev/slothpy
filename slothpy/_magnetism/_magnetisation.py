@@ -42,10 +42,10 @@ from numpy.linalg import eigh
 from numba import jit, set_num_threads, prange, float32, float64
 from numba import types
 from slothpy._general_utilities._constants import KB, MU_B_AU, MU_B_AU_T # do drugie ma zniknac jak sie usunie wszystko stare - teraz pole jest przeliczane na a.u.
-from slothpy._general_utilities._system import (
-    _get_num_of_processes,
-    _distribute_chunks,
-)
+# from slothpy._general_utilities._system import (
+#     _get_num_of_processes,
+#     _distribute_chunks,
+# )
 # from slothpy._general_utilities._io import (
 #     _get_soc_magnetic_momenta_and_energies_from_hdf5)
 
@@ -59,7 +59,7 @@ import psutil
 from slothpy.core._config import settings
 
 from slothpy._general_utilities._math_expresions import _validate_and_compute_partition_product_and_magnetisation_sum
-from slothpy._general_utilities._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
+from slothpy.core._system import SharedMemoryArrayInfo, _load_shared_memory_arrays
 from slothpy.core._hamiltonian_object import Hamiltonian
 
 
@@ -577,9 +577,10 @@ def _mth(
     )
 
     # Get number of parallel proceses to be used
-    num_processes, num_threads = _get_num_of_processes(
-        num_cpu, num_threads, fields.shape[0]
-    )
+    num_processes, num_threads = 0, 0
+    # _get_num_of_processes(
+    #     num_cpu, num_threads, fields.shape[0]
+    # )
 
     #  Allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)
@@ -843,9 +844,10 @@ def _mag_3d(
             ValueError('Grid type can only be set to "mesh" or "fibonacci".')
         )
     # Get number of parallel proceses to be used
-    num_process, num_threads = _get_num_of_processes(
-        num_cpu, num_threads, num_points
-    )
+    num_process, num_threads = 0,0
+    # _get_num_of_processes(
+    #     num_cpu, num_threads, num_points
+    # )
 
     #  Allocate arrays as contiguous
     fields = ascontiguousarray(fields, dtype=float64)

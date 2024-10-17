@@ -27,6 +27,8 @@ from .slt_file_object import SltFile
 
 from ._config import (
     settings,
+    set_sysexit_on_sigint,
+    set_default_on_sigint,
     turn_on_monitor,
     turn_off_monitor,
     set_default_error_reporting_mode,
@@ -35,6 +37,8 @@ from ._config import (
     set_single_precision,
     set_log_level,
     set_print_level,
+    set_number_threads,
+    set_number_cpu,
 )
 
 __all__ = [
@@ -46,6 +50,8 @@ __all__ = [
     "supercell",
     "SltFile",
     "settings",
+    "set_sysexit_on_sigint",
+    "set_default_on_sigint",
     "turn_on_monitor",
     "turn_off_monitor",
     "set_default_error_reporting_mode",
@@ -54,4 +60,6 @@ __all__ = [
     "set_single_precision",
     "set_log_level",
     "set_print_level",
+    "set_num_threads",
+    "set_number_cpu",
 ]

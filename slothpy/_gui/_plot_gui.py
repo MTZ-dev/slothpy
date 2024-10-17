@@ -19,7 +19,7 @@ from matplotlib.pyplot import close
 from multiprocessing import current_process
 from pkg_resources import resource_filename
 
-from slothpy._general_utilities._system import _is_notebook
+from slothpy.core._system import _is_notebook
 
 mpl.use("QtAgg")
 

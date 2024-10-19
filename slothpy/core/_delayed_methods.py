@@ -650,6 +650,83 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
 
     # also in input parser add to error with direct acces to properties to use property_under_magnetic_field instead!! for slothpy hamiltonians with field [0,0,0]
 
+
+class SltPhononDispersion(_MultiProcessed):
+    _method_name = "Phonon Dispersion"
+    _method_type = "PHONON_DISPERSION"
+
+    __slots__ = _MultiProcessed.__slots__ + ["_band_path", "_number_of_states", "_states_cutoff"]
+     
+    def __init__(self, slt_hamiltonian,
+        magnetic_fields: ndarray,
+        orientations: ndarray,
+        number_of_states: int,
+        states_cutoff: list = [0,0],
+        rotation: ndarray = None,
+        electric_field_vector: ndarray = None,
+        hyperfine: dict = None,
+        number_cpu: int = 1,
+        number_threads: int = 1,
+        autotune: bool = False,
+        slt_save: str = None,
+        smm: SharedMemoryManager = None,
+        terminate_event: Event = None,
+        ) -> None:
+        super().__init__(slt_hamiltonian, magnetic_fields.shape[0] * orientations.shape[0], number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
+        self._magnetic_fields = magnetic_fields
+        self._orientations = orientations
+        self._number_of_states = number_of_states
+        if self._orientations.shape[1] == 4:
+            self._returns = True
+        self._states_cutoff = states_cutoff
+        self._rotation = rotation
+        self._electric_field_vector = electric_field_vector
+        self._hyperfine = hyperfine
+        self._args = [self._number_of_states, self._electric_field_vector]
+        self._executor_proxy = _zeeman_splitting_proxy
+        self._slt_hamiltonian = slt_hamiltonian._slt_hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False) ######## This should be at least renamed to set rotation or something like this
+        self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
+    
+    def _load_args_arrays(self):
+        self._args_arrays = [*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations]
+        if not self._returns:
+            self._result = empty((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._number_of_states), dtype=self._magnetic_fields.dtype, order="C")
+            self._result_shape = (self._orientations.shape[0], self._magnetic_fields.shape[0], self._number_of_states)
+    
+    def _gather_results(self, result_queue):
+        zeeman_splitting_array = zeros((self._magnetic_fields.shape[0], self._args[0]), dtype=self._magnetic_fields.dtype)
+        while not result_queue.empty():
+            start_field_index, end_field_index, zeeman_array = result_queue.get()
+            for i, j in enumerate(range(start_field_index, end_field_index)):
+                zeeman_splitting_array[j, :] += zeeman_array[i, :]
+        return zeeman_splitting_array
+
+    def _save(self):
+        self._metadata_dict = {
+            "Type": self._method_type,
+            "Kind": "AVERAGE" if self._orientations.shape[1] == 4 else "DIRECTIONAL",
+            "Precision": settings.precision.upper(),
+            "Description": f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."
+        }
+        self._data_dict = {
+            "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._orientations.shape[1] == 4 else "[orientations, fields, energies]")),
+            "MAGNETIC_FIELDS": (self._magnetic_fields, "Dataset containing magnetic field (T) values used in the simulation."),
+            "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),
+        }
+
+    def _load_from_slt_file(self):
+        self._result = self._slt_group["ZEEMAN_SPLITTING"][:]
+        self._magnetic_fields = self._slt_group["MAGNETIC_FIELDS"][:]
+        self._orientations = self._slt_group["ORIENTATIONS"][:]
+
+    def _plot(self, **kwargs):
+        from slothpy._general_utilities._ploting_utilities import _plot_zeeman_splitting
+        _plot_zeeman_splitting(self._, self._result, self._magnetic_fields, **kwargs)
+ 
+    def _to_data_frame(self):
+        pass
+
+
 class SltZeemanSplitting(_MultiProcessed):
     _method_name = "Zeeman Splitting"
     _method_type = "ZEEMAN_SPLITTING"

@@ -1239,7 +1239,16 @@ class SltHessian(SltSuperCell):
     def born_charges(self) -> ndarray: #### From here add methods to SltGroup
         return self._born_charges
     
-    def phonons(): #### This to slt group as delayed methoo with input parser
+    def phonon_dispersion(): #### This to slt group as delayed methoo with input parser
+        pass
+
+    def phonon_density_of_states():
+        pass # plus raman second order
+
+    def ir_spectrum():
+        pass
+
+    def animate_modes_displacements():
         pass
 
 

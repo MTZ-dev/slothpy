@@ -20,9 +20,9 @@ from slothpy.core._system import SharedMemoryArrayInfo, _load_shared_memory_arra
 from slothpy._general_utilities._math_expresions import _add_diagonal
 from slothpy._general_utilities._direct_product_space import _kron_mult
 
-class Hamiltonian():
+class Hessian():
     ########### Slots here and clean this messss xD
-    def __init__(self, sm_arrays_info_list: list[SharedMemoryArrayInfo], slt_hamiltonian_info):
+    def __init__(self, sm_arrays_info_list: list[SharedMemoryArrayInfo], slt_hessian_info):
         self._cutoff_info_list = slt_hamiltonian_info[1]
         self._local_states = slt_hamiltonian_info[2]
         self._number_of_centers = len(self._cutoff_info_list)

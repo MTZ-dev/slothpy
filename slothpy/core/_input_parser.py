@@ -126,7 +126,7 @@ def validate_input(func):
                             else:
                                 raise ValueError("The orientations' array must be (n,3) in the form: [[direction_x, direction_y, direction_z],...] or (n,4) array in the form: [[direction_x, direction_y, direction_z, weight],...] for powder-averaging (or integer from 0-11).")
                     case "states_cutoff":
-                        if slt_group.attributes["Kind"] == "SLOTHPY": ################################################ 
+                        if slt_group.attributes["Kind"] == "SLOTHPY": ################################################ slt_group.type == "EXCHANGE_HAMILTONIAN"
                             if value != [0, "auto"]:
                                 warn("State cutoff was modified, but it has no impact on the SlothPy user-defined Hamiltonian.", SltWarning)
                             continue

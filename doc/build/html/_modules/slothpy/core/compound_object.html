@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>slothpy.core.compound_object &#8212; SlothPy 0.2.0 documentation</title>
+    <title>slothpy.core.compound_object &#8212; SlothPy 0.2.1 documentation</title>
   
   
   
@@ -39,7 +39,7 @@
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
   <script src="../../../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
 
-    <script src="../../../_static/documentation_options.js?v=95e61db4"></script>
+    <script src="../../../_static/documentation_options.js?v=3ca669d2"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -221,7 +221,7 @@
       
         <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
 <div class="custom-version-indicator">
-    <span class="version-text">SlothPy Version: 0.2.0</span>
+    <span class="version-text">SlothPy Version: 0.2.1</span>
 </div>
 
 <style>
@@ -396,7 +396,7 @@ document.write(`
         
           <div class="navbar-item"><!-- Custom Version Indicator for SlothPy -->
 <div class="custom-version-indicator">
-    <span class="version-text">SlothPy Version: 0.2.0</span>
+    <span class="version-text">SlothPy Version: 0.2.1</span>
 </div>
 
 <style>
@@ -2895,6 +2895,7 @@ document.write(`
         <span class="n">rotation</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">slt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">autotune</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">_subtract_spherical_component</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">[</span><span class="n">float64</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculates 3D Helmholtz or internal energy over a spherical grid for</span>
@@ -3116,6 +3117,7 @@ document.write(`
                 <span class="n">number_cpu</span><span class="p">,</span>
                 <span class="n">number_threads</span><span class="p">,</span>
                 <span class="n">rotation</span><span class="p">,</span>
+                <span class="n">_subtract_spherical_component</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SltCompError</span><span class="p">(</span>

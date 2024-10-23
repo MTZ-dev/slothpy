@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import Union, Optional, Iterator, List
+from typing import Union, Optional, Iterator, List, Mapping, Sequence
 import warnings
 from ast import literal_eval
 from os import makedirs
@@ -121,13 +121,18 @@ class SltDataset:
                 case "i":
                     return dataset.astype(settings.int)[slice_]
                 case _:
+                    if isinstance(dataset[0], bytes):
+                        return [element.decode('utf-8') for element in dataset[slice_]]
                     return dataset[slice_]
         
     @slothpy_exc("SltSaveError")
     def __setitem__(self, slice_, value):
         with File(self._hdf5, 'r+') as file:
             dataset = file[self._dataset_path]
-            dataset[slice_] = array(value)
+            if isinstance(value, list) and isinstance(value[0], str):
+                dataset[slice_] = asarray(value, dtype='S')
+            else:
+                dataset[slice_] = asarray(value)
 
     @slothpy_exc("SltFileError")
     def __repr__(self):
@@ -335,7 +340,11 @@ class SltGroup(metaclass=MethodDelegateMeta):
             self._exists = True
             if key in group:
                 raise KeyError(f"{PURPLE}Dataset{RESET} '{key}' already exists within the {BLUE}Group{RESET} '{self._group_name}'. Delete it manually to ensure your data safety.")
-            group.create_dataset(key, data=array(value))
+            if isinstance(value, list) and isinstance(value[0], str):
+                data = asarray(value, dtype='S')
+            else:
+                data = asarray(value)
+            group.create_dataset(key, data=data, chunks=True)
 
     @slothpy_exc("SltFileError")
     def __repr__(self): 
@@ -490,6 +499,8 @@ class SltGroup(metaclass=MethodDelegateMeta):
     def to_csv(self, csv_filepath: str, separator: str = ",", *args, **kwargs): pass
 
     def to_xyz(self, xyz_filepath: str, hese: int, *args, **kwargs): pass
+
+    def show_bandpath(self, brillouin_zone_path: str = None, npoints: int = None, density: float = None, special_points: Mapping[str, Sequence[float]] = None, symmetry_eps: float = 2e-4) -> None: pass
 
     def replace_atoms(self, atom_indices: List[int], new_symbols: List[str]) -> None:
         """
@@ -696,6 +707,8 @@ class SltGroup(metaclass=MethodDelegateMeta):
         """
         pass
 
+    def phonon_dispersion(self, brillouin_zone_path: str = None, npoints: int = None, density: float = None, special_points: Mapping[str, Sequence[float]] = None, symmetry_eps: float = 2e-4, modes_cutoff: int = 0, number_cpu: int = None, number_threads: int = None, slt_save: str = None, autotune: bool = False) -> SltPhononDispersion: pass
+
     def states_energies_cm_1(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesCm1: pass
     
     def states_energies_au(self, start_state=0, stop_state=0, slt_save=None) -> SltStatesEnergiesAu: pass
@@ -737,7 +750,7 @@ class SltHamiltonian(metaclass=MethodTypeMeta): # here you can only leave *args 
 
     __slots__ = ["_slt_group", "_states"]
 
-    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None:
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None: ### w sumie tutaj tez moze byc modyfikowanie parametrow jak z delayed methods bedziesz robil SltHamiltonian() z init i lepiej bo nie idzie przez delegowanie i input parser
         self._slt_group: str = slt_group
     
     def _slt_hamiltonian_from_slt_group(self, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> SltHamiltonian : pass
@@ -832,7 +845,7 @@ class SltHamiltonian(metaclass=MethodTypeMeta): # here you can only leave *args 
 
 
 class SltExchangeHamiltonian(SltHamiltonian):
-    _method_type = "EXCHANGE_HAMILTONIAN"
+    _method_type = "EXCHANGE_HAMILTONIAN" ################################################ INPUT PARSER !!!!!!!!!!!!!! slt_group.type == "EXCHANGE_HAMILTONIAN" a nie "SLOTHPY" itd.
 
     __slots__ = ["_slt_group", "_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
 
@@ -1016,8 +1029,6 @@ class SltXyz(metaclass=MethodTypeMeta):
     def __init__(self, slt_group: SltGroup) -> None:
         self._slt_group = slt_group
         elements = slt_group["ELEMENTS"][:]
-        if isinstance(elements[0], bytes):
-            elements = [elem.decode('utf-8') for elem in elements]
         self._atoms = Atoms(elements, slt_group["COORDINATES"][:])
         self._charge = None
         self._multiplicity = None
@@ -1058,21 +1069,9 @@ class SltXyz(metaclass=MethodTypeMeta):
         try:
             elements_ds = self._slt_group["ELEMENTS"]
             elements = elements_ds[:]
-
-            if isinstance(elements[0], bytes):
-                elements = [elem.decode('utf-8') for elem in elements]
-            else:
-                elements = list(elements)
-
             for idx, new_sym in zip(atom_indices, new_symbols):
                 elements[idx] = new_sym
-            
-            if isinstance(elements_ds.dtype, type(string_dtype(encoding='utf-8'))):
-                elements_encoded = array(elements, dtype='S')
-            else:
-                elements_encoded = array(elements, dtype=elements_ds.dtype)
-
-            elements_ds[:] = elements_encoded
+            elements_ds[:] = elements
             print(f"'ELEMENTS' dataset successfully updated in group '{self._slt_group._group_name}'.")
         except Exception as exc:
             raise SltFileError(self._slt_group._hdf5, exc, f"Failed to update 'ELEMENTS' dataset in the .slt group") from None
@@ -1197,6 +1196,9 @@ class SltUnitCell(SltXyz):
         if save_supercell_to_slt:
             self.supercell(nx, ny, nz, 'slt', slt_group_name=save_supercell_to_slt)
         return self.generate_finite_stencil_displacements(displacement_number, step, output_option, custom_directory, slt_group_name, True, nx, ny, nz)
+    
+    def show_bandpath(self, brillouin_zone_path: str = None, npoints: int = None, density: float = None, special_points: Mapping[str, Sequence[float]] = None, symmetry_eps: float = 2e-4) -> None:
+        self.atoms_object().cell.bandpath(path=brillouin_zone_path, npoints=npoints, special_points=special_points, density=density, eps=symmetry_eps).plot(show=True)
 
 
 class SltSuperCell(SltUnitCell):
@@ -1225,31 +1227,39 @@ class SltSuperCell(SltUnitCell):
 class SltHessian(SltSuperCell):
     _method_type = "HESSIAN"
 
-    __slots__ = SltXyz.__slots__ + ["_hessian", "_born_charges"]
+    __slots__ = SltXyz.__slots__ + ["_bandpath"]
 
     def __init__(self, slt_group) -> None:
         super().__init__(slt_group)
-        self._hessian = self._slt_group["HESSIAN"]
-        if _dataset_exists(self._slt_group._hdf5, self._slt_group._group_name, "BORN_CHARGES"):
-            self._born_charges = self._slt_group["BORN_CHARGES"]
+
+    @property
+    def masess(self):
+        return self.atoms_object().get_masses()[:self.hessian().shape[3]//3].astype(settings.float)
 
     def hessian(self) -> ndarray:
-        return self._hessian
+        return self._slt_group["HESSIAN"]
     
-    def born_charges(self) -> ndarray: #### From here add methods to SltGroup
-        return self._born_charges
+    def born_charges(self) -> ndarray:
+        if _dataset_exists(self._slt_group._hdf5, self._slt_group._group_name, "BORN_CHARGES"):
+            return self._slt_group["BORN_CHARGES"]
+        else:
+            raise RuntimeError(f"Hessian from {BLUE}Group{RESET}: '{self._slt_group._group_name}' {GREEN}File{RESET}: '{self._slt_group._hdf5}' does not have born charges loaded.")
     
-    def phonon_dispersion(): #### This to slt group as delayed methoo with input parser
-        pass
+    def phonon_dispersion(self, brillouin_zone_path: str = None, npoints: int = None, density: float = None, special_points: Mapping[str, Sequence[float]] = None, symmetry_eps: float = 2e-4, modes_cutoff: int = 0, number_cpu: int = None, number_threads: int = None, slt_save: str = None, autotune: bool = False) -> SltPhononDispersion:
+        self._bandpath = self.atoms_object().cell.bandpath(path=brillouin_zone_path, npoints=npoints, special_points=special_points, density=density, eps=symmetry_eps)
+        return SltPhononDispersion(self._slt_group, self.hessian(), self.masess, self._bandpath, modes_cutoff, number_cpu, number_threads, autotune, slt_save)
 
-    def phonon_density_of_states():
+    def phonon_density_of_states(self):
         pass # plus raman second order
 
-    def ir_spectrum():
+    def ir_spectrum(self):
         pass
 
-    def animate_modes_displacements():
+    def animate_normal_modes(self):
         pass
+
+    # def array to shared:
+    # def hessian from cos tam, jakby argumenty delayed method mialy zmieniac
 
 
 ####################

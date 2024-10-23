@@ -157,7 +157,7 @@ class _SingleProcessed(ABC, metaclass=MethodTypeMeta):
 
 class _MultiProcessed(_SingleProcessed):
 
-    __slots__ = _SingleProcessed.__slots__ + ["_slt_hamiltonian", "_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape", "_transpose_result", "_additional_result", "_additional_result_shape", "_benchmark_process", "_monitor"]
+    __slots__ = _SingleProcessed.__slots__ + ["_number_to_parallelize", "_number_cpu", "_number_processes", "_number_threads", "_executor_proxy", "_process_pool", "_autotune", "_autotune_from_run", "_smm", "_sm", "_sm_arrays_info", "_sm_progress_array_info",  "_sm_result_info", "_terminate_event", "_returns", "_args_arrays", "_args", "_result_shape", "_transpose_result", "_additional_result", "_additional_result_shape", "_benchmark_process", "_monitor"]
 
     @abstractmethod
     def __init__(self, slt_group, number_to_parallelize: int, number_cpu: int, number_threads: int, autotune: bool, smm: SharedMemoryManager = None, terminate_event: Event = None, slt_save: str = None) -> None:
@@ -177,9 +177,8 @@ class _MultiProcessed(_SingleProcessed):
         self._returns = False
         self._args_arrays = []
         self._args = ()
-        self._result_shape = ()
+        self._result_shape = None
         self._transpose_result = None
-        self._slt_hamiltonian = None
         self._additional_result = False
         self._additional_result_shape = ()
         self._benchmark_process = None
@@ -226,10 +225,9 @@ class _MultiProcessed(_SingleProcessed):
         sm_arrays_info_list = self._sm_arrays_info[:]
         sm_arrays_info_list.append(self._sm_progress_array_info)
         if not self._returns:
-            sm_arrays_info_list.append(self._sm_result_info)
-        return [(self._slt_hamiltonian.info, sm_arrays_info_list, self._args, process_index, chunk.start, chunk.end, self._returns) for process_index, chunk in enumerate(_distribute_chunks(self._number_to_parallelize, self._number_processes))]
-            
-    @abstractmethod
+            sm_arrays_info_list.append(self._sm_result_info) ######## From here I removed self._slt_hamiltonian.info in the first entry
+        return [(sm_arrays_info_list, self._args, process_index, chunk.start, chunk.end, self._returns) for process_index, chunk in enumerate(_distribute_chunks(self._number_to_parallelize, self._number_processes))]
+
     def _gather_results(self, results):
         pass
 
@@ -382,7 +380,7 @@ class _MultiProcessed(_SingleProcessed):
                     if self._returns:
                         self._result = result
                     else:
-                        self._result = _from_shared_memory_to_array(self._sm_result_info, reshape=(self._result_shape))
+                        self._result = _from_shared_memory_to_array(self._sm_result_info, reshape=self._result_shape if self._result_shape else None)
                         if self._transpose_result is not None:
                             self._result = self._result.transpose(self._transpose_result)
                         if self._additional_result:

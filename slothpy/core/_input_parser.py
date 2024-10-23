@@ -258,6 +258,18 @@ def validate_input(func):
                     case "born_charges":
                         if not isinstance(value, bool):
                             raise ValueError("Set born_charges option to True or False.")
+                    case "brillouin_zone_path":
+                        try:
+                            slt_group.atoms_object.cell.bandpath(path=value, npoints=bound_args.arguments["npoints"], density=bound_args.arguments["density"], special_points=bound_args.arguments["special_points"], eps=bound_args.arguments["symmetry_eps"])
+                        except Exception:
+                            raise
+                    case "modes_cutoff":
+                        if value == 0:
+                            value = int(slt_group.attributes["Modes"])
+                        elif not isinstance(value, (int, int32, int64)) or value[0] < 0:
+                            raise ValueError(f"The modes' cutoff must be a nonnegative integer less than or equal to the overall number of available modes: {slt_group.attributes['Modes']} (or 0 for all the states).")
+                        elif value[0] > slt_group.attributes["Modes"]:
+                            raise ValueError(f"Set the modes' cutoff to a nonnegative integer less than or equal to the overall number of available modes: {slt_group.attributes['Modes']} (or 0 for all the states).")
 
                 bound_args.arguments[name] = value
                 

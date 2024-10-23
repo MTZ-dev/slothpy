@@ -65,8 +65,11 @@ def _save_data_to_slt(file_path, group_name, data_dict, metadata_dict):
     with File(file_path, 'a') as file:
         group = file.create_group(group_name)
         for key, value in data_dict.items():
-            dataset = group.create_dataset(key, shape=value[0].shape, dtype=value[0].dtype, chunks=True)
-            dataset[:] = value[0]
+            if isinstance(value[0], list) and isinstance(value[0], str):
+                data = asarray(value[0], dtype='S')
+            else:
+                data = value[0]
+            dataset = group.create_dataset(key, data=data)
             dataset.attrs['Description'] = value[1]
         for key, value in metadata_dict.items():
             group.attrs[key] = value
@@ -223,6 +226,7 @@ def _hessian_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny,
     _supercell_to_slt(slt_filepath, group_name, elements, positions, cell, nx, ny, nz, multiplicity, "HESSIAN", "Hessian group containing force constants and supercell parameters.")
     with File(slt_filepath, 'a') as slt:
         group = slt[group_name]
+        group.attrs["Modes"] = hessian.shape[3]
         dataset = group.create_dataset('HESSIAN', data=hessian, dtype=settings.float, chunks=True)
         dataset.attrs["Description"] = "Hessian matrix (2nd order force constants) a.u. / Bohr**2 in the form [nx, ny, nz, dof_number, dof_number] where the last index is for the unit cell at the origin."
         if born_charges is not None:

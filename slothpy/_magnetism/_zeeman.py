@@ -118,7 +118,7 @@ def _zeeman_splitting_average(hamiltonian: Hamiltonian, magnetic_fields: ndarray
  
     return start_field_index, end_field_index, zeeman_array
 
-
+##### here no longer slt_hamiltonian info
 def _zeeman_splitting_proxy(slt_hamiltonian_info, sm_arrays_info_list: list[SharedMemoryArrayInfo], args_list, process_index, start: int, end: int, returns: bool = False):
     hamiltonian = Hamiltonian(sm_arrays_info_list, slt_hamiltonian_info)
     sm, arrays = _load_shared_memory_arrays(sm_arrays_info_list[hamiltonian._shared_memory_index:])

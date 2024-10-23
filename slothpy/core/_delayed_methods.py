@@ -19,9 +19,10 @@ from typing import Literal, Union
 from multiprocessing.managers import SharedMemoryManager
 from multiprocessing.synchronize import Event
 
-from numpy import ndarray, zeros, empty
+from numpy import ndarray, asarray, zeros, empty, repeat, sqrt
 from pandas import DataFrame
 import matplotlib.pyplot as plt
+from ase.dft.kpoints import BandPath
 
 from slothpy.core._config import settings
 from slothpy.core._slothpy_exceptions import SltCompError, SltFileError
@@ -31,6 +32,7 @@ from slothpy._general_utilities._constants import H_CM_1
 from slothpy._general_utilities._utils import slpjm_components_driver
 from slothpy._magnetism._zeeman import _zeeman_splitting_proxy
 from slothpy._magnetism._magnetisation import _magnetisation_proxy
+from slothpy._lattice_dynamics._phonon_dispersion import _phonon_dispersion_proxy
 
 class SltStatesEnergiesCm1(_SingleProcessed):
     _method_name = "States' Energies in cm-1"
@@ -565,7 +567,7 @@ class SltPropertyUnderMagneticField(_MultiProcessed):
         self._hyperfine = hyperfine
         self._args = [self._mode, self._full_matrix, self._return_energies, self._direction, self._number_of_states, self._electric_field_vector]
         self._executor_proxy = _property_under_magnetic_field_proxy
-        self._slt_hamiltonian = self._slt_group._slt_hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False)
+        self._slt_hamiltonian = self._slt_group._slt_hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False) ### moze SltHamiltonian(slt_group)!!!!!!!!!!!!
         self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
         for mod in self._mode:
             if mod not in self._slt_hamiltonian._mode:
@@ -655,73 +657,55 @@ class SltPhononDispersion(_MultiProcessed):
     _method_name = "Phonon Dispersion"
     _method_type = "PHONON_DISPERSION"
 
-    __slots__ = _MultiProcessed.__slots__ + ["_band_path", "_number_of_states", "_states_cutoff"]
+    __slots__ = _MultiProcessed.__slots__ + ["_hessian", "_kpts", "_masses", "_bandpath", "_modes_cutoff", "_x", "_x_coords", "_x_labels"]
      
-    def __init__(self, slt_hamiltonian,
-        magnetic_fields: ndarray,
-        orientations: ndarray,
-        number_of_states: int,
-        states_cutoff: list = [0,0],
-        rotation: ndarray = None,
-        electric_field_vector: ndarray = None,
-        hyperfine: dict = None,
-        number_cpu: int = 1,
-        number_threads: int = 1,
-        autotune: bool = False,
-        slt_save: str = None,
-        smm: SharedMemoryManager = None,
-        terminate_event: Event = None,
-        ) -> None:
-        super().__init__(slt_hamiltonian, magnetic_fields.shape[0] * orientations.shape[0], number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
-        self._magnetic_fields = magnetic_fields
-        self._orientations = orientations
-        self._number_of_states = number_of_states
-        if self._orientations.shape[1] == 4:
-            self._returns = True
-        self._states_cutoff = states_cutoff
-        self._rotation = rotation
-        self._electric_field_vector = electric_field_vector
-        self._hyperfine = hyperfine
-        self._args = [self._number_of_states, self._electric_field_vector]
-        self._executor_proxy = _zeeman_splitting_proxy
-        self._slt_hamiltonian = slt_hamiltonian._slt_hamiltonian_from_slt_group(self._states_cutoff, self._rotation, self._hyperfine, False) ######## This should be at least renamed to set rotation or something like this
-        self._slt_hamiltonian._mode = "em" if electric_field_vector is None else "emp"
+    def __init__(self, slt_group, hessian: ndarray, masses: ndarray, bandpath: BandPath, modes_cutoff: int = 0, number_cpu: int = 1, number_threads: int = 1, autotune: bool = False, slt_save: str = None, smm: SharedMemoryManager = None, terminate_event: Event = None) -> None:
+        super().__init__(slt_group, len(bandpath.kpts), number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
+        self._hessian = hessian
+        self._masses = masses
+        self._bandpath = bandpath
+        self._kpts = bandpath.kpts.astype(settings.float)
+        self._x, self._x_coords, self._x_labels = bandpath.get_linear_kpoint_axis()
+        self._modes_cutoff = modes_cutoff
+        self._args = [self._modes_cutoff]
+        self._executor_proxy = _phonon_dispersion_proxy
     
     def _load_args_arrays(self):
-        self._args_arrays = [*self._slt_hamiltonian.arrays_to_shared_memory, self._magnetic_fields, self._orientations]
-        if not self._returns:
-            self._result = empty((self._magnetic_fields.shape[0] * self._orientations.shape[0], self._number_of_states), dtype=self._magnetic_fields.dtype, order="C")
-            self._result_shape = (self._orientations.shape[0], self._magnetic_fields.shape[0], self._number_of_states)
-    
-    def _gather_results(self, result_queue):
-        zeeman_splitting_array = zeros((self._magnetic_fields.shape[0], self._args[0]), dtype=self._magnetic_fields.dtype)
-        while not result_queue.empty():
-            start_field_index, end_field_index, zeeman_array = result_queue.get()
-            for i, j in enumerate(range(start_field_index, end_field_index)):
-                zeeman_splitting_array[j, :] += zeeman_array[i, :]
-        return zeeman_splitting_array
+        masses = repeat(self._masses, 3)
+        masses_inv_sqrt = 1.0 / sqrt(masses[:, None] * masses[None, :])
+        self._args_arrays = [self._hessian[:], masses_inv_sqrt, self._kpts]
+        self._result = empty((len(self._x), self._modes_cutoff), dtype=settings.float, order="C")
 
     def _save(self):
         self._metadata_dict = {
             "Type": self._method_type,
-            "Kind": "AVERAGE" if self._orientations.shape[1] == 4 else "DIRECTIONAL",
             "Precision": settings.precision.upper(),
-            "Description": f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."
+            "Description": f"Group containing {self._method_name} calculated from Group '{self._group_name}'."
         }
         self._data_dict = {
-            "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._orientations.shape[1] == 4 else "[orientations, fields, energies]")),
-            "MAGNETIC_FIELDS": (self._magnetic_fields, "Dataset containing magnetic field (T) values used in the simulation."),
-            "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),
+            f"{self._method_type}": (self._result, f"Dataset containing {self._method_name} in the form [kpts, frequencies] in cm-1."),
+            "X": (self._x, "Dataset containing X coordinates for the dispersion plotting."),
+            "X_COORDS": (self._x_coords, "Dataset containing X coordiantes of the special point labels."),
+            "X_LABELS": (self._x_labels, "Dataset containing the special point labels."),
         }
 
     def _load_from_slt_file(self):
-        self._result = self._slt_group["ZEEMAN_SPLITTING"][:]
-        self._magnetic_fields = self._slt_group["MAGNETIC_FIELDS"][:]
-        self._orientations = self._slt_group["ORIENTATIONS"][:]
+        self._result = self._slt_group[f"{self._method_type}"][:]
+        self._x = self._slt_group["X"][:]
+        self._x_coords = self._slt_group["X_COORDS"][:]
+        self._x_labels = self._slt_group["X_LABELS"][:]
 
     def _plot(self, **kwargs):
-        from slothpy._general_utilities._ploting_utilities import _plot_zeeman_splitting
-        _plot_zeeman_splitting(self._, self._result, self._magnetic_fields, **kwargs)
+        plt.figure(figsize=(8, 6))
+        for mode in range(self._result.shape[1]):
+            plt.plot(self._x, self._result[:, mode], color='b')
+
+        plt.xticks(self._x_coords, self._x_labels)
+        plt.xlabel('Wave Vector Fraction along Path')
+        plt.ylabel('Frequency (cm$^{-1}$)')  # Adjust units as needed
+        plt.title('Phonon Dispersion')
+        plt.grid(True)
+        plt.show()
  
     def _to_data_frame(self):
         pass
@@ -733,8 +717,8 @@ class SltZeemanSplitting(_MultiProcessed):
 
     __slots__ = _MultiProcessed.__slots__ + ["_magnetic_fields", "_orientations", "_number_of_states", "_states_cutoff", "_rotation", "_electric_field_vector", "_hyperfine"]
      
-    def __init__(self, slt_hamiltonian,
-        magnetic_fields: ndarray,
+    def __init__(self, slt_hamiltonian, ####### Teraz slt_group i argumenty boezposrednio przekazywane (zmień całość tutaj i w magnetyzacji)
+        magnetic_fields: ndarray, ########################## Also slt.hamiltonian.info is removed from create jobs from first entry so probably move it into args!!!!!!!!!!!!!!
         orientations: ndarray,
         number_of_states: int,
         states_cutoff: list = [0,0],
@@ -784,7 +768,7 @@ class SltZeemanSplitting(_MultiProcessed):
             "Precision": settings.precision.upper(),
             "Description": f"Group containing Zeeman splitting calculated from Group '{self._group_name}'."
         }
-        self._data_dict = {
+        self._data_dict = { # tutaj jednak wybrałem {slt._method_type itd. patrz na phonons}
             "ZEEMAN_SPLITTING": (self._result, "Dataset containing Zeeman splitting in the form {}".format("[fields, energies]" if self._orientations.shape[1] == 4 else "[orientations, fields, energies]")),
             "MAGNETIC_FIELDS": (self._magnetic_fields, "Dataset containing magnetic field (T) values used in the simulation."),
             "ORIENTATIONS": (self._orientations, "Dataset containing magnetic fields' orientation grid used in the simulation."),

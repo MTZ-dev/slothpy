@@ -434,6 +434,7 @@ def _hamiltonian_derivatives_from_dir_to_slt(dirpath: str, slt_filepath: str, gr
                                     slt_group.create_dataset("MAGNETIC_DIPOLE_MOMENTA", data=slt_group_hamiltonian.magnetic_dipole_momentum_matrices().eval(), chunks=True)
                                     if electric_dipole_momenta:
                                         slt_group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", data=slt_group_hamiltonian.electric_dipole_momentum_matrices().eval(), chunks=True)
+                                read_hamiltonian(out_filepath, slt_filepath, f"{group_name}/HAMILTONIAN", pt2, electric_dipole_momenta, ssc, False)
                         else:
                             gbw_tmp = out_filepath[:-3] + "gbw"
                             tmp_files.append(join(dirpath, f"{dof_number}_{nx}_{ny}_{nz}_{disp}.tmp"))
@@ -444,7 +445,7 @@ def _hamiltonian_derivatives_from_dir_to_slt(dirpath: str, slt_filepath: str, gr
                 displacements_list = list(sorted_displacement_data.keys())
                 number_of_displacements = len(displacements_list)
                 mch_overlap_matrix_derivative_list = [zeros((number_of_displacements, root, root), dtype=settings.float, order='C') for root in roots]
-                difference_stencil = _central_finite_difference_stencil(1, displacement_number, step)
+                finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step)
                 
                 print("Calculating overlaps...")
 
@@ -464,15 +465,14 @@ def _hamiltonian_derivatives_from_dir_to_slt(dirpath: str, slt_filepath: str, gr
                             raise future_exception
 
                         completed_file, multiplicities, dof_number, nx, ny, nz, displacement = completed_dof_disp.result()
-                        displacement_shift = displacement + displacement_number
-                        stencil_index = displacement_shift if displacement < 0 else displacement_shift - 1
+                        stencil_index = displacement + displacement_number
                         slt_group_hamiltonian = SltGroup(completed_file, "tmp")
                         phases_list = []
 
                         with File(completed_file, 'r') as tmp_file:
                             tmp_group = tmp_file["tmp"]
                             for index, mult in enumerate(multiplicities):
-                                mch_overlap_matrix_derivative_list[index][displacements_list.index((dof_number, nx, ny, nz))] += tmp_group[str(mult)]["OVERLAP"][:] * difference_stencil[stencil_index]
+                                mch_overlap_matrix_derivative_list[index][displacements_list.index((dof_number, nx, ny, nz))] += tmp_group[str(mult)]["OVERLAP"][:] * finite_difference_stencil[stencil_index]
                                 phases_list.append(tile(tmp_group[str(mult)]["PHASES"][:], mult))
                             phases = concatenate(phases_list)
                             slt_group = group.create_group(f"{dof_number}_{nx}_{ny}_{nz}_{displacement}")

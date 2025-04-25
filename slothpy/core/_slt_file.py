@@ -1287,7 +1287,7 @@ class SltGroup(metaclass=MethodDelegateMeta):
 class SltHamiltonian(metaclass=MethodTypeMeta): # here you can only leave *args and *kwargs in arguments
     _method_type = "HAMILTONIAN"
 
-    __slots__ = ["_slt_group"]
+    __slots__ = ["_slt_group", "_mode"]
 
     def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None: ### w sumie tutaj tez moze byc modyfikowanie parametrow jak z delayed methods bedziesz robil SltHamiltonian() z init i lepiej bo nie idzie przez delegowanie i input parser
         self._slt_group: str = slt_group
@@ -1929,13 +1929,14 @@ class SltHessian(SltSuperCell):
 ####################
 
 
-class SltHamiltonianDerivatives(SltHessian):
+class SltHamiltonianDerivatives(SltHamiltonian):
     _method_type = "HAMILTONIAN_DERIVATIVES"
 
-    __slots__ = SltXyz.__slots__
+    __slots__ = SltHamiltonian.__slots__ + ["_base_slt_group"]
 
-    def __init__(self, slt_group) -> None:
-        super().__init__(slt_group)
+    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None:
+        self._base_slt_group = slt_group
+        super().__init__(f"{slt_group}/HAMILTONIAN", states_cutoff, rotation, hyperfine, local_states)
 
 
 ################
@@ -1943,14 +1944,15 @@ class SltHamiltonianDerivatives(SltHessian):
 ################
 
 
-class SltCrystalLattice(SltHessian):
+class SltCrystalLattice():
     _method_type = "CRYSTAL_LATTICE"
 
-    __slots__ = ["_hdf5", "_magnetic_centers", "_exchange_interactions", "_states", "_electric_dipole", "_magnetic_interactions", "_electric_interactions", "_mode", "_local_states"]
+    __slots__ = ["_slt_group", "_hessian_slt_group", "_hamiltonian_derivatives_slt_group"]
 
-    def __init__(self, slt_group: SltGroup, states_cutoff=[0,0], rotation=None, hyperfine=None, local_states=True) -> None:
-        self._hdf5: str = slt_group._hdf5
-        self._magnetic_centers, self._exchange_interactions, self._states, self._electric_dipole, self._magnetic_interactions, self._electric_interactions, self._local_states = slt_group._retrieve_hamiltonian_dict(states_cutoff, rotation, hyperfine, local_states)
-        self._mode: str = None # "eslpjm"
+    def __init__(self, slt_group: SltGroup) -> None:
+        self._slt_group: SltGroup = slt_group
+        self._hessian_slt_group = SltGroup(self._slt_group._hdf5, self._slt_group["HESSIAN"])
+        self._hamiltonian_derivatives_slt_group= SltGroup(self._slt_group._hdf5, self._slt_group["HAMILTONIAN_DERIVATIVES"])
+
 
 

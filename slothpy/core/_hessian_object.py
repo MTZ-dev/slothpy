@@ -24,9 +24,9 @@ class Hessian():
     
     __slots__ = ["_sm", "_hessian", "_masses_inv_sqrt", "_kpoint", "_heevr_lwork", "_heevr", "_lwork", "_il", "_iu", "_vl", "_vu", "_range", "_dtype_array"]
 
-    def __init__(self, hessian: ndarray, masses_inv_sqrt: ndarray, kpoint: ndarray = None, start_mode: int = 0, stop_mode: int = 0, start_frequency: float = None, stop_frequency: float = None, eigen_range: Literal["I", "V"] = "I"):
+    def __init__(self, hessian: ndarray, masses_inv_sqrt_matrix: ndarray, kpoint: ndarray = None, start_mode: int = 0, stop_mode: int = 0, start_frequency: float = None, stop_frequency: float = None, eigen_range: Literal["I", "V"] = "I"):
         self._hessian = hessian
-        self._masses_inv_sqrt = masses_inv_sqrt
+        self._masses_inv_sqrt = masses_inv_sqrt_matrix
         self._kpoint = kpoint
         if self._hessian.dtype == float64:
             from slothpy._general_utilities._lapack import _zheevr_lwork as _heevr_lwork, _zheevr as _heevr
@@ -43,6 +43,14 @@ class Hessian():
             self._dtype_array = empty(1, dtype=complex64)
         else:
             self._dtype_array = empty(1, dtype=complex128)
+
+    @property
+    def kpoint(self):
+        return self._kpoint
+    
+    @kpoint.setter
+    def kpoint(self, value):
+        self._kpoint = value
 
     @property
     def dynamical_matrix(self):

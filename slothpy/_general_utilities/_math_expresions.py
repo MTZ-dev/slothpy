@@ -440,5 +440,5 @@ def _calculate_wavefunction_overlap_phase_correction(det_inner_matrix_sqr: float
     phases = where(diag(result) < 0, -1, 1)
     result *= phases[newaxis, :]
 
-    return result, phases
+    return result
 

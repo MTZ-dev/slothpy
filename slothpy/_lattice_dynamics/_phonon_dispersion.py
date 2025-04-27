@@ -27,7 +27,7 @@ def _phonon_dispersion_proxy(hessian: ndarray, masses_inv_sqrt: ndarray, kpoints
     au_bohr_cm_1 = asarray(AU_BOHR_CM_1, dtype=kpoints.dtype)
     
     for i in range(start, end):
-        hessian_object._kpoint = kpoints[i]
+        hessian_object.kpoint = kpoints[i]
         frequencies = hessian_object.frequencies * au_bohr_cm_1
         result_array[i, :] = frequencies
         progress_array[process_index] += 1

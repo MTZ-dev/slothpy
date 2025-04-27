@@ -1845,7 +1845,7 @@ class SltHessian(SltSuperCell):
 
     @property
     def masses(self):
-        return self.atoms_object().get_masses()[:self.hessian().shape[3]//3].astype(settings.float)
+        return repeat(self.atoms_object().get_masses()[:self.hessian().shape[3]//3].astype(settings.float), 3)
 
     def hessian(self) -> ndarray:
         return self._slt_group["HESSIAN"]
@@ -1858,7 +1858,7 @@ class SltHessian(SltSuperCell):
     
     @property
     def _masses_inv_sqrt(self):
-        return 1.0 / sqrt(repeat(self.masses, 3))
+        return 1.0 / sqrt(self.masses)
     
     def phonon_frequencies(self, kpoint: ndarray[Union[float32, float64]] = [0, 0, 0], start_mode: Optional[int] = None, stop_mode: Optional[int] = None, slt_save: str = None) -> SltPhononFrequencies:
         return SltPhononFrequencies(self._slt_group, self, kpoint, start_mode, stop_mode, slt_save)

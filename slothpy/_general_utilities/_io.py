@@ -467,19 +467,16 @@ def _hamiltonian_derivatives_from_dir_to_slt(dirpath: str, slt_filepath: str, gr
                         completed_file, multiplicities, dof_number, nx, ny, nz, displacement = completed_dof_disp.result()
                         stencil_index = displacement + displacement_number
                         slt_group_hamiltonian = SltGroup(completed_file, "tmp")
-                        phases_list = []
 
                         with File(completed_file, 'r') as tmp_file:
                             tmp_group = tmp_file["tmp"]
                             for index, mult in enumerate(multiplicities):
                                 mch_overlap_matrix_derivative_list[index][displacements_list.index((dof_number, nx, ny, nz))] += tmp_group[str(mult)]["OVERLAP"][:] * finite_difference_stencil[stencil_index]
-                                phases_list.append(tile(tmp_group[str(mult)]["PHASES"][:], mult))
-                            phases = concatenate(phases_list)
                             slt_group = group.create_group(f"{dof_number}_{nx}_{ny}_{nz}_{displacement}")
-                            slt_group.create_dataset("HAMILTONIAN_MATRIX", data=(tmp_group[energy_matrix_type][:]*phases[newaxis, :]), chunks=True)
-                            slt_group.create_dataset("MAGNETIC_DIPOLE_MOMENTA", data=(slt_group_hamiltonian.magnetic_dipole_momentum_matrices().eval()*phases[newaxis, :]), chunks=True)
+                            slt_group.create_dataset("HAMILTONIAN_MATRIX", data=tmp_group[energy_matrix_type][:], chunks=True)
+                            slt_group.create_dataset("MAGNETIC_DIPOLE_MOMENTA", data=slt_group_hamiltonian.magnetic_dipole_momentum_matrices().eval(), chunks=True)
                             if electric_dipole_momenta:
-                                slt_group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", data=(slt_group_hamiltonian.electric_dipole_momentum_matrices().eval()*phases[newaxis, :]), chunks=True)
+                                slt_group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", data=slt_group_hamiltonian.electric_dipole_momentum_matrices().eval(), chunks=True)
 
                         if exists(completed_file):
                             remove(completed_file)
@@ -860,11 +857,10 @@ def _orca_process_overlap_mch_basis_hamiltonian(out_dir, out_filepath: str, pt2:
             beta_orbitals = mult_group["BETA_ORBITALS"][:]
             ci_coefficients = mult_group["ROOTS_CI_COEFFICIENTS"].astype(dtype)[:]
 
-            overlap, phases = _calculate_wavefunction_overlap_phase_correction(det_inner_matrix_sqr, inv_active_right, active_left_matrix, active_active_matrix, zero_alpha_orbitals, zero_beta_orbitals, alpha_orbitals, beta_orbitals, zero_ci_coefficients, ci_coefficients)
+            overlap = _calculate_wavefunction_overlap_phase_correction(det_inner_matrix_sqr, inv_active_right, active_left_matrix, active_active_matrix, zero_alpha_orbitals, zero_beta_orbitals, alpha_orbitals, beta_orbitals, zero_ci_coefficients, ci_coefficients)
 
             mult_group = tmp_group.create_group(str(mult))
             mult_group.create_dataset("OVERLAP", data=overlap, chunks=True)
-            mult_group.create_dataset("PHASES", data=phases, chunks=True)
 
     return tmp_filepath, multiplicities, dof_number, nx, ny, nz, displacement
 

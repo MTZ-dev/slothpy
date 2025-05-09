@@ -390,7 +390,9 @@ def _hamiltonian_derivatives_from_dir_to_slt(dirpath: str, slt_filepath: str, gr
         if not found_dof_0:
             raise ValueError("Output files for dof=0 not found in the directory.")
         
-        sorted_displacement_data = {key: displacement_data[key] for key in sorted(displacement_data)}
+        special = (0, 0, 0, 0)
+
+        sorted_displacement_data = {key: displacement_data[key] for key in sorted(displacement_data, key=lambda k: (k != special, k))}
 
         print("Initializing process pool and processing DOF=0 DISP=0...")
 

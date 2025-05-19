@@ -29,7 +29,7 @@ def _phonon_density_of_states_proxy(hessian: ndarray, masses_inv_sqrt: ndarray, 
     frequencies_list = []
 
     for i in range(start, end):
-        hessian_object._kpoint = kpoints_grid[i]
+        hessian_object.kpoint = kpoints_grid[i]
         frequencies_list.extend(hessian_object.frequencies * au_bohr_cm_1)
         progress_array[process_index] += 1
 

@@ -25,7 +25,7 @@ from subprocess import Popen, PIPE
 
 from h5py import File, string_dtype
 from numpy import ndarray, dtype, bytes_, asarray, zeros, concatenate, empty, loadtxt, sum, reshape, mean, arange, tile, transpose, fromstring, asfortranarray, min, int64, float64, newaxis
-from scipy.linalg import eigh, block_diag
+from scipy.linalg import eigh, block_diag, svd
 from tqdm import tqdm
 
 from slothpy.core._slothpy_exceptions import SltReadError
@@ -447,7 +447,7 @@ def _hamiltonian_derivatives_from_dir_to_slt(dirpath: str, slt_filepath: str, gr
                 displacements_list = list(sorted_displacement_data.keys())
                 number_of_displacements = len(displacements_list)
                 mch_overlap_matrix_derivative_list = [zeros((number_of_displacements, root, root), dtype=settings.float, order='C') for root in roots]
-                finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step)
+                finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step * A_BOHR)
                 
                 print("Calculating overlaps...")
 
@@ -472,11 +472,15 @@ def _hamiltonian_derivatives_from_dir_to_slt(dirpath: str, slt_filepath: str, gr
 
                         with File(completed_file, 'r') as tmp_file:
                             tmp_group = tmp_file["tmp"]
+                            raw_overlap = [zeros((root, root), dtype=settings.float, order='C') for root in roots]
                             for index, mult in enumerate(multiplicities):
-                                mch_overlap_matrix_derivative_list[index][displacements_list.index((dof_number, nx, ny, nz))] += tmp_group[str(mult)]["OVERLAP"][:] * finite_difference_stencil[stencil_index]
+                                ovl_mult = tmp_group[str(mult)]["OVERLAP"][:]
+                                mch_overlap_matrix_derivative_list[index][displacements_list.index((dof_number, nx, ny, nz))] += ovl_mult * finite_difference_stencil[stencil_index]
+                                raw_overlap[index] += ovl_mult
                             slt_group = group.create_group(f"{dof_number}_{nx}_{ny}_{nz}_{displacement}")
                             slt_group.create_dataset("HAMILTONIAN_MATRIX", data=tmp_group[energy_matrix_type][:], chunks=True)
                             slt_group.create_dataset("MAGNETIC_DIPOLE_MOMENTA", data=slt_group_hamiltonian.magnetic_dipole_momentum_matrices().eval(), chunks=True)
+                            slt_group.create_dataset("OVERLAP", data=block_diag(*[_kron_eye_N_A(mult, overlap) for mult, overlap in zip(multiplicities, raw_overlap)]), chunks=True)
                             if electric_dipole_momenta:
                                 slt_group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", data=slt_group_hamiltonian.electric_dipole_momentum_matrices().eval(), chunks=True)
 
@@ -805,11 +809,14 @@ def _orca_fragovl_reader(orca_fragovl_source: Union[str, Iterator], dim: int, a 
         fragment_B_MO_matrix = _orca_matrix_reader(dim, number_of_whole_blocks, remaining_columns, file, dtype, True)
 
         fragment_fragment_MO_overlap_matrix = fragment_A_MO_matrix.T @ fragment_fragment_matrix @ fragment_B_MO_matrix
+
+        # u, s, vt = svd(fragment_fragment_MO_overlap_matrix)
+        
     finally:
         if should_close:
             file.close()
-    
-    return fragment_fragment_MO_overlap_matrix
+
+    return fragment_fragment_MO_overlap_matrix # @ u @ vt
 
 
 def _orca_process_overlap_mch_basis_hamiltonian(out_dir, out_filepath: str, pt2: bool, electric_dipole_momenta: bool, ssc: bool, gbw_zero_filepath:str, gbw_tmp_filepath: str, dim: int, zero_filepath: str, dof_number: int, nx: int, ny: int, nz: int, displacement: int, _orca_fragovl_filepath: str):
@@ -859,8 +866,40 @@ def _orca_process_overlap_mch_basis_hamiltonian(out_dir, out_filepath: str, pt2:
             beta_orbitals = mult_group["BETA_ORBITALS"][:]
             ci_coefficients = mult_group["ROOTS_CI_COEFFICIENTS"].astype(dtype)[:]
 
-            overlap = _calculate_wavefunction_overlap_phase_correction(det_inner_matrix_sqr, inv_active_right, active_left_matrix, active_active_matrix, zero_alpha_orbitals, zero_beta_orbitals, alpha_orbitals, beta_orbitals, zero_ci_coefficients, ci_coefficients)
+            ######## TEST ###########
+            # import numpy as np
+            # overlap_test = np.zeros((alpha_orbitals.shape[0], alpha_orbitals.shape[0]), dtype=np.float64)
+            # for i in range(alpha_orbitals.shape[0]):
+            #     for j in range(alpha_orbitals.shape[0]):
+            #         extra_idx_zero = inactive_orbitals + zero_alpha_orbitals[i]
+            #         extra_idx = inactive_orbitals + alpha_orbitals[j]
+            #         idx_zero = np.concatenate((np.arange(inactive_orbitals, dtype=int), extra_idx_zero))
+            #         idx = np.concatenate((np.arange(inactive_orbitals, dtype=int), extra_idx))
+            #         sub = fragment_fragment_MO_overlap_matrix[np.ix_(idx_zero, idx)]
+            #         det_alpha = np.linalg.det(sub)
 
+            #         extra_idx_zero = inactive_orbitals + zero_beta_orbitals[i]
+            #         extra_idx = inactive_orbitals + beta_orbitals[j]
+            #         idx_zero = np.concatenate((np.arange(inactive_orbitals, dtype=int), extra_idx_zero))
+            #         idx = np.concatenate((np.arange(inactive_orbitals, dtype=int), extra_idx))
+            #         sub = fragment_fragment_MO_overlap_matrix[np.ix_(idx_zero, idx)]
+            #         det_beta= np.linalg.det(sub)
+
+            #         overlap_test[i,j] = det_alpha * det_beta
+
+            # u, s, vt = np.linalg.svd(zero_ci_coefficients.T @ overlap_test @ ci_coefficients)
+            # overlap_test = u @ vt
+
+            # for i in range(alpha_orbitals.shape[0]):
+            #     if np.abs(overlap_test[i,i]) < np.max(np.abs(overlap_test[:,i])):
+            #         for j in range(i, alpha_orbitals.shape[0]):
+            #             if np.max(overlap_test[:,j]) == overlap_test[i,j]:
+            #                 overlap_test[:, [i, j]] = overlap_test[:, [j, i]]
+
+            # phases = np.where(np.diag(overlap_test) < 0, -1, 1)
+            # overlap_test *= phases[newaxis, :]
+
+            overlap = _calculate_wavefunction_overlap_phase_correction(det_inner_matrix_sqr, inv_active_right, active_left_matrix, active_active_matrix, zero_alpha_orbitals, zero_beta_orbitals, alpha_orbitals, beta_orbitals, zero_ci_coefficients, ci_coefficients, dof_number, displacement)
             mult_group = tmp_group.create_group(str(mult))
             mult_group.create_dataset("OVERLAP", data=overlap, chunks=True)
 

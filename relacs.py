@@ -23,13 +23,121 @@ from slothpy.core._hessian_object import Hessian
 import matplotlib.pyplot as plt
 
 
-from typing import Tuple, Sequence
+from typing import Tuple, Sequence, Any
+slt.set_default_error_reporting_mode()
+
+def is_hermitian(a: Any, tol: float = 1e-12) -> bool:
+    """
+    Return True if a square 2-D array is Hermitian within a given tolerance.
+
+    Parameters
+    ----------
+    a   : array-like
+        Complex (or real) 2-D matrix to test.
+    tol : float, optional
+        Absolute tolerance on each element of  (A − Aᴴ).
+        Default is 1 × 10⁻¹².
+
+    Notes
+    -----
+    * Uses `np.allclose` with ``rtol=0`` so only the absolute tolerance
+      matters.
+    * For non-square inputs the function returns **False** instead of raising.
+
+    Examples
+    --------
+    >>> H = np.array([[1+0j, 2-1j],
+    ...               [2+1j, 3   ]])
+    >>> is_hermitian(H)
+    True
+    >>> is_hermitian(H + 1e-10j)        # tiny imaginary drift on the diagonal
+    True
+    >>> is_hermitian(H + 1e-6j)         # now beyond the default tol
+    False
+    """
+    a = np.asanyarray(a)
+
+    # Must be 2-D and square
+    if a.ndim != 2 or a.shape[0] != a.shape[1]:
+        return False
+
+    return np.allclose(a, a.conj().T, atol=tol, rtol=0)
+
+from scipy.fft import fft, ifft, fftfreq
+
+def hilbert_transform(
+        omega: np.ndarray,
+        X: np.ndarray,
+        *,
+        use_fft: bool | None = None,
+        return_analytic: bool = False
+    ) -> np.ndarray:
+    """
+    Discrete Hilbert transform (or analytic spectrum) of X(ω).
+
+    Parameters
+    ----------
+    omega : 1-D ndarray, strictly monotone (rad s⁻¹)
+    X     : 1-D ndarray, same length as `omega`
+    use_fft : bool or None, choose algorithm (see earlier docs)
+    return_analytic : bool, default False
+        True  → return X + j H{X}  (analytic spectrum)
+        False → return H{X} only   (just the Hilbert transform)
+
+    Returns
+    -------
+    ndarray
+        Length-N array (real or complex as requested).
+    """
+    omega = np.asarray(omega, float)
+    X     = np.asarray(X, float if np.isrealobj(X) else complex)
+
+    if omega.ndim != 1 or X.shape != omega.shape:
+        raise ValueError("`omega` and `X` must be 1-D arrays of equal length")
+
+    # ------------------------------------------------------------------
+    # Choose algorithm
+    if use_fft is None:
+        use_fft = np.allclose(np.diff(omega), np.diff(omega)[0])
+    elif use_fft and not np.allclose(np.diff(omega), np.diff(omega)[0]):
+        raise ValueError("FFT method requires a uniform ω grid")
+
+    # ------------------------------------------------------------------
+    if use_fft:
+        # -------- uniform-grid FFT branch -----------------------------
+        N   = len(X)
+        dω  = omega[1] - omega[0]
+        sign = np.sign(fftfreq(N, d=dω))
+        H   = np.imag(ifft(fft(X) * sign))
+    else:
+        # -------- any-grid principal-value branch ---------------------
+        dΩ     = omega[:, None] - omega[None, :]
+        np.fill_diagonal(dΩ, np.inf)             # avoid div by zero
+        kernel = 1.0 / (np.pi * dΩ)              # (N × N)
+
+        # correct trapezoidal weights (length N)
+        N = len(omega)
+        weights = np.empty_like(omega)
+        weights[1:-1] = (omega[2:] - omega[:-2]) / 2.0
+        weights[0]    = (omega[1] - omega[0]) / 2.0
+        weights[-1]   = (omega[-1] - omega[-2]) / 2.0
+
+        H = kernel.dot(X * weights)              # (N,)
+
+    # ------------------------------------------------------------------
+    if return_analytic:
+        return X + 1j * H
+    else:
+        return H
+
+
+H_BAR = 2.4188843265864e-17
 
 def half_bz_grid_aniso(
     b_len: Sequence[float],
     n_ref: int,
     *,
-    endpoint: bool = True,
+    endpoint: bool = False,
     tol: float = 1e-12
 ) -> np.ndarray:
     """
@@ -40,18 +148,20 @@ def half_bz_grid_aniso(
     b_len    : (3,) sequence
         Lengths |b1|, |b2|, |b3| of the reciprocal-lattice vectors.
     n_ref    : int (odd)
-        Number of points along the **shortest** axis in the *full* mesh.
-        Must be odd so that 0 is on every axis.
+        Points along the *shortest* axis in the *full* mesh (must be odd).
     endpoint : bool, optional
-        If True, +0.5 is included on each axis (default False – half-open).
+        If True,  +0.5  is included on every axis (closed grid);
+        if False (default), the grid is half-open on the +0.5 side.
+        In both cases 0 is centred on all axes.
     tol      : float, optional
-        Tolerance for zero tests / symmetry checks.
+        Tolerance for zero / symmetry tests.
 
     Returns
     -------
     q : (M, 3) ndarray
-        Unique q-points (fractional coordinates), one per {+q, −q}, Γ included.
+        Unique q-points (fractional coords), one per {+q, –q}, Γ included.
     """
+    # ---- 0. sanity checks -------------------------------------------------
     if n_ref % 2 == 0:
         raise ValueError("n_ref must be odd so that 0 is on the grid.")
 
@@ -59,38 +169,43 @@ def half_bz_grid_aniso(
     if b_len.size != 3 or np.any(b_len <= 0):
         raise ValueError("b_len must contain three positive numbers.")
 
-    # --- 1. choose n_i so that |b_i|/(n_i-1) ≈ const -----------------------
+    # ---- 1. choose n_i so that |b_i|/(n_i – 1) ≈ const -------------------
     b_min = b_len.min()
     n_axis = []
     for L in b_len:
-        n = int(round(n_ref * L / b_min))         # proportional to length
-        if n % 2 == 0:                            # force odd → includes 0
+        n = int(round(n_ref * L / b_min))    # proportional to length
+        if n % 2 == 0:                       # force odd → includes 0
             n += 1
         n_axis.append(n)
 
-    # --- 2. build the full tensor product grid ----------------------------
-    ax = [np.linspace(-0.5, 0.5, n, endpoint=endpoint, dtype=float)
-          for n in n_axis]
-    full = np.array(np.meshgrid(*ax, indexing="ij")).reshape(3, -1).T  # (N,3)
+    # ---- 2. build the full tensor-product grid ---------------------------
+    ax = []
+    for n in n_axis:
+        if endpoint:                         # closed grid: ±0.5 both included
+            ax.append(np.linspace(-0.5, 0.5, n, endpoint=True, dtype=float))
+        else:                                # half-open: +0.5 excluded, 0 centred
+            k  = n // 2                      # n = 2·k + 1  (odd!)
+            ax.append(np.arange(-k, k + 1, dtype=float) / n)  # step = 1/n
+    full = np.array(np.meshgrid(*ax, indexing="ij")).reshape(3, -1).T  # (N, 3)
 
-    # --- 3. inversion-symmetry reduction ----------------------------------
-    keep = np.zeros(full.shape[0], bool)
+    # ---- 3. inversion-symmetry reduction ---------------------------------
+    keep = np.zeros(full.shape[0], dtype=bool)
     for i, (x, y, z) in enumerate(full):
-        # Γ always in
+        # Γ is always kept
         if abs(x) < tol and abs(y) < tol and abs(z) < tol:
             keep[i] = True
             continue
-        # first non-zero component decides
+        # first non-zero component decides the (+) half
         if   x >  tol: keep[i] = True
         elif x < -tol: continue
         elif y >  tol: keep[i] = True
         elif y < -tol: continue
         elif z >  tol: keep[i] = True
-        # (z < −tol) -> partner already kept
+        # (z < -tol) → partner already kept
 
     q_unique = full[keep]
 
-    # --- 4. sorted for reproducibility ------------------------------------
+    # ---- 4. sort for reproducibility -------------------------------------
     idx = np.lexsort(q_unique.T[::-1])
     return q_unique[idx]
 
@@ -220,6 +335,69 @@ def dofs_with_complete_displacements(h5_group: h5py.Group, displacement_number: 
 
     return complete
 
+def phase_correction_eigenvectors(momenta_matrix):
+
+    _, eigenvectors = np.linalg.eigh(momenta_matrix[2, :, :])
+
+    momenta_matrix_x = eigenvectors.conjugate().T @ np.ascontiguousarray(momenta_matrix[0, :, :]) @ eigenvectors
+
+    # Initialize phases of vectors with the first one = 1
+    c = np.zeros(momenta_matrix.shape[1], dtype=np.complex128)
+    c[0] = 1.0
+
+    # Set Jx[i,i+1] to real negative and collect phases of vectors in c[:]
+    for i in range(momenta_matrix_x.shape[1] - 1):
+        if (
+            np.real(momenta_matrix_x[i, i + 1]) > 1e-17
+            or abs(np.imag(momenta_matrix_x[i, i + 1])) > 1e-17
+        ):
+            c[i + 1] = (
+                momenta_matrix_x[i, i + 1] * c[i].conjugate()
+            ).conjugate() / abs(momenta_matrix_x[i, i + 1])
+            if (
+                (momenta_matrix_x[i, i + 1] * c[i].conjugate()) * c[i + 1]
+            ).real > 0.0:
+                c[i + 1] = -c[i + 1]
+        else:
+            c[i + 1] = 1.0
+
+    # Apply the phases for eigenvecotrs
+    eigenvectors = np.ascontiguousarray(eigenvectors * c)
+
+    return eigenvectors
+
+
+def crystal_field_derivatives(dof_array, group, magnetic_field_vector, displacement_number, step, states_number):
+    H_grad = []
+    finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step * A_BOHR)
+
+    momenta_matrix0 = group[f"0/MAGNETIC_DIPOLE_MOMENTA"][:]
+    hamiltonian0 = group[f"0/HAMILTONIAN_MATRIX"][:] - (momenta_matrix0[0] * magnetic_field_vector[0] + momenta_matrix0[1] * magnetic_field_vector[1] + momenta_matrix0[2] * magnetic_field_vector[2])
+    E_0, U_0 = np.linalg.eigh(hamiltonian0)
+    momenta_matrix0 = (U_0.conj().T[np.newaxis, :, :] @ momenta_matrix0 @ U_0[np.newaxis, :, :])[:, :states_number, :states_number]
+    eigenvectors0 = phase_correction_eigenvectors(momenta_matrix0)
+
+    for dof in dof_array:
+        stencil_index = -1
+        H_grad_component = np.zeros((states_number, states_number), dtype=np.complex128)
+        for displacement in range(-displacement_number, displacement_number + 1):
+            stencil_index += 1
+            if displacement == 0:
+                continue
+            group_name = f"{dof[0]}_{dof[1]}_{dof[2]}_{dof[3]}_{displacement}"
+            momenta_matrix = group[f"{group_name}/MAGNETIC_DIPOLE_MOMENTA"][:]
+            hamiltonian = group[f"{group_name}/HAMILTONIAN_MATRIX"][:] - (momenta_matrix[0] * magnetic_field_vector[0] + momenta_matrix[1] * magnetic_field_vector[1] + momenta_matrix[2] * magnetic_field_vector[2])
+            E, U = np.linalg.eigh(hamiltonian)
+            momenta_matrix = (U.conj().T[np.newaxis, :, :] @ momenta_matrix @ U[np.newaxis, :, :])[:, :states_number, :states_number]
+            eigenvectors = phase_correction_eigenvectors(momenta_matrix)
+            hamiltonian_z_basis = eigenvectors.conj().T @ np.diag(E[:states_number]) @ eigenvectors
+            
+            H_grad_component += hamiltonian_z_basis * finite_difference_stencil[stencil_index]
+
+        H_grad.append(eigenvectors0 @ H_grad_component @ eigenvectors0.conj().T)
+
+    return np.asarray(H_grad, dtype=np.complex128)
+
 
 def k_mch(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray):
     k_mch = []
@@ -232,7 +410,7 @@ def k_mch(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray):
     return np.asarray(k_mch, dtype=np.complex128)
 
 
-def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, magnetic_field_vector: np.ndarray, displacement_number: int, degeneracy_tolerance: float = 1e-8):
+def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, magnetic_field_vector: np.ndarray, displacement_number: int, step: float, degeneracy_tolerance: float = 1e-13):
     E_grad = []
     k_U = []
     finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step * A_BOHR)
@@ -247,20 +425,23 @@ def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, magne
                 continue
             group_name = f"{dof[0]}_{dof[1]}_{dof[2]}_{dof[3]}_{displacement}"
             hamiltonian = group[f"{group_name}/HAMILTONIAN_MATRIX"][:]+_zdot3d(group[f"{group_name}/MAGNETIC_DIPOLE_MOMENTA"][:], -magnetic_field_vector)
+            overlap = group[f"{group_name}/OVERLAP"][:]
+
             E, U_R0_delta = np.linalg.eigh(hamiltonian)
 
             S = U_R0_delta.conj().T @ U_R0
 
             projection_mask = np.abs(E[:, None] - E[None, :]) < degeneracy_tolerance
-            M = np.where(projection_mask, S, 0.0) 
+            M = np.where(projection_mask, S, 0.0)
             u, s, vt = np.linalg.svd(M)
+
             U_R0_delta = U_R0_delta @ u @ vt
 
             E_grad_component += E * finite_difference_stencil[stencil_index]
-            k_U_component += U_R0_delta * finite_difference_stencil[stencil_index]
+            k_U_component += U_R0.T @ U_R0_delta.conj() * finite_difference_stencil[stencil_index]
 
         E_grad.append(E_grad_component)
-        k_U.append(k_U_component.conj().T @ U_R0)
+        k_U.append(k_U_component)
     
     return np.asarray(E_grad, dtype=np.float64), np.asarray(k_U, dtype=np.complex128)
 
@@ -275,15 +456,15 @@ DROP_EXP = 36    # exp(36)  ≈  1e16  → treat as numerically zero
 @njit(cache=True)
 def bose(omega: float, beta: float) -> float:
     """Bose occupation with overflow protection."""
-    u = beta * 1 * omega
-    if u > DROP_EXP:
-        # print("DROP", u)
-        return 0.0              # e^{u} huge → n_B ≈ 0
-    # if u < -DROP_EXP:
+    u = beta * omega * H_BAR
+    # if u > DROP_EXP:
+    #     # print("DROP", u)
+    #     return 0.0              # e^{u} huge → n_B ≈ 0
+    # # if u < -DROP_EXP:
     #     return -1.0             # exp(u)≈0 ⇒ expm1(u)≈-1
     return 1.0 / math.expm1(u)
 
-@njit(cache=True)
+# @njit(cache=True)
 def zeta(x: float, beta: float) -> float:
     """ζ(x) = (e^{βħx}−1)/(ħx) with drop‑rule."""
     eps = 1e-14
@@ -297,7 +478,7 @@ def zeta(x: float, beta: float) -> float:
         return -1.0 / (1 * x)
     return math.expm1(u) / (1 * x)
 
-@njit(cache=True)
+# @njit(cache=True)
 def Iint(w1: float, w2: float, beta: float) -> float:
     """Imaginary‑time double integral with exponent dropping."""
     eps = 1e-14
@@ -329,46 +510,86 @@ def Iint(w1: float, w2: float, beta: float) -> float:
     term2 = expm1_drop(u1)  / (1**2 * w1 * w2)
     return term1 - term2
 
-@njit(cache=True)
+# @njit(cache=True)
 def lor_pref(x, d):
     return d / (x * x + d * d)
 
-@njit(cache=True)
+# @njit(cache=True)
 def lor_hilb(x, d):
     return x / (x * x + d * d)
 
 
 @njit(cache=True)
+def Jhat_m(omega, w_ab, wq, n_q, d):
+    
+    # if np.abs(w_ab) < 1e-8 / H_BAR:
+    #     return 0.0 + 0.0j
+    
+    L1 = 0.0 + 0.0j
+    L2 = 0.0 + 0.0j
+    
+    if w_ab - wq > 0:
+        L1 += 1 / (omega - w_ab + wq + 1j * d) * n_q
+    if w_ab + wq > 0:
+        L2 += 1 / (omega - w_ab - wq + 1j * d) * (n_q + 1)
+    
+
+    return -0.5 / wq * (L1 + L2)
+
+
+@njit(cache=True)
+def Jhat_p(omega, w_ab, wq, n_q, d):
+    
+    # if np.abs(w_ab) < 1e-8 / H_BAR:
+    #     return 0.0 + 0.0j
+
+    L1 = 0.0 + 0.0j
+    L2 = 0.0 + 0.0j
+    
+    if w_ab + wq > 0:
+        L1 += 1 / (omega - w_ab - wq + 1j * d) * n_q
+    if w_ab - wq > 0:
+        L2 += 1 / (omega - w_ab + wq + 1j * d) * (n_q + 1)
+    
+
+    return -0.5 / wq * (L1 + L2)
+
+
+    # if np.abs(w_ab) < 1e-8 / H_BAR:
+    #     return 0.0 + 0.0j
+
+#     if w_ab > 0.0:                     # absorption (n_q term)
+#     # x = omega - (w_ab - wq)
+#     # if (w_ab - wq) < 0:
+#     #     return 0.0 + 0.0j
+#         return -1j / (w_ab - wq - omega - 1j * d) * 0.5 / wq * n_q# omega - lor_pref(w_ab - wq, d) + 1j * (omega - lor_hilb(w_ab - wq, d))
+# #     return 0.5 / wq * (n_q * L)
+#     else:                              # emission ((n_q+1) term)
+# #     # x =  ()
+# #     # if (w_ab + wq) < 0:
+# #     #     return 0.0 + 0.0j
+#         return -1j / (w_ab + wq - omega - 1j * d) * 0.5 / wq * (n_q + 1) # omega - lor_pref(w_ab + wq, d) + 1j * (omega - lor_hilb(w_ab + wq, d))
+#     # return 0.5 / wq * (n_q * L1 + (n_q + 1.0) * L2) # 0.5 / wq * ((n_q + 1.0) * L)
+
+@njit(cache=True)
+def fl_kernel(omega, w_ab, wq, d):
+    return 1 / (d - 1j * (omega - wq - w_ab))
+
+
+@njit(cache=True)
 def Jhat(omega, w_ab, wq, n_q, d):
-    """Lorentz–broadened spectral density with **sign‑filtered evaluation**.
-
-    * |w_ab| ≃ 0  → 0 (no transition).
-    * w_ab > 0    → absorption only  (phonon taken from bath).
-    * w_ab < 0    → emission   only  (phonon emitted).
-    The unused branch is not evaluated, so no extra lorentzian is formed.
-    """
-    if np.abs(w_ab) < 1e-8:
-        return 0.0 + 0.0j
-
-    if w_ab > 0.0:                     # absorption (n_q term)
-        x = omega - (w_ab - wq)
-        if (w_ab - wq) < 0:
-            return 0.0 + 0.0j
-        L = lor_pref(x, d) + 1j * lor_hilb(x, d)
-        return 0.5 / wq * (n_q * L)
-    else:                              # emission ((n_q+1) term)
-        x = omega - (w_ab + wq)
-        if (w_ab + wq) < 0:
-            return 0.0 + 0.0j
-        L = lor_pref(x, d) + 1j * lor_hilb(x, d)
-        return 0.5 / wq * ((n_q + 1.0) * L)
+    # if w_ab - wq < 0:
+    #     return 0.5 / wq * n_q * fl_kernel(omega, w_ab, -wq, d)
+    # else:
+    #     return 0.5 / wq * (n_q + 1.0) * fl_kernel(omega, w_ab, wq, d)
+    return 0.5 / wq * (n_q * fl_kernel(omega, w_ab, -wq, d) + (n_q + 1.0) * fl_kernel(omega, w_ab, wq, d))
 
 # @njit(cache=True)
 # def Jhat(omega, w_ab, wq, n_q, d):
 #     x1 = omega - (w_ab - wq)
 #     x2 = omega - (w_ab + wq)
-#     L1 = lor_pref(x1, d) - 1j * lor_hilb(x1, d)
-#     L2 = lor_pref(x2, d) - 1j * lor_hilb(x2, d)
+#     L1 = lor_pref(x1, d) + 1j * lor_hilb(x1, d)
+#     L2 = lor_pref(x2, d) + 1j * lor_hilb(x2, d)
 #     return 0.5 * 1 / wq * (n_q * L1 + (n_q + 1.0) * L2)
 
 @njit(cache=True)
@@ -402,12 +623,12 @@ def liou(a, b, N):
     return a * N + b
 
 # -------------------- add matrices per (q,J‑bundle) -------------------------
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n):
     N = w_n.size; N2 = N * N; J = wb.size
-    for j in prange(J):
+    for j in range(J):
         Y, wq, n_q = Yb[j], wb[j], nb[j]
-        Yh = np.conjugate(Y)
+        Yh = np.conjugate(Y.T)
         for a in range(N):
             for b in range(N):
                 ab = liou(a,b,N)
@@ -418,21 +639,21 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n):
                         if d==b:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat(omega,w_n[e]-w_n[d],wq,n_q,delta)*Y[a,e]*Yh[e,c]
+                                tmp+=Jhat_p(omega,w_n[e]-w_n[d],wq,n_q,delta)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
                             val+=tmp
-                        val-=Jhat(omega,w_n[a]-w_n[d],wq,n_q,delta)*Y[a,c]*Yh[d,b]
+                        val-=Jhat_p(omega,w_n[a]-w_n[d],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         if a==c:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat(omega,w_n[c]-w_n[e],-wq,n_q,delta)*Y[d,e]*Yh[e,b]
+                                tmp+=Jhat_m(omega,w_n[c]-w_n[e],wq,n_q,delta)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
                             val+=tmp
-                        val-=Jhat(omega,w_n[c]-w_n[b],-wq,n_q,delta)*Y[a,c]*Yh[d,b]
+                        val-=Jhat_m(omega,w_n[c]-w_n[b],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         out[ab,cd]+=val
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def add_PSI_bundle(out, omega, A, Yb, wb, nb, d, beta, w_n):
     N=w_n.size; N2=N*N; J=wb.size
-    for j in prange(J):
+    for j in range(J):
         Y, wq, n_q = Yb[j], wb[j], nb[j]
         Yh=np.conjugate(Y.T)
         for a in range(N):
@@ -458,11 +679,11 @@ def add_PSI_bundle(out, omega, A, Yb, wb, nb, d, beta, w_n):
                             val-=Jcorr(omega,w_ed,om_p,wq,n_q,d,beta)*Y[a,c]*Yh[d_,e]*A[e,b]
                         out[ab,cd]+=val
 
-@njit(cache=True, parallel=True)
+# @njit(cache=True, parallel=True)
 def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n):
     """Second‑order Δρ_S term with correct ½ħ/ω_q prefactor."""
     N=w_n.size; J=wb.size
-    for j in prange(J):
+    for j in range(J):
         Y, wq, n_q = Yb[j], wb[j], nb[j]
         coeff = -1 / (2.0 * wq)
         Yh=np.conjugate(Y.T)
@@ -490,7 +711,7 @@ def susceptibility(
     get_Y_q_and_freq: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]],
     *,
     states_number: int = 0,
-    include_init_corr: bool = True,
+    include_init_corr: bool = False,
     on_step: Callable[[int, float, complex], None] | None = None,
 ):
 
@@ -502,60 +723,55 @@ def susceptibility(
     A_e = A_e[:states_number, :states_number]
     B_e = B_e[:states_number, :states_number]
 
-    E_shift = E[:states_number] - E.min()
-    w_n = E_shift
+    E_shift = E[:states_number]
+    w_n = E_shift / H_BAR
 
-    rho_eq = np.exp(-beta * E_shift)
+    rho_eq = np.exp(-beta * (E[:states_number]-E[0]))
     rho_eq /= rho_eq.sum()
-    rho_eq[rho_eq < 1e-12] = 0
+    # rho_eq[rho_eq < 1e-12] = 0
     rho_vec = np.diag(rho_eq).flatten()
 
     N  = states_number
     N2 = N * N
     d  = 0.5 * gamma_fwhm
 
-    # Get omega ####################################################
+    rho_vec_test = np.zeros((N2), dtype=np.complex128)
 
-    # omega_grid = []
-    # row, cols = np.tril_indices(N, k=-1)
+    rho_mat = np.diag(rho_eq)
 
-    # E_diff = (w_n[:, np.newaxis] - w_n[np.newaxis, :])[row, cols].flatten()
-    # for _, wb in get_Y_q_and_freq():
-    #     for w in wb:
-    #         diff = E_diff - w
-    #         print(diff)
-    #         omega_grid.append(np.abs(diff))
-
-    # omega_grid = np.concatenate(omega_grid)
-    # print(omega_grid.shape)
-    
-    # etol = gamma_fwhm  # cluster distance tolerance
-
-    # # Sort array for easier clustering
-    # arr_sorted = np.sort(omega_grid)
-
-    # # Start clustering
-    # clusters = []
-    # i = 0
-    # n = len(arr_sorted)
-    # while i < n:
-    #     start = arr_sorted[i]
-    #     j = i
-    #     # grow the cluster while distance to the start point ≤ etol
-    #     while j < n and arr_sorted[j] - start <= etol:
-    #         j += 1
-    #     clusters.append(arr_sorted[i:j])
-    #     i = j
-
-    # omega_grid = np.array([np.mean(c) for c in clusters])
-
-    # print(omega_grid.shape)
+    for c in range(N):
+        for d in range(N):
+            rho_vec_test[liou(c, d, N)] += rho_mat[c,d]
 
     ####################################################################
 
     # Liouvillian and “initial” matrices ------------------------------------
-    M_L   = np.kron(np.diag(w_n), np.eye(N)) - np.kron(np.eye(N), np.diag(w_n))
+    M_L   = np.kron(np.diag(E_shift), np.eye(N)) - np.kron(np.eye(N), np.diag(E_shift ))
+
+    H_s = np.diag(E_shift)
+    M_L_test = np.zeros((N2, N2), dtype=np.complex128)
+    for a in range(N):
+        for b in range(N):
+            for c in range(N):
+                for d in range(N):
+                    if d == b:
+                        M_L_test[liou(a,b,N), liou(c,d,N)] += H_s[a,c]
+                    if a == c:
+                        M_L_test[liou(a,b,N), liou(c,d,N)] -= H_s[d,b]
+
+    print(np.max(np.abs(M_L - M_L_test)))
+
     M_rho0 = np.kron(A_e, np.eye(N)) - np.kron(np.eye(N), A_e)
+
+    M_rho0_test = np.zeros((N2, N2), dtype=np.complex128)
+    for a in range(N):
+        for b in range(N):
+            for c in range(N):
+                for d in range(N):
+                    if d == b:
+                        M_rho0_test[liou(a,b,N), liou(c,d,N)] += A_e[a,c]
+                    if a == c:
+                        M_rho0_test[liou(a,b,N), liou(c,d,N)] -= A_e[d,b]
 
     if include_init_corr:
         for Yb, wb in get_Y_q_and_freq():
@@ -567,33 +783,37 @@ def susceptibility(
 
     # frequency loop ---------------------------------------------------------
     for k, omega in enumerate(omega_grid):
-        print(k)
+        # print(k)
         M_KR  = np.zeros((N2, N2), dtype=np.complex128)
         M_PSI = np.zeros((N2, N2), dtype=np.complex128)
 
         for Yb, wb in get_Y_q_and_freq():
             nb = np.array([bose(w, beta) for w in wb])
             add_KR_bundle(M_KR, omega, Yb, wb, nb, d, w_n)
-            add_PSI_bundle(M_PSI, omega, A_e, Yb, wb, nb, d, beta, w_n)
+            # add_PSI_bundle(M_PSI, omega, A_e, Yb, wb, nb, d, beta, w_n)
 
-        Xi       = 1j * M_L + 2* M_KR.real - 1j * omega * eye
-        num      = (M_rho0 + M_PSI) @ rho_vec
+        Xi       = 1j / H_BAR * M_L_test + 1 / (H_BAR*H_BAR) * M_KR - 1j * omega * eye
+        num      = (M_rho0_test + M_PSI) @ rho_vec_test
         rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
-        chi[k]   = 1j * np.trace(B_e @ rho_hat)
+        chi[k]   = 1j / H_BAR * np.trace(B_e @ rho_hat)
 
         if on_step is not None:
             on_step(k, omega, chi[k])  # ω back in SI
+
+    # chi = hilbert_transform(omega_grid, chi, return_analytic=True)
+
+    # plt.plot(omega_grid, chi.imag)
 
     return chi
 
 
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, number_of_kpoints_inv_sqrt):
     for i in range(dof_array.shape[0]):
         dof = dof_array[i]
-        for j in prange(normal_modes.shape[1]):
-            Y_q[j] +=  H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * number_of_kpoints_inv_sqrt * np.exp(-2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
+        for j in range(normal_modes.shape[1]):
+            Y_q[j] +=  H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * number_of_kpoints_inv_sqrt * np.exp(2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
 
 
 # --------------------------------------------------------------------------- #
@@ -602,25 +822,25 @@ def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, numb
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [3,5,7,9,11]
-    gamma_fwhm_list = [3e-5]          # FWHM in a.u.
-    T_list          = [20.0]           # Kelvin
-    B_list          = [0.1]            # Tesla
-    states_number   = 4                    # electronic sub-space size
-    modes_number    = 30                    # phonon modes per k-point
+    npoints_list    = [3]
+    gamma_fwhm_list = [10/H_CM_1/H_BAR]          # FWHM in a.u. np.linspace(6e-4/H_BAR, 6e-3/H_BAR, 5) 
+    T_list          = [20, 30, 40, 200, 300]           # Kelvin
+    B_list          = [0]            # Tesla
+    states_number   = 6                  # electronic sub-space size
+    modes_number    = 84                    # phonon modes per k-point
     # ────────────────────────────────────────────────────────────────────────
 
     import itertools
 
     # one-shot data that never changes over the sweep -----------------------
     orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
-    dirpath             = "/home/mikolaj/Data/Displacements_small/NdCo_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
+    dirpath             = "/home/mikolaj/Data/Displacements_small/YbCo_displ" # "/home/mikolaj/Data/Displacements_small/YbCo_displ" #  # "/home/mikolaj/Data/wfovl_test/YbCo_displ"
     slt_filepath        = "./seminarium/import.slt"
     group_name          = "xxx"
     displacement_number = 1
-    step                = 0.025
+    step                = 0.001
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(-7, -3, 100)
+    omega_au            = np.logspace(6, -3, 50)
 
     # refresh the .slt file
     if os.path.exists(slt_filepath):
@@ -668,18 +888,19 @@ if __name__ == "__main__":
         xs, ys_re, ys_im = [], [], []
 
         def _update(k, omega_si, chi_k):
-            xs.append(omega_si)
-            ys_re.append(chi_k.real)
-            ys_im.append(chi_k.imag)
+            if np.abs(chi_k.imag) < np.inf:
+                xs.append(omega_si)
+                ys_re.append(chi_k.real)
+                ys_im.append(chi_k.imag)
 
-            line_re.set_data(xs, ys_re)
-            line_im.set_data(xs, ys_im)
+                line_re.set_data(xs, ys_re)
+                line_im.set_data(xs, ys_im)
 
-            # keep autoscaling inexpensive
-            for ax in (ax_re, ax_im):
-                ax.relim()
-                ax.autoscale_view()
-            plt.pause(0.001)   # let the GUI breathe
+                # keep autoscaling inexpensive
+                for ax in (ax_re, ax_im):
+                    ax.relim()
+                    ax.autoscale_view()
+                plt.pause(0.001)   # let the GUI breathe
 
         return _update
         
@@ -698,32 +919,21 @@ if __name__ == "__main__":
     #  OUTER LOOP: different band-path densities (npoints)                   #
     # ---------------------------------------------------------------------- #
     for npoints in npoints_list:
-
-        # -------- data that depend *only* on npoints -----------------------
-        with h5py.File(slt_filepath, "r") as f:
-            grp          = f[group_name]
-            dof_array    = dofs_with_complete_displacements(grp, displacement_number)
-            hamiltonian0 = grp["0/HAMILTONIAN_MATRIX"][:]
-            AB           = _zdot3d(grp["0/MAGNETIC_DIPOLE_MOMENTA"][:],
-                                   np.asarray([0, 1, 1], dtype = np.float64))
-
-        # ------------------------------------------------------------------ #
-        #  INNER SWEEP over linewidth γ, temperature T and field B           #
-        # ------------------------------------------------------------------ #
-        for gamma_fwhm, T, B in itertools.product(
-                gamma_fwhm_list, T_list, B_list):
-
+        for B in B_list:
             # correct B-vector *and* B-dependent electronic objects ---------
-            orient = np.array([0, 1, 1], np.float64)
+            orient = np.array([1, 1, 1], np.float64)
             orient /= np.linalg.norm(orient)
-            B_vec  = B / B_AU_T * orient
+            B_vec  = B / B_AU_T * orient ######################################################### B ####################### BBBBB
 
             grid = half_bz_grid_aniso(recip_axes, npoints)
+            # print(grid)
 
             # q = np.linspace(-0.5, 0.5, npoints, endpoint=True)
+            # q = np.array([-0.5, 0, 0.5], dtype=np.float64)
             # q = np.array([0], dtype=np.float64)
-            # q = np.array([-0.5, -0.25, 0, 0.25, 0.5], dtype=np.float64)
+            # q = np.array([-0.25, 0, 0.25], dtype=np.float64)
             # q = np.array([-0.5, -0.333333,-0.166666, 0, 0.166666, 0.333333, 0.5], dtype=np.float64)
+            # q = np.array([-0.375, -0.25,-0.125, 0, 0.125, 0.25, 0.375], dtype=np.float64)
             # q_grid = np.meshgrid(q, q, q, indexing='ij')
             # grid = np.ascontiguousarray(np.vstack([grid.ravel() for grid in q_grid]).T)
 
@@ -731,10 +941,13 @@ if __name__ == "__main__":
             #                 npoints=npoints
             #             ).kpts.astype(np.float64)
 
+            # -------- data that depend *only* on npoints -----------------------
             with h5py.File(slt_filepath, "r") as f:
-                grp = f[group_name]
-                H_total = grp["0/HAMILTONIAN_MATRIX"][:] + \
-                          _zdot3d(grp["0/MAGNETIC_DIPOLE_MOMENTA"][:], -B_vec)
+                grp          = f[group_name]
+                dof_array    = dofs_with_complete_displacements(grp, displacement_number)
+                hamiltonian0 = grp["0/HAMILTONIAN_MATRIX"][:]
+                AB           = _zdot3d(grp["0/MAGNETIC_DIPOLE_MOMENTA"][:], orient)
+                H_total = hamiltonian0 + _zdot3d(grp["0/MAGNETIC_DIPOLE_MOMENTA"][:], -B_vec)
 
                 # field-dependent eigenvectors
                 E_tot, U_R0 = np.linalg.eigh(H_total)
@@ -743,16 +956,27 @@ if __name__ == "__main__":
                 k_mch_arr = k_mch(dof_array, grp, U_R0)
                 E_grad, k_U_arr = E_grad_k_U(
                     dof_array, grp, U_R0,
-                    B_vec, displacement_number, 1e-10
+                    B_vec, displacement_number, step, 1e-10
                 )
 
             # build H_grad (field dependent) and truncate -------------------
-            H_grad = np.empty_like(k_mch_arr)
-            for i in range(H_grad.shape[0]):
-                Ek = (E_tot[None, :] - E_tot[:, None]) * (k_mch_arr[i] + k_U_arr[i])
-                np.fill_diagonal(Ek, E_grad[i])
-                H_grad[i] = Ek
-            H_grad = H_grad[:, :states_number, :states_number]
+            # H_grad = np.empty_like(k_mch_arr)
+            # for i in range(H_grad.shape[0]):
+            #     Ek = (E_tot[None, :] - E_tot[:, None]) * (k_mch_arr[i] + k_U_arr[i])
+            #     np.fill_diagonal(Ek, E_grad[i])
+            #     H_grad[i] = Ek * AU_BOHR_CM_1 / H_CM_1
+
+                H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
+
+                # plot_complex_matrix(H_grad[0])
+
+                # for i in range(H_grad.shape[0]):
+                #     print(is_hermitian(H_grad[i], tol = 1e-7))
+                #     print(H_grad[i])
+                    # H_grad[i] += H_grad[i].conj().T
+                    # H_grad[i] *= 0.5
+                    # print(is_hermitian(H_grad[i], tol = 1e-2))
+
 
             # closure capturing *field-dependent* H_grad --------------------
             def get_Y_q_and_freq():
@@ -762,7 +986,7 @@ if __name__ == "__main__":
                     freq, modes = hess_obj.frequencies_eigenvectors
 
                     # --- keep only the requested number of modes --------------------
-                    freq  = freq[:modes_number] * (AU_BOHR_CM_1 / H_CM_1)
+                    freq  = freq[:modes_number] * (AU_BOHR_CM_1 / H_CM_1/ H_BAR)
                     modes = modes[:, :modes_number]
 
                     nz    = np.where(freq <= 0)[0]
@@ -788,24 +1012,32 @@ if __name__ == "__main__":
                         np.ascontiguousarray(freq[start:]),
                     )
 
-            label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
-                    f"T={T:g} K, B={B:g} T")
 
-            step_plotter = make_step_plotter(ax_re, ax_im, label)
+            # ------------------------------------------------------------------ #
+            #  INNER SWEEP over linewidth γ, temperature T and field B           #
+            # ------------------------------------------------------------------ #
+            for gamma_fwhm, T in itertools.product(
+                    gamma_fwhm_list, T_list):
 
-            chi = susceptibility(
-                omega_au, H_total, AB, AB,
-                T, gamma_fwhm, get_Y_q_and_freq,
-                states_number=states_number,
-                include_init_corr=True,
-                on_step=step_plotter            # ← live updates happen here
-            )
 
-            # # plotting ------------------------------------------------------
-            # label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
-            #          f"T={T:g} K, B={B:g} T")
-            # ax_re.plot(omega_SI, chi.real, label=label)
-            # ax_im.plot(omega_SI, chi.imag, label=label)
+                label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
+                        f"T={T:g} K, B={B:g} T")
+
+                step_plotter = make_step_plotter(ax_re, ax_im, label)
+
+                chi = susceptibility(
+                    omega_au, H_total, AB, AB,
+                    T, gamma_fwhm, get_Y_q_and_freq,
+                    states_number=states_number,
+                    include_init_corr=False,
+                    on_step=step_plotter            # ← live updates happen here
+                )
+
+                # # plotting ------------------------------------------------------
+                # label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
+                #          f"T={T:g} K, B={B:g} T")
+                # ax_re.plot(omega_SI, chi.real, label=label)
+                # ax_im.plot(omega_SI, chi.imag, label=label)
 
     # figure cosmetics -------------------------------------------------------
     ax_re.legend(fontsize="x-small", frameon=False, ncols=2)

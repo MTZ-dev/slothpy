@@ -131,6 +131,7 @@ def hilbert_transform(
         return H
 
 
+M_AU = 1822.89
 H_BAR = 2.4188843265864e-17
 
 def half_bz_grid_aniso(
@@ -396,7 +397,17 @@ def crystal_field_derivatives(dof_array, group, magnetic_field_vector, displacem
 
         H_grad.append(eigenvectors0 @ H_grad_component @ eigenvectors0.conj().T)
 
-    return np.asarray(H_grad, dtype=np.complex128)
+    H_grad = np.asarray(H_grad, dtype=np.complex128)           # (Nderiv, Ns, Ns)
+    dir_idx = (dof_array[:, 0] + 2) % 3                        # 0→x, 1→y, 2→z
+
+    for l in (0, 1, 2):                                        # each Cartesian set
+        mask = dir_idx == l
+        if not mask.any():
+            continue
+        avg = H_grad[mask].mean(axis=0)                        # (Ns, Ns)
+        H_grad[mask] -= avg                                    # broadcast subtraction
+
+    return H_grad
 
 
 def k_mch(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray):
@@ -813,7 +824,7 @@ def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, numb
     for i in range(dof_array.shape[0]):
         dof = dof_array[i]
         for j in range(normal_modes.shape[1]):
-            Y_q[j] +=  H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * number_of_kpoints_inv_sqrt * np.exp(2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
+            Y_q[j] +=  H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * 1/np.sqrt(M_AU) * number_of_kpoints_inv_sqrt * np.exp(2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
 
 
 # --------------------------------------------------------------------------- #
@@ -823,8 +834,8 @@ if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [3]
-    gamma_fwhm_list = [10/H_CM_1/H_BAR]          # FWHM in a.u. np.linspace(6e-4/H_BAR, 6e-3/H_BAR, 5) 
-    T_list          = [20, 30, 40, 200, 300]           # Kelvin
+    gamma_fwhm_list = [10/H_CM_1/H_BAR] #          # FWHM in a.u. np.linspace(6e-4/H_BAR, 6e-3/H_BAR, 5) 
+    T_list          = [2,3,5,8,10,12,15,20,25,50,100,200,300,400]           # Kelvin
     B_list          = [0]            # Tesla
     states_number   = 6                  # electronic sub-space size
     modes_number    = 84                    # phonon modes per k-point

@@ -26,6 +26,10 @@ import matplotlib.pyplot as plt
 from typing import Tuple, Sequence, Any
 slt.set_default_error_reporting_mode()
 
+M_AU = 1822.89
+H_BAR = 2.4188843265864e-17
+AU_ANGULAR_FREQUENCY = 4.13413733359e16 
+
 def is_hermitian(a: Any, tol: float = 1e-12) -> bool:
     """
     Return True if a square 2-D array is Hermitian within a given tolerance.
@@ -130,9 +134,6 @@ def hilbert_transform(
     else:
         return H
 
-
-M_AU = 1822.89
-H_BAR = 2.4188843265864e-17
 
 def half_bz_grid_aniso(
     b_len: Sequence[float],
@@ -299,9 +300,7 @@ def plot_complex_matrix(
         ax.set_ylabel('i')
 
     plt.tight_layout()
-    plt.show()
-
-AU_ANGULAR_FREQUENCY = 4.13413733359e16                       
+    plt.show()                      
 
 def omega_to_au(omega_si):
     return np.asarray(omega_si) / AU_ANGULAR_FREQUENCY
@@ -539,9 +538,9 @@ def Jhat_m(omega, w_ab, wq, n_q, d):
     L1 = 0.0 + 0.0j
     L2 = 0.0 + 0.0j
     
-    if w_ab - wq > 0:
+    if w_ab - wq < 0:
         L1 += 1 / (omega - w_ab + wq + 1j * d) * n_q
-    if w_ab + wq > 0:
+    if w_ab + wq < 0:
         L2 += 1 / (omega - w_ab - wq + 1j * d) * (n_q + 1)
     
 
@@ -557,9 +556,9 @@ def Jhat_p(omega, w_ab, wq, n_q, d):
     L1 = 0.0 + 0.0j
     L2 = 0.0 + 0.0j
     
-    if w_ab + wq > 0:
+    if w_ab + wq < 0:
         L1 += 1 / (omega - w_ab - wq + 1j * d) * n_q
-    if w_ab - wq > 0:
+    if w_ab - wq < 0:
         L2 += 1 / (omega - w_ab + wq + 1j * d) * (n_q + 1)
     
 
@@ -593,7 +592,13 @@ def Jhat(omega, w_ab, wq, n_q, d):
     #     return 0.5 / wq * n_q * fl_kernel(omega, w_ab, -wq, d)
     # else:
     #     return 0.5 / wq * (n_q + 1.0) * fl_kernel(omega, w_ab, wq, d)
-    return 0.5 / wq * (n_q * fl_kernel(omega, w_ab, -wq, d) + (n_q + 1.0) * fl_kernel(omega, w_ab, wq, d))
+    # return 0.5 / wq * (n_q * fl_kernel(omega, w_ab, -wq, d) + (n_q + 1.0) * fl_kernel(omega, w_ab, wq, d))
+    if w_ab == 0:
+        return 0.0 + 0.0 * 1j
+    if w_ab > 0:
+        return -1j / (w_ab - wq - 1j * d) * n_q
+    if w_ab < 0:
+        return -1j / (w_ab + wq - 1j * d) * (n_q + 1)
 
 # @njit(cache=True)
 # def Jhat(omega, w_ab, wq, n_q, d):
@@ -650,15 +655,15 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n):
                         if d==b:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_p(omega,w_n[e]-w_n[d],wq,n_q,delta)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
+                                tmp+=Jhat(omega,w_n[e]-w_n[d],wq,n_q,delta)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
                             val+=tmp
-                        val-=Jhat_p(omega,w_n[a]-w_n[d],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat(omega,w_n[a]-w_n[d],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         if a==c:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_m(omega,w_n[c]-w_n[e],wq,n_q,delta)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
+                                tmp+=Jhat(omega,w_n[e]-w_n[c],wq,n_q,delta)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
                             val+=tmp
-                        val-=Jhat_m(omega,w_n[c]-w_n[b],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat(omega,w_n[b]-w_n[c],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         out[ab,cd]+=val
 
 @njit(cache=True)
@@ -757,7 +762,7 @@ def susceptibility(
     ####################################################################
 
     # Liouvillian and “initial” matrices ------------------------------------
-    M_L   = np.kron(np.diag(E_shift), np.eye(N)) - np.kron(np.eye(N), np.diag(E_shift ))
+    M_L   = np.kron(np.diag(E_shift), np.eye(N)) - np.kron(np.eye(N), np.diag(E_shift))
 
     H_s = np.diag(E_shift)
     M_L_test = np.zeros((N2, N2), dtype=np.complex128)
@@ -818,7 +823,6 @@ def susceptibility(
     return chi
 
 
-
 @njit(cache=True)
 def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, number_of_kpoints_inv_sqrt):
     for i in range(dof_array.shape[0]):
@@ -834,8 +838,8 @@ if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [3]
-    gamma_fwhm_list = [10/H_CM_1/H_BAR] #          # FWHM in a.u. np.linspace(6e-4/H_BAR, 6e-3/H_BAR, 5) 
-    T_list          = [2,3,5,8,10,12,15,20,25,50,100,200,300,400]           # Kelvin
+    gamma_fwhm_list = [10/H_CM_1/H_BAR, 20/H_CM_1/H_BAR, 30/H_CM_1/H_BAR, 40/H_CM_1/H_BAR] #          # FWHM in a.u. np.linspace(6e-4/H_BAR, 6e-3/H_BAR, 5) 
+    T_list          = [2]           # Kelvin
     B_list          = [0]            # Tesla
     states_number   = 6                  # electronic sub-space size
     modes_number    = 84                    # phonon modes per k-point
@@ -845,13 +849,13 @@ if __name__ == "__main__":
 
     # one-shot data that never changes over the sweep -----------------------
     orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
-    dirpath             = "/home/mikolaj/Data/Displacements_small/YbCo_displ" # "/home/mikolaj/Data/Displacements_small/YbCo_displ" #  # "/home/mikolaj/Data/wfovl_test/YbCo_displ"
+    dirpath             = "/home/mikolaj/Data/Displacements_small_001/YbCo_displ" # "/home/mikolaj/Data/Displacements_small/YbCo_displ" #  # "/home/mikolaj/Data/wfovl_test/YbCo_displ"
     slt_filepath        = "./seminarium/import.slt"
     group_name          = "xxx"
     displacement_number = 1
     step                = 0.001
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(6, -3, 50)
+    omega_au            = np.logspace(0, 6, 100)
 
     # refresh the .slt file
     if os.path.exists(slt_filepath):
@@ -964,16 +968,16 @@ if __name__ == "__main__":
                 E_tot, U_R0 = np.linalg.eigh(H_total)
 
                 # k-matrix & gradients with **CORRECT** B-vector
-                k_mch_arr = k_mch(dof_array, grp, U_R0)
-                E_grad, k_U_arr = E_grad_k_U(
-                    dof_array, grp, U_R0,
-                    B_vec, displacement_number, step, 1e-10
-                )
+                # k_mch_arr = k_mch(dof_array, grp, U_R0)
+                # E_grad, k_U_arr = E_grad_k_U(
+                #     dof_array, grp, U_R0,
+                #     B_vec, displacement_number, step, 1e-10
+                # )
 
             # build H_grad (field dependent) and truncate -------------------
             # H_grad = np.empty_like(k_mch_arr)
             # for i in range(H_grad.shape[0]):
-            #     Ek = (E_tot[None, :] - E_tot[:, None]) * (k_mch_arr[i] + k_U_arr[i])
+            #     Ek = (E_tot[None, :] - E_tot[:, None]) * (k_U_arr[i])
             #     np.fill_diagonal(Ek, E_grad[i])
             #     H_grad[i] = Ek * AU_BOHR_CM_1 / H_CM_1
 
@@ -982,10 +986,11 @@ if __name__ == "__main__":
                 # plot_complex_matrix(H_grad[0])
 
                 # for i in range(H_grad.shape[0]):
-                #     print(is_hermitian(H_grad[i], tol = 1e-7))
-                #     print(H_grad[i])
-                    # H_grad[i] += H_grad[i].conj().T
-                    # H_grad[i] *= 0.5
+                #     print(is_hermitian(H_grad[i], tol = 1e-2))
+                #     if not is_hermitian(H_grad[i], tol = 1e-2):
+                #         print(H_grad[i])
+                #     H_grad[i] += H_grad[i].conj().T
+                #     H_grad[i] *= 0.5
                     # print(is_hermitian(H_grad[i], tol = 1e-2))
 
 

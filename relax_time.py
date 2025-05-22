@@ -44,7 +44,8 @@ def liou_idx(a: int, b: int, N: int) -> int:
 
 @njit(cache=True, inline="always")
 def _lorentz(dE: float, lw: float) -> float:
-    return lw / (dE*dE + lw*lw) / pi
+    return -1j / (dE - 1j * lw)
+    # return lw / (dE*dE + lw*lw)
 
 @njit(cache=True, inline="always")
 def _gauss(dE: float, lw: float) -> float:
@@ -186,6 +187,7 @@ def make_R41(Ener: np.ndarray,
              lw1:  float,
              lw2:  float,
              smear: int,
+             q_0: bool,
              correction: bool = False,
              sec_tol: float = 1e-6) -> np.ndarray:
     N  = Ener.size
@@ -200,6 +202,12 @@ def make_R41(Ener: np.ndarray,
     Rbam = _R_pm(V2, V1, Ener, -1, f1, lw1)
 
     prefc = pi * pi / H
+
+    if q_0 == 1:
+        prefc *= 0.5
+    elif q_0 == 2:
+        prefc *= 0.25
+
     Δ  = lambda dE: delta_line(smear, dE, lw1)  # Fortran used Γ₁ for δ
 
     R = np.zeros((N2, N2), np.complex128)
@@ -338,7 +346,7 @@ def make_R41(Ener: np.ndarray,
 
                             #  K2   (built with V1) – energy denominator ΔE
                             Ediff  = Ener[lk] - Ener[ll] - Ener[c] + Ener[d]
-                            if np.abs(Ediff) >= 1e-6:
+                            if np.abs(Ediff) >= sec_tol:
                                 num  = get_K21(V1, Ener, T, f1, Ener[lk] - Ener[ll], lw_tot, smear, a, b, lk, ll)
                                 num -= get_K21(V1, Ener, T, f1, e_shift,            lw_tot, smear, a, b, lk, ll)
                                 K2   = num / Ediff
@@ -348,7 +356,7 @@ def make_R41(Ener: np.ndarray,
 
                             #  Swap V1 ↔ V2
                             G2 = get_K21(V1, Ener, T, f1, e_shift, lw_tot, smear, lk, ll, c, d)
-                            if np.abs(Ediff) >= 1e-6:
+                            if np.abs(Ediff) >= sec_tol:
                                 num  = get_K21(V2, Ener, T, f2, Ener[lk] - Ener[ll], lw_tot, smear, a, b, lk, ll)
                                 num -= get_K21(V2, Ener, T, f2, e_shift,            lw_tot, smear, a, b, lk, ll)
                                 K2   = num / Ediff
@@ -356,7 +364,7 @@ def make_R41(Ener: np.ndarray,
                                 K2   = get_dK21(V2, Ener, T, f2, e_shift, lw_tot, smear, a, b, lk, ll)
                             val -= K2 * G2
 
-            R[ab, cd] = prefc * val
+            R[ab, cd] += prefc * val
 
     return R
 
@@ -471,10 +479,7 @@ def build_R41(Ener,
                              correction: bool = False,
                              sec_tol: float = 1e-6):
     
-    if isinstance(lw_ph, (tuple, list, np.ndarray)) and len(lw_ph) == 2:
-        lw1, lw2 = map(float, lw_ph)
-    else:
-        lw1 = lw2 = float(lw_ph)
+    lw1 = lw2 = np.float64(lw_ph)
 
     N  = Ener.size
     N2 = N * N
@@ -483,14 +488,17 @@ def build_R41(Ener,
     modes = []  # each element: (freq, Y_matrix)
     for Y_q, freq_vec, q_0 in mode_gen():
         for j in range(freq_vec.size):
-            modes.append((float(freq_vec[j]), Y_q[j].copy()))
+            modes.append((np.float64(freq_vec[j]), Y_q[j].copy(), q_0))
+            modes.append((np.float64(freq_vec[j]), Y_q[j].conj().T.copy(), q_0))
 
     # ─── double sum without repetition (unordered pairs) ──────────────
     R_total = np.zeros((N2, N2), np.complex128)
-    for (f1, V1), (f2, V2) in itertools.combinations_with_replacement(modes, 2):
-        R_total += make_R41(Ener, V1, V2, temp, f1, f2,
-                               lw1, lw2, type_smear,
-                               correction, sec_tol)
+    for (f1, V1, q_01), (f2, V2, q_02) in itertools.combinations_with_replacement(modes, 2):
+        block = make_R41(Ener, V1, V2, temp, f1, f2, lw1, lw2, type_smear, q_01 + q_02, correction, sec_tol)
+        if V1 is not V2:
+            block = block + block.T
+
+        R_total += block
 
     return R_total
 
@@ -887,7 +895,7 @@ if __name__ == "__main__":
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [1]
     gamma_fwhm_list = [5]          # FWHM in a.u.
-    T_list          = [1,2,3,4,5,6,10,20,30,40]           # Kelvin
+    T_list          = [1,2,3,4,5,6,10,20,30,40,50]           # Kelvin
     B_list          = [0.00000001]            # Tesla
     states_number   = 6                    # electronic sub-space size
     modes_mult      = 1.1
@@ -943,22 +951,13 @@ if __name__ == "__main__":
     slt_hessian     = SltHessian(hessian)
     masses_inv_sqrt = slt_hessian._masses_inv_sqrt
     recip_axes = slt_hessian.atoms_object().cell.reciprocal().cellpar()[:3]
-    hess_obj        = Hessian(
-        slt_hessian.hessian()[:],
-        np.outer(masses_inv_sqrt, masses_inv_sqrt),
-        np.array([0., 0., 0.])
-    )
+    hess_obj        = Hessian(slt_hessian.hessian()[:], np.outer(masses_inv_sqrt, masses_inv_sqrt), np.array([0., 0., 0.]))
 
     add, finish = make_T1_accumulator()
 
     for npoints in npoints_list:
-        
-        # ------------------------------------------------------------------ #
-        #  INNER SWEEP over linewidth γ, temperature T and field B           #
-        # ------------------------------------------------------------------ #
         for B in B_list:
 
-            # correct B-vector *and* B-dependent electronic objects ---------
             orient = np.array([1, 1, 1], np.float64)
             orient /= np.linalg.norm(orient)
             B_vec  = B / B_AU_T * orient
@@ -998,7 +997,7 @@ if __name__ == "__main__":
                 #     H_grad[i] = Ek
                 # H_grad = H_grad[:, :states_number, :states_number]
 
-                # E_tot = E_tot[:states_number] * H_CM_1
+                E_tot = E_tot[:states_number] * H_CM_1
 
                 H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
 
@@ -1033,14 +1032,14 @@ if __name__ == "__main__":
 
                 Rtot, R21, R41 = redfield_lindbladian(
                     E_tot, T, gamma_fwhm, 0, get_Y_q_and_freq,
-                    include_R41=True, sec_tol=secular_tolerance)
+                    include_R41=False, sec_tol=secular_tolerance)
 
                 T1_R21_s = AU_TIME_S * relaxation_time(R21)
                 print(T1_R21_s)
-                T1_R41_s = AU_TIME_S * relaxation_time(R41)
-                print(T1_R41_s)
+                # T1_R41_s = AU_TIME_S * relaxation_time(R41)
+                # print(T1_R41_s)
 
                 add(T, "R21", B, gamma_fwhm, T1_R21_s)
-                add(T, "R41", B, gamma_fwhm, T1_R41_s)
+                # add(T, "R41", B, gamma_fwhm, T1_R41_s)
 
     finish(invT=True)

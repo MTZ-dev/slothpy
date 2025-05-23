@@ -45,7 +45,54 @@ def Jhat(omega, w_ab, wq, n_q, d):
         return -1j / (w_ab - wq - 1j * d) * n_q
     if w_ab > 0:
         return -1j / (w_ab + wq - 1j * d) * (n_q + 1)
+    
+@njit(cache=True)
+def Jhat_p(omega, w_ab, wq, n_q, d):
+    if w_ab == 0:
+        return 0.0 + 0.0 * 1j
+    if w_ab > 0:
+        return -1j / (w_ab - wq - 1j * d) * n_q
+    if w_ab < 0:
+        return -1j / (w_ab + wq - 1j * d) * (n_q + 1)
 
+@njit(cache=True)
+def Jhat_m(omega, w_ab, wq, n_q, d):
+    if w_ab == 0:
+        return 0.0 + 0.0 * 1j
+    if w_ab < 0:
+        return -1j / (w_ab + wq - 1j * d) * n_q
+    if w_ab > 0:
+        return -1j / (w_ab - wq - 1j * d) * (n_q + 1)
+    
+
+@njit(cache=True)
+def add_PSI_bundle(out, omega, A, Yb, wb, nb, d, beta, w_n):
+    N=w_n.size; N2=N*N; J=wb.size
+    for j in range(J):
+        Y, wq, n_q = Yb[j], wb[j], nb[j]
+        Yh=np.conjugate(Y.T)
+        for a in range(N):
+            for b in range(N):
+                ab=liou(a,b,N)
+                for c in range(N):
+                    for d_ in range(N):
+                        cd=liou(c,d_,N)
+                        val=0.0+0.0j
+                        for e in range(N):
+                            w_ed=w_n[e]-w_n[d_]
+                            val+=Jcorr(omega,w_ed,w_n[d_]-w_n[b],wq,n_q,d,beta)*Y[a,e]*A[e,c]*Yh[d_,b]
+                            val-=Jcorr(omega,w_ed,w_n[a]-w_n[d_],wq,n_q,d,beta)*A[a,c]*Y[d_,e]*Yh[e,b]
+                        if a==c:
+                            for e in range(N):
+                                w_ed=w_n[e]-w_n[d_]
+                                for f in range(N):
+                                    om_p=w_n[c]-w_n[d_]+w_n[e]-w_n[f]
+                                    val+=Jcorr(omega,w_ed,om_p,wq,n_q,d,beta)*Y[d_,e]*A[e,f]*Yh[f,b]
+                        for e in range(N):
+                            w_ed=w_n[e]-w_n[d_]
+                            om_p=w_n[c]-w_n[d_]+w_n[e]-w_n[b]
+                            val-=Jcorr(omega,w_ed,om_p,wq,n_q,d,beta)*Y[a,c]*Yh[d_,e]*A[e,b]
+                        out[ab,cd]+=val
 
 @njit(cache=True)
 def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n):
@@ -63,17 +110,70 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n):
                         if d==b:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat(omega,w_n[e]-w_n[d],wq,n_q,delta)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
+                                tmp+=Jhat_p(omega,w_n[e]-w_n[d],wq,n_q,delta)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
                             val+=tmp
-                        val-=Jhat(omega,w_n[a]-w_n[d],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat_p(omega,w_n[a]-w_n[d],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         if a==c:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat(omega,w_n[e]-w_n[c],wq,n_q,delta)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
+                                tmp+=Jhat_m(omega,w_n[c]-w_n[e],wq,n_q,delta)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
                             val+=tmp
-                        val-=Jhat(omega,w_n[b]-w_n[c],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat_m(omega,w_n[c]-w_n[b],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         out[ab,cd]+=val / H_BAR
 
+@njit(cache=True)
+def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n):
+    N=w_n.size; J=wb.size
+    for j in range(J):
+        Y, wq, n_q = Yb[j], wb[j], nb[j]
+        coeff = -1 * H_BAR**2 / (2.0)
+        Yh=np.conjugate(Y.T)
+        for a in range(N):
+            for b in range(N):
+                ab=liou(a,b,N)
+                for c in range(N):
+                    for d_ in range(N):
+                        cd=liou(c,d_,N)
+                        corr=0.0+0.0j
+                        for e in range(N):
+                            w_de=w_n[d_]-w_n[e]
+                            corr+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta))*A[a,c]*(Y[d_,e]*Yh[e,b]+Yh[d_,e]*Y[e,b])
+                            for f in range(N):
+                                corr-=(n_q*Iint(w_de+wq,w_n[e]-w_n[f]-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[f]+wq,beta))*(1.0 if a==c else 0.0)*(Y[d_,e]*Yh[e,f] + Yh[d_,e]*Y[e,f])*A[f,b]
+                        out[ab,cd]+=coeff*corr
+
+@njit(cache=True)
+def Iint(w1: float, w2: float, beta: float) -> float:
+    """Imaginary‑time double integral with exponent dropping."""
+    eps = 1e-14
+    if abs(w1) < eps and abs(w2) < eps:
+        return 0.5 * beta * beta
+
+    def expm1_drop(u):
+        # if u > DROP_EXP:
+        #     # print("DROP", u)
+        #     return 0.0          # treat large exponent as cancelled
+        # if u < -DROP_EXP:
+        #     return -1.0
+        return np.expm1(u)
+
+    if abs(w2) < eps:
+        u = 1 * w1 * beta
+        num = np.exp(u)
+        # num = 0.0 if u > DROP_EXP else math.exp(u)
+        return beta * num / (1 * w1) - expm1_drop(u) / (1**2 * w1**2)
+    if abs(w1) < eps:
+        u = 1 * w2 * beta
+        return expm1_drop(u) / (1**2 * w2**2) - beta / (1 * w2)
+    if abs(w1 + w2) < eps:
+        u = 1 * w1 * beta
+        return -(beta - expm1_drop(u) / (1 * w1)) / (1 * w1)
+
+    u1  = 1 * w1 * beta
+    u12 = 1 * (w1 + w2) * beta
+    term1 = expm1_drop(u12) / (1**2 * w2 * (w1 + w2))
+    term2 = expm1_drop(u1)  / (1**2 * w1 * w2)
+    return term1 - term2
 
 @njit(cache=True, inline="always")
 def bose_occ(freq: float, beta: float) -> float:
@@ -147,7 +247,19 @@ def _add_R21_mode(R21: np.ndarray, Ener: np.ndarray, V: np.ndarray,
     return R21
 
 
-def build_R21(Ener: np.ndarray, temp: float, lw: float, smear: int,
+def build_KR(Ener: np.ndarray, temp: float, lw: float, smear: int,
+              gen: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]],
+              *, sec_tol: float = 1e-12) -> np.ndarray:
+    N = Ener.size
+    R = np.zeros((N*N, N*N), np.complex128)
+    beta = 1.0 / (KB*temp)
+    for Y, w, q_0 in gen():
+        add_KR_bundle(R, 0.0, Y, w, bose_occ(w, beta), lw, Ener)
+
+    return R
+
+
+def build_M_PSI(Ener: np.ndarray, temp: float, lw: float, smear: int,
               gen: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]],
               *, sec_tol: float = 1e-12) -> np.ndarray:
     N = Ener.size
@@ -374,8 +486,6 @@ def susceptibility(
     rho_eq = np.exp(-beta * (E-E[0]))
     rho_eq /= rho_eq.sum()
 
-    print(rho_eq)
-
     N  = states_number
     N2 = N * N
 
@@ -417,12 +527,17 @@ def susceptibility(
     eye = np.eye(N2, dtype=np.complex128)
     chi = np.empty_like(omega_grid, dtype=np.complex128)
 
+    # Neglect omega for now out of the loop
+    M_KR  = build_KR(E, T, gamma_fwhm, 0, get_Y_q_and_freq, sec_tol=1e-9)
+    M_PSI = np.zeros((N2, N2), dtype=np.complex128)
+
+    if include_init_corr:
+        for Yb, wb, q_0 in get_Y_q_and_freq():
+            add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E)
+
     # frequency loop ---------------------------------------------------------
     for k, omega in enumerate(omega_grid):
         # print(k)
-        M_KR  = build_R21(E, T, gamma_fwhm, 0, get_Y_q_and_freq, sec_tol=1e-9)
-        M_PSI = np.zeros((N2, N2), dtype=np.complex128)
-
 
         Xi       = 1j / H_BAR * M_L + M_KR - 1j * omega * eye
         num      = (M_rho0 + M_PSI) @ rho_vec
@@ -441,9 +556,9 @@ def susceptibility(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [3]
-    gamma_fwhm_list = [10]          # FWHM in cm-1
-    T_list          = [2,3,4,5,6,7,8]           # Kelvin
+    npoints_list    = [5]
+    gamma_fwhm_list = [6]          # FWHM in cm-1
+    T_list          = [2,2.5,3,3.5,4,4.5,5]           # Kelvin 
     B_list          = [0.00000001]            # Tesla
     states_number   = 6                    # electronic sub-space size
     modes_mult      = 1.1
@@ -462,7 +577,7 @@ if __name__ == "__main__":
     displacement_number = 1
     step                = 0.025
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(0, 8, 110)
+    omega_au            = np.logspace(0, 6, 110)
 
     # refresh the .slt file
     if os.path.exists(slt_filepath):
@@ -594,7 +709,7 @@ if __name__ == "__main__":
                         omega_au/1e12, H_total, AB, AB,
                         T, gamma_fwhm, get_Y_q_and_freq,
                         states_number=states_number,
-                        include_init_corr=False,
+                        include_init_corr=True,
                         on_step=step_plotter            # ← live updates happen here
                     )
 

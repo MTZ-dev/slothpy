@@ -36,32 +36,33 @@ H         = 33.3571775619
 H_BAR     = 33.3571775619 / (2 * pi)
 AU_TIME_S = 1e-12
 M_AU = 1822.89
-    
+
+
 @njit(cache=True)
 def Jhat_p(omega, w_ab, wq, n_q, d):
-    if np.abs(w_ab) < 5:
+    if np.abs(w_ab) < 0.1:
         return 0.0 + 0.0 * 1j
     if w_ab > 0:
         z = -1j / (w_ab - wq - 1j * d) * n_q
-        return z if z.imag > 0 else np.conjugate(z)
+        return z if z.imag < 0 else np.conjugate(z)
     if w_ab < 0:
         z = -1j / (w_ab + wq - 1j * d) * (n_q + 1)
-        return z if z.imag > 0 else np.conjugate(z)
+        return z if z.imag < 0 else np.conjugate(z)
 
 @njit(cache=True)
 def Jhat_m(omega, w_ab, wq, n_q, d):
-    if np.abs(w_ab) < 5:
+    if np.abs(w_ab) < 0.1:
         return 0.0 + 0.0 * 1j
     if w_ab < 0:
         z = -1j / (w_ab + wq - 1j * d) * n_q
-        return z if z.imag < 0 else np.conjugate(z)
+        return z if z.imag > 0 else np.conjugate(z)
     if w_ab > 0:
         z = -1j / (w_ab - wq - 1j * d) * (n_q + 1)
-        return z if z.imag < 0 else np.conjugate(z)
+        return z if z.imag > 0 else np.conjugate(z)
     
 @njit(cache=True)
 def zeta(x: float, beta: float) -> float:
-    eps = 1e-14
+    eps = 1e-40
     if abs(x) < eps:
         return beta
     u = beta * x
@@ -69,12 +70,14 @@ def zeta(x: float, beta: float) -> float:
 
 @njit(cache=True)
 def Jcorr(omega, omega_p, w_ab, wq, n_q, d, beta):
-    if w_ab == 0:
+    if np.abs(w_ab) < 0.1:
         return 0.0 + 0.0 * 1j
     if w_ab < 0:
-        return -1j / (omega_p + wq - 1j * d) * n_q * zeta(w_ab + wq, beta)
+        z = -1j / (omega_p + wq - 1j * d) * n_q * zeta(w_ab + wq, beta)
+        return z if z.imag < 0 else np.conjugate(z)
     if w_ab > 0:
-        return -1j / (omega_p - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta)
+        z = -1j / (omega_p - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta)
+        return z if z.imag > 0 else np.conjugate(z)
 
 @njit(cache=True)
 def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0):
@@ -101,7 +104,7 @@ def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0):
                             val-=Jcorr(omega,w_n[c]-w_n[d]+w_n[e]-w_n[b],w_n[d]-w_n[e],wq,n_q,delta,beta)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
                         out[ab,cd]+=val*coeff
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
     N = w_n.size; N2 = N * N; J = wb.size
     coeff = 1 / H_BAR
@@ -110,7 +113,7 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
     for j in range(J):
         Y, wq, n_q = Yb[j], wb[j], nb[j]
         Yh = np.conjugate(Y.T)
-        for a in prange(N):
+        for a in range(N):
             for b in range(N):
                 ab = liou(a,b,N)
                 for c in range(N):
@@ -131,16 +134,16 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
                         val-=Jhat_m(omega,w_n[c]-w_n[b],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         out[ab,cd]+=val * coeff
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0):
     N=w_n.size; J=wb.size
-    coeff = -1 * H_BAR**2 / (2.0)
+    coeff = -1 * H_BAR * H_BAR / (2.0)
     if q_0:
         coeff *= 0.5
     for j in range(J):
         Y, wq, n_q = Yb[j], wb[j], nb[j]
         Yh=np.conjugate(Y.T)
-        for a in prange(N):
+        for a in range(N):
             for b in range(N):
                 ab=liou(a,b,N)
                 for c in range(N):
@@ -156,7 +159,7 @@ def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0):
 
 @njit(cache=True, inline="always")
 def Iint(w1: float, w2: float, beta: float) -> float:
-    eps = 1e-14
+    eps = 1e-40
     if abs(w1) < eps and abs(w2) < eps:
         return 0.5 * beta * beta
 
@@ -164,14 +167,14 @@ def Iint(w1: float, w2: float, beta: float) -> float:
         return np.expm1(u)
 
     if abs(w2) < eps:
-        u = 1 * w1 * beta
+        u = w1 * beta
         num = np.exp(u)
         return beta * num / (1 * w1) - expm1_drop(u) / (1**2 * w1**2)
     if abs(w1) < eps:
-        u = 1 * w2 * beta
+        u = w2 * beta
         return expm1_drop(u) / (1**2 * w2**2) - beta / (1 * w2)
     if abs(w1 + w2) < eps:
-        u = 1 * w1 * beta
+        u = w1 * beta
         return -(beta - expm1_drop(u) / (1 * w1)) / (1 * w1)
 
     u1  = 1 * w1 * beta
@@ -462,11 +465,13 @@ def susceptibility(
     # Neglect omega for now out of the loop
     M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq)
     M_PSI = np.zeros((N2, N2), dtype=np.complex128)
-    # M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
+    M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
 
     if include_init_corr:
         for Yb, wb, q_0 in get_Y_q_and_freq():
             add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0)
+
+    M_rho0 /= np.max(np.abs(M_rho0))
 
     # frequency loop ---------------------------------------------------------
     for k, omega in enumerate(omega_grid):
@@ -485,9 +490,9 @@ if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [5]
-    gamma_fwhm_list = [5]          # FWHM in cm-1
-    T_list          = [4,4.5,5,5.5,6,6.5,7,8,8.5,9,9.5,10,11,12,13,14,15]           # Kelvin 
-    B_list          = [0.1]            # Tesla
+    gamma_fwhm_list = [3]          # FWHM in cm-1
+    T_list          = [2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5,5.5,6]           # Kelvin 
+    B_list          = [0.01]            # Tesla
     states_number   = 6                    # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
@@ -557,8 +562,8 @@ if __name__ == "__main__":
         def _update(k, omega_si, chi_k):
             if np.abs(chi_k.imag) < np.inf:
                 xs.append(omega_si)
-                ys_re.append(chi_k.real)
-                ys_im.append(chi_k.imag)
+                ys_re.append(np.abs(chi_k.real))
+                ys_im.append(np.abs(chi_k.imag))
 
                 line_re.set_data(xs, ys_re)
                 line_im.set_data(xs, ys_im)
@@ -595,7 +600,7 @@ if __name__ == "__main__":
                 grp = f[group_name]
                 dof_array = dofs_with_complete_displacements(grp, displacement_number)
                 magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
-                AB = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2]) * H_CM_1
+                AB = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2])
                 H_total = (grp["0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])) * H_CM_1
 
                 H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
@@ -636,6 +641,7 @@ if __name__ == "__main__":
                         include_init_corr=True,
                         on_step=step_plotter            # ← live updates happen here
                     )
+ 
 
                     # # plotting ------------------------------------------------------
                     # label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "

@@ -893,9 +893,9 @@ def plot_complex_matrix(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [1]
+    npoints_list    = [5]
     gamma_fwhm_list = [5]          # FWHM in a.u.
-    T_list          = [1,2,3,4,5,6,10,20,30,40,50]           # Kelvin
+    T_list          = [1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,8,8.5,9,9.5,10,11,12,13,14,15]           # Kelvin
     B_list          = [0.00000001]            # Tesla
     states_number   = 6                    # electronic sub-space size
     modes_mult      = 1.1
@@ -1027,8 +1027,8 @@ if __name__ == "__main__":
                     yield np.ascontiguousarray(Y_q[idx], dtype=np.complex128), np.ascontiguousarray(freq[idx], dtype=np.float64), q_0
 
 
-            for gamma_fwhm, T, B in itertools.product(
-                gamma_fwhm_list, T_list, B_list):
+            for gamma_fwhm, T in itertools.product(
+                gamma_fwhm_list, T_list):
 
                 Rtot, R21, R41 = redfield_lindbladian(
                     E_tot, T, gamma_fwhm, 0, get_Y_q_and_freq,

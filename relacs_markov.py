@@ -36,38 +36,52 @@ H         = 33.3571775619
 H_BAR     = 33.3571775619 / (2 * pi)
 AU_TIME_S = 1e-12
 M_AU = 1822.89
-
-@njit(cache=True)
-def Jhat(omega, w_ab, wq, n_q, d):
-    if w_ab == 0:
-        return 0.0 + 0.0 * 1j
-    if w_ab < 0:
-        return -1j / (w_ab - wq - 1j * d) * n_q
-    if w_ab > 0:
-        return -1j / (w_ab + wq - 1j * d) * (n_q + 1)
     
 @njit(cache=True)
 def Jhat_p(omega, w_ab, wq, n_q, d):
-    if w_ab == 0:
+    if np.abs(w_ab) < 5:
         return 0.0 + 0.0 * 1j
     if w_ab > 0:
-        return -1j / (w_ab - wq - 1j * d) * n_q
+        z = -1j / (w_ab - wq - 1j * d) * n_q
+        return z if z.imag > 0 else np.conjugate(z)
     if w_ab < 0:
-        return -1j / (w_ab + wq - 1j * d) * (n_q + 1)
+        z = -1j / (w_ab + wq - 1j * d) * (n_q + 1)
+        return z if z.imag > 0 else np.conjugate(z)
 
 @njit(cache=True)
 def Jhat_m(omega, w_ab, wq, n_q, d):
+    if np.abs(w_ab) < 5:
+        return 0.0 + 0.0 * 1j
+    if w_ab < 0:
+        z = -1j / (w_ab + wq - 1j * d) * n_q
+        return z if z.imag < 0 else np.conjugate(z)
+    if w_ab > 0:
+        z = -1j / (w_ab - wq - 1j * d) * (n_q + 1)
+        return z if z.imag < 0 else np.conjugate(z)
+    
+@njit(cache=True)
+def zeta(x: float, beta: float) -> float:
+    eps = 1e-14
+    if abs(x) < eps:
+        return beta
+    u = beta * x
+    return np.expm1(u) / (x)
+
+@njit(cache=True)
+def Jcorr(omega, omega_p, w_ab, wq, n_q, d, beta):
     if w_ab == 0:
         return 0.0 + 0.0 * 1j
     if w_ab < 0:
-        return -1j / (w_ab + wq - 1j * d) * n_q
+        return -1j / (omega_p + wq - 1j * d) * n_q * zeta(w_ab + wq, beta)
     if w_ab > 0:
-        return -1j / (w_ab - wq - 1j * d) * (n_q + 1)
-    
+        return -1j / (omega_p - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta)
 
 @njit(cache=True)
-def add_PSI_bundle(out, omega, A, Yb, wb, nb, d, beta, w_n):
+def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0):
     N=w_n.size; N2=N*N; J=wb.size
+    coeff = 1 / H_BAR
+    if q_0:
+        coeff *= 0.5
     for j in range(J):
         Y, wq, n_q = Yb[j], wb[j], nb[j]
         Yh=np.conjugate(Y.T)
@@ -75,32 +89,28 @@ def add_PSI_bundle(out, omega, A, Yb, wb, nb, d, beta, w_n):
             for b in range(N):
                 ab=liou(a,b,N)
                 for c in range(N):
-                    for d_ in range(N):
-                        cd=liou(c,d_,N)
+                    for d in range(N):
+                        cd=liou(c,d,N)
                         val=0.0+0.0j
                         for e in range(N):
-                            w_ed=w_n[e]-w_n[d_]
-                            val+=Jcorr(omega,w_ed,w_n[d_]-w_n[b],wq,n_q,d,beta)*Y[a,e]*A[e,c]*Yh[d_,b]
-                            val-=Jcorr(omega,w_ed,w_n[a]-w_n[d_],wq,n_q,d,beta)*A[a,c]*Y[d_,e]*Yh[e,b]
-                        if a==c:
-                            for e in range(N):
-                                w_ed=w_n[e]-w_n[d_]
+                            val+=Jcorr(omega,w_n[e]-w_n[d],w_n[d]-w_n[b],wq,n_q,delta,beta)*A[e,c]*(Yh[d,b]*Y[a,e]+Y[d,b]*Yh[a,e])
+                            val-=Jcorr(omega,w_n[a]-w_n[d],w_n[d]-w_n[e],wq,n_q,delta,beta)*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                            if a==c:
                                 for f in range(N):
-                                    om_p=w_n[c]-w_n[d_]+w_n[e]-w_n[f]
-                                    val+=Jcorr(omega,w_ed,om_p,wq,n_q,d,beta)*Y[d_,e]*A[e,f]*Yh[f,b]
-                        for e in range(N):
-                            w_ed=w_n[e]-w_n[d_]
-                            om_p=w_n[c]-w_n[d_]+w_n[e]-w_n[b]
-                            val-=Jcorr(omega,w_ed,om_p,wq,n_q,d,beta)*Y[a,c]*Yh[d_,e]*A[e,b]
-                        out[ab,cd]+=val
+                                    val+=Jcorr(omega,w_n[c]-w_n[d]+w_n[e]-w_n[f],w_n[d]-w_n[e],wq,n_q,delta,beta)*A[e,f]*(Yh[f,b]*Y[d,e]+Y[f,b]*Yh[d,e])
+                            val-=Jcorr(omega,w_n[c]-w_n[d]+w_n[e]-w_n[b],w_n[d]-w_n[e],wq,n_q,delta,beta)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
+                        out[ab,cd]+=val*coeff
 
-@njit(cache=True)
-def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n):
+@njit(cache=True, parallel=True)
+def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
     N = w_n.size; N2 = N * N; J = wb.size
+    coeff = 1 / H_BAR
+    if q_0:
+        coeff *= 0.5
     for j in range(J):
         Y, wq, n_q = Yb[j], wb[j], nb[j]
         Yh = np.conjugate(Y.T)
-        for a in range(N):
+        for a in prange(N):
             for b in range(N):
                 ab = liou(a,b,N)
                 for c in range(N):
@@ -119,48 +129,43 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n):
                                 tmp+=Jhat_m(omega,w_n[c]-w_n[e],wq,n_q,delta)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
                             val+=tmp
                         val-=Jhat_m(omega,w_n[c]-w_n[b],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
-                        out[ab,cd]+=val / H_BAR
+                        out[ab,cd]+=val * coeff
 
-@njit(cache=True)
-def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n):
+@njit(cache=True, parallel=True)
+def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0):
     N=w_n.size; J=wb.size
+    coeff = -1 * H_BAR**2 / (2.0)
+    if q_0:
+        coeff *= 0.5
     for j in range(J):
         Y, wq, n_q = Yb[j], wb[j], nb[j]
-        coeff = -1 * H_BAR**2 / (2.0)
         Yh=np.conjugate(Y.T)
-        for a in range(N):
+        for a in prange(N):
             for b in range(N):
                 ab=liou(a,b,N)
                 for c in range(N):
-                    for d_ in range(N):
-                        cd=liou(c,d_,N)
+                    for d in range(N):
+                        cd=liou(c,d,N)
                         corr=0.0+0.0j
                         for e in range(N):
-                            w_de=w_n[d_]-w_n[e]
-                            corr+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta))*A[a,c]*(Y[d_,e]*Yh[e,b]+Yh[d_,e]*Y[e,b])
+                            w_de=w_n[d]-w_n[e]
+                            corr+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
                             for f in range(N):
-                                corr-=(n_q*Iint(w_de+wq,w_n[e]-w_n[f]-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[f]+wq,beta))*(1.0 if a==c else 0.0)*(Y[d_,e]*Yh[e,f] + Yh[d_,e]*Y[e,f])*A[f,b]
+                                corr-=(n_q*Iint(w_de+wq,w_n[e]-w_n[f]-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[f]+wq,beta))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]
                         out[ab,cd]+=coeff*corr
 
-@njit(cache=True)
+@njit(cache=True, inline="always")
 def Iint(w1: float, w2: float, beta: float) -> float:
-    """Imaginary‑time double integral with exponent dropping."""
     eps = 1e-14
     if abs(w1) < eps and abs(w2) < eps:
         return 0.5 * beta * beta
 
     def expm1_drop(u):
-        # if u > DROP_EXP:
-        #     # print("DROP", u)
-        #     return 0.0          # treat large exponent as cancelled
-        # if u < -DROP_EXP:
-        #     return -1.0
         return np.expm1(u)
 
     if abs(w2) < eps:
         u = 1 * w1 * beta
         num = np.exp(u)
-        # num = 0.0 if u > DROP_EXP else math.exp(u)
         return beta * num / (1 * w1) - expm1_drop(u) / (1**2 * w1**2)
     if abs(w1) < eps:
         u = 1 * w2 * beta
@@ -184,91 +189,23 @@ def bose_occ(freq: float, beta: float) -> float:
 def liou(a, b, N):
     return a * N + b
 
-@njit(cache=True, inline="always")
-def _lorentz(dE: float, lw: float) -> float:
-    # return -1j / (dE - 1j * lw)
-    return lw / (dE*dE + lw*lw)
-
-@njit(cache=True, inline="always")
-def _gauss(dE: float, lw: float) -> float:
-    return np.exp(-(dE/lw)**2) / (lw*np.sqrt(pi))
-
-@njit(cache=True)
-def delta_line(kind: int, dE: float, lw: float) -> float:
-    return _lorentz(dE, lw) if kind == 0 else _gauss(dE, lw)
-
-@njit(cache=True)
-def _add_R21_mode(R21: np.ndarray, Ener: np.ndarray, V: np.ndarray,
-                  freq: float, nB: float, lw: float,
-                  smear: int, sec_tol: float, q_0: bool):
-
-    N, N2 = Ener.size, Ener.size*Ener.size
-    prefc = pi / H
-
-    R21 = np.zeros((N2, N2), np.complex128)
-
-    if q_0:
-        prefc *= 0.5
-
-    for ab in range(N2):
-        a, b = ab // N, ab % N
-        for cd in range(N2):
-            c, d = cd // N, cd % N
-            if abs(Ener[a]-Ener[c]+Ener[d]-Ener[b]) > sec_tol:
-                continue
-
-            val = 0.0 + 0.0j
-
-            dE = Ener[b]-Ener[d]
-            s  = 1.0 if dE > 0.0 else -1.0
-            g  = (nB if s > 0 else nB+1.0) * pi * delta_line(smear, dE - s*freq, lw)
-            val += (V[a,c]*np.conj(V[b,d]) + np.conj(V[c,a])*V[d,b]) * g
-
-            dE = Ener[a]-Ener[c]
-            s  = 1.0 if dE > 0.0 else -1.0
-            g  = (nB if s > 0 else nB+1.0) * pi * delta_line(smear, dE - s*freq, lw)
-            val += (V[a,c]*np.conj(V[b,d]) + np.conj(V[c,a])*V[d,b]) * g
-
-            if d == b:
-                for k in range(N):
-                    dE = Ener[k]-Ener[c]
-                    s  = 1.0 if dE > 0.0 else -1.0
-                    g  = (nB if s > 0 else nB+1.0) * pi * delta_line(smear, dE - s*freq, lw)
-                    val -= (np.conj(V[k,a])*V[k,c] + V[a,k]*np.conj(V[c,k])) * g
-            if c == a:
-                for k in range(N):
-                    dE = Ener[k]-Ener[d]
-                    s  = 1.0 if dE > 0.0 else -1.0
-                    g  = (nB if s > 0 else nB+1.0) * pi * delta_line(smear, dE - s*freq, lw)
-                    val -= (V[k,b]*np.conj(V[k,d]) + np.conj(V[b,k])*V[d,k]) * g
-
-            R21[ab, cd] += prefc * val
-    
-    return R21
-
-
-def build_KR(Ener: np.ndarray, temp: float, lw: float, smear: int,
-              gen: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]],
-              *, sec_tol: float = 1e-12) -> np.ndarray:
+def build_KR(Ener: np.ndarray, temp: float, lw: float,
+              gen: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]]) -> np.ndarray:
     N = Ener.size
     R = np.zeros((N*N, N*N), np.complex128)
     beta = 1.0 / (KB*temp)
     for Y, w, q_0 in gen():
-        add_KR_bundle(R, 0.0, Y, w, bose_occ(w, beta), lw, Ener)
+        add_KR_bundle(R, 0.0, Y, w, bose_occ(w, beta), lw, Ener, q_0)
 
     return R
 
-
-def build_M_PSI(Ener: np.ndarray, temp: float, lw: float, smear: int,
-              gen: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]],
-              *, sec_tol: float = 1e-12) -> np.ndarray:
+def build_M_PSI(Ener: np.ndarray, temp: float, lw: float,
+              gen: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]], A) -> np.ndarray:
     N = Ener.size
     R = np.zeros((N*N, N*N), np.complex128)
     beta = 1.0 / (KB*temp)
     for Y, w, q_0 in gen():
-        add_KR_bundle(R, 0.0, Y, w, bose_occ(w, beta), lw, Ener)
-        # for V, f in zip(Y, w):
-        #     R += _add_R21_mode(R, Ener, V, f, bose_occ(f, beta), lw, smear, sec_tol, q_0)
+        add_PSI_bundle(R, 0.0, A, Y, w, bose_occ(w, beta), lw, beta, Ener, q_0)
 
     return R
 
@@ -519,37 +456,28 @@ def susceptibility(
                     if a == c:
                         M_rho0[liou(a,b,N), liou(c,d,N)] -= A_e[d,b]
 
-    # if include_init_corr:
-    #     for Yb, wb in get_Y_q_and_freq():
-    #         nb = np.array([bose(w, beta) for w in wb])
-    #         add_rho0_bundle(M_rho0, A_e, Yb, wb, nb, beta, w_n)
-
     eye = np.eye(N2, dtype=np.complex128)
     chi = np.empty_like(omega_grid, dtype=np.complex128)
 
     # Neglect omega for now out of the loop
-    M_KR  = build_KR(E, T, gamma_fwhm, 0, get_Y_q_and_freq, sec_tol=1e-9)
+    M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq)
     M_PSI = np.zeros((N2, N2), dtype=np.complex128)
+    # M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
 
     if include_init_corr:
         for Yb, wb, q_0 in get_Y_q_and_freq():
-            add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E)
+            add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0)
 
     # frequency loop ---------------------------------------------------------
     for k, omega in enumerate(omega_grid):
-        # print(k)
 
         Xi       = 1j / H_BAR * M_L + M_KR - 1j * omega * eye
-        num      = (M_rho0 + M_PSI) @ rho_vec
+        num      = (M_rho0 + 1j * H_BAR * M_PSI) @ rho_vec
         rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
         chi[k]   = 1j / H_BAR * np.trace(B_e @ rho_hat)
 
         if on_step is not None:
             on_step(k, omega*1e12, chi[k])  # ω back in SI
-
-    # chi = hilbert_transform(omega_grid, chi, return_analytic=True)
-
-    # plt.plot(omega_grid, chi.imag)
 
     return chi
 
@@ -557,9 +485,9 @@ if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [5]
-    gamma_fwhm_list = [6]          # FWHM in cm-1
-    T_list          = [2,2.5,3,3.5,4,4.5,5]           # Kelvin 
-    B_list          = [0.00000001]            # Tesla
+    gamma_fwhm_list = [5]          # FWHM in cm-1
+    T_list          = [4,4.5,5,5.5,6,6.5,7,8,8.5,9,9.5,10,11,12,13,14,15]           # Kelvin 
+    B_list          = [0.1]            # Tesla
     states_number   = 6                    # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
@@ -670,10 +598,6 @@ if __name__ == "__main__":
                 AB = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2]) * H_CM_1
                 H_total = (grp["0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])) * H_CM_1
 
-                E_tot, U_R0 = np.linalg.eigh(H_total)
-
-                E_tot = E_tot[:states_number]
-
                 H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
 
             def get_Y_q_and_freq():
@@ -699,8 +623,8 @@ if __name__ == "__main__":
                     yield np.ascontiguousarray(Y_q[idx], dtype=np.complex128), np.ascontiguousarray(freq[idx], dtype=np.float64), q_0
 
 
-            for gamma_fwhm, T, B in itertools.product(
-                gamma_fwhm_list, T_list, B_list):
+            for gamma_fwhm, T in itertools.product(
+                gamma_fwhm_list, T_list):
                     label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
                             f"T={T:g} K, B={B:g} T")
                     step_plotter = make_step_plotter(ax_re, ax_im, label)

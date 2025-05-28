@@ -29,6 +29,170 @@ from slothpy.core._hessian_object import Hessian
 
 import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
+from matplotlib.lines import Line2D
+from matplotlib.ticker import ScalarFormatter
+
+def plot_susceptibility_curves(
+        omega_rad_s : np.ndarray,        # (M,)
+        chi_complex : np.ndarray,        # (K,M)
+        temps_K     : np.ndarray,        # (K,)
+        *,
+        plot_type    : str = "freq",          # "freq"  or  "colecole"
+        part         : str = "imag",          # only used if plot_type=="freq"
+        colormap     : str = "viridis",
+        legend_style : str = "list",          # "list" or "colorbar"
+        ax           : mpl.axes.Axes | None = None,
+        title        : str | None = None,
+        xlabel       : str | None = None,
+        ylabel       : str | None = None,
+        savepath     : str | None = None,
+        dpi          : int = 300,
+):
+    """
+    • plot_type = "freq"     →  χ(ν) vs ν  (as before)
+    • plot_type = "colecole" →  χ″ vs χ′   (Cole–Cole / Nyquist)
+
+      All other options and the legend behaviour are unchanged.
+    """
+
+    # -------------------------------------------------------------------- #
+    # 0. Matplotlib defaults                                               #
+    # -------------------------------------------------------------------- #
+    mpl.rcParams.update({
+        "font.family"      : "serif",
+        "font.size"        : 10,
+        "mathtext.fontset" : "cm",
+        "axes.labelsize"   : 10,
+        "axes.titlesize"   : 10,
+        "xtick.direction"  : "in",
+        "ytick.direction"  : "in",
+        "xtick.top"        : True,
+        "ytick.right"      : True,
+        "axes.spines.right": True,
+        "axes.spines.top"  : True,
+        "figure.dpi"       : dpi,
+        "legend.handletextpad": 0.4,
+        "legend.handlelength": 1.2,
+        "legend.columnspacing": 0.6,
+    })
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(3.4, 2.7), constrained_layout=True)
+    else:
+        fig = ax.figure
+
+    # -------------------------------------------------------------------- #
+    # 1. sort temperatures, normalise χ (your original behaviour)          #
+    # -------------------------------------------------------------------- #
+    sorter        = np.argsort(temps_K)
+    T_sorted      = np.asarray(temps_K, float)[sorter]
+    χ_sorted      = np.asarray(chi_complex)[sorter]
+
+    # --- normalise to dimensionless / a.u. ------------------------------- #
+    χ_sorted = χ_sorted / np.max(χ_sorted.imag)
+
+    # colour mapping
+    norm = mpl.colors.Normalize(vmin=T_sorted.min(), vmax=T_sorted.max())
+    cmap = mpl.cm.get_cmap(colormap)
+
+    # -------------------------------------------------------------------- #
+    # 2. plotting                                                          #
+    # -------------------------------------------------------------------- #
+    lines = []
+
+    if plot_type.lower() == "freq":
+        # part selector --------------------------------------------------- #
+        part_funcs = {"real": np.real, "imag": np.imag, "abs": np.abs}
+        if part not in part_funcs:
+            raise ValueError(f"'part' must be one of {list(part_funcs)}")
+        f_part = part_funcs[part]
+
+        for T, χ in zip(T_sorted, χ_sorted):
+            line, = ax.plot(
+                omega_rad_s,
+                f_part(χ),
+                lw=1.1,
+                ms=3,
+                color=cmap(norm(T)),
+            )
+            lines.append(line)
+
+        ax.set_xscale("log")
+        xlabel = xlabel or r"$\nu\;(\mathrm{Hz})$"
+        if ylabel is None:
+            ylab_map = {"real": r"$\chi'$", "imag": r"$\chi''$", "abs": r"|$\chi$|"}
+            ylabel   = rf"{ylab_map[part]} / AU"
+
+        # scientific formatter on y
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+        ax.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
+
+    elif plot_type.lower() == "colecole":
+        # Cole–Cole plot -------------------------------------------------- #
+        for T, χ in zip(T_sorted, χ_sorted):
+            line, = ax.plot(
+                np.real(χ),
+                np.imag(χ),
+                lw=1.1,
+                ms=3,
+                color=cmap(norm(T)),
+            )
+            lines.append(line)
+
+        # equal aspect so semi-circles look like circles
+        # ax.set_aspect('equal', adjustable='datalim')
+
+        xlabel = xlabel or r"$\chi' / \mathrm{AU}$"
+        ylabel = ylabel or r"$\chi'' / \mathrm{AU}$"
+
+    else:
+        raise ValueError("plot_type must be 'freq' or 'colecole'")
+
+    # -------------------------------------------------------------------- #
+    # 3. common axis decoration                                            #
+    # -------------------------------------------------------------------- #
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.grid(True, which="both", ls=":", lw=0.4)
+    if title is not None:
+        ax.set_title(title)
+
+    # -------------------------------------------------------------------- #
+    # 4. legend / colour key (unchanged)                                   #
+    # -------------------------------------------------------------------- #
+    if legend_style == "list":
+        handles = list(reversed(lines))
+        labels  = [f"{T:g}" for T in T_sorted[::-1]]
+        ax.legend(
+            handles, labels,
+            title=r"$T$ / K",
+            title_fontsize=10,
+            loc='center left',
+            bbox_to_anchor=(1.02, 0.5),
+            frameon=False,
+            borderaxespad=0.0,
+            labelspacing=0.3,
+        )
+
+    elif legend_style == "colorbar":
+        sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+        cbar = fig.colorbar(sm, ax=ax, pad=0.02)
+        cbar.set_label(r"$T$ / K")
+        cbar.set_ticks([T_sorted.min(), T_sorted.max()])
+        cbar.set_ticklabels([f"{T_sorted.min():g}", f"{T_sorted.max():g}"])
+    else:
+        raise ValueError("legend_style must be 'list' or 'colorbar'")
+
+    # -------------------------------------------------------------------- #
+
+    if savepath is not None:
+        fig.savefig(savepath, dpi=dpi, bbox_inches="tight")
+
+    return ax
 
 # ─── physical constants (a.u.) ───────────────────────────────────────────────
 KB        = 0.6950347291
@@ -40,29 +204,31 @@ M_AU = 1822.89
 
 @njit(cache=True)
 def Jhat_p(omega, w_ab, wq, n_q, d):
-    if np.abs(w_ab) < 0.1:
+    if np.abs(w_ab) < 3.0:
         return 0.0 + 0.0 * 1j
-    if w_ab > 0:
+    if w_ab >= 0:
         z = -1j / (w_ab - wq - 1j * d) * n_q
-        return z if z.imag < 0 else np.conjugate(z)
+        return z if z.imag > 0 else np.conjugate(z)
     if w_ab < 0:
         z = -1j / (w_ab + wq - 1j * d) * (n_q + 1)
-        return z if z.imag < 0 else np.conjugate(z)
+        return z if z.imag > 0 else np.conjugate(z)
 
 @njit(cache=True)
 def Jhat_m(omega, w_ab, wq, n_q, d):
-    if np.abs(w_ab) < 0.1:
+    if np.abs(w_ab) < 3.0:
         return 0.0 + 0.0 * 1j
-    if w_ab < 0:
+    if w_ab <= 0:
         z = -1j / (w_ab + wq - 1j * d) * n_q
-        return z if z.imag > 0 else np.conjugate(z)
+        return z if z.imag < 0 else np.conjugate(z)
     if w_ab > 0:
         z = -1j / (w_ab - wq - 1j * d) * (n_q + 1)
-        return z if z.imag > 0 else np.conjugate(z)
+        return z if z.imag < 0 else np.conjugate(z)
     
 @njit(cache=True)
-def zeta(x: float, beta: float) -> float:
-    eps = 1e-40
+def zeta(x: float, beta: float, fwhm: float) -> float:
+    eps = 1e-12
+    if abs(x) > fwhm:
+        return 0.0 + 1j * 0.0
     if abs(x) < eps:
         return beta
     u = beta * x
@@ -70,13 +236,13 @@ def zeta(x: float, beta: float) -> float:
 
 @njit(cache=True)
 def Jcorr(omega, omega_p, w_ab, wq, n_q, d, beta):
-    if np.abs(w_ab) < 0.1:
+    if np.abs(w_ab) < 3.0:
         return 0.0 + 0.0 * 1j
-    if w_ab < 0:
-        z = -1j / (omega_p + wq - 1j * d) * n_q * zeta(w_ab + wq, beta)
+    if w_ab <= 0:
+        z = -1j / (omega_p + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, d)
         return z if z.imag < 0 else np.conjugate(z)
     if w_ab > 0:
-        z = -1j / (omega_p - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta)
+        z = -1j / (omega_p - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta, d)
         return z if z.imag > 0 else np.conjugate(z)
 
 @njit(cache=True)
@@ -135,9 +301,9 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
                         out[ab,cd]+=val * coeff
 
 @njit(cache=True)
-def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0):
+def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0, fwhm):
     N=w_n.size; J=wb.size
-    coeff = -1 * H_BAR * H_BAR / (2.0)
+    coeff = H_BAR * H_BAR / (2.0)
     if q_0:
         coeff *= 0.5
     for j in range(J):
@@ -152,14 +318,17 @@ def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0):
                         corr=0.0+0.0j
                         for e in range(N):
                             w_de=w_n[d]-w_n[e]
-                            corr+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                            corr+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta,fwhm))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
                             for f in range(N):
-                                corr-=(n_q*Iint(w_de+wq,w_n[e]-w_n[f]-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[f]+wq,beta))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]
+                                corr-=(n_q*Iint(w_de+wq,w_n[e]-w_n[f]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[f]+wq,beta,fwhm))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]
                         out[ab,cd]+=coeff*corr
 
-@njit(cache=True, inline="always")
-def Iint(w1: float, w2: float, beta: float) -> float:
-    eps = 1e-40
+@njit(cache=True)
+def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
+    eps = 1e-12
+    if abs(w1) > fwhm or abs(w1) > fwhm:
+        return 0.0 + 1j * 0.0
+    
     if abs(w1) < eps and abs(w2) < eps:
         return 0.5 * beta * beta
 
@@ -169,18 +338,18 @@ def Iint(w1: float, w2: float, beta: float) -> float:
     if abs(w2) < eps:
         u = w1 * beta
         num = np.exp(u)
-        return beta * num / (1 * w1) - expm1_drop(u) / (1**2 * w1**2)
+        return beta * num / (w1) - expm1_drop(u) / (w1**2)
     if abs(w1) < eps:
         u = w2 * beta
-        return expm1_drop(u) / (1**2 * w2**2) - beta / (1 * w2)
+        return expm1_drop(u) / (w2**2) - beta / (w2)
     if abs(w1 + w2) < eps:
         u = w1 * beta
-        return -(beta - expm1_drop(u) / (1 * w1)) / (1 * w1)
+        return -(beta - expm1_drop(u) / (1 * w1)) / (w1)
 
-    u1  = 1 * w1 * beta
-    u12 = 1 * (w1 + w2) * beta
-    term1 = expm1_drop(u12) / (1**2 * w2 * (w1 + w2))
-    term2 = expm1_drop(u1)  / (1**2 * w1 * w2)
+    u1  = w1 * beta
+    u12 = (w1 + w2) * beta
+    term1 = expm1_drop(u12) / (w2 * (w1 + w2))
+    term2 = expm1_drop(u1)  / (w1 * w2)
     return term1 - term2
 
 @njit(cache=True, inline="always")
@@ -466,12 +635,15 @@ def susceptibility(
     M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq)
     M_PSI = np.zeros((N2, N2), dtype=np.complex128)
     M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
+    M_PSI /= np.max(np.abs(M_PSI)) # NORMALIZE
 
     if include_init_corr:
         for Yb, wb, q_0 in get_Y_q_and_freq():
-            add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0)
+            # add_rho0_bundle_Zcorr(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, rho_eq)
+            add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm)
 
-    M_rho0 /= np.max(np.abs(M_rho0))
+        M_rho0 /= np.max(np.abs(M_rho0)) # NORMALIZE
+
 
     # frequency loop ---------------------------------------------------------
     for k, omega in enumerate(omega_grid):
@@ -490,14 +662,14 @@ if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [5]
-    gamma_fwhm_list = [3]          # FWHM in cm-1
-    T_list          = [2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5,5.5,6]           # Kelvin 
-    B_list          = [0.01]            # Tesla
+    gamma_fwhm_list = [15]          # FWHM in cm-1
+    T_list          = [3,3.2,3.5,4,4.5,5,5.5,6,8,10,15,20]           # 3,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4,5  Kelvin 2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5,5.5, 3,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,10.5,11,13,15,20,30
+    B_list          = [0.2]            # Tesla
     states_number   = 6                    # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
     modes_low       = 3    #cm-1
-    modes_high      = 1200 #cm-1
+    modes_high      = 600 #cm-1
     secular_tolerance = 1e-9    
     # ────────────────────────────────────────────────────────────────────────
 
@@ -510,7 +682,8 @@ if __name__ == "__main__":
     displacement_number = 1
     step                = 0.025
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(0, 6, 110)
+    omega_au            = np.logspace(0, 5, 100)
+    chi_all_T = np.zeros((len(T_list), omega_au.shape[0]), dtype=np.complex128)
 
     # refresh the .slt file
     if os.path.exists(slt_filepath):
@@ -590,7 +763,7 @@ if __name__ == "__main__":
     for npoints in npoints_list:
         for B in B_list:
 
-            orient = np.array([1, 1, 1], np.float64) 
+            orient = np.array([0, 0, 1], np.float64) 
             orient /= (np.linalg.norm(orient) * B_AU_T)
             B_vec  = B * orient
 
@@ -629,18 +802,58 @@ if __name__ == "__main__":
 
 
             for gamma_fwhm, T in itertools.product(
-                gamma_fwhm_list, T_list):
+                gamma_fwhm_list, enumerate(T_list)):
                     label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
-                            f"T={T:g} K, B={B:g} T")
+                            f"T={T[1]:g} K, B={B:g} T")
                     step_plotter = make_step_plotter(ax_re, ax_im, label)
 
                     chi = susceptibility(
                         omega_au/1e12, H_total, AB, AB,
-                        T, gamma_fwhm, get_Y_q_and_freq,
+                        T[1], gamma_fwhm, get_Y_q_and_freq,
                         states_number=states_number,
                         include_init_corr=True,
                         on_step=step_plotter            # ← live updates happen here
                     )
+
+                    chi_all_T[T[0]] = chi
+
+            # ax = plot_susceptibility_curves(
+            #         omega_au,
+            #         chi_all_T,
+            #         np.array(T_list),
+            #         part="imag",          # or "real", "abs"
+            #         legend_style="colorbar",
+            #         colormap="jet",    # anything in mpl.cm
+            #         title=rf"{lanthanide}Co (B = {B} T, $\gamma$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+            #         savepath=f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}_imag.png",
+            # )
+            # plt.show()
+
+            # ax = plot_susceptibility_curves(
+            #         omega_au,
+            #         chi_all_T,
+            #         np.array(T_list),
+            #         part="real",          # or "real", "abs"
+            #         legend_style="colorbar",
+            #         colormap="jet",    # anything in mpl.cm
+            #         title=rf"{lanthanide}Co (B = {B} T, $\gamma$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+            #         savepath=f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}_real.png",
+            # )
+            # plt.show()
+
+
+            # ax = plot_susceptibility_curves(
+            #         omega_au,
+            #         chi_all_T,
+            #         np.array(T_list),
+            #         plot_type="colecole",
+            #         part="real",          # or "real", "abs"
+            #         legend_style="colorbar",
+            #         colormap="jet",    # anything in mpl.cm
+            #         title=rf"{lanthanide}Co (B = {B} T, $\gamma$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+            #         savepath=f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}_colecole.png",
+            # )
+            # plt.show()
  
 
                     # # plotting ------------------------------------------------------

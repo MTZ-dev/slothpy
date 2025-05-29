@@ -206,7 +206,7 @@ M_AU = 1822.89
 def Jhat_p(omega, w_ab, wq, n_q, d):
     if np.abs(w_ab) < 3.0:
         return 0.0 + 0.0 * 1j
-    if w_ab >= 0:
+    if w_ab > 0:
         z = -1j / (w_ab - wq - 1j * d) * n_q
         return z if z.imag > 0 else np.conjugate(z)
     if w_ab < 0:
@@ -217,7 +217,7 @@ def Jhat_p(omega, w_ab, wq, n_q, d):
 def Jhat_m(omega, w_ab, wq, n_q, d):
     if np.abs(w_ab) < 3.0:
         return 0.0 + 0.0 * 1j
-    if w_ab <= 0:
+    if w_ab < 0:
         z = -1j / (w_ab + wq - 1j * d) * n_q
         return z if z.imag < 0 else np.conjugate(z)
     if w_ab > 0:
@@ -226,8 +226,8 @@ def Jhat_m(omega, w_ab, wq, n_q, d):
     
 @njit(cache=True)
 def zeta(x: float, beta: float, fwhm: float) -> float:
-    eps = 1e-12
-    if abs(x) > fwhm:
+    eps = 1e-6
+    if abs(x) > 12:
         return 0.0 + 1j * 0.0
     if abs(x) < eps:
         return beta
@@ -235,20 +235,22 @@ def zeta(x: float, beta: float, fwhm: float) -> float:
     return np.expm1(u) / (x)
 
 @njit(cache=True)
-def Jcorr(omega, omega_p, w_ab, wq, n_q, d, beta):
-    if np.abs(w_ab) < 3.0:
+def Jcorr(omega, w_cd, w_ab, wq, n_q, d, beta):
+    u = w_cd + w_ab
+    if np.abs(u) < 3.0:
         return 0.0 + 0.0 * 1j
-    if w_ab <= 0:
-        z = -1j / (omega_p + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, d)
+    if u < 0:
+        z = -1j / (u + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, d)
         return z if z.imag < 0 else np.conjugate(z)
-    if w_ab > 0:
-        z = -1j / (omega_p - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta, d)
+    if u > 0:
+        z = -1j / (u - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta, d)
         return z if z.imag > 0 else np.conjugate(z)
 
 @njit(cache=True)
 def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0):
     N=w_n.size; N2=N*N; J=wb.size
     coeff = 1 / H_BAR
+    E0 = w_n[0]
     if q_0:
         coeff *= 0.5
     for j in range(J):
@@ -258,17 +260,17 @@ def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0):
             for b in range(N):
                 ab=liou(a,b,N)
                 for c in range(N):
-                    for d in range(N):
-                        cd=liou(c,d,N)
-                        val=0.0+0.0j
-                        for e in range(N):
-                            val+=Jcorr(omega,w_n[e]-w_n[d],w_n[d]-w_n[b],wq,n_q,delta,beta)*A[e,c]*(Yh[d,b]*Y[a,e]+Y[d,b]*Yh[a,e])
-                            val-=Jcorr(omega,w_n[a]-w_n[d],w_n[d]-w_n[e],wq,n_q,delta,beta)*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
-                            if a==c:
-                                for f in range(N):
-                                    val+=Jcorr(omega,w_n[c]-w_n[d]+w_n[e]-w_n[f],w_n[d]-w_n[e],wq,n_q,delta,beta)*A[e,f]*(Yh[f,b]*Y[d,e]+Y[f,b]*Yh[d,e])
-                            val-=Jcorr(omega,w_n[c]-w_n[d]+w_n[e]-w_n[b],w_n[d]-w_n[e],wq,n_q,delta,beta)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
-                        out[ab,cd]+=val*coeff
+                    d = c
+                    cd=liou(c,d,N)
+                    val=0.0+0.0j
+                    for e in range(N):
+                        val+=Jcorr(omega,w_n[e]-w_n[c],w_n[d]-w_n[b],wq,n_q,delta,beta)*A[e,c]*(Yh[d,b]*Y[a,e]+Y[d,b]*Yh[a,e])
+                        val-=Jcorr(omega,w_n[a]-w_n[d],w_n[d]-w_n[e],wq,n_q,delta,beta)*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                        if a == c:
+                            for f in range(N):
+                                val+=Jcorr(omega,w_n[e]-w_n[f],w_n[d]-w_n[e],wq,n_q,delta,beta)*A[e,f]*(Yh[f,b]*Y[d,e]+Y[f,b]*Yh[d,e])
+                        val-=Jcorr(omega,w_n[e]-w_n[b],w_n[d]-w_n[e],wq,n_q,delta,beta)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
+                    out[ab,cd]+=val*coeff
 
 @njit(cache=True)
 def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
@@ -304,6 +306,7 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
 def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0, fwhm):
     N=w_n.size; J=wb.size
     coeff = H_BAR * H_BAR / (2.0)
+    E0 = w_n[0]
     if q_0:
         coeff *= 0.5
     for j in range(J):
@@ -313,43 +316,46 @@ def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0, fwhm):
             for b in range(N):
                 ab=liou(a,b,N)
                 for c in range(N):
-                    for d in range(N):
-                        cd=liou(c,d,N)
-                        corr=0.0+0.0j
-                        for e in range(N):
-                            w_de=w_n[d]-w_n[e]
-                            corr+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta,fwhm))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
-                            for f in range(N):
-                                corr-=(n_q*Iint(w_de+wq,w_n[e]-w_n[f]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[f]+wq,beta,fwhm))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]
-                        out[ab,cd]+=coeff*corr
+                    d = c
+                    cd=liou(c,d,N)
+                    corr=0.0+0.0j
+                    for e in range(N):
+                        w_de=w_n[d]-w_n[e]
+                        corr+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta,fwhm))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                        for f in range(N):
+                            corr-=(n_q*Iint(w_de+wq,w_n[e]-w_n[f]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[f]+wq,beta,fwhm))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]
+                    out[ab,cd]+=coeff*corr
+
+
+
+@njit(cache=True, inline="always")
+def thermal_cutoff(E0: float, E: float, beta: float, n_sigma: float = 8.0) -> bool:
+    return (E - E0) * beta <= n_sigma
+
 
 @njit(cache=True)
 def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
-    eps = 1e-12
-    if abs(w1) > fwhm or abs(w1) > fwhm:
+    eps = 1e-6
+    if abs(w1+w2) > 12 or abs(w1) > 12 or abs(w1) > 12:
         return 0.0 + 1j * 0.0
     
     if abs(w1) < eps and abs(w2) < eps:
         return 0.5 * beta * beta
-
-    def expm1_drop(u):
-        return np.expm1(u)
-
     if abs(w2) < eps:
         u = w1 * beta
         num = np.exp(u)
-        return beta * num / (w1) - expm1_drop(u) / (w1**2)
+        return beta * num / (w1) - np.expm1(u) / (w1**2)
     if abs(w1) < eps:
         u = w2 * beta
-        return expm1_drop(u) / (w2**2) - beta / (w2)
+        return np.expm1(u) / (w2**2) - beta / (w2)
     if abs(w1 + w2) < eps:
         u = w1 * beta
-        return -(beta - expm1_drop(u) / (1 * w1)) / (w1)
+        return -(beta - np.expm1(u) / (1 * w1)) / (w1)
 
     u1  = w1 * beta
     u12 = (w1 + w2) * beta
-    term1 = expm1_drop(u12) / (w2 * (w1 + w2))
-    term2 = expm1_drop(u1)  / (w1 * w2)
+    term1 = np.expm1(u12) / (w2 * (w1 + w2))
+    term2 = np.expm1(u1)  / (w1 * w2)
     return term1 - term2
 
 @njit(cache=True, inline="always")
@@ -635,14 +641,11 @@ def susceptibility(
     M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq)
     M_PSI = np.zeros((N2, N2), dtype=np.complex128)
     M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
-    M_PSI /= np.max(np.abs(M_PSI)) # NORMALIZE
 
     if include_init_corr:
         for Yb, wb, q_0 in get_Y_q_and_freq():
-            # add_rho0_bundle_Zcorr(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, rho_eq)
             add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm)
-
-        M_rho0 /= np.max(np.abs(M_rho0)) # NORMALIZE
+        M_rho0 /= np.trace(M_rho0).real
 
 
     # frequency loop ---------------------------------------------------------
@@ -662,10 +665,10 @@ if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [5]
-    gamma_fwhm_list = [15]          # FWHM in cm-1
-    T_list          = [3,3.2,3.5,4,4.5,5,5.5,6,8,10,15,20]           # 3,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4,5  Kelvin 2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5,5.5, 3,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,10.5,11,13,15,20,30
+    gamma_fwhm_list = [30]          # FWHM in cm-1
+    T_list          = [2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5,5.5]           # 3,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4,5  Kelvin 2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5,5.5, 3,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,10.5,11,13,15,20,30
     B_list          = [0.2]            # Tesla
-    states_number   = 6                    # electronic sub-space size
+    states_number   = 8                    # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
     modes_low       = 3    #cm-1

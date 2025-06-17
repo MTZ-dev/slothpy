@@ -22,13 +22,32 @@ import signal
 import argparse
 import glob
 import re
-import docker
+import textwrap
 import datetime
 import uuid
 from multiprocessing import Pool
 
+import docker
 import docker.errors
 from tqdm import tqdm
+
+def get_docker_client():
+    try:
+        return docker.from_env()
+    except docker.errors.DockerException as exc:
+        if "permission denied" in str(exc).lower():
+            help_msg = textwrap.dedent(f"""
+                You’re not allowed to access /var/run/docker.sock.
+                Add yourself to the docker group and log back in:
+
+                    sudo groupadd docker     # once, if needed
+                    sudo usermod -aG docker $USER
+                    newgrp docker            # or logout/login
+
+                Or re-run this script with sudo if that’s acceptable.
+            """)
+            raise RuntimeError(help_msg) from exc
+        raise
 
 def generate_input_file(dof_number, disp_number, wfn_start=None):
     project_name = f'dof_{dof_number}_disp_{disp_number}'
@@ -125,7 +144,7 @@ def run_cp2k(input_file, output_file, mpi_processes, threads, cp2k_version, dof_
 
     image = f'cp2k/cp2k:{cp2k_version}'  ###!!!### Replace that with your format if it's different than cp2k/cp2k:{cp2k_version} ###!!!###
 
-    client = docker.from_env()
+    client = get_docker_client()
     container = None
 
     # Generate a unique container name

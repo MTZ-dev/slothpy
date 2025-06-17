@@ -17,11 +17,11 @@
 from math import factorial
 from numpy import ndarray, array, zeros, zeros_like, ascontiguousarray, arange, tile, ones, argsort, take_along_axis, where, diag, empty, ix_, abs, round, mod, sqrt, min, max, power, newaxis, int64 as np_int64, min as np_min, exp, pi
 from numpy.linalg import eigh, inv, det, svd
+from scipy.optimize import linear_sum_assignment
 from numba import jit, prange, types, int64, float32, float64, complex64, complex128
+
 from slothpy._general_utilities._constants import GE, MU_B_AU
 from slothpy.core._slothpy_exceptions import SltInputError
-
-from numba import jit, prange, types, float32, float64
 
 
 @jit([float32(float32, float32, float32), float64(float64, float64, float64)], nopython=True, nogil=True, cache=True, fastmath=True, inline='always')
@@ -437,8 +437,11 @@ def _calculate_wavefunction_overlap_phase_correction(det_inner_matrix_sqr: float
     u, s, vt = svd(zero_ci_coefficients.T @ result @ ci_coefficients)
     result = u @ vt
 
+    permutation = linear_sum_assignment(-abs(result))[1]
+    result = result[:, permutation]
+
     phases = where(diag(result) < 0, -1, 1)
     result *= phases[newaxis, :]
 
-    return result
+    return result, phases, permutation
 

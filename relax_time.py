@@ -14,10 +14,7 @@ from collections import defaultdict
 import itertools
 from typing import Callable, Iterable, Tuple, Sequence
 
-import numpy as np
 import h5py
-import numpy as np
-from numba import njit, prange
 
 import slothpy as slt
 from slothpy._general_utilities._constants import A_BOHR, H_CM_1, B_AU_T, AU_BOHR_CM_1
@@ -28,6 +25,12 @@ from slothpy.core._slt_file import SltHessian
 from slothpy.core._hessian_object import Hessian
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+import cmcrameri.cm as cmc      # <-- contains `cmc.managua`
+# register under its own name so that later get_cmap("managua") works
+mpl.colormaps.register(cmc.managua, name = "managua")
+from collections import defaultdict
+from matplotlib.lines import Line2D
 
 
 # ─── physical constants (a.u.) ───────────────────────────────────────────────
@@ -534,38 +537,199 @@ def relaxation_time(R, *, tol=0):
     return -1.0 / max(negatives)
 
 # ─── plotting helpers ───────────────────────────────────────────────────────
+
 def make_T1_accumulator():
+    """
+    Returns three callables:
+
+        add(T, label, B, γ, T1_s)
+            – append a data point
+
+        finish(invT=True, …)
+            – quick look (as you had before)
+
+        publish(**kwargs)
+            – high-quality, publication-ready plot
+    """
     bank: dict[tuple[str,float,float], list[tuple[float,float]]] = defaultdict(list)
+
+    # ------------------------------------------------------------------ #
+    # 1.  data collection                                                #
+    # ------------------------------------------------------------------ #
     def add(T: float, label: str, B: float, γ: float, T1_s: float):
-        bank[(label,B,γ)].append((T,T1_s))
-    def finish(invT=True):
+        bank[(label, B, γ)].append((T, T1_s))
+
+    # ------------------------------------------------------------------ #
+    # 2.  quick screen plot (your original code, very lightly tidied)    #
+    # ------------------------------------------------------------------ #
+    def finish(invT: bool = True, *, ylog: bool = True):
         if not bank:
             print("nothing to plot"); return
-        plt.figure(figsize=(6,4))
-        for (lab,B,γ), data in bank.items():
+
+        plt.figure(figsize=(6, 4))
+        for (lab, B, γ), data in bank.items():
             data.sort()
-            T,T1 = map(np.array, zip(*data))
-            x = 1.0/T if invT else T
+            T, T1 = map(np.array, zip(*data))
+            x = 1.0 / T if invT else T
             plt.plot(x, T1, marker='o', lw=1,
-                     label=f"{lab}  B={B:g} T γ={γ:.0e}")
-        plt.yscale('log')
-        plt.ylabel("T₁ (s)")
-        if invT:
-            plt.xlabel("1 / T  (K⁻¹)")
-        else:
-            plt.xlabel("Temperature (K)")
+                     label=f"{lab}  B={B:g} T  γ={γ:.0e}")
+        if ylog:
+            plt.yscale('log')
+        plt.ylabel(r"$T_1$ (s)")
+        plt.xlabel(r"$1/T$ (K$^{-1}$)" if invT else "Temperature (K)")
+        if not invT:
             plt.xscale('log')
         plt.grid(True, ls=':')
         plt.legend(frameon=False, fontsize='x-small')
-        plt.tight_layout(); plt.show()
-    return add, finish
+        plt.tight_layout()
+        plt.show()
+
+    # ------------------------------------------------------------------ #
+    # 3.  publication-quality plot                                       #
+    # ------------------------------------------------------------------ #
+    def publish(
+            *,
+            invT       : bool  = True,
+            ylog       : bool  = True,
+            colormap   : str   = "viridis",
+            reverse    : bool  = False,
+            color_mode : str   = "value",        # "value" or "index"
+            legend     : str   = "colorbar",     # "list" or "colorbar"
+            force_zero : bool  = False,
+            dpi        : int   = 300,
+            title      : str | None = None,
+            xlabel     : str | None = None,
+            ylabel     : str | None = None,
+            savepath   : str | None = None,
+    ):
+        if not bank:
+            print("nothing to plot"); return
+
+        # ---------- global figure style -------------------------------- #
+        mpl.rcParams.update({
+            "font.family"      : "serif",
+            "font.size"        : 10,
+            "mathtext.fontset" : "cm",
+            "axes.labelsize"   : 10,
+            "axes.titlesize"   : 10,
+            "xtick.direction"  : "in",
+            "ytick.direction"  : "in",
+            "xtick.top"        : True,
+            "ytick.right"      : True,
+            "axes.spines.right": True,
+            "axes.spines.top"  : True,
+            "figure.dpi"       : dpi,
+        })
+
+        fig, ax = plt.subplots(figsize=(4.5, 4.5/1.15), constrained_layout=True)
+
+        # ---------- build a colour palette ----------------------------- #
+        base_cmap = mpl.colormaps.get_cmap(colormap)
+        if reverse:
+            base_cmap = base_cmap.reversed()
+
+        # collect *all* temperatures once
+        all_T = np.concatenate([np.fromiter((t for t, _ in data), float)
+                                for data in bank.values()])
+
+        if color_mode == "value":
+            # continuous normalisation
+            norm = mpl.colors.Normalize(vmin=all_T.min(), vmax=all_T.max())
+            map_value_to_colour = lambda T: base_cmap(norm(T))
+
+            # colour-bar will use the same norm / cmap
+            cbar_cmap, cbar_norm = base_cmap, norm
+
+        elif color_mode == "index":
+            # evenly spaced colours
+            unique_T = np.sort(np.unique(all_T))
+            palette  = base_cmap(np.linspace(0, 1, len(unique_T)))
+            idx_cmap = mpl.colors.ListedColormap(palette,
+                                                 name=f"{colormap}_indexed")
+            idx_norm = mpl.colors.Normalize(vmin=0, vmax=len(unique_T) - 1)
+
+            temp2idx = {float(T): i for i, T in enumerate(unique_T)}
+            map_value_to_colour = lambda T: palette[temp2idx[float(T)]]
+
+            cbar_cmap, cbar_norm = idx_cmap, idx_norm
+        else:
+            raise ValueError("color_mode must be 'value' or 'index'")
+
+        # ---------- plot every curve ----------------------------------- #
+        handles = []
+        for (lab, B, γ), data in sorted(bank.items()):
+            data.sort()
+            T, T1 = map(np.array, zip(*data))
+            x = 1.0 / T if invT else T
+
+            # thin grey guide
+            ax.plot(x, T1, lw=0.7, color='0.6', zorder=1)
+
+            # coloured points
+            if color_mode == "value":
+                sc = ax.scatter(x, T1, c=T, cmap=cbar_cmap, norm=cbar_norm,
+                                s=25, edgecolors='none', zorder=2)
+            else:  # colour_mode == "index"
+                idx = np.fromiter((temp2idx[float(t)] for t in T), int)
+                sc = ax.scatter(x, T1, c=idx, cmap=cbar_cmap, norm=cbar_norm,
+                                s=25, edgecolors='none', zorder=2)
+
+            handles.append(Line2D([], [], lw=0.7, color='0.6',
+                                  label=f"{lab}  B={B:g} T  γ={γ:.0e}"))
+
+        # ---------- axes & labels -------------------------------------- #
+        if ylog:
+            ax.set_yscale('log')
+        if force_zero:
+            ax.set_ylim(bottom=0)
+
+        ax.set_xlabel(xlabel or (r"$1/T$ ($\mathrm{K}^{-1}$)" if invT else "Temperature (K)"))
+        ax.set_ylabel(ylabel or r"$T_1 / \mathrm{s}$")
+
+        if not invT:
+            ax.set_xscale('log')
+        ax.grid(True, which="both", ls=":", lw=0.4)
+        if title:
+            ax.set_title(title)
+
+        # ---------- legend / colour-bar -------------------------------- #
+        if legend == "list":
+            ax.legend(handles[::-1], [h.get_label() for h in handles[::-1]],
+                      frameon=False, fontsize=8,
+                      loc='center left', bbox_to_anchor=(1.02, 0.5))
+
+        elif legend == "colorbar":
+            sm = mpl.cm.ScalarMappable(cmap=cbar_cmap, norm=cbar_norm)
+            sm.set_array([])
+            cbar = fig.colorbar(sm, ax=ax, pad=0.02)
+            cbar.set_label(r"$T$ / K")
+
+            # show only min & max labels to keep it compact
+            if color_mode == "value":
+                cbar.set_ticks([all_T.min(), all_T.max()])
+                cbar.set_ticklabels([f"{all_T.min():g}", f"{all_T.max():g}"])
+            else:  # colour_mode == "index"
+                cbar.set_ticks([0, len(unique_T) - 1])
+                cbar.set_ticklabels([f"{unique_T[0]:g}",
+                                     f"{unique_T[-1]:g}"])
+        else:
+            raise ValueError("legend must be 'list' or 'colorbar'")
+
+        # ---------- export --------------------------------------------- #
+        if savepath:
+            fig.savefig(savepath, dpi=dpi, bbox_inches="tight")
+        else:
+            plt.show()
+
+    # ------------------------------------------------------------------ #
+    return add, finish, publish
 
 
 def half_bz_grid_aniso(
     b_len: Sequence[float],
     n_ref: int,
     *,
-    endpoint: bool = False,
+    endpoint: bool = True,
     tol: float = 1e-12
 ) -> np.ndarray:
     """
@@ -894,14 +1058,14 @@ if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [5]
-    gamma_fwhm_list = [5]          # FWHM in a.u.
-    T_list          = [1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,8,8.5,9,9.5,10,11,12,13,14,15]           # Kelvin
-    B_list          = [0.00000001]            # Tesla
-    states_number   = 6                    # electronic sub-space size
+    gamma_fwhm_list = [30]         # FWHM in a.u.
+    T_list          = [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5] #            # Kelvin
+    B_list          = [0.000001]            # Tesla
+    states_number   = 8                    # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
     modes_low       = 3    #cm-1
-    modes_high      = 1000 #cm-1
+    modes_high      = 600 #cm-1
     secular_tolerance = 1e-9    
     # ────────────────────────────────────────────────────────────────────────
 
@@ -953,7 +1117,11 @@ if __name__ == "__main__":
     recip_axes = slt_hessian.atoms_object().cell.reciprocal().cellpar()[:3]
     hess_obj        = Hessian(slt_hessian.hessian()[:], np.outer(masses_inv_sqrt, masses_inv_sqrt), np.array([0., 0., 0.]))
 
-    add, finish = make_T1_accumulator()
+    # freq_gamma_mode, modes_eig = hess_obj.frequencies_eigenvectors
+    # freq_gamma_mode *= AU_BOHR_CM_1
+    # np.savetxt("/home/mikolaj/Documents/PosterECMOLS25/gamma_freq.dat",freq_gamma_mode)
+
+    add, finish, publish = make_T1_accumulator()
 
     for npoints in npoints_list:
         for B in B_list:
@@ -999,6 +1167,8 @@ if __name__ == "__main__":
 
                 E_tot = E_tot[:states_number] * H_CM_1
 
+                # np.savetxt("/home/mikolaj/Documents/PosterECMOLS25/energies.dat", E_tot - E_tot[0])
+
                 H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
 
                 # H_grad = random_H_grad(dof_array, states_number)
@@ -1027,19 +1197,31 @@ if __name__ == "__main__":
                     yield np.ascontiguousarray(Y_q[idx], dtype=np.complex128), np.ascontiguousarray(freq[idx], dtype=np.float64), q_0
 
 
-            for gamma_fwhm, T in itertools.product(
-                gamma_fwhm_list, T_list):
+            for gamma_fwhm in gamma_fwhm_list:
+                for T in T_list:
 
-                Rtot, R21, R41 = redfield_lindbladian(
-                    E_tot, T, gamma_fwhm, 0, get_Y_q_and_freq,
-                    include_R41=False, sec_tol=secular_tolerance)
+                    Rtot, R21, R41 = redfield_lindbladian(
+                        E_tot, T, gamma_fwhm, 0, get_Y_q_and_freq,
+                        include_R41=False, sec_tol=secular_tolerance)
 
-                T1_R21_s = AU_TIME_S * relaxation_time(R21)
-                print(T1_R21_s)
-                # T1_R41_s = AU_TIME_S * relaxation_time(R41)
-                # print(T1_R41_s)
+                    T1_R21_s = AU_TIME_S * relaxation_time(R21)
+                    print(T1_R21_s)
+                    # T1_R41_s = AU_TIME_S * relaxation_time(R41)
+                    # print(T1_R41_s)
 
-                add(T, "R21", B, gamma_fwhm, T1_R21_s)
-                # add(T, "R41", B, gamma_fwhm, T1_R41_s)
+                    add(T, "R21", B, gamma_fwhm, T1_R21_s)
+                    # add(T, "R41", B, gamma_fwhm, T1_R41_s)
 
-    finish(invT=True)
+                finish(invT=True)
+
+                publish(                         # high-quality version
+                invT       = True,           # 1/T on the x-axis
+                ylog       = True,           # log scale for τ
+                colormap   = "managua",
+                reverse    = True,
+                color_mode = "index",
+                legend     = "colorbar",     # "list" or "colorbar"
+                force_zero = False,          # pin y-axis at bottom=0 if wanted
+                title      = fr"YbCo ($B = 1$ μT, $\Delta = {gamma_fwhm}$ cm$^{{-1}}$)",
+                savepath   = f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}_relax_time.png",
+)

@@ -31,9 +31,12 @@ import matplotlib.pyplot as plt
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import cmcrameri.cm as cmc      # <-- contains `cmc.managua`
+# register under its own name so that later get_cmap("managua") works
+mpl.colormaps.register(cmc.managua, name = "managua")
 import numpy as np
 from matplotlib.lines import Line2D
-from matplotlib.ticker import ScalarFormatter
+from matplotlib.ticker import ScalarFormatter, LogLocator, LogFormatterExponent
 
 def plot_susceptibility_curves(
         omega_rad_s : np.ndarray,        # (M,)
@@ -43,6 +46,8 @@ def plot_susceptibility_curves(
         plot_type    : str = "freq",          # "freq"  or  "colecole"
         part         : str = "imag",          # only used if plot_type=="freq"
         colormap     : str = "viridis",
+        reverse      : bool = False,
+        color_mode   : str = "value",         # "value" or "index"
         legend_style : str = "list",          # "list" or "colorbar"
         ax           : mpl.axes.Axes | None = None,
         title        : str | None = None,
@@ -52,15 +57,19 @@ def plot_susceptibility_curves(
         dpi          : int = 300,
 ):
     """
-    • plot_type = "freq"     →  χ(ν) vs ν  (as before)
-    • plot_type = "colecole" →  χ″ vs χ′   (Cole–Cole / Nyquist)
+    plot_type:
+        "freq"     – χ'(ν), χ''(ν) or |χ|(ν) on logarithmic ν axis
+        "colecole" – Cole–Cole (χ'' vs χ') plot
 
-      All other options and the legend behaviour are unchanged.
+    color_mode:
+        "value"    – colour ∝ temperature value (continuous scale)
+        "index"    – colour uses evenly spaced positions in the colormap,
+                     one hue per temperature curve
     """
 
-    # -------------------------------------------------------------------- #
-    # 0. Matplotlib defaults                                               #
-    # -------------------------------------------------------------------- #
+    # ------------------------------------------------------------------ #
+    # 0. global style                                                    #
+    # ------------------------------------------------------------------ #
     mpl.rcParams.update({
         "font.family"      : "serif",
         "font.size"        : 10,
@@ -80,31 +89,51 @@ def plot_susceptibility_curves(
     })
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=(3.4, 2.7), constrained_layout=True)
+        fig, ax = plt.subplots(figsize=(4.5, 4.5/1.15), constrained_layout=True)
     else:
         fig = ax.figure
 
-    # -------------------------------------------------------------------- #
-    # 1. sort temperatures, normalise χ (your original behaviour)          #
-    # -------------------------------------------------------------------- #
-    sorter        = np.argsort(temps_K)
-    T_sorted      = np.asarray(temps_K, float)[sorter]
-    χ_sorted      = np.asarray(chi_complex)[sorter]
+    # ------------------------------------------------------------------ #
+    # 1. prepare, sort, normalise                                        #
+    # ------------------------------------------------------------------ #
+    sorter    = np.argsort(temps_K)
+    T_sorted  = np.asarray(temps_K, float)[sorter]
+    χ_sorted  = np.asarray(np.abs(chi_complex.real)+ 1j * np.abs(chi_complex.imag))[sorter]
 
-    # --- normalise to dimensionless / a.u. ------------------------------- #
+    # dimensionless normalisation (keeps sign)
     χ_sorted = χ_sorted / np.max(χ_sorted.imag)
 
-    # colour mapping
-    norm = mpl.colors.Normalize(vmin=T_sorted.min(), vmax=T_sorted.max())
-    cmap = mpl.cm.get_cmap(colormap)
 
-    # -------------------------------------------------------------------- #
-    # 2. plotting                                                          #
-    # -------------------------------------------------------------------- #
+    # ------------------------------------------------------------------ #
+    # 2. build colour mapping                                            #
+    # ------------------------------------------------------------------ #
+    base_cmap = mpl.colormaps.get_cmap(colormap)
+    if reverse:
+        base_cmap = base_cmap.reversed()
+
+    if color_mode == "value":
+        norm      = mpl.colors.Normalize(vmin=T_sorted.min(),
+                                         vmax=T_sorted.max())
+        cmap_line = lambda T: base_cmap(norm(T))
+        cbar_cmap, cbar_norm = base_cmap, norm
+
+    elif color_mode == "index":
+        palette   = base_cmap(np.linspace(0, 1, len(T_sorted)))
+        cmap_idx  = mpl.colors.ListedColormap(palette,
+                                              name=f"{colormap}_indexed")
+        idx_norm  = mpl.colors.Normalize(vmin=0, vmax=len(T_sorted) - 1)
+        cmap_line = lambda T: palette[np.where(T_sorted == T)[0][0]]
+
+        cbar_cmap, cbar_norm = cmap_idx, idx_norm
+    else:
+        raise ValueError("color_mode must be 'value' or 'index'")
+
+    # ------------------------------------------------------------------ #
+    # 3. draw curves                                                     #
+    # ------------------------------------------------------------------ #
     lines = []
 
     if plot_type.lower() == "freq":
-        # part selector --------------------------------------------------- #
         part_funcs = {"real": np.real, "imag": np.imag, "abs": np.abs}
         if part not in part_funcs:
             raise ValueError(f"'part' must be one of {list(part_funcs)}")
@@ -114,60 +143,53 @@ def plot_susceptibility_curves(
             line, = ax.plot(
                 omega_rad_s,
                 f_part(χ),
-                lw=1.1,
-                ms=3,
-                color=cmap(norm(T)),
+                lw=0.9,
+                color=cmap_line(T),
             )
             lines.append(line)
 
         ax.set_xscale("log")
-        xlabel = xlabel or r"$\nu\;(\mathrm{Hz})$"
+        xlabel = xlabel or r"$\nu / \mathrm{Hz}$"
         if ylabel is None:
-            ylab_map = {"real": r"$\chi'$", "imag": r"$\chi''$", "abs": r"|$\chi$|"}
-            ylabel   = rf"{ylab_map[part]} / AU"
+            label_map = {"real": r"$\chi'$", "imag": r"$\chi''$", "abs": r"|$\chi$|"}
+            ylabel = rf"{label_map[part]} / a.u."
 
-        # scientific formatter on y
         ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
         ax.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
 
     elif plot_type.lower() == "colecole":
-        # Cole–Cole plot -------------------------------------------------- #
         for T, χ in zip(T_sorted, χ_sorted):
             line, = ax.plot(
                 np.real(χ),
                 np.imag(χ),
-                lw=1.1,
-                ms=3,
-                color=cmap(norm(T)),
+                lw=0.9,
+                color=cmap_line(T),
             )
             lines.append(line)
 
-        # equal aspect so semi-circles look like circles
+        xlabel = xlabel or r"$\chi' / \mathrm{a.u.}$"
+        ylabel = ylabel or r"$\chi'' / \mathrm{a.u.}$"
         # ax.set_aspect('equal', adjustable='datalim')
-
-        xlabel = xlabel or r"$\chi' / \mathrm{AU}$"
-        ylabel = ylabel or r"$\chi'' / \mathrm{AU}$"
 
     else:
         raise ValueError("plot_type must be 'freq' or 'colecole'")
 
-    # -------------------------------------------------------------------- #
-    # 3. common axis decoration                                            #
-    # -------------------------------------------------------------------- #
+    # ------------------------------------------------------------------ #
+    # 4. axis decoration                                                 #
+    # ------------------------------------------------------------------ #
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.grid(True, which="both", ls=":", lw=0.4)
-    if title is not None:
+    if title:
         ax.set_title(title)
 
-    # -------------------------------------------------------------------- #
-    # 4. legend / colour key (unchanged)                                   #
-    # -------------------------------------------------------------------- #
+    # ------------------------------------------------------------------ #
+    # 5. legend / colour-key                                             #
+    # ------------------------------------------------------------------ #
     if legend_style == "list":
-        handles = list(reversed(lines))
-        labels  = [f"{T:g}" for T in T_sorted[::-1]]
         ax.legend(
-            handles, labels,
+            list(reversed(lines)),
+            [f"{T:g}" for T in T_sorted[::-1]],
             title=r"$T$ / K",
             title_fontsize=10,
             loc='center left',
@@ -178,18 +200,21 @@ def plot_susceptibility_curves(
         )
 
     elif legend_style == "colorbar":
-        sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm = mpl.cm.ScalarMappable(cmap=cbar_cmap, norm=cbar_norm)
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax, pad=0.02)
         cbar.set_label(r"$T$ / K")
-        cbar.set_ticks([T_sorted.min(), T_sorted.max()])
-        cbar.set_ticklabels([f"{T_sorted.min():g}", f"{T_sorted.max():g}"])
+        if color_mode == "value":
+            cbar.set_ticks([T_sorted.min(), T_sorted.max()])
+            cbar.set_ticklabels([f"{T_sorted.min():g}", f"{T_sorted.max():g}"])
+        else:  # index mode → discrete bar
+            cbar.set_ticks([0, len(T_sorted) - 1])
+            cbar.set_ticklabels([f"{T_sorted[0]:g}", f"{T_sorted[-1]:g}"])
     else:
         raise ValueError("legend_style must be 'list' or 'colorbar'")
 
-    # -------------------------------------------------------------------- #
-
-    if savepath is not None:
+    # ------------------------------------------------------------------ #
+    if savepath:
         fig.savefig(savepath, dpi=dpi, bbox_inches="tight")
 
     return ax
@@ -204,9 +229,9 @@ M_AU = 1822.89
 
 @njit(cache=True)
 def Jhat_p(omega, w_ab, wq, n_q, d):
-    if np.abs(w_ab) < 3.0:
+    if np.abs(w_ab) == 0.0:
         return 0.0 + 0.0 * 1j
-    if w_ab > 0:
+    if w_ab >= 0:
         z = -1j / (w_ab - wq - 1j * d) * n_q
         return z if z.imag > 0 else np.conjugate(z)
     if w_ab < 0:
@@ -215,7 +240,7 @@ def Jhat_p(omega, w_ab, wq, n_q, d):
 
 @njit(cache=True)
 def Jhat_m(omega, w_ab, wq, n_q, d):
-    if np.abs(w_ab) < 3.0:
+    if np.abs(w_ab) == 0.0:
         return 0.0 + 0.0 * 1j
     if w_ab < 0:
         z = -1j / (w_ab + wq - 1j * d) * n_q
@@ -227,7 +252,7 @@ def Jhat_m(omega, w_ab, wq, n_q, d):
 @njit(cache=True)
 def zeta(x: float, beta: float, fwhm: float) -> float:
     eps = 1e-6
-    if abs(x) > 12:
+    if abs(x) > 50:
         return 0.0 + 1j * 0.0
     if abs(x) < eps:
         return beta
@@ -237,9 +262,9 @@ def zeta(x: float, beta: float, fwhm: float) -> float:
 @njit(cache=True)
 def Jcorr(omega, w_cd, w_ab, wq, n_q, d, beta):
     u = w_cd + w_ab
-    if np.abs(u) < 3.0:
+    if np.abs(u) == 0.0:
         return 0.0 + 0.0 * 1j
-    if u < 0:
+    if u <= 0:
         z = -1j / (u + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, d)
         return z if z.imag < 0 else np.conjugate(z)
     if u > 0:
@@ -336,7 +361,7 @@ def thermal_cutoff(E0: float, E: float, beta: float, n_sigma: float = 8.0) -> bo
 @njit(cache=True)
 def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
     eps = 1e-6
-    if abs(w1+w2) > 12 or abs(w1) > 12 or abs(w1) > 12:
+    if abs(w1+w2) > 50 or abs(w1) > 50 or abs(w1) > 50:
         return 0.0 + 1j * 0.0
     
     if abs(w1) < eps and abs(w2) < eps:
@@ -638,6 +663,7 @@ def susceptibility(
     chi = np.empty_like(omega_grid, dtype=np.complex128)
 
     # Neglect omega for now out of the loop
+    M_KR = np.zeros((N2, N2), dtype=np.complex128)
     M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq)
     M_PSI = np.zeros((N2, N2), dtype=np.complex128)
     M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
@@ -645,7 +671,7 @@ def susceptibility(
     if include_init_corr:
         for Yb, wb, q_0 in get_Y_q_and_freq():
             add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm)
-        M_rho0 /= np.trace(M_rho0).real
+        # M_rho0 /= np.trace(M_rho0).real
 
 
     # frequency loop ---------------------------------------------------------
@@ -664,16 +690,17 @@ def susceptibility(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [5]
-    gamma_fwhm_list = [30]          # FWHM in cm-1
-    T_list          = [2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5,5.5]           # 3,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4,5  Kelvin 2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,4,4.5,5,5.5, 3,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,10.5,11,13,15,20,30
-    B_list          = [0.2]            # Tesla
+    npoints_list    = [15,17,19,21]
+    gamma_fwhm_list = [10]          # FWHM in cm-1
+    T_list          = [2.5] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5]
+    B_list          = [0]            # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 8                    # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
     modes_low       = 3    #cm-1
-    modes_high      = 600 #cm-1
-    secular_tolerance = 1e-9    
+    modes_high      = 500 #cm-1
+    secular_tolerance = 1e-9
+    correlation = True
     # ────────────────────────────────────────────────────────────────────────
 
     # one-shot data that never changes over the sweep -----------------------
@@ -685,7 +712,7 @@ if __name__ == "__main__":
     displacement_number = 1
     step                = 0.025
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(0, 5, 100)
+    omega_au            = np.logspace(0, 10, 100)
     chi_all_T = np.zeros((len(T_list), omega_au.shape[0]), dtype=np.complex128)
 
     # refresh the .slt file
@@ -738,8 +765,8 @@ if __name__ == "__main__":
         def _update(k, omega_si, chi_k):
             if np.abs(chi_k.imag) < np.inf:
                 xs.append(omega_si)
-                ys_re.append(np.abs(chi_k.real))
-                ys_im.append(np.abs(chi_k.imag))
+                ys_re.append(chi_k.real)
+                ys_im.append(chi_k.imag)
 
                 line_re.set_data(xs, ys_re)
                 line_im.set_data(xs, ys_im)
@@ -766,7 +793,7 @@ if __name__ == "__main__":
     for npoints in npoints_list:
         for B in B_list:
 
-            orient = np.array([0, 0, 1], np.float64) 
+            orient = np.array([1, 1, 1], np.float64) 
             orient /= (np.linalg.norm(orient) * B_AU_T)
             B_vec  = B * orient
 
@@ -787,6 +814,9 @@ if __name__ == "__main__":
                     q_0 = np.allclose(q, np.asarray([0.0, 0.0, 0.0]), atol=0.000001)
                     hess_obj.kpoint = q
                     freq, modes = hess_obj.frequencies_eigenvectors
+
+                    if q_0:
+                        freq, modes = freq[3:], modes[3:,3:]
 
                     # --- keep only the requested number of modes --------------------
                     freq  *= AU_BOHR_CM_1
@@ -820,15 +850,19 @@ if __name__ == "__main__":
 
                     chi_all_T[T[0]] = chi
 
+            base_name = f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}{"_corr" if correlation else ""}"
+
             # ax = plot_susceptibility_curves(
             #         omega_au,
             #         chi_all_T,
             #         np.array(T_list),
-            #         part="imag",          # or "real", "abs"
+            #         part="imag",
             #         legend_style="colorbar",
-            #         colormap="jet",    # anything in mpl.cm
-            #         title=rf"{lanthanide}Co (B = {B} T, $\gamma$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
-            #         savepath=f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}_imag.png",
+            #         colormap="managua",
+            #         reverse=True,
+            #         color_mode="index",
+            #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+            #         savepath=f"{base_name}_imag.png",
             # )
             # plt.show()
 
@@ -836,11 +870,13 @@ if __name__ == "__main__":
             #         omega_au,
             #         chi_all_T,
             #         np.array(T_list),
-            #         part="real",          # or "real", "abs"
+            #         part="real",
             #         legend_style="colorbar",
-            #         colormap="jet",    # anything in mpl.cm
-            #         title=rf"{lanthanide}Co (B = {B} T, $\gamma$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
-            #         savepath=f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}_real.png",
+            #         colormap="managua",
+            #         reverse=True,
+            #         color_mode="index",
+            #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+            #         savepath=f"{base_name}_real.png",
             # )
             # plt.show()
 
@@ -850,11 +886,13 @@ if __name__ == "__main__":
             #         chi_all_T,
             #         np.array(T_list),
             #         plot_type="colecole",
-            #         part="real",          # or "real", "abs"
+            #         part="real",
             #         legend_style="colorbar",
-            #         colormap="jet",    # anything in mpl.cm
-            #         title=rf"{lanthanide}Co (B = {B} T, $\gamma$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
-            #         savepath=f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}_colecole.png",
+            #         colormap="managua",
+            #         reverse=True,
+            #         color_mode="index",
+            #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+            #         savepath=f"{base_name}_colecole.png",
             # )
             # plt.show()
  

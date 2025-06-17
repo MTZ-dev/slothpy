@@ -497,11 +497,18 @@ def _hamiltonian_derivatives_from_dir_to_slt(dirpath: str, slt_filepath: str, gr
                             hamiltonian_corrected = hamiltonian_corrected[:, permutation_extended]
                             hamiltonian_corrected = hamiltonian_corrected[permutation_extended, :]
                             hamiltonian_corrected = hamiltonian_corrected * phases_extended[newaxis, :] * phases_extended[:,newaxis]
-                            # Same correction for magnetic and electric dipole
                             slt_group.create_dataset("HAMILTONIAN_MATRIX", data=hamiltonian_corrected, chunks=True)
-                            slt_group.create_dataset("MAGNETIC_DIPOLE_MOMENTA", data=slt_group_hamiltonian.magnetic_dipole_momentum_matrices().eval(), chunks=True)
+                            magnetic_momenta_corrected = slt_group_hamiltonian.magnetic_dipole_momentum_matrices().eval()
+                            magnetic_momenta_corrected = magnetic_momenta_corrected[:, :, permutation_extended]
+                            magnetic_momenta_corrected = magnetic_momenta_corrected[:, permutation_extended, :]
+                            magnetic_momenta_corrected = magnetic_momenta_corrected * phases_extended[newaxis, newaxis, :] * phases_extended[newaxis, :, newaxis]
+                            slt_group.create_dataset("MAGNETIC_DIPOLE_MOMENTA", data=magnetic_momenta_corrected, chunks=True)
                             if electric_dipole_momenta:
-                                slt_group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", data=slt_group_hamiltonian.electric_dipole_momentum_matrices().eval(), chunks=True)
+                                electric_momenta_corrected = slt_group_hamiltonian.electric_dipole_momentum_matrices().eval()
+                                electric_momenta_corrected = electric_momenta_corrected[:, :, permutation_extended]
+                                electric_momenta_corrected = electric_momenta_corrected[:, permutation_extended, :]
+                                electric_momenta_corrected = electric_momenta_corrected * phases_extended[newaxis, newaxis, :] * phases_extended[newaxis, :, newaxis]
+                                slt_group.create_dataset("ELECTRIC_DIPOLE_MOMENTA", data=electric_momenta_corrected, chunks=True)
 
                         if exists(completed_file):
                             remove(completed_file)

@@ -38,6 +38,67 @@ import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.ticker import ScalarFormatter, LogLocator, LogFormatterExponent
 
+def k_mch(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray):
+    k_mch = []
+    U_R0_T = U_R0.conj().T
+
+    for dof in dof_array:
+        k_mch.append(U_R0_T @ group[f"{dof[0]}_{dof[1]}_{dof[2]}_{dof[3]}"][:] @ U_R0)
+
+    return np.asarray(k_mch, dtype=np.complex128)
+
+def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, magnetic_field_vector: np.ndarray, displacement_number: int, step: float, degeneracy_tolerance: float = 1e-9):
+    E_grad = []
+    k_U = []
+    finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step * A_BOHR)
+
+    for dof in dof_array:
+        E_grad_component = np.zeros(U_R0.shape[0], dtype=np.float64)
+        k_U_component = np.zeros_like(U_R0)
+        stencil_index = -1
+        for displacement in range(-displacement_number, displacement_number + 1):
+            stencil_index += 1
+            if displacement == 0:
+                continue
+            group_name = f"{dof[0]}_{dof[1]}_{dof[2]}_{dof[3]}_{displacement}"
+            hamiltonian = group[f"{group_name}/HAMILTONIAN_MATRIX"][:]+_zdot3d(group[f"{group_name}/MAGNETIC_DIPOLE_MOMENTA"][:], -magnetic_field_vector)
+            E, U_R0_delta = np.linalg.eigh(hamiltonian)
+
+            S = U_R0_delta.conj().T @ U_R0
+
+            projection_mask = np.abs(E[:, None] - E[None, :]) < degeneracy_tolerance
+            M = np.where(projection_mask, S, 0.0) 
+            u, s, vt = np.linalg.svd(M)
+            U_R0_delta = U_R0_delta @ u @ vt
+
+            E_grad_component += E * finite_difference_stencil[stencil_index]
+            k_U_component += U_R0_delta * finite_difference_stencil[stencil_index]
+
+        E_grad.append(E_grad_component)
+        k_U.append(U_R0.conj().T @ k_U_component)
+    
+    return np.asarray(E_grad, dtype=np.float64), np.asarray(k_U, dtype=np.complex128)
+
+def full_derivatives(dof_array, group, B_vec, displacement_number, step, degeneracy_tolerance, states_number):
+
+    hamiltonian0 = group[f"0/HAMILTONIAN_MATRIX"][:]+_zdot3d(group[f"0/MAGNETIC_DIPOLE_MOMENTA"][:], -B_vec)
+    E_tot_0, U_R0 = np.linalg.eigh(hamiltonian0)
+
+    k_mch_array = k_mch(dof_array, group, U_R0)
+    E_grad_array, k_U_array = E_grad_k_U(dof_array, group, U_R0, B_vec, displacement_number, step, degeneracy_tolerance)
+    anti_symm_energy = E_tot_0[None, :] - E_tot_0[:, None]
+    H_grad = np.empty_like(k_mch_array)
+    for i in range(H_grad.shape[0]):
+        grad_mch = anti_symm_energy * k_mch_array[i]
+        grad_mch = (grad_mch + grad_mch.conj().T) * 0.5
+        grad_ku = anti_symm_energy * k_U_array[i]
+        grad_ku= (grad_ku + grad_ku.conj().T) * 0.5
+        grad_full = grad_mch + grad_ku
+        np.fill_diagonal(grad_full, E_grad_array[i])
+        H_grad[i] = grad_full
+
+    return np.ascontiguousarray(H_grad[:, :states_number, :states_number]) * H_CM_1
+
 def plot_susceptibility_curves(
         omega_rad_s : np.ndarray,        # (M,)
         chi_complex : np.ndarray,        # (K,M)
@@ -229,7 +290,7 @@ M_AU = 1822.89
 
 @njit(cache=True)
 def Jhat_p(omega, w_ab, wq, n_q, d):
-    if np.abs(w_ab) == 0.0:
+    if np.abs(w_ab) <= 3:
         return 0.0 + 0.0 * 1j
     if w_ab >= 0:
         z = -1j / (w_ab - wq - 1j * d) * n_q
@@ -240,7 +301,7 @@ def Jhat_p(omega, w_ab, wq, n_q, d):
 
 @njit(cache=True)
 def Jhat_m(omega, w_ab, wq, n_q, d):
-    if np.abs(w_ab) == 0.0:
+    if np.abs(w_ab) <= 3:
         return 0.0 + 0.0 * 1j
     if w_ab < 0:
         z = -1j / (w_ab + wq - 1j * d) * n_q
@@ -262,7 +323,7 @@ def zeta(x: float, beta: float, fwhm: float) -> float:
 @njit(cache=True)
 def Jcorr(omega, w_cd, w_ab, wq, n_q, d, beta):
     u = w_cd + w_ab
-    if np.abs(u) == 0.0:
+    if np.abs(u) <= 3:
         return 0.0 + 0.0 * 1j
     if u <= 0:
         z = -1j / (u + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, d)
@@ -666,11 +727,11 @@ def susceptibility(
     M_KR = np.zeros((N2, N2), dtype=np.complex128)
     M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq)
     M_PSI = np.zeros((N2, N2), dtype=np.complex128)
-    M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
+    # M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
 
-    if include_init_corr:
-        for Yb, wb, q_0 in get_Y_q_and_freq():
-            add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm)
+    # if include_init_corr:
+    #     for Yb, wb, q_0 in get_Y_q_and_freq():
+    #         add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm)
         # M_rho0 /= np.trace(M_rho0).real
 
 
@@ -690,15 +751,16 @@ def susceptibility(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [15,17,19,21]
+    npoints_list    = [3]
     gamma_fwhm_list = [10]          # FWHM in cm-1
-    T_list          = [2.5] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5]
-    B_list          = [0]            # Tesla 0.001,0.002,0.003,0.004,
+    T_list          = [2] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5]
+    B_list          = [0.05,0.1,0.2,0.3,0.5,0.6,0.8,1,2,3]            # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 8                    # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
     modes_low       = 3    #cm-1
     modes_high      = 500 #cm-1
+    degeneracy_tolerance = 1e-9
     secular_tolerance = 1e-9
     correlation = True
     # ────────────────────────────────────────────────────────────────────────
@@ -706,30 +768,23 @@ if __name__ == "__main__":
     # one-shot data that never changes over the sweep -----------------------
     lanthanide          = "Yb"
     orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
-    dirpath             = f"/home/mikolaj/Data/Displacements_small/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
+    dirpath             = f"/home/mikolaj/Data/Displacements_small_0001/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
     slt_filepath        = "./seminarium/import.slt"
     group_name          = "xxx"
     displacement_number = 1
-    step                = 0.025
+    step                = 0.0001
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(0, 10, 100)
+    omega_au            = np.logspace(0, 4, 100)
     chi_all_T = np.zeros((len(T_list), omega_au.shape[0]), dtype=np.complex128)
 
     # refresh the .slt file
     if os.path.exists(slt_filepath):
         os.remove(slt_filepath)
     slt.set_default_error_reporting_mode()
-    _hamiltonian_derivatives_from_dir_to_slt(
-        dirpath, slt_filepath, group_name,
-        displacement_number, step, 64, 1, "ORCA",
-        False, False, False, orca_fragovl_path
-    )
+    _hamiltonian_derivatives_from_dir_to_slt(dirpath, slt_filepath, group_name, displacement_number, step, 64, 1, "ORCA",False, False, False, orca_fragovl_path)
 
     # phonon part -------------------------------------------------------
-    Dy = slt.supercell(
-        "./seminarium/YCo_supercell_from_cell/dof_0_disp_0.xyz",
-        slt_filepath, "YCo_supercell",
-        3, 3, 2,
+    Dy = slt.supercell("./seminarium/YCo_supercell_from_cell/dof_0_disp_0.xyz", slt_filepath, "YCo_supercell", 3, 3, 2,
         supercell_params=[22.663134149075237,
                             22.663134149075233,
                             25.14851428466812,
@@ -737,11 +792,7 @@ if __name__ == "__main__":
         multiplicity=1,
     )
     Dy["YCo_supercell"].replace_atoms([0], [lanthanide])
-    hessian = Dy["YCo_supercell"].hessian_from_finite_displacements(
-        "./seminarium/YCo_supercell_from_cell",
-        "CP2K", "YCo_hessian",
-        1, 0.01, born_charges=True
-    )
+    hessian = Dy["YCo_supercell"].hessian_from_finite_displacements("./seminarium/YCo_supercell_from_cell", "CP2K", "YCo_hessian", 1, 0.01, born_charges=True)
 
     # Dy = slt.unit_cell("/home/mikolaj/InputOutput_CP2K/LaCu_pymon_no_symm/LaCu_pymon_opt.xyz", "./seminarium/Dy.slt", "guju", [[1.2795564780516631E+001, 0.0000000000000000E+000, 0.0000000000000000E+000],[0.0000000000000000E+000,  1.0688348682773828E+001, 0.0000000000000000E+000],[-8.0938444693724920E-001,  0.0000000000000000E+000,  6.2893542237840405E+000]])
     # Dy["guju"].supercell(2,2,3,"slt", slt_group_name="guju_super")
@@ -790,23 +841,24 @@ if __name__ == "__main__":
     ax_re.set_ylabel(r"Re χ(ω)")
     ax_im.set_ylabel(r"Im χ(ω)")
 
-    for npoints in npoints_list:
-        for B in B_list:
+    orient = np.array([1, 1, 1], np.float64) 
+    orient /= (np.linalg.norm(orient) * B_AU_T)
+    
+    for B in B_list:
+        B_vec  = B * orient
 
-            orient = np.array([1, 1, 1], np.float64) 
-            orient /= (np.linalg.norm(orient) * B_AU_T)
-            B_vec  = B * orient
+        with h5py.File(slt_filepath, "r") as f:
+            grp = f[group_name]
+            dof_array = dofs_with_complete_displacements(grp, displacement_number)
+            magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
+            AB = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2])
+            H_total = (grp["0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])) * H_CM_1
 
+            H_grad = full_derivatives(dof_array, grp, B_vec, 1, step, degeneracy_tolerance, states_number)
+            # H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
+        
+        for npoints in npoints_list:
             grid = half_bz_grid_aniso(recip_axes, npoints)
-
-            with h5py.File(slt_filepath, "r") as f:
-                grp = f[group_name]
-                dof_array = dofs_with_complete_displacements(grp, displacement_number)
-                magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
-                AB = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2])
-                H_total = (grp["0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])) * H_CM_1
-
-                H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
 
             def get_Y_q_and_freq():
                 n_k_inv = 1.0 / np.sqrt(len(grid))

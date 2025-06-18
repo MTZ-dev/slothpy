@@ -727,12 +727,12 @@ def susceptibility(
     M_KR = np.zeros((N2, N2), dtype=np.complex128)
     M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq)
     M_PSI = np.zeros((N2, N2), dtype=np.complex128)
-    # M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
+    M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
 
-    # if include_init_corr:
-    #     for Yb, wb, q_0 in get_Y_q_and_freq():
-    #         add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm)
-        # M_rho0 /= np.trace(M_rho0).real
+    if include_init_corr:
+        for Yb, wb, q_0 in get_Y_q_and_freq():
+            add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm)
+        M_rho0 /= np.trace(M_rho0).real
 
 
     # frequency loop ---------------------------------------------------------
@@ -751,10 +751,10 @@ def susceptibility(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [3]
+    npoints_list    = [5]
     gamma_fwhm_list = [10]          # FWHM in cm-1
-    T_list          = [2] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5]
-    B_list          = [0.05,0.1,0.2,0.3,0.5,0.6,0.8,1,2,3]            # Tesla 0.001,0.002,0.003,0.004,
+    T_list          = [2.0,2.1,2.2,2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5]
+    B_list          = [0.2]            # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 8                    # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
@@ -774,7 +774,7 @@ if __name__ == "__main__":
     displacement_number = 1
     step                = 0.0001
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(0, 4, 100)
+    omega_au            = np.logspace(0, 6, 100)
     chi_all_T = np.zeros((len(T_list), omega_au.shape[0]), dtype=np.complex128)
 
     # refresh the .slt file

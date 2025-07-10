@@ -163,7 +163,7 @@ def generate_input_file_pbe_guess(cpus, max_memory, tmp_dir):
     # Build the BASIS section
     basis_section = build_basis_section(atoms, lanthanide_element)
 
-    xyz_filename = os.path.join('..', f'{project_name}.xyz')
+    xyz_filename = os.path.join('..', f'dof_0_disp_0.xyz')
 
     # Build the ORCA input content for the initial PBE calculation
     input_content = f"""! PBE DKH2 DKH-def2-SVP AutoAux RIJCOSX NormalSCF NoFrozenCore SlowConv UNO

@@ -101,13 +101,13 @@ This script automates ORCA calculations of displacement directories created by S
 Run the script from the command line, specifying the required arguments:
 
 ```bash
-python run_displacements_ORCA.py --cpus 64 --processes 4 --orca_path /path/to/orca --max_memory 8000 --expbas
+python run_displacements_lanthanides_ORCA.py --cpus 64 --processes 4 --orca_path /path/to/orca --max_memory 8000 --expbas
 ```
 
 or when you provide .gbw starting file from the calculation corresponding to the different lanthanide and want to skip the basis expansion:
 
 ```bash
-python run_displacements_ORCA.py --cpus 64 --processes 4 --orca_path /path/to/orca --max_memory 8000 --start_from_different_lanthanide
+python run_displacements_lanthanides_ORCA.py --cpus 64 --processes 4 --orca_path /path/to/orca --max_memory 8000 --start_from_different_lanthanide
 ```
 
 - **Arguments:**
@@ -122,7 +122,7 @@ python run_displacements_ORCA.py --cpus 64 --processes 4 --orca_path /path/to/or
 **Example with NEVPT2/SSC Enabled:**
 
 ```bash
-python run_displacements_ORCA.py --cpus 64 --processes 4 --orca_path /usr/local/orca/orca --max_memory 8000 --use_nevpt2 --ssc
+python run_displacements_lanthanides_ORCA.py --cpus 64 --processes 4 --orca_path /usr/local/orca/orca --max_memory 8000 --use_nevpt2 --ssc
 ```
 
 ---

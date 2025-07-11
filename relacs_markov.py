@@ -302,10 +302,10 @@ M_AU = 1822.89
 def Jhat_p(omega, w_ab, wq, n_q, d, s):
     if np.abs(w_ab) <= s:
         return 0.0 + 0.0 * 1j
-    if w_ab >= 0 and (w_ab - wq) > 0:
+    if w_ab >= 0: # and (w_ab - wq) > 0:
         z = -1j / (w_ab - wq - 1j * d) * n_q
         return z # if z.imag > 0 else np.conjugate(z)
-    if w_ab < 0 and (w_ab + wq) > 0:
+    if w_ab <= 0: # and (w_ab + wq) > 0:
         z = -1j / (w_ab + wq - 1j * d) * (n_q + 1)
         return z # if z.imag > 0 else np.conjugate(z)
     return 0.0 + 0.0 * 1j
@@ -314,17 +314,17 @@ def Jhat_p(omega, w_ab, wq, n_q, d, s):
 def Jhat_m(omega, w_ab, wq, n_q, d, s):
     if np.abs(w_ab) <= s:
         return 0.0 + 0.0 * 1j
-    if w_ab <= 0 and (w_ab + wq) < 0:
+    if w_ab <= 0: # and (w_ab + wq) > 0:
         z = -1j / (w_ab + wq - 1j * d) * n_q
         return z # if z.imag < 0 else np.conjugate(z)
-    if w_ab > 0 and (w_ab - wq) < 0:
+    if w_ab >= 0: # and (w_ab - wq) > 0:
         z = -1j / (w_ab - wq - 1j * d) * (n_q + 1)
         return z # if z.imag < 0 else np.conjugate(z)
     return 0.0 + 0.0 * 1j
     
 @njit(cache=True)
 def zeta(x: float, beta: float, fwhm: float) -> float:
-    eps = 1e-13
+    eps = 1e-14
     if abs(x) > fwhm:
         return 0.0 + 1j * 0.0
     if abs(x) < eps:
@@ -337,10 +337,10 @@ def Jcorr(omega, w_cd, w_ab, wq, n_q, d, beta, s):
     u = w_cd + w_ab
     if np.abs(u) <= s:
         return 0.0 + 0.0 * 1j
-    if u <= 0 and (w_ab + wq) >= 0:
+    if u <= 0: # and (w_ab + wq) >= 0:
         z = -1j / (u + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, d)
         return z # if z.imag < 0 else np.conjugate(z)
-    if u > 0 and (w_ab - wq) > 0:
+    if u > 0: # and (w_ab - wq) > 0:
         z = -1j / (u - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta, d)
         return z # if z.imag > 0 else np.conjugate(z)
     return 0.0 + 0.0 * 1j
@@ -519,8 +519,6 @@ def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0, fwhm, rho, trace):
     
     return trace
 
-
-
 @njit(cache=True, inline="always")
 def thermal_cutoff(E0: float, E: float, beta: float, n_sigma: float = 8.0) -> bool:
     return (E - E0) * beta <= n_sigma
@@ -528,7 +526,7 @@ def thermal_cutoff(E0: float, E: float, beta: float, n_sigma: float = 8.0) -> bo
 
 @njit(cache=True)
 def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
-    eps = 1e-13
+    eps = 1e-14
     if abs(w1+w2) > fwhm or abs(w1) > fwhm or abs(w1) > fwhm:
         return 0.0 + 1j * 0.0
     
@@ -549,7 +547,7 @@ def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
     u12 = (w1 + w2) * beta
     term1 = np.expm1(u12) / (w2 * (w1 + w2))
     term2 = np.expm1(u1)  / (w1 * w2)
-    return term1 - term2
+    return np.abs(term1 - term2)
 
 @njit(cache=True, inline="always")
 def bose_occ(freq: float, beta: float) -> float:
@@ -795,7 +793,15 @@ def susceptibility(
 
     E = E[:states_number]
 
-    rho_eq = np.exp(-beta * (E-E[0]))
+    E = E - E[0]
+
+    for i in range(E.shape[0]):
+        for j in range(i+1, E.shape[0]):
+            if np.isclose(E[i], E[j], atol=5e-4):
+                E[i] = (E[i] + E[j]) * 0.5
+                E[j] = E[i]
+
+    rho_eq = np.exp(-beta * E)
     rho_eq /= rho_eq.sum()
 
     N  = states_number
@@ -826,8 +832,7 @@ def susceptibility(
 
     if include_init_corr:
         for Yb, wb, q_0 in get_Y_q_and_freq():
-            add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm, rho_mat, M_rho0_trace)
-        # M_rho0_trace = np.trace(M_rho0.real)
+            M_rho0_trace += add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm, rho_mat, M_rho0_trace)
 
     for a in range(N):
         for b in range(N):
@@ -838,9 +843,7 @@ def susceptibility(
                     if a == c:
                         M_rho0[liou(a,b,N), liou(c,d,N)] -= A_e[d,b]
     
-    M_rho0 /= np.trace(M_rho0.real)
-    # M_rho0 /= M_rho0_trace.real
-    # rho_vec /= M_rho0_trace
+    M_rho0 /= M_rho0_trace.real
 
     eye = np.eye(N2, dtype=np.complex128)
     chi = np.empty_like(omega_grid, dtype=np.complex128)
@@ -850,8 +853,6 @@ def susceptibility(
     M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq, 0.0)
     M_PSI = np.zeros((N2, N2), dtype=np.complex128)
     M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
-
-    # M_PSI /= np.trace(M_PSI.real)
 
 
     # frequency loop ---------------------------------------------------------
@@ -872,10 +873,10 @@ def susceptibility(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [11]
-    gamma_fwhm_list = [10]          # FWHM in cm-1
-    T_list          = [1.8,1.9,2,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5]
-    B_list          = [0.1]            # Tesla 0.001,0.002,0.003,0.004,
+    npoints_list    = [15]
+    gamma_fwhm_list = [20]          # FWHM in cm-1
+    T_list          = [1.8,1.9,2,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.4] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5]
+    B_list          = [0]            # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
@@ -895,7 +896,7 @@ if __name__ == "__main__":
     displacement_number = 1
     step                = 0.0001
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(0, 4, 100)
+    omega_au            = np.logspace(-6, 8, 300)
     chi_all_T = np.zeros((len(T_list), omega_au.shape[0]), dtype=np.complex128)
 
     # refresh the .slt file
@@ -979,7 +980,7 @@ if __name__ == "__main__":
             # H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
         
         for npoints in npoints_list:
-            grid = half_bz_grid_aniso(recip_axes, npoints, endpoint=False)
+            grid = half_bz_grid_aniso(recip_axes, npoints, endpoint=True)
 
             def get_Y_q_and_freq():
                 n_k_inv = 1.0 / np.sqrt(len(grid))
@@ -1001,8 +1002,6 @@ if __name__ == "__main__":
 
                     get_Y_q(Y_q, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq)
 
-                    # for index, i in enumerate(np.ascontiguousarray(Y_q[idx], dtype=np.complex128)):
-                    #     print(index, np.trace(i@i.conj().T))
 
                     yield np.ascontiguousarray(Y_q[idx], dtype=np.complex128), np.ascontiguousarray(freq[idx], dtype=np.float64), q_0
 

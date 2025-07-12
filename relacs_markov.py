@@ -5,7 +5,7 @@ import tqdm
 import numpy as np
 from numpy import pi
 from scipy.linalg import eigvals
-from numba import njit, prange
+
 
 import os
 import re
@@ -14,13 +14,12 @@ from collections import defaultdict
 import itertools
 from typing import Callable, Iterable, Tuple, Sequence
 
-import numpy as np
 import h5py
-import numpy as np
-from numba import njit, prange
+from numba import njit, prange, set_num_threads
+from threadpoolctl import threadpool_limits
 
 import slothpy as slt
-from slothpy._general_utilities._constants import A_BOHR, H_CM_1, B_AU_T, AU_BOHR_CM_1
+from slothpy._general_utilities._constants import A_BOHR, H_CM_1, B_AU_T, AU_BOHR_CM_1, MU_B_AU_T, MU_B_CM_3
 from slothpy._general_utilities._io import _hamiltonian_derivatives_from_dir_to_slt
 from slothpy._general_utilities._lapack import _zdot3d
 from slothpy._general_utilities._math_expresions import _central_finite_difference_stencil
@@ -300,37 +299,31 @@ M_AU = 1822.89
 
 @njit(cache=True)
 def Jhat_p(omega, w_ab, wq, n_q, d, s):
+    # if np.abs(w_ab-wq) > 2 * d:
+    #     return 0.0 + 0.0 * 1j
     if np.abs(w_ab) <= s:
         return 0.0 + 0.0 * 1j
-    if w_ab >= 0: # and (w_ab - wq) > 0:
+    if w_ab >= 0 and (w_ab - wq) > 0:
         z = -1j / (w_ab - wq - 1j * d) * n_q
         return z # if z.imag > 0 else np.conjugate(z)
-    if w_ab <= 0: # and (w_ab + wq) > 0:
+    if w_ab <= 0 and (w_ab + wq) > 0:
         z = -1j / (w_ab + wq - 1j * d) * (n_q + 1)
         return z # if z.imag > 0 else np.conjugate(z)
     return 0.0 + 0.0 * 1j
 
 @njit(cache=True)
 def Jhat_m(omega, w_ab, wq, n_q, d, s):
+    # if np.abs(w_ab-wq) > 2 * d:
+    #     return 0.0 + 0.0 * 1j
     if np.abs(w_ab) <= s:
         return 0.0 + 0.0 * 1j
-    if w_ab <= 0: # and (w_ab + wq) > 0:
+    if w_ab <= 0 and (w_ab + wq) < 0:
         z = -1j / (w_ab + wq - 1j * d) * n_q
         return z # if z.imag < 0 else np.conjugate(z)
-    if w_ab >= 0: # and (w_ab - wq) > 0:
+    if w_ab >= 0 and (w_ab - wq) < 0:
         z = -1j / (w_ab - wq - 1j * d) * (n_q + 1)
         return z # if z.imag < 0 else np.conjugate(z)
     return 0.0 + 0.0 * 1j
-    
-@njit(cache=True)
-def zeta(x: float, beta: float, fwhm: float) -> float:
-    eps = 1e-14
-    if abs(x) > fwhm:
-        return 0.0 + 1j * 0.0
-    if abs(x) < eps:
-        return beta
-    u = beta * x
-    return np.expm1(u) / (x)
 
 @njit(cache=True)
 def Jcorr(omega, w_cd, w_ab, wq, n_q, d, beta, s):
@@ -401,101 +394,12 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0, s):
                         val-=Jhat_m(omega,w_n[c]-w_n[b],wq,n_q,delta,s)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         out[ab,cd]+=val * coeff
 
-@njit(cache=True)
-def closest_branch_map(w_n: np.ndarray, wb: np.ndarray) -> np.ndarray:
-    """
-    Return an (N,N) array IDX such that IDX[p,q] is the index j for which
-    |wb[j] - (w_n[p] - w_n[q])| is minimal.
-    """
-    # Δ_{pq}  =  w_n[p] - w_n[q]   (shape N×N)
-    delta_pq = w_n[:, None] - w_n[None, :]
-
-    # Broadcast wb over the (p,q) grid and take argmin over j
-    # resulting shape is (N,N)
-    idx = np.abs(wb[:, None, None] - delta_pq).argmin(axis=0)
-    return idx.astype(np.int32)
 
 @njit(cache=True)
-def add_KR_bundle_filter(out, omega, Yb, wb, nb, delta, w_n, q_0, s):
-
-    N   = w_n.size
-    coeff = (0.5 if q_0 else 1.0) / H_BAR
-
-    # ➊  pre-compute conjugates for every branch
-    Yh_all = np.conjugate(Yb.transpose(0, 2, 1))      # (J,N,N)
-
-    # ➋  pre-compute winner map
-    closest = closest_branch_map(w_n, wb)             # (N,N)
-
-    # ------------------------------------------------------------------
-    for a in range(N):
-        for b in range(N):
-            ab = liou(a, b, N)
-
-            for c in range(N):
-                for d in range(N):
-                    cd  = liou(c, d, N)
-                    val = 0.0 + 0.0j
-
-                    # ---- 1st big parenthesis ---------------------------------
-                    if d == b:
-                        tmp = 0.0 + 0.0j
-                        for e in range(N):
-                            j_ed   = closest[e, d]
-                            Y_ed   = Yb[j_ed];  Yh_ed = Yh_all[j_ed]
-                            wq_ed  = wb[j_ed];  n_q_ed = nb[j_ed]
-
-                            jp = Jhat_p(omega, w_n[e]-w_n[d],
-                                         wq_ed, n_q_ed, delta,s)
-
-                            tmp += jp * (Y_ed[a, e]*Yh_ed[e, c]
-                                       + Yh_ed[a, e]*Y_ed[e, c])
-                        val += tmp
-
-                    # ---- 2nd term -------------------------------------------
-                    j_ad   = closest[a, d]
-                    Y_ad   = Yb[j_ad];  Yh_ad = Yh_all[j_ad]
-                    wq_ad  = wb[j_ad];  n_q_ad = nb[j_ad]
-
-                    val -= Jhat_p(omega, w_n[a]-w_n[d],
-                                   wq_ad, n_q_ad, delta,s) * (
-                                   Y_ad[a, c]*Yh_ad[d, b]
-                                 + Yh_ad[a, c]*Y_ad[d, b])
-
-                    # ---- 3rd big parenthesis ---------------------------------
-                    if a == c:
-                        tmp = 0.0 + 0.0j
-                        for e in range(N):
-                            j_ce   = closest[c, e]
-                            Y_ce   = Yb[j_ce];  Yh_ce = Yh_all[j_ce]
-                            wq_ce  = wb[j_ce];  n_q_ce = nb[j_ce]
-
-                            jm = Jhat_m(omega, w_n[c]-w_n[e],
-                                         wq_ce, n_q_ce, delta,s)
-
-                            tmp += jm * (Y_ce[d, e]*Yh_ce[e, b]
-                                       + Yh_ce[d, e]*Y_ce[e, b])
-                        val += tmp
-
-                    # ---- 4th term -------------------------------------------
-                    j_cb   = closest[c, b]
-                    Y_cb   = Yb[j_cb];  Yh_cb = Yh_all[j_cb]
-                    wq_cb  = wb[j_cb];  n_q_cb = nb[j_cb]
-
-                    val -= Jhat_m(omega, w_n[c]-w_n[b],
-                                   wq_cb, n_q_cb, delta,s) * (
-                                   Y_cb[a, c]*Yh_cb[d, b]
-                                 + Yh_cb[a, c]*Y_cb[d, b])
-
-                    # ---- accumulate ------------------------------------------
-                    out[ab, cd] += val * coeff
-
-
-@njit(cache=True)
-def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0, fwhm, rho, trace):
+def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0, fwhm, rho, s):
     N=w_n.size; J=wb.size
     coeff = H_BAR * H_BAR / (2.0)
-    E0 = w_n[0]
+    trace = 0.0 + 1j * 0.0
     if q_0:
         coeff *= 0.5
     for j in range(J):
@@ -506,29 +410,45 @@ def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0, fwhm, rho, trace):
                 ab=liou(a,b,N)
                 for c in range(N):
                     d = c
-                    cd=liou(c,d,N)
+                    # cd=liou(c,d,N)
                     corr=0.0+0.0j
                     for e in range(N):
                         w_de=w_n[d]-w_n[e]
-                        if b == d:
-                            trace+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta,fwhm))*rho[d,d]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
-                        corr+=(n_q*Iint(w_de+wq,w_n[e]-w_n[b]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[b]+wq,beta,fwhm))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                        w_eb=w_n[e]-w_n[b]
+                        # if np.abs(w_de) or np.abs(w_eb) <= s:
+                        #     return 0.0 + 1j * 0.0
+                        if b == a:
+                            trace+=(n_q*Iint(w_de+wq,w_eb-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,+wq,beta,fwhm))*rho[c,d]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                        corr+=(n_q*Iint(w_de+wq,w_eb-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta,fwhm))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])*rho[c,d]
                         for f in range(N):
-                            corr-=(n_q*Iint(w_de+wq,w_n[e]-w_n[f]-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_n[e]-w_n[f]+wq,beta,fwhm))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]
-                    out[ab,cd]+=coeff*corr
-    
+                            w_ef=w_n[e]-w_n[f]
+                            # if np.abs(w_ef) <= s:
+                            #     return 0.0 + 1j * 0.0
+                            corr-=(n_q*Iint(w_de+wq,w_ef-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_ef+wq,beta,fwhm))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]*rho[c,d]
+                    out[ab]+=coeff*corr
     return trace
 
 @njit(cache=True, inline="always")
 def thermal_cutoff(E0: float, E: float, beta: float, n_sigma: float = 8.0) -> bool:
     return (E - E0) * beta <= n_sigma
 
+@njit(cache=True)
+def zeta(x: float, beta: float, fwhm: float) -> float:
+    eps = 1e-30
+    # if abs(x) > 20:
+    #     return 0.0 + 1j * 0.0
+    if abs(x) < eps:
+        return beta
+    u = beta * x
+    # if abs(u) > 20:
+    #     return 0.0 + 1j * 0.0
+    return np.expm1(u) / (x)
 
 @njit(cache=True)
 def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
-    eps = 1e-14
-    if abs(w1+w2) > fwhm or abs(w1) > fwhm or abs(w1) > fwhm:
-        return 0.0 + 1j * 0.0
+    eps = 1e-30
+    # if abs((w1+w2)*beta) > 20 or abs(w1*beta) > 20 or abs(w1*beta) > 20:
+    #     return 0.0 + 1j * 0.0
     
     if abs(w1) < eps and abs(w2) < eps:
         return 0.5 * beta * beta
@@ -554,7 +474,7 @@ def bose_occ(freq: float, beta: float) -> float:
     u = beta * freq
     return 1.0/(np.exp(u) - 1.0)
 
-@njit(cache=True)
+@njit(cache=True, inline="always")
 def liou(a, b, N):
     return a * N + b
 
@@ -828,11 +748,21 @@ def susceptibility(
                         M_L[liou(a,b,N), liou(c,d,N)] -= H_s[d,b]
 
     M_rho0 = np.zeros((N2, N2), dtype=np.complex128)
-    M_rho0_trace = 1.0 + 1j * 0.0
+    M_KR = np.zeros((N2, N2), dtype=np.complex128)
+    M_PSI = np.zeros((N2, N2), dtype=np.complex128)
+    rho_vec_init = np.zeros_like(rho_vec)
 
-    if include_init_corr:
-        for Yb, wb, q_0 in get_Y_q_and_freq():
-            M_rho0_trace += add_rho0_bundle(M_rho0, A_e, Yb, wb, bose_occ(wb, beta), beta, E, q_0, gamma_fwhm, rho_mat, M_rho0_trace)
+    M_rho0_trace = 1.0 + 1j * 0.0
+    s = np.clip(np.abs(E[0]-E[1]), 1e-4, 5)
+    s = s if s > 1e-4 else 0.0
+
+    for Yb, wb, q_0 in tqdm.tqdm(get_Y_q_and_freq()):
+        bose = bose_occ(wb, beta)
+        add_KR_bundle(M_KR, 0.0, Yb, wb, bose, gamma_fwhm, E, q_0, s)
+        add_PSI_bundle(M_PSI, 0.0, A, Yb, wb, bose, gamma_fwhm, beta, E, q_0, s)
+        M_rho0_trace += add_rho0_bundle(rho_vec_init, A_e, Yb, wb, bose, beta, E, q_0, gamma_fwhm, rho_mat, s)
+
+        # print(M_rho0_trace, np.max(rho_vec_init), np.min(rho_vec_init))
 
     for a in range(N):
         for b in range(N):
@@ -843,16 +773,15 @@ def susceptibility(
                     if a == c:
                         M_rho0[liou(a,b,N), liou(c,d,N)] -= A_e[d,b]
     
-    M_rho0 /= M_rho0_trace.real
+    # rho_vec_init /= M_rho0_trace.real
 
     eye = np.eye(N2, dtype=np.complex128)
     chi = np.empty_like(omega_grid, dtype=np.complex128)
 
     # Neglect omega for now out of the loop
-    M_KR = np.zeros((N2, N2), dtype=np.complex128)
-    M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq, 0.0)
-    M_PSI = np.zeros((N2, N2), dtype=np.complex128)
-    M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
+    
+    # M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq, 0.0)
+    # M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
 
 
     # frequency loop ---------------------------------------------------------
@@ -861,8 +790,15 @@ def susceptibility(
         # M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq, omega*H_BAR)
 
         Xi       = 1j / H_BAR * M_L + M_KR - 1j * omega * eye
-        num      = (M_rho0 + 1j * H_BAR * M_PSI) @ rho_vec
-        rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
+        num      = 1j * H_BAR * M_PSI @ rho_vec + (M_rho0 @ rho_vec + rho_vec_init) / M_rho0_trace.real
+
+        if k == 0:
+            print(np.max(Xi), np.max(num))
+            print(np.min(Xi), np.min(num))
+        
+        Xi_inv = np.linalg.inv(Xi)
+        rho_hat = (Xi_inv @ num).reshape((N,N))
+        # rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
         chi[k]   = 1j / H_BAR * np.trace(B_e @ rho_hat)
 
         if on_step is not None:
@@ -873,15 +809,15 @@ def susceptibility(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [15]
-    gamma_fwhm_list = [20]          # FWHM in cm-1
-    T_list          = [1.8,1.9,2,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.4] # [2.3,2.35,2.4,2.45,2.5,2.55,2.6,2.7,2.8,2.9,3,3.2,3.5,3.7,3.9,4.2,4.5,4.9,5.1,5.3,5.7,6,6.5]
+    npoints_list    = [9]
+    gamma_fwhm_list = [18]          # FWHM in cm-1
+    T_list          = [2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3]#[1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0]
     B_list          = [0]            # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
-    modes_low       = 1    #cm-1
-    modes_high      = 200 #cm-1
+    modes_low       = 0.5    #cm-1
+    modes_high      = 300 #cm-1
     degeneracy_tolerance = 1e-9
     secular_tolerance = 1e-9
     correlation = True
@@ -896,7 +832,7 @@ if __name__ == "__main__":
     displacement_number = 1
     step                = 0.0001
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(-6, 8, 300)
+    omega_au            = np.logspace(0, 4, 200)
     chi_all_T = np.zeros((len(T_list), omega_au.shape[0]), dtype=np.complex128)
 
     # refresh the .slt file
@@ -963,122 +899,127 @@ if __name__ == "__main__":
     ax_re.set_ylabel(r"Re χ(ω)")
     ax_im.set_ylabel(r"Im χ(ω)")
 
-    orient = np.array([1, 1, 1], np.float64) 
-    orient /= (np.linalg.norm(orient) * B_AU_T)
+    orients = np.array([[0,0,1]], np.float64) # np.array([[0,0,1], [1,0,0], [0,1,0]], np.float64)
+
+    for orient in orients:
+        orient /= (np.linalg.norm(orient) * B_AU_T)
     
-    for B in B_list:
-        B_vec  = B * orient
+        for B in B_list:
+            B_vec  = B * orient
 
-        with h5py.File(slt_filepath, "r") as f:
-            grp = f[group_name]
-            dof_array = dofs_with_complete_displacements(grp, displacement_number)
-            magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
-            AB = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2])
-            H_total = (grp["0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])) * H_CM_1
+            with h5py.File(slt_filepath, "r") as f:
+                grp = f[group_name]
+                dof_array = dofs_with_complete_displacements(grp, displacement_number)
+                magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
+                A_op = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2])
+                B_op = A_op / MU_B_AU_T * MU_B_CM_3
+                H_total = (grp["0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])) * H_CM_1
 
-            H_grad = full_derivatives(dof_array, grp, B_vec, 1, step, degeneracy_tolerance, states_number)
-            # H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
-        
-        for npoints in npoints_list:
-            grid = half_bz_grid_aniso(recip_axes, npoints, endpoint=True)
+                H_grad = full_derivatives(dof_array, grp, B_vec, 1, step, degeneracy_tolerance, states_number)
+                # H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
+            
+            for npoints in npoints_list:
+                grid = half_bz_grid_aniso(recip_axes, npoints, endpoint=True)
+                # grid = hessian.atoms_object.cell.bandpath(npoints=npoints**3).kpts.astype(np.float64)
+                print(grid.shape[0])
 
-            def get_Y_q_and_freq():
-                n_k_inv = 1.0 / np.sqrt(len(grid))
-                for q in grid:
-                    q_0 = np.allclose(q, np.asarray([0.0, 0.0, 0.0]), atol=0.000001)
-                    hess_obj.kpoint = q
-                    freq, modes = hess_obj.frequencies_eigenvectors
+                def get_Y_q_and_freq():
+                    n_k_inv = 1.0 / np.sqrt(len(grid))
+                    for q in grid:
+                        q_0 = np.allclose(q, np.asarray([0.0, 0.0, 0.0]), atol=0.000001)
+                        hess_obj.kpoint = q
+                        freq, modes = hess_obj.frequencies_eigenvectors
 
-                    if q_0:
-                        freq, modes = freq[3:], modes[3:,3:]
+                        if q_0:
+                            freq, modes = freq[3:], modes[3:,3:]
 
-                    # --- keep only the requested number of modes --------------------
-                    freq  *= AU_BOHR_CM_1
+                        # --- keep only the requested number of modes --------------------
+                        freq  *= AU_BOHR_CM_1
 
-                    mask = (freq >= modes_low) & (freq <= modes_high)
-                    idx  = np.where(mask)[0]
+                        mask = (freq >= modes_low) & (freq <= modes_high)
+                        idx  = np.where(mask)[0]
 
-                    Y_q = np.zeros((freq.size, states_number, states_number), dtype=np.complex128)
+                        Y_q = np.zeros((freq.size, states_number, states_number), dtype=np.complex128)
 
-                    get_Y_q(Y_q, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq)
-
-
-                    yield np.ascontiguousarray(Y_q[idx], dtype=np.complex128), np.ascontiguousarray(freq[idx], dtype=np.float64), q_0
-
-
-            for gamma_fwhm, T in itertools.product(
-                gamma_fwhm_list, enumerate(T_list)):
-                    label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
-                            f"T={T[1]:g} K, B={B:g} T")
-                    step_plotter = make_step_plotter(ax_re, ax_im, label)
-
-                    chi = susceptibility(
-                        omega_au/1e12, H_total, AB, AB,
-                        T[1], gamma_fwhm, get_Y_q_and_freq,
-                        states_number=states_number,
-                        include_init_corr=True,
-                        on_step=step_plotter            # ← live updates happen here
-                    )
-
-                    chi_all_T[T[0]] = chi
-
-            base_name = f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}{"_corr" if correlation else ""}"
-
-            # ax = plot_susceptibility_curves(
-            #         omega_au,
-            #         chi_all_T,
-            #         np.array(T_list),
-            #         part="imag",
-            #         legend_style="colorbar",
-            #         colormap="managua",
-            #         reverse=True,
-            #         color_mode="index",
-            #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
-            #         savepath=f"{base_name}_imag.png",
-            # )
-            # plt.show()
-
-            # ax = plot_susceptibility_curves(
-            #         omega_au,
-            #         chi_all_T,
-            #         np.array(T_list),
-            #         part="real",
-            #         legend_style="colorbar",
-            #         colormap="managua",
-            #         reverse=True,
-            #         color_mode="index",
-            #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
-            #         savepath=f"{base_name}_real.png",
-            # )
-            # plt.show()
+                        get_Y_q(Y_q, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq)
 
 
-            # ax = plot_susceptibility_curves(
-            #         omega_au,
-            #         chi_all_T,
-            #         np.array(T_list),
-            #         plot_type="colecole",
-            #         part="real",
-            #         legend_style="colorbar",
-            #         colormap="managua",
-            #         reverse=True,
-            #         color_mode="index",
-            #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
-            #         savepath=f"{base_name}_colecole.png",
-            # )
-            # plt.show()
- 
+                        yield np.ascontiguousarray(Y_q[idx], dtype=np.complex128), np.ascontiguousarray(freq[idx], dtype=np.float64), q_0
 
-                    # # plotting ------------------------------------------------------
-                    # label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
-                    #          f"T={T:g} K, B={B:g} T")
-                    # ax_re.plot(omega_SI, chi.real, label=label)
-                    # ax_im.plot(omega_SI, chi.imag, label=label)
+
+                for gamma_fwhm, T in itertools.product(
+                    gamma_fwhm_list, enumerate(T_list)):
+                        label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
+                                f"T={T[1]:g} K, B={B:g} T")
+                        step_plotter = make_step_plotter(ax_re, ax_im, label)
+
+                        chi = susceptibility(
+                            omega_au/1e12, H_total, A_op, B_op,
+                            T[1], gamma_fwhm, get_Y_q_and_freq,
+                            states_number=states_number,
+                            include_init_corr=True,
+                            on_step=step_plotter            # ← live updates happen here
+                        )
+
+                        chi_all_T[T[0]] = chi
+
+                base_name = f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}{"_corr" if correlation else ""}"
+
+                # ax = plot_susceptibility_curves(
+                #         omega_au,
+                #         chi_all_T,
+                #         np.array(T_list),
+                #         part="imag",
+                #         legend_style="colorbar",
+                #         colormap="managua",
+                #         reverse=True,
+                #         color_mode="index",
+                #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+                #         savepath=f"{base_name}_imag.png",
+                # )
+                # plt.show()
+
+                # ax = plot_susceptibility_curves(
+                #         omega_au,
+                #         chi_all_T,
+                #         np.array(T_list),
+                #         part="real",
+                #         legend_style="colorbar",
+                #         colormap="managua",
+                #         reverse=True,
+                #         color_mode="index",
+                #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+                #         savepath=f"{base_name}_real.png",
+                # )
+                # plt.show()
+
+
+                # ax = plot_susceptibility_curves(
+                #         omega_au,
+                #         chi_all_T,
+                #         np.array(T_list),
+                #         plot_type="colecole",
+                #         part="real",
+                #         legend_style="colorbar",
+                #         colormap="managua",
+                #         reverse=True,
+                #         color_mode="index",
+                #         title=rf"{lanthanide}Co (B = {B} T, $\Delta$ = {gamma_fwhm_list[0]} cm$^{{-1}}$)",
+                #         savepath=f"{base_name}_colecole.png",
+                # )
+                # plt.show()
+
+
+                        # # plotting ------------------------------------------------------
+                        # label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
+                        #          f"T={T:g} K, B={B:g} T")
+                        # ax_re.plot(omega_SI, chi.real, label=label)
+                        # ax_im.plot(omega_SI, chi.imag, label=label)
 
     # figure cosmetics -------------------------------------------------------
     ax_re.legend(fontsize="x-small", frameon=False, ncols=2)
     ax_im.legend(fontsize="x-small", frameon=False, ncols=2)
     plt.ioff()                   # stop live updates
     plt.show()
-              
+            
 # R21 = build_R21(Ener, T, lw, smear, gen, sec_tol=sec_tol)

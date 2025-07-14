@@ -15,7 +15,7 @@ import itertools
 from typing import Callable, Iterable, Tuple, Sequence
 
 import h5py
-from numba import njit, prange, set_num_threads
+from numba import njit, prange, set_num_threads, get_num_threads, get_thread_id
 from threadpoolctl import threadpool_limits
 
 import slothpy as slt
@@ -296,57 +296,45 @@ H_BAR     = 33.3571775619 / (2 * pi)
 AU_TIME_S = 1e-12
 M_AU = 1822.89
 
-
-@njit(cache=True)
-def Jhat_p(omega, w_ab, wq, n_q, d, s):
-    # if np.abs(w_ab-wq) > 2 * d:
+@njit(cache=True, fastmath=True)
+def Jhat_p(omega, w_ab, wq, n_q, d):
+    # if np.abs(w_ab) <= s:
     #     return 0.0 + 0.0 * 1j
-    if np.abs(w_ab) <= s:
-        return 0.0 + 0.0 * 1j
-    if w_ab >= 0 and (w_ab - wq) > 0:
-        z = -1j / (w_ab - wq - 1j * d) * n_q
-        return z # if z.imag > 0 else np.conjugate(z)
-    if w_ab <= 0 and (w_ab + wq) > 0:
-        z = -1j / (w_ab + wq - 1j * d) * (n_q + 1)
-        return z # if z.imag > 0 else np.conjugate(z)
+    if w_ab > 0 and (w_ab - wq) < 0:
+        return -1j / (w_ab - wq - 1j * d) * n_q
+    if w_ab < 0 and (w_ab + wq) > 0:
+        return -1j / (w_ab + wq - 1j * d) * (n_q + 1)
+    return 0.0 + 0.0 * 1j 
+
+@njit(cache=True, fastmath=True)
+def Jhat_m(omega, w_ab, wq, n_q, d):
+    # if np.abs(w_ab) <= s:
+    #     return 0.0 + 0.0 * 1j
+    if w_ab < 0 and (w_ab + wq) > 0:
+        return -1j / (w_ab + wq - 1j * d) * n_q
+    if w_ab > 0 and (w_ab - wq) < 0:
+        return -1j / (w_ab - wq - 1j * d) * (n_q + 1)
     return 0.0 + 0.0 * 1j
 
-@njit(cache=True)
-def Jhat_m(omega, w_ab, wq, n_q, d, s):
-    # if np.abs(w_ab-wq) > 2 * d:
-    #     return 0.0 + 0.0 * 1j
-    if np.abs(w_ab) <= s:
-        return 0.0 + 0.0 * 1j
-    if w_ab <= 0 and (w_ab + wq) < 0:
-        z = -1j / (w_ab + wq - 1j * d) * n_q
-        return z # if z.imag < 0 else np.conjugate(z)
-    if w_ab >= 0 and (w_ab - wq) < 0:
-        z = -1j / (w_ab - wq - 1j * d) * (n_q + 1)
-        return z # if z.imag < 0 else np.conjugate(z)
-    return 0.0 + 0.0 * 1j
-
-@njit(cache=True)
-def Jcorr(omega, w_cd, w_ab, wq, n_q, d, beta, s):
+@njit(cache=True, fastmath=True)
+def Jcorr(omega, w_cd, w_ab, wq, n_q, d, beta):
     u = w_cd + w_ab
-    if np.abs(u) <= s:
-        return 0.0 + 0.0 * 1j
-    if u <= 0: # and (w_ab + wq) >= 0:
-        z = -1j / (u + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, d)
-        return z # if z.imag < 0 else np.conjugate(z)
-    if u > 0: # and (w_ab - wq) > 0:
-        z = -1j / (u - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta, d)
-        return z # if z.imag > 0 else np.conjugate(z)
+    # if np.abs(u) <= s:
+    #     return 0.0 + 0.0 * 1j
+    if u < 0 and (u + wq) > 0:
+        return -1j / (u + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, d)
+    if u > 0 and (u - wq) < 0:
+        return -1j / (u - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta, d)
     return 0.0 + 0.0 * 1j
 
-@njit(cache=True)
-def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0, s):
-    N=w_n.size; N2=N*N; J=wb.size
+@njit(cache=True, parallel=True, fastmath=True)
+def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0):
+    N=w_n.shape[0]; J=wb.size
     coeff = 1 / H_BAR
-    E0 = w_n[0]
     if q_0:
         coeff *= 0.5
-    for j in range(J):
-        Y, wq, n_q = Yb[j], wb[j], nb[j]
+    for j in prange(J):
+        Y, wq, n_q, i = Yb[j], wb[j], nb[j], get_thread_id()
         Yh=np.conjugate(Y.T)
         for a in range(N):
             for b in range(N):
@@ -356,22 +344,22 @@ def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0, s):
                     cd=liou(c,d,N)
                     val=0.0+0.0j
                     for e in range(N):
-                        val+=Jcorr(omega,w_n[e]-w_n[c],w_n[d]-w_n[b],wq,n_q,delta,beta,s)*A[e,c]*(Yh[d,b]*Y[a,e]+Y[d,b]*Yh[a,e])
-                        val-=Jcorr(omega,w_n[a]-w_n[d],w_n[d]-w_n[e],wq,n_q,delta,beta,s)*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                        val+=Jcorr(omega,w_n[e,c],w_n[d,b],wq,n_q,delta,beta)*A[e,c]*(Yh[d,b]*Y[a,e]+Y[d,b]*Yh[a,e])
+                        val-=Jcorr(omega,w_n[a,d],w_n[d,e],wq,n_q,delta,beta)*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
                         if a == c:
                             for f in range(N):
-                                val+=Jcorr(omega,w_n[e]-w_n[f],w_n[d]-w_n[e],wq,n_q,delta,beta,s)*A[e,f]*(Yh[f,b]*Y[d,e]+Y[f,b]*Yh[d,e])
-                        val-=Jcorr(omega,w_n[e]-w_n[b],w_n[d]-w_n[e],wq,n_q,delta,beta,s)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
-                    out[ab,cd]+=val*coeff
+                                val+=Jcorr(omega,w_n[e,f],w_n[d,e],wq,n_q,delta,beta)*A[e,f]*(Yh[f,b]*Y[d,e]+Y[f,b]*Yh[d,e])
+                        val-=Jcorr(omega,w_n[e,b],w_n[d,e],wq,n_q,delta,beta)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
+                    out[ab,cd,i]+=val*coeff
 
-@njit(cache=True)
-def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0, s):
-    N = w_n.size; N2 = N * N; J = wb.size
+@njit(cache=True, parallel=True, fastmath=True)
+def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
+    N = w_n.shape[0]; J = wb.size
     coeff = 1 / H_BAR
     if q_0:
         coeff *= 0.5
-    for j in range(J):
-        Y, wq, n_q = Yb[j], wb[j], nb[j]
+    for j in prange(J):
+        Y, wq, n_q, i = Yb[j], wb[j], nb[j], get_thread_id()
         Yh = np.conjugate(Y.T)
         for a in range(N):
             for b in range(N):
@@ -383,73 +371,58 @@ def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0, s):
                         if d==b:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_p(omega,w_n[e]-w_n[d],wq,n_q,delta,s)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
+                                tmp+=Jhat_p(omega,w_n[e,d],wq,n_q,delta)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
                             val+=tmp
-                        val-=Jhat_p(omega,w_n[a]-w_n[d],wq,n_q,delta,s)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat_p(omega,w_n[a,d],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         if a==c:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_m(omega,w_n[c]-w_n[e],wq,n_q,delta,s)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
+                                tmp+=Jhat_m(omega,w_n[c,e],wq,n_q,delta)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
                             val+=tmp
-                        val-=Jhat_m(omega,w_n[c]-w_n[b],wq,n_q,delta,s)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
-                        out[ab,cd]+=val * coeff
+                        val-=Jhat_m(omega,w_n[c,b],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        out[ab,cd,i]+=val * coeff
 
-
-@njit(cache=True)
-def add_rho0_bundle(out, A, Yb, wb, nb, beta, w_n, q_0, fwhm, rho, s):
-    N=w_n.size; J=wb.size
+@njit(cache=True, parallel=True, fastmath=True)
+def add_rho0_bundle(out, trace, A, Yb, wb, nb, beta, w_n, q_0, fwhm, rho):
+    N=w_n.shape[0]; J=wb.size
     coeff = H_BAR * H_BAR / (2.0)
-    trace = 0.0 + 1j * 0.0
     if q_0:
         coeff *= 0.5
-    for j in range(J):
-        Y, wq, n_q = Yb[j], wb[j], nb[j]
+    for j in prange(J):
+        Y, wq, n_q, i = Yb[j], wb[j], nb[j], get_thread_id()
         Yh=np.conjugate(Y.T)
         for a in range(N):
             for b in range(N):
                 ab=liou(a,b,N)
                 for c in range(N):
                     d = c
-                    # cd=liou(c,d,N)
                     corr=0.0+0.0j
                     for e in range(N):
-                        w_de=w_n[d]-w_n[e]
-                        w_eb=w_n[e]-w_n[b]
-                        # if np.abs(w_de) or np.abs(w_eb) <= s:
-                        #     return 0.0 + 1j * 0.0
+                        w_de=w_n[d,e]
+                        w_eb=w_n[e,b]
                         if b == a:
-                            trace+=(n_q*Iint(w_de+wq,w_eb-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,+wq,beta,fwhm))*rho[c,d]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                            trace[i]+=(n_q*Iint(w_de+wq,w_eb-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,+wq,beta,fwhm))*rho[c,d]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
                         corr+=(n_q*Iint(w_de+wq,w_eb-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta,fwhm))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])*rho[c,d]
                         for f in range(N):
-                            w_ef=w_n[e]-w_n[f]
-                            # if np.abs(w_ef) <= s:
-                            #     return 0.0 + 1j * 0.0
+                            w_ef=w_n[e,f]
                             corr-=(n_q*Iint(w_de+wq,w_ef-wq,beta,fwhm)+(n_q+1.0)*Iint(w_de-wq,w_ef+wq,beta,fwhm))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]*rho[c,d]
-                    out[ab]+=coeff*corr
-    return trace
+                    out[ab,i]+=coeff*corr
 
-@njit(cache=True, inline="always")
-def thermal_cutoff(E0: float, E: float, beta: float, n_sigma: float = 8.0) -> bool:
-    return (E - E0) * beta <= n_sigma
-
-@njit(cache=True)
+@njit(cache=True, fastmath=True)
 def zeta(x: float, beta: float, fwhm: float) -> float:
-    eps = 1e-30
-    # if abs(x) > 20:
-    #     return 0.0 + 1j * 0.0
+    eps = 1e-60
     if abs(x) < eps:
         return beta
     u = beta * x
-    # if abs(u) > 20:
-    #     return 0.0 + 1j * 0.0
+    if abs(u) > 600:
+        return 0.0 + 1j * 0.0
     return np.expm1(u) / (x)
 
-@njit(cache=True)
+@njit(cache=True, fastmath=True)
 def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
-    eps = 1e-30
-    # if abs((w1+w2)*beta) > 20 or abs(w1*beta) > 20 or abs(w1*beta) > 20:
-    #     return 0.0 + 1j * 0.0
-    
+    eps = 1e-60
+    if abs((w1+w2)*beta) > 600 or abs(w1*beta) > 600 or abs(w1*beta) > 600:
+        return 0.0 + 1j * 0.0
     if abs(w1) < eps and abs(w2) < eps:
         return 0.5 * beta * beta
     if abs(w2) < eps:
@@ -462,45 +435,20 @@ def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
     if abs(w1 + w2) < eps:
         u = w1 * beta
         return -(beta - np.expm1(u) / (1 * w1)) / (w1)
-
     u1  = w1 * beta
     u12 = (w1 + w2) * beta
     term1 = np.expm1(u12) / (w2 * (w1 + w2))
     term2 = np.expm1(u1)  / (w1 * w2)
     return np.abs(term1 - term2)
 
-@njit(cache=True, inline="always")
+@njit(cache=True, inline="always", fastmath=True)
 def bose_occ(freq: float, beta: float) -> float:
     u = beta * freq
     return 1.0/(np.exp(u) - 1.0)
 
-@njit(cache=True, inline="always")
+@njit(cache=True, inline="always", fastmath=True)
 def liou(a, b, N):
     return a * N + b
-
-def build_KR(Ener: np.ndarray, temp: float, lw: float,
-              gen: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]], omega) -> np.ndarray:
-    N = Ener.size
-    R = np.zeros((N*N, N*N), np.complex128)
-    beta = 1.0 / (KB*temp)
-    s = np.clip(np.abs(Ener[0]-Ener[1]), 1e-5, 5)
-    s = s if s > 1e-4 else 0.0
-    for Y, w, q_0 in gen():
-        add_KR_bundle(R, omega, Y, w, bose_occ(w, beta), lw, Ener, q_0, s)
-
-    return R
-
-def build_M_PSI(Ener: np.ndarray, temp: float, lw: float,
-              gen: Callable[[], Iterable[Tuple[np.ndarray, np.ndarray]]], A) -> np.ndarray:
-    N = Ener.size
-    R = np.zeros((N*N, N*N), np.complex128)
-    beta = 1.0 / (KB*temp)
-    s = np.clip(np.abs(Ener[0]-Ener[1]), 1e-4, 5)
-    s = s if s > 1e-4 else 0.0
-    for Y, w, q_0 in gen():
-        add_PSI_bundle(R, 0.0, A, Y, w, bose_occ(w, beta), lw, beta, Ener, q_0, s)
-
-    return R
 
 def half_bz_grid_aniso(
     b_len: Sequence[float],
@@ -551,7 +499,7 @@ def half_bz_grid_aniso(
     ax = []
     for n in n_axis:
         if endpoint:                         # closed grid: ±0.5 both included
-            ax.append(np.linspace(-0.5, 0.5, n, endpoint=True, dtype=float))
+            ax.append(np.linspace(-0.005, 0.005, n, endpoint=True, dtype=float))
         else:                                # half-open: +0.5 excluded, 0 centred
             k  = n // 2                      # n = 2·k + 1  (odd!)
             ax.append(np.arange(-k, k + 1, dtype=float) / n)  # step = 1/n
@@ -652,12 +600,13 @@ def crystal_field_derivatives(dof_array, group, magnetic_field_vector, displacem
 
     return H_grad * H_CM_1
 
-@njit(cache=True)
+@njit(cache=True, fastmath=True)
 def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, number_of_kpoints_inv_sqrt, freq):
     for i in range(dof_array.shape[0]):
         dof = dof_array[i]
         for j in range(normal_modes.shape[1]):
-            Y_q[j] += (1 / np.sqrt(freq[j]/H_CM_1)) * H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * 1/np.sqrt(M_AU) * number_of_kpoints_inv_sqrt * np.exp(-2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
+            if freq[j] >= 0.0001:
+                Y_q[j] += (1 / np.sqrt(freq[j]/H_CM_1)) * H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * 1/np.sqrt(M_AU) * number_of_kpoints_inv_sqrt * np.exp(-2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
 
 
 def dofs_with_complete_displacements(h5_group: h5py.Group, displacement_number: int):
@@ -701,6 +650,7 @@ def susceptibility(
     states_number: int = 0,
     include_init_corr: bool = False,
     on_step: Callable[[int, float, complex], None] | None = None,
+    threads: int = 64,
 ):
 
     beta = 1.0 / (KB * T)
@@ -717,7 +667,7 @@ def susceptibility(
 
     for i in range(E.shape[0]):
         for j in range(i+1, E.shape[0]):
-            if np.isclose(E[i], E[j], atol=5e-4):
+            if np.isclose(E[i], E[j], atol=5e-5):
                 E[i] = (E[i] + E[j]) * 0.5
                 E[j] = E[i]
 
@@ -747,22 +697,31 @@ def susceptibility(
                     if a == c:
                         M_L[liou(a,b,N), liou(c,d,N)] -= H_s[d,b]
 
-    M_rho0 = np.zeros((N2, N2), dtype=np.complex128)
-    M_KR = np.zeros((N2, N2), dtype=np.complex128)
-    M_PSI = np.zeros((N2, N2), dtype=np.complex128)
-    rho_vec_init = np.zeros_like(rho_vec)
+    M_rho0 = np.zeros((N2, N2, threads), dtype=np.complex128)
+    M_KR = np.zeros((N2, N2, threads), dtype=np.complex128)
+    M_PSI = np.zeros((N2, N2, threads), dtype=np.complex128)
+    rho_vec_init = np.zeros((N2, threads), dtype=np.complex128)
+    M_rho0_trace = np.zeros((threads), dtype=np.complex128)
 
-    M_rho0_trace = 1.0 + 1j * 0.0
-    s = np.clip(np.abs(E[0]-E[1]), 1e-4, 5)
-    s = s if s > 1e-4 else 0.0
+    # s = np.clip(np.abs(E[0]-E[1]), 1e-4, 5)
+    # s = s if s > 1e-4 else 0.0
 
-    for Yb, wb, q_0 in tqdm.tqdm(get_Y_q_and_freq()):
-        bose = bose_occ(wb, beta)
-        add_KR_bundle(M_KR, 0.0, Yb, wb, bose, gamma_fwhm, E, q_0, s)
-        add_PSI_bundle(M_PSI, 0.0, A, Yb, wb, bose, gamma_fwhm, beta, E, q_0, s)
-        M_rho0_trace += add_rho0_bundle(rho_vec_init, A_e, Yb, wb, bose, beta, E, q_0, gamma_fwhm, rho_mat, s)
+    w = E[:,np.newaxis] - E[np.newaxis,:]
 
-        # print(M_rho0_trace, np.max(rho_vec_init), np.min(rho_vec_init))
+    set_num_threads(threads)
+
+    with threadpool_limits(threads):
+        for Yb, wb, q_0 in tqdm.tqdm(get_Y_q_and_freq()):
+            bose = bose_occ(wb, beta)
+            add_KR_bundle(M_KR, 0.0, Yb, wb, bose, gamma_fwhm, w, q_0)
+            add_PSI_bundle(M_PSI, 0.0, A, Yb, wb, bose, gamma_fwhm, beta, w, q_0)
+            add_rho0_bundle(rho_vec_init, M_rho0_trace, A_e, Yb, wb, bose, beta, w, q_0, gamma_fwhm, rho_mat)
+
+    M_rho0 = np.sum(M_rho0, axis=2)
+    M_KR = np.sum(M_KR, axis=2)
+    M_PSI = np.sum(M_PSI, axis=2)
+    rho_vec_init = np.sum(rho_vec_init, axis=1)
+    M_rho0_trace = np.sum(M_rho0_trace, axis=0) + 1.0
 
     for a in range(N):
         for b in range(N):
@@ -773,21 +732,14 @@ def susceptibility(
                     if a == c:
                         M_rho0[liou(a,b,N), liou(c,d,N)] -= A_e[d,b]
     
-    # rho_vec_init /= M_rho0_trace.real
+
 
     eye = np.eye(N2, dtype=np.complex128)
     chi = np.empty_like(omega_grid, dtype=np.complex128)
 
-    # Neglect omega for now out of the loop
-    
-    # M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq, 0.0)
-    # M_PSI = build_M_PSI(E, T, gamma_fwhm, get_Y_q_and_freq, A_e)
-
 
     # frequency loop ---------------------------------------------------------
     for k, omega in enumerate(omega_grid):
-
-        # M_KR  = build_KR(E, T, gamma_fwhm, get_Y_q_and_freq, omega*H_BAR)
 
         Xi       = 1j / H_BAR * M_L + M_KR - 1j * omega * eye
         num      = 1j * H_BAR * M_PSI @ rho_vec + (M_rho0 @ rho_vec + rho_vec_init) / M_rho0_trace.real
@@ -796,9 +748,9 @@ def susceptibility(
             print(np.max(Xi), np.max(num))
             print(np.min(Xi), np.min(num))
         
-        Xi_inv = np.linalg.inv(Xi)
-        rho_hat = (Xi_inv @ num).reshape((N,N))
-        # rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
+        # Xi_inv = np.linalg.inv(Xi)
+        # rho_hat = (Xi_inv @ num).reshape((N,N))
+        rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
         chi[k]   = 1j / H_BAR * np.trace(B_e @ rho_hat)
 
         if on_step is not None:
@@ -809,22 +761,22 @@ def susceptibility(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [9]
-    gamma_fwhm_list = [18]          # FWHM in cm-1
-    T_list          = [2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3]#[1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0]
-    B_list          = [0]            # Tesla 0.001,0.002,0.003,0.004,
-    states_number   = 6                   # electronic sub-space size
+    npoints_list    = [33]
+    gamma_fwhm_list = [20]          # FWHM in cm-1
+    T_list          = [2.0,2.1,2.2,2.3,2.5,2.7,3,3.5,4,5,6,8,10]#[1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0]
+    B_list          = [0.001]            # Tesla 0.001,0.002,0.003,0.004,
+    states_number   = 8                   # electronic sub-space size
     modes_mult      = 1.1
     mode_threshold  = 1e-30
-    modes_low       = 0.5    #cm-1
-    modes_high      = 300 #cm-1
+    modes_low       = 0.0001    #cm-1
+    modes_high      = 250 #cm-1
     degeneracy_tolerance = 1e-9
     secular_tolerance = 1e-9
     correlation = True
     # ────────────────────────────────────────────────────────────────────────
 
     # one-shot data that never changes over the sweep -----------------------
-    lanthanide          = "Yb"
+    lanthanide          = "Dy"
     orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
     dirpath             = f"/home/mikolaj/Data/Displacements_small_0001/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
     slt_filepath        = "./seminarium/import.slt"
@@ -832,7 +784,7 @@ if __name__ == "__main__":
     displacement_number = 1
     step                = 0.0001
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(0, 4, 200)
+    omega_au            = np.logspace(0, 12, 350)
     chi_all_T = np.zeros((len(T_list), omega_au.shape[0]), dtype=np.complex128)
 
     # refresh the .slt file
@@ -929,12 +881,12 @@ if __name__ == "__main__":
                         q_0 = np.allclose(q, np.asarray([0.0, 0.0, 0.0]), atol=0.000001)
                         hess_obj.kpoint = q
                         freq, modes = hess_obj.frequencies_eigenvectors
+                        freq *= AU_BOHR_CM_1
 
                         if q_0:
                             freq, modes = freq[3:], modes[3:,3:]
 
                         # --- keep only the requested number of modes --------------------
-                        freq  *= AU_BOHR_CM_1
 
                         mask = (freq >= modes_low) & (freq <= modes_high)
                         idx  = np.where(mask)[0]
@@ -944,7 +896,7 @@ if __name__ == "__main__":
                         get_Y_q(Y_q, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq)
 
 
-                        yield np.ascontiguousarray(Y_q[idx], dtype=np.complex128), np.ascontiguousarray(freq[idx], dtype=np.float64), q_0
+                        yield  np.ascontiguousarray(Y_q[idx], dtype=np.complex128), np.ascontiguousarray(freq[idx], dtype=np.float64), q_0
 
 
                 for gamma_fwhm, T in itertools.product(

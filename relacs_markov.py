@@ -726,8 +726,8 @@ def susceptibility(
         for Yb, wb, q_0 in tqdm.tqdm(get_Y_q_and_freq()):
             bose = bose_occ(wb, beta)
             add_KR_bundle(M_KR, 0.0, Yb, wb, bose, gamma_fwhm, w_n, q_0)
-            # add_PSI_bundle(M_PSI, 0.0, A, Yb, wb, bose, gamma_fwhm, beta, w_n, q_0)
-            # add_rho0_bundle(rho_vec_init, M_rho0_trace, A_e, Yb, wb, bose, beta, w_n, q_0, gamma_fwhm, rho_mat)
+            add_PSI_bundle(M_PSI, 0.0, A, Yb, wb, bose, gamma_fwhm, beta, w_n, q_0)
+            add_rho0_bundle(rho_vec_init, M_rho0_trace, A_e, Yb, wb, bose, beta, w_n, q_0, gamma_fwhm, rho_mat)
 
     M_rho0 = np.sum(M_rho0, axis=2)
     M_KR = np.sum(M_KR, axis=2)
@@ -775,8 +775,8 @@ if __name__ == "__main__":
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [9]
     gamma_fwhm_list = [10]          # FWHM in cm-1
-    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,5,6,7] #,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.5,4,5,6,7]
-    B_list          = [0.0001]          # Tesla 0.001,0.002,0.003,0.004,
+    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4,4.2,4.5,5,6,7] #,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.5,4,5,6,7]
+    B_list          = [0.00008]          # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_low       = 0.01    #cm-1
     modes_high      = 150 #cm-1
@@ -832,8 +832,8 @@ if __name__ == "__main__":
         def _update(k, omega_si, chi_k):
             if np.abs(chi_k.imag) < np.inf:
                 xs.append(omega_si)
-                ys_re.append(chi_k.real)
-                ys_im.append(chi_k.imag)
+                ys_re.append(np.abs(chi_k.real))
+                ys_im.append(np.abs(chi_k.imag))
 
                 line_re.set_data(xs, ys_re)
                 line_im.set_data(xs, ys_im)

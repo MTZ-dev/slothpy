@@ -106,13 +106,13 @@ class TauGrid:
     tau_total: np.ma.MaskedArray
     mechanisms: Dict[str, np.ma.MaskedArray]
 
-    def slice_T(self, H_value: float, /, *, atol: float = 1e-3):
+    def slice_T(self, H_value: float, /, *, atol: float = 1e-6):
         idx = np.where(np.abs(self.H - H_value) <= atol)[0]
         if idx.size == 0:
             raise ValueError("field not found")
         return self.T, self.tau_exp[:, idx[0]], self.tau_total[:, idx[0]]
 
-    def slice_H(self, T_value: float, /, *, atol: float = 1e-3):
+    def slice_H(self, T_value: float, /, *, atol: float = 1e-6):
         idx = np.where(np.abs(self.T - T_value) <= atol)[0]
         if idx.size == 0:
             raise ValueError("temperature not found")
@@ -290,7 +290,7 @@ def plot_chi_prime(
     if logx:
         ax.set_xscale("log")
     ax.set_xlabel(r"$\nu$ / $\mathrm{Hz}$")
-    ax.set_ylabel(r"$\chi'$" + (" / $\mathrm{a.u.}$" if normalize else r" / $\mathrm{cm^3 mol^{-1}}$"))
+    ax.set_ylabel(r"$\chi'$" + (r" / $\mathrm{a.u.}$" if normalize else r" / $\mathrm{cm^3 mol^{-1}}$"))
     ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
     ax.grid(True, which="both", ls=":", lw=0.4)
@@ -308,10 +308,10 @@ def plot_chi_prime(
         Hs = {d.H for d in datasets}
         if len(Ts) > 1:
             tick_labels = [f"{min(Ts):g}", f"{max(Ts):g}"]
-            cbar.set_label(r"$T$ / $\mathrm{K}$")
+            cbar.set_label(r"$T$ / $\mathrm{K}$", labelpad=-8)
         else:
             tick_labels = [f"{min(Hs):g}", f"{max(Hs):g}"]
-            cbar.set_label(r"$H$ / $\mathrm{Oe}$")
+            cbar.set_label(r"$H$ / $\mathrm{Oe}$", labelpad=-8)
 
         cbar.set_ticks([0, len(datasets) - 1])
         cbar.set_ticklabels(tick_labels)
@@ -342,7 +342,7 @@ def plot_chi_bis(
     if kwargs.get("logx", True):
         ax.set_xscale("log")
     ax.set_xlabel(r"$\nu$ / $\mathrm{Hz}$")
-    ax.set_ylabel(r"$\chi''$" + (" / $\mathrm{a.u.}$" if normalize else r" / $\mathrm{cm^3 mol^{-1}$}"))
+    ax.set_ylabel(r"$\chi''$" + (r" / $\mathrm{a.u.}$" if normalize else r" / $\mathrm{cm^3 mol^{-1}}$"))
     ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
     ax.grid(True, which="both", ls=":", lw=0.4)
@@ -360,10 +360,10 @@ def plot_chi_bis(
         Hs = {d.H for d in datasets}
         if len(Ts) > 1:
             tick_labels = [f"{min(Ts):g}", f"{max(Ts):g}"]
-            cbar.set_label(r"$T$ / $\mathrm{K}$")
+            cbar.set_label(r"$T$ / $\mathrm{K}$", labelpad=-8)
         else:
             tick_labels = [f"{min(Hs):g}", f"{max(Hs):g}"]
-            cbar.set_label(r"$H$ / $\mathrm{Oe}$")
+            cbar.set_label(r"$H$ / $\mathrm{Oe}$", labelpad=-8)
 
         cbar.set_ticks([0, len(datasets) - 1])
         cbar.set_ticklabels(tick_labels)
@@ -389,8 +389,8 @@ def plot_cole_cole(
         if ds.chi_prime_model is not None:
             ax.plot(ds.chi_prime_model / max_norm, ds.chi_bis_model / max_norm, color=clr, lw=0.9)
 
-    ax.set_xlabel(r"$\chi'$" + (" / $\mathrm{a.u.}$" if normalize else r" / $\mathrm{cm^3 mol^{-1}}$"))
-    ax.set_ylabel(r"$\chi''$" + (" / $\mathrm{a.u.}$" if normalize else r" / $\mathrm{cm^3 mol^{-1}}$"))
+    ax.set_xlabel(r"$\chi'$" + (r" / $\mathrm{a.u.}$" if normalize else r" / $\mathrm{cm^3 mol^{-1}}$"))
+    ax.set_ylabel(r"$\chi''$" + (r" / $\mathrm{a.u.}$" if normalize else r" / $\mathrm{cm^3 mol^{-1}}$"))
     ax.grid(True, which="both", ls=":", lw=0.4)
 
 
@@ -407,10 +407,10 @@ def plot_cole_cole(
         Hs = {d.H for d in datasets}
         if len(Ts) > 1:
             tick_labels = [f"{min(Ts):g}", f"{max(Ts):g}"]
-            cbar.set_label(r"$T$ / $\mathrm{K}$")
+            cbar.set_label(r"$T$ / $\mathrm{K}$", labelpad=-8)
         else:
             tick_labels = [f"{min(Hs):g}", f"{max(Hs):g}"]
-            cbar.set_label(r"$H$ / $\mathrm{Oe}$")
+            cbar.set_label(r"$H$ / $\mathrm{Oe}$", labelpad=-8)
 
         cbar.set_ticks([0, len(datasets) - 1])
         cbar.set_ticklabels(tick_labels)
@@ -422,28 +422,34 @@ def plot_tau(tau_exp, tau_mod, *, T=None, H=None, components=None, ax=None, mark
 
     ax = _get_ax(ax)
 
-    if T is not None:    
+    τexp: np.ma.MaskedArray = np.ma.asarray(tau_exp)
+
+    if T is not None:
+        values = np.asarray(T)    
         x = 1 / np.asarray(T)
     elif H is not None:
+        values = np.asarray(H)
         x = np.asarray(H)
     else:
         raise ValueError("Temperature or field value must be provided.")
+    
+    # keep only where τexp is unmasked
+    good   = ~τexp.mask
+    x_good = x[good]
+    τ_good = τexp.data[good]
+    v_good = values[good]
 
-    order = np.argsort(x)
-    values_sorted = x[order]
-    tau_exp_sorted = np.asarray(tau_exp)[order]
+    # sort for a nice gradient (optional)
+    order  = np.argsort(v_good)
+    x_good, τ_good, v_good = x_good[order], τ_good[order], v_good[order]
 
-    colors = _build_colors(len(values_sorted), cmap=cmap, reverse=reverse_cmap)
+    colours = _build_colors(len(v_good), cmap=cmap, reverse=reverse_cmap)
 
-    # experimental dots, colour-coded
-    for v, y, clr in zip(values_sorted, tau_exp_sorted, colors):
-        ax.plot(1 / v if T is not None else v, np.log10(y), ls='', marker=marker, ms=3, color=clr)
-        
-    # experimental dots
-    ax.plot(x, np.log10(tau_exp), ls='', marker=marker, ms=3, color="k", label="exp")
-
+    for v, y, clr in zip(x_good, τ_good, colours):
+        ax.plot(v, np.log10(y), ls='', marker=marker, ms=3, color=clr)
+    
     # model surface line
-    ax.plot(x, np.log10(tau_mod), lw=0.9, color="k", label="model")
+    ax.plot(x, np.log10(tau_mod), lw=0.9, color="purple", label="model")
 
     if components:
         for name, arr in components.items():
@@ -455,7 +461,7 @@ def plot_tau(tau_exp, tau_mod, *, T=None, H=None, components=None, ax=None, mark
                     arr = arr[:, 0]
                 elif H is not None:
                     arr = arr[0, :]
-            ax.plot(x, np.log10(arr), lw=0.9, label=name)
+            ax.plot(x, np.log10(arr), lw=0.9, label=name, color="purple")
 
     if T is not None:
         ax.set_xlabel(r"$T^{-1}$ / $\mathrm{K^{-1}}$")
@@ -464,6 +470,16 @@ def plot_tau(tau_exp, tau_mod, *, T=None, H=None, components=None, ax=None, mark
     ax.set_ylabel(r"$\log_{10}\,\tau$ / $\mathrm{s}$")
     ax.grid(True, which="both", ls=":", lw=0.4)
     ax.legend(frameon=False, fontsize=7)
+
+    if legend_style == "colorbar" and len(v_good) > 1:
+        sm = mpl.cm.ScalarMappable(
+            cmap=mpl.colors.ListedColormap(colours),
+            norm=mpl.colors.Normalize(vmin=v_good.min(), vmax=v_good.max()))
+        sm.set_array([])
+        cbar = plt.colorbar(sm, ax=ax, pad=0.02)
+        cbar.set_label(r"$T$ / $\mathrm{K}$" if T is not None else r"$H$ / $\mathrm{Oe}", labelpad=-8)
+        cbar.set_ticks([v_good.min(), v_good.max()])
+
     return ax
 
 
@@ -479,8 +495,8 @@ def plot_composite_panel(
     normalize_chi: bool = False,
     suptitle: Optional[str] = None,
     grid: Tuple[int, int] = (2, 2),
-    cluster_tol_H: float = 0.9,
-    cluster_tol_T: float = 0.09,
+    cluster_tol_H: float = 0.5,
+    cluster_tol_T: float = 0.05,
 ):
     """Create the standard 4‑panel figure (χ″, χ′, Cole‑Cole, ln τ).
 
@@ -507,10 +523,10 @@ def plot_composite_panel(
 
     if field_sel is not None:
         T, tau_exp, tau_mod = tau_grid.slice_T(field_sel)
-        plot_tau(tau_exp, tau_mod, T=T, components=mechanisms, ax=ax_tau)
+        plot_tau(tau_exp, tau_mod, T=T, components=mechanisms, ax=ax_tau, cmap=cmap, reverse_cmap=reverse_cmap)
     elif temp_sel is not None:
         H, tau_exp, tau_mod = tau_grid.slice_H(temp_sel)
-        plot_tau(tau_exp, tau_mod, H=H, components=mechanisms, ax=ax_tau)
+        plot_tau(tau_exp, tau_mod, H=H, components=mechanisms, ax=ax_tau, cmap=cmap, reverse_cmap=reverse_cmap)
     else:
         ax_tau.set_visible(False)
 
@@ -550,9 +566,9 @@ def plot_composite_panel(
 
     fig_tau, ax_tau_s = plt.subplots(figsize=single_size, constrained_layout=True)
     if field_sel is not None:
-        plot_tau(tau_exp, tau_mod, T=T, components=mechanisms, ax=ax_tau_s)
+        plot_tau(tau_exp, tau_mod, T=T, components=mechanisms, ax=ax_tau_s, cmap=cmap, reverse_cmap=reverse_cmap)
     else:
-        plot_tau(tau_exp, tau_mod, H=H, components=mechanisms, ax=ax_tau_s)
+        plot_tau(tau_exp, tau_mod, H=H, components=mechanisms, ax=ax_tau_s, cmap=cmap, reverse_cmap=reverse_cmap)
     if suptitle:
         fig_tau.suptitle(suptitle, fontsize=10)
 

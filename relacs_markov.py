@@ -19,7 +19,7 @@ from numba import njit, prange, set_num_threads, get_num_threads, get_thread_id
 from threadpoolctl import threadpool_limits
 
 import slothpy as slt
-from slothpy._general_utilities._constants import A_BOHR, H_CM_1, B_AU_T, AU_BOHR_CM_1, MU_B_AU_T, MU_B_CM_3
+from slothpy._general_utilities._constants import A_BOHR, H_CM_1, B_AU_T, AU_BOHR_CM_1, MU_B_AU_T, MU_B_CM_3, MU_B_AU
 from slothpy._general_utilities._io import _hamiltonian_derivatives_from_dir_to_slt
 from slothpy._general_utilities._lapack import _zdot3d
 from slothpy._general_utilities._math_expresions import _central_finite_difference_stencil
@@ -324,7 +324,7 @@ def Jcorr(omega, w_cd, w_ab, wq, n_q, d, beta):
 @njit(cache=True, parallel=True, fastmath=True)
 def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0):
     N=w_n.shape[0]; J=wb.size
-    coeff = 1
+    coeff = H_BAR
     if q_0:
         coeff *= 0.5
     for j in prange(J):
@@ -349,7 +349,7 @@ def add_PSI_bundle(out, omega, A, Yb, wb, nb, delta, beta, w_n, q_0):
 @njit(cache=True, parallel=True, fastmath=True)
 def add_KR_bundle(out, omega, Yb, wb, nb, delta, w_n, q_0):
     N = w_n.shape[0]; J = wb.size
-    coeff = 1
+    coeff = H_BAR
     if q_0:
         coeff *= 0.5
     for j in prange(J):
@@ -404,17 +404,17 @@ def add_rho0_bundle(out, trace, A, Yb, wb, nb, beta, w_n, q_0, fwhm, rho):
 
 @njit(cache=True, fastmath=True)
 def zeta(x: float, beta: float, fwhm: float) -> float:
-    eps = 1e-60
+    eps = 1e-30
     if abs(x) < eps:
         return beta
     u = beta * x
-    if abs(u) > 600:
+    if abs(u) > 40:
         return 0.0 + 1j * 0.0
     return np.expm1(u) / (x)
 
 @njit(cache=True, fastmath=True)
 def Iint(w1: float, w2: float, beta: float, fwhm: float) -> float:
-    eps = 1e-60
+    eps = 1e-30
     if abs((w1+w2)*beta) > 600 or abs(w1*beta) > 600 or abs(w1*beta) > 600:
         return 0.0 + 1j * 0.0
     if abs(w1) < eps and abs(w2) < eps:
@@ -726,8 +726,8 @@ def susceptibility(
         for Yb, wb, q_0 in tqdm.tqdm(get_Y_q_and_freq()):
             bose = bose_occ(wb, beta)
             add_KR_bundle(M_KR, 0.0, Yb, wb, bose, gamma_fwhm, w_n, q_0)
-            add_PSI_bundle(M_PSI, 0.0, A, Yb, wb, bose, gamma_fwhm, beta, w_n, q_0)
-            add_rho0_bundle(rho_vec_init, M_rho0_trace, A_e, Yb, wb, bose, beta, w_n, q_0, gamma_fwhm, rho_mat)
+            # add_PSI_bundle(M_PSI, 0.0, A, Yb, wb, bose, gamma_fwhm, beta, w_n, q_0)
+            # add_rho0_bundle(rho_vec_init, M_rho0_trace, A_e, Yb, wb, bose, beta, w_n, q_0, gamma_fwhm, rho_mat)
 
     M_rho0 = np.sum(M_rho0, axis=2)
     M_KR = np.sum(M_KR, axis=2)
@@ -763,7 +763,7 @@ def susceptibility(
         # Xi_inv = np.linalg.inv(Xi)
         # rho_hat = (Xi_inv @ num).reshape((N,N))
         rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
-        chi[k]   = 1j / H_BAR * np.trace(B_e @ rho_hat)
+        chi[k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / H_CM_1 / MU_B_AU * MU_B_CM_3
 
         if on_step is not None:
             on_step(k, omega*1e12, chi[k])  # ω back in SI
@@ -773,20 +773,20 @@ def susceptibility(
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [9]
+    npoints_list    = [11]
     gamma_fwhm_list = [10]          # FWHM in cm-1
-    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4,4.2,4.5,5,6,7] #,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.5,4,5,6,7]
-    B_list          = [0.00008]          # Tesla 0.001,0.002,0.003,0.004,
+    T_list          = [1.9, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3, 3.2, 3.4, 4, 5] #,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.5,4,5,6,7]
+    B_list          = [0.0]          # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_low       = 0.01    #cm-1
-    modes_high      = 150 #cm-1
+    modes_high      = 250 #cm-1
     q_ranges        = [0.5]
     degeneracy_tolerance = 1e-5
     correlation = True
     # ────────────────────────────────────────────────────────────────────────
 
     # one-shot data that never changes over the sweep -----------------------
-    lanthanide          = "Dy"
+    lanthanide          = "Yb"
     orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
     dirpath             = f"/home/mikolaj/Data/Displacements_small_0001/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
     slt_filepath        = "./seminarium/import.slt"
@@ -794,7 +794,7 @@ if __name__ == "__main__":
     displacement_number = 1
     step                = 0.0001
     omega_SI            = np.logspace(0.0001, 6, 500)
-    omega_au            = np.logspace(0, 10, 100)
+    omega_au            = np.logspace(-2, 10, 100)
     chi_all_T = np.zeros((len(T_list), omega_au.shape[0]), dtype=np.complex128)
 
     # refresh the .slt file

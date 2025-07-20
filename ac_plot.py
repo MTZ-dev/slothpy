@@ -188,6 +188,7 @@ def read_ac_csv(path: str | Path) -> List[ACDataset]:
 # ---------------------------------------------------------------------
 
 _BASE_MECHS = ["Orbach", "Raman", "Raman_2", "QTM", "Direct", "V_d"]
+_MECHS_COLOR = {"Orbach": "darkgray", "Raman": "darkblue", "Raman_2": "darkcyan", "QTM": "darksalmon", "Direct": "b", "V_d": "b"}
 
 
 def read_tau_csv(path: str | Path, *, mechanisms: Sequence[str] | None = None) -> TauGrid:
@@ -418,7 +419,7 @@ def plot_cole_cole(
     return ax
 
 
-def plot_tau(tau_exp, tau_mod, *, T=None, H=None, components=None, ax=None, marker="o", cmap: str = "turbo", reverse_cmap: bool = False, legend_style: str = "colorbar"):
+def plot_tau(tau_exp, tau_mod, *, T=None, H=None, components=None, ax=None, marker="o", cmap: str = "turbo", reverse_cmap: bool = False, legend_style: str = "colorbar", model: bool = True):
 
     ax = _get_ax(ax)
 
@@ -448,8 +449,9 @@ def plot_tau(tau_exp, tau_mod, *, T=None, H=None, components=None, ax=None, mark
     for v, y, clr in zip(x_good, τ_good, colours):
         ax.plot(v, np.log10(y), ls='', marker=marker, ms=3, color=clr)
     
-    # model surface line
-    ax.plot(x, np.log10(tau_mod), lw=0.9, color="purple", label="model")
+    if model:
+        # model surface line
+        ax.plot(x, np.log10(tau_mod), lw=0.9, color="purple", label="model")
 
     if components:
         for name, arr in components.items():
@@ -461,7 +463,7 @@ def plot_tau(tau_exp, tau_mod, *, T=None, H=None, components=None, ax=None, mark
                     arr = arr[:, 0]
                 elif H is not None:
                     arr = arr[0, :]
-            ax.plot(x, np.log10(arr), lw=0.9, label=name, color="purple")
+            ax.plot(x, np.log10(arr), lw=0.9, label=name, color=_MECHS_COLOR[name])
 
     if T is not None:
         ax.set_xlabel(r"$T^{-1}$ / $\mathrm{K^{-1}}$")
@@ -497,6 +499,7 @@ def plot_composite_panel(
     grid: Tuple[int, int] = (2, 2),
     cluster_tol_H: float = 0.5,
     cluster_tol_T: float = 0.05,
+    model: bool = True,
 ):
     """Create the standard 4‑panel figure (χ″, χ′, Cole‑Cole, ln τ).
 
@@ -523,10 +526,10 @@ def plot_composite_panel(
 
     if field_sel is not None:
         T, tau_exp, tau_mod = tau_grid.slice_T(field_sel)
-        plot_tau(tau_exp, tau_mod, T=T, components=mechanisms, ax=ax_tau, cmap=cmap, reverse_cmap=reverse_cmap)
+        plot_tau(tau_exp, tau_mod, T=T, components=mechanisms, ax=ax_tau, cmap=cmap, reverse_cmap=reverse_cmap, model=model)
     elif temp_sel is not None:
         H, tau_exp, tau_mod = tau_grid.slice_H(temp_sel)
-        plot_tau(tau_exp, tau_mod, H=H, components=mechanisms, ax=ax_tau, cmap=cmap, reverse_cmap=reverse_cmap)
+        plot_tau(tau_exp, tau_mod, H=H, components=mechanisms, ax=ax_tau, cmap=cmap, reverse_cmap=reverse_cmap, model=model)
     else:
         ax_tau.set_visible(False)
 
@@ -566,9 +569,9 @@ def plot_composite_panel(
 
     fig_tau, ax_tau_s = plt.subplots(figsize=single_size, constrained_layout=True)
     if field_sel is not None:
-        plot_tau(tau_exp, tau_mod, T=T, components=mechanisms, ax=ax_tau_s, cmap=cmap, reverse_cmap=reverse_cmap)
+        plot_tau(tau_exp, tau_mod, T=T, components=mechanisms, ax=ax_tau_s, cmap=cmap, reverse_cmap=reverse_cmap, model=model)
     else:
-        plot_tau(tau_exp, tau_mod, H=H, components=mechanisms, ax=ax_tau_s, cmap=cmap, reverse_cmap=reverse_cmap)
+        plot_tau(tau_exp, tau_mod, H=H, components=mechanisms, ax=ax_tau_s, cmap=cmap, reverse_cmap=reverse_cmap, model=model)
     if suptitle:
         fig_tau.suptitle(suptitle, fontsize=10)
 

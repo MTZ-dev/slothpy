@@ -123,33 +123,63 @@ def export_susceptibility_csv(
     filename: str | Path = "susceptibility_data.csv",
 ) -> None:
 
-    # Convert inputs to numpy arrays
-    T  = np.asarray(temperatures, dtype=float)
-    H  = np.asarray(fields,       dtype=float)
-    f  = np.asarray(freqs,        dtype=float)
-    chi = np.asarray(chi,         dtype=complex)
+    T  = np.asarray(temperatures, dtype=np.float64)
+    H  = np.asarray(fields, dtype=np.float64)
+    f  = np.asarray(freqs, dtype=np.float64)
+    chi = np.asarray(chi, dtype=np.complex128)
 
-    # Basic shape check
     if chi.shape != (H.size, T.size, f.size):
         raise ValueError(
             f"`chi` must have shape (n_fields, n_temps, n_freqs) = "
             f"({H.size}, {T.size}, {f.size}); got {chi.shape!r}."
         )
 
-    # Build grids that match chi’s shape, then flatten everything
     H_grid, T_grid, f_grid = np.meshgrid(H, T, f, indexing="ij")
     rows = np.column_stack([
-        T_grid.ravel(),               # Temperature (K)
-        H_grid.ravel(),               # Field (Oe)
-        f_grid.ravel(),               # Frequency (Hz)
-        np.abs(chi.real).ravel(),             # χ′ (emu/Oe)
-        np.abs(chi.imag).ravel(),             # χ″ (emu/Oe)
+        T_grid.ravel(),        
+        H_grid.ravel(),
+        f_grid.ravel(),
+        np.abs(chi.real).ravel(),
+        np.abs(chi.imag).ravel(),
     ])
 
     filename = Path(filename)
     with filename.open(mode="w", newline="") as fp:
         fp.write("[Data]\n")
         fp.write("Temperature (K),Magnetic Field (Oe),AC Frequency (Hz),AC X'  (emu/Oe),AC X\" (emu/Oe)\n")
+        writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
+        writer.writerows(rows)
+
+    print(f"CSV written to {filename.resolve()}")
+
+def export_tau_csv(
+    temperatures: ArrayLike,
+    fields: ArrayLike,
+    tau: np.ndarray,
+    filename: str | Path = "susceptibility_data.csv",
+) -> None:
+
+    T  = np.asarray(temperatures, dtype=np.float64)
+    H  = np.asarray(fields, dtype=np.float64)
+    tau = np.asarray(tau, dtype=np.float64)
+
+    if tau.shape != (H.size, T.size):
+        raise ValueError(
+            f"`tau` must have shape (n_fields, n_temps) = "
+            f"({H.size}, {T.size}); got {chi.shape!r}."
+        )
+
+    H_grid, T_grid = np.meshgrid(H, T, indexing="ij")
+    rows = np.column_stack([
+        T_grid.ravel(),
+        H_grid.ravel(),
+        tau.ravel(),
+    ])
+
+    filename = Path(filename)
+    with filename.open(mode="w", newline="") as fp:
+        fp.write("[Data]\n")
+        fp.write("T,H,tau\n")
         writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
         writer.writerows(rows)
 
@@ -644,11 +674,11 @@ def crystal_field_derivatives(dof_array, group, magnetic_field_vector, displacem
     return H_grad * H_CM_1
 
 @njit(nogil=True, cache=True, fastmath=True)
-def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, number_of_kpoints_inv_sqrt, freq, degeneracy_tolerance):
+def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, number_of_kpoints_inv_sqrt, freq, modes_low):
     for i in range(dof_array.shape[0]):
         dof = dof_array[i]
         for j in range(normal_modes.shape[1]):
-            if freq[j] >= degeneracy_tolerance:
+            if freq[j] >= modes_low:
                 Y_q[j] += (1 / np.sqrt(freq[j]/H_CM_1)) * H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * 1/np.sqrt(M_AU) * number_of_kpoints_inv_sqrt * np.exp(-2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
 
 
@@ -807,14 +837,14 @@ def susceptibility_relax_time(
     max_neg = -np.inf
     for i in range(lam_size):
         if i == i_min:
-            continue            # exclude the nearest‑zero element
+            continue
         xi = lam[i]
         if xi < 0.0 and xi > max_neg:
             max_neg = xi
 
-    relax_time = (-1.0/max_neg)*S_TIME_PS
+    relax_time = (-1.0/max_neg)/S_TIME_PS
 
-    print(relax_time)
+    print(relax_time, np.log10(relax_time))
 
     # frequency loop
     for k, omega in enumerate(omega_grid):
@@ -889,19 +919,19 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, grid: np.nd
     n_k_inv = 1.0 / np.sqrt(grid.shape[0])
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
 
-    modes_high = np.log(1e250)/beta
-    print(modes_high)
+    # modes_high = np.log(1e270)/beta
+    # print(modes_high)
 
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
-    scale_freq = np.min(freq)
+    # scale_freq = np.min(freq)
 
     for i in prange(grid.shape[0]):
         thread_id = get_thread_id()
         q = grid[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
-        freq = freq + scale_freq
+        # freq = freq + scale_freq
         freq *= AU_BOHR_CM_1
 
         if q_0:
@@ -912,7 +942,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, grid: np.nd
 
         Y_q = np.zeros((freq.size, states_number, states_number), dtype=np.complex128)
 
-        get_Y_q(Y_q, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, degeneracy_tolerance)
+        get_Y_q(Y_q, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, modes_low)
 
         Yb, wb =  np.ascontiguousarray(Y_q[idx]), np.ascontiguousarray(freq[idx])
 
@@ -925,15 +955,15 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, grid: np.nd
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [133]
-    gamma_fwhm_list = [15]          # FWHM in cm-1
-    T_list          = [1.9,2.0]
+    npoints_list    = [151]
+    gamma_fwhm_list = [8]          # FWHM in cm-1
+    T_list          = [1.9,2.0,2.1,2.2]
     B_list          = [0.0]          # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
-    modes_low       = 0.01    #cm-1
-    modes_high      = 3000 #cm-1
+    modes_low       = 0.5    #cm-1
+    modes_high      = 140 #cm-1
     q_ranges        = [0.5]
-    cutoff_list     = [45,50,52.5,55,65]
+    cutoff_list     = [60]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True
@@ -947,9 +977,9 @@ if __name__ == "__main__":
     group_name          = "xxx"
     displacement_number = 1
     step                = 0.0001
-    omega_Hz            = np.logspace(0, 4, 120)
+    omega_Hz            = np.logspace(0.1, 4, 180)
     chi_H_T = np.zeros((len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)
-    tau = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
+    tau_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
 
     # refresh the .slt file
     if os.path.exists(slt_filepath):
@@ -1054,10 +1084,11 @@ if __name__ == "__main__":
                         )
 
                         chi_H_T[B[0],T[0],:] = chi
-                        tau[B[0],T[0]] = relax_time
+                        tau_H_T[B[0],T[0]] = relax_time
 
-                
-    export_susceptibility_csv(T_list, np.asarray(B_list)*T_FILED_OE, omega_Hz, chi_H_T, "./seminarium/test_ac_relacs.dat")
+    B_array = np.asarray(B_list)*T_FILED_OE
+    export_susceptibility_csv(T_list, B_array, omega_Hz, chi_H_T, "./seminarium/test_ac_relacs.dat")
+    export_tau_csv(T_list, B_array, tau_H_T, "./seminarium/test_tau_relacs.dat")
 
                 # base_name = f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}{"_corr" if correlation else ""}"
 

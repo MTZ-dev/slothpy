@@ -150,7 +150,7 @@ def export_susceptibility_csv(
         writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
         writer.writerows(rows)
 
-    print(f"CSV written to {filename.resolve()}")
+    # print(f"CSV written to {filename.resolve()}")
 
 def export_tau_csv(
     temperatures: ArrayLike,
@@ -183,7 +183,7 @@ def export_tau_csv(
         writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
         writer.writerows(rows)
 
-    print(f"CSV written to {filename.resolve()}")
+    # print(f"CSV written to {filename.resolve()}")
 
 def plot_susceptibility_curves(
         omega_rad_s : np.ndarray,        # (M,)
@@ -366,28 +366,41 @@ def plot_susceptibility_curves(
 
     return ax
 
+def make_tau_plotter(ax, *, label=None):
+    line, = ax.plot([], [], "o-", lw=1, ms=4, label=label or "τ(T)")
+    xs, ys = [], []                 # pre‑allocate containers
+
+    def _update(npts, tau):
+        xs.append(npts)
+        ys.append(np.log10(tau))    # store log10(τ)
+        line.set_data(xs, ys)
+
+        ax.relim();  ax.autoscale_view()
+        plt.pause(0.001)            # let the GUI breathe
+    return _update
+
 @njit(nogil=True, cache=True, fastmath=True)
-def Jhat_p(w_ab, wq, n_q, d):
-    if w_ab > 0 and (w_ab - wq) < 0:
+def Jhat_p(w_ab, wq, n_q, d, cutoff):
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff: # and w_ab - wq < 0:
         return -1j / (w_ab - wq - 1j * d) * n_q
-    if w_ab < 0 and (w_ab + wq) > 0:
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff: # and w_ab + wq > 0:
         return -1j / (w_ab + wq - 1j * d) * (n_q + 1)
     return 0.0 + 0.0 * 1j 
 
 @njit(nogil=True, cache=True, fastmath=True)
-def Jhat_m(w_ab, wq, n_q, d):
-    if w_ab < 0 and (w_ab + wq) > 0:
+def Jhat_m(w_ab, wq, n_q, d, cutoff):
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff: # and w_ab + wq > 0:
         return -1j / (w_ab + wq - 1j * d) * n_q
-    if w_ab > 0 and (w_ab - wq) < 0:
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff: # and w_ab - wq < 0:
         return -1j / (w_ab - wq - 1j * d) * (n_q + 1)
     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
     u = w_cd + w_ab
-    if u < 0 and (u + wq) > 0:
+    if u < 0 and np.abs(u + wq) < cutoff: # and w_ab + wq > 0:
         return -1j / (u + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, cutoff)
-    if u > 0 and (u - wq) < 0:
+    if u > 0 and np.abs(u - wq) < cutoff: # and w_ab - wq < 0:
         return -1j / (u - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta, cutoff)
     return 0.0 + 0.0 * 1j
 
@@ -417,7 +430,7 @@ def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff):
                     out[ab,cd,i]+=val*coeff
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i):
+def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, cutoff):
     N = w_n.shape[0]; J = wb.size
     coeff = H_BAR
     if q_0:
@@ -435,15 +448,15 @@ def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i):
                         if d==b:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_p(w_n[e,d],wq,n_q,delta)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
+                                tmp+=Jhat_p(w_n[e,d],wq,n_q,delta,cutoff)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
                             val+=tmp
-                        val-=Jhat_p(w_n[a,d],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat_p(w_n[a,d],wq,n_q,delta,cutoff)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         if a==c:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_m(w_n[c,e],wq,n_q,delta)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
+                                tmp+=Jhat_m(w_n[c,e],wq,n_q,delta,cutoff)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
                             val+=tmp
-                        val-=Jhat_m(w_n[c,b],wq,n_q,delta)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat_m(w_n[c,b],wq,n_q,delta,cutoff)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         out[ab,cd,i]+=val * coeff
 
 @njit(nogil=True, cache=True, fastmath=True)
@@ -478,7 +491,7 @@ def zeta(x: float, beta: float, cutoff:float) -> float:
     u = beta * x
     if abs(u) < eps:
         return beta
-    if abs(u) > cutoff:
+    if abs(u) > 680:
         return 0.0 + 1j * 0.0
     return np.expm1(u) / (x)
 
@@ -488,7 +501,7 @@ def Iint(w1: float, w2: float, beta: float) -> float:
     u1 = w1 * beta
     u2 = w2 * beta
     u12 = u1 + u2
-    if abs(u1) > 600 or abs(u2) > 600 or abs(u12) > 600:
+    if abs(u1) > 680 or abs(u2) > 680 or abs(u12) > 680:
         return 0.0 + 1j * 0.0
     elif abs(u1) < eps and abs(u2) < eps:
         return 0.5 * beta * beta
@@ -750,12 +763,12 @@ def susceptibility_relax_time(
 
     E = (E - np.min(E))
 
-    print(f"Energies: {E}")
+    # print(f"Energies: {E}")
 
     rho_eq = np.exp(-beta * E)
     rho_eq /= rho_eq.sum()
 
-    print(f"Rho_eq: {rho_eq}")
+    # print(f"Rho_eq: {rho_eq}")
 
     N  = states_number
     N2 = N * N
@@ -787,9 +800,6 @@ def susceptibility_relax_time(
     M_rho0_trace = np.zeros((threads), dtype=np.complex128)
     R21 = np.zeros((N2, N2, threads), dtype=np.complex128)
 
-    # s = np.clip(np.abs(E[0]-E[1]), 1e-4, 5)
-    # s = s if s > 1e-4 else 0.0
-
     w_n = E[:,np.newaxis] - E[np.newaxis,:]
 
     start = perf_counter()
@@ -800,7 +810,7 @@ def susceptibility_relax_time(
     
     stop = perf_counter()
 
-    print((stop-start)/grid.shape[0])
+    # print((stop-start)/grid.shape[0])
 
     M_rho0 = np.sum(M_rho0, axis=2)
     M_KR = np.sum(M_KR, axis=2)
@@ -852,9 +862,9 @@ def susceptibility_relax_time(
         Xi       = 1j / H_BAR * M_L + M_KR / (H_BAR ** 2) - 1j * omega * eye
         num      = (1j / H_BAR * M_PSI) @ rho_vec + (M_rho0 @ rho_vec + rho_vec_init) / M_rho0_trace.real
 
-        if k == 0:
-            print(np.max(Xi), np.max(num))
-            print(np.min(Xi), np.min(num))
+        # if k == 0:
+        #     print(np.max(Xi), np.max(num))
+        #     print(np.min(Xi), np.min(num))
 
         rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
         chi[k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / H_CM_1 * MU_B_CM_3
@@ -886,7 +896,7 @@ def frequencies_eigenvectors(dynamical_matrix):
         return np.where(frequencies_squared >= 0, np.sqrt(np.abs(frequencies_squared)), -np.sqrt(np.abs(frequencies_squared))), eigenvectors
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol):
+def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff):
     N, J = w_n.shape[0], wb.shape[0]
     prefc = 1 / H_BAR
     if q_0:
@@ -904,14 +914,14 @@ def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol):
                         if abs(w_n[a,c]+w_n[d,b]) > sec_tol:
                             continue
                         val = 0.0 + 0.0j
-                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[b,d], wq, n_q, delta)
-                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[a,c], wq, n_q, delta)
+                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[b,d], wq, n_q, delta, cutoff)
+                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[a,c], wq, n_q, delta, cutoff)
                         if d == b:
                             for j in range(N):
-                                val -= (Yh[a,j]*Y[j,c] + Y[a,j]*Yh[j,c]) * Jhat_p(w_n[j,c], wq, n_q, delta)
+                                val -= (Yh[a,j]*Y[j,c] + Y[a,j]*Yh[j,c]) * Jhat_p(w_n[j,c], wq, n_q, delta, cutoff)
                         if c == a:
                             for j in range(N):
-                                val -= (Y[j,b]*Yh[d,j] + Yh[j,b]*Y[d,j]) * Jhat_p(w_n[j,d], wq, n_q, delta)
+                                val -= (Y[j,b]*Yh[d,j] + Yh[j,b]*Y[d,j]) * Jhat_p(w_n[j,d], wq, n_q, delta, cutoff)
                         out[ab,cd,i] += prefc * val
 
 @njit(nogil=True, cache=True, fastmath=True, parallel=True)
@@ -919,7 +929,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, grid: np.nd
     n_k_inv = 1.0 / np.sqrt(grid.shape[0])
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
 
-    # modes_high = np.log(1e270)/beta
+    # modes_high = np.log(1e40)/beta
     # print(modes_high)
 
     gamma = np.asarray([0.0, 0.0, 0.0])
@@ -947,23 +957,23 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, grid: np.nd
         Yb, wb =  np.ascontiguousarray(Y_q[idx]), np.ascontiguousarray(freq[idx])
 
         bose = bose_occ(wb, beta)
-        add_KR_bundle(M_KR, Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id)
+        add_KR_bundle(M_KR, Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, cutoff)
         add_PSI_bundle(M_PSI, A_e, Yb, wb, bose, gamma_fwhm, beta, w_n, q_0, thread_id, cutoff)
         add_rho0_bundle(rho_vec_init, M_rho0_trace, A_e, Yb, wb, bose, beta, w_n, q_0, rho_mat, thread_id)
-        add_R21_bundle(R21, Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, sec_tol)
+        add_R21_bundle(R21, Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, sec_tol, cutoff)
 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [151]
-    gamma_fwhm_list = [8]          # FWHM in cm-1
-    T_list          = [1.9,2.0,2.1,2.2]
-    B_list          = [0.0]          # Tesla 0.001,0.002,0.003,0.004,
+    npoints_list    = [33] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [0.8]          # FWHM in cm-1
+    T_list          = [1.9,2.0,2.1] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
-    modes_low       = 0.5    #cm-1
-    modes_high      = 140 #cm-1
+    modes_low       = 1    #cm-1
+    modes_high      = 145 #cm-1
     q_ranges        = [0.5]
-    cutoff_list     = [60]
+    cutoff_list     = [1.8]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True
@@ -977,7 +987,7 @@ if __name__ == "__main__":
     group_name          = "xxx"
     displacement_number = 1
     step                = 0.0001
-    omega_Hz            = np.logspace(0.1, 4, 180)
+    omega_Hz            = np.logspace(0.1, 8, 180)
     chi_H_T = np.zeros((len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)
     tau_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
 
@@ -1033,13 +1043,22 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------- #
     #  PLOTTING CANVAS (two sub-plots: Re and Im)                            #
     # ---------------------------------------------------------------------- #
-    fig, (ax_re, ax_im) = plt.subplots(1, 2, figsize=(12, 5), sharex=True)
+    fig, (ax_re, ax_im, ax_tau) = plt.subplots(
+        1, 3, figsize=(15, 5), sharex=False,
+        gridspec_kw={"width_ratios": (1.2, 1.2, 1)})   # ⬅ wider canvas
+
     for ax in (ax_re, ax_im):
         ax.set_xscale("log")
         ax.set_xlabel(r"ω  (rad s$^{-1}$)")
         ax.grid(True, which="both", ls=":")
     ax_re.set_ylabel(r"Re χ(ω)")
     ax_im.set_ylabel(r"Im χ(ω)")
+
+    ax_tau.set_xlabel(r"$n_\mathrm{points}$")
+    ax_tau.set_ylabel(r"$\log_{10}\,\tau$  (ps)")
+    ax_tau.set_title("Relaxation time vs. mesh size")
+    ax_tau.grid(True, ls=":")
+    tau_plotter = make_tau_plotter(ax_tau)
 
     orients = np.array([[0,0,1]], np.float64) # np.array([[0,0,1], [1,0,0], [0,1,0]], np.float64)
 
@@ -1065,7 +1084,7 @@ if __name__ == "__main__":
                 # grid = half_bz_grid_aniso(recip_axes, npoints, endpoint=True)
                 grid = multigrid_aniso(recip_axes, npoints, q_ranges, endpoint=True)
                 # grid = hessian.atoms_object.cell.bandpath(npoints=npoints**3).kpts.astype(np.float64)
-                print(grid.shape[0])
+                # print(grid.shape[0])
 
 
                 for gamma_fwhm, cutoff, T in itertools.product(gamma_fwhm_list, cutoff_list, enumerate(T_list)):
@@ -1082,6 +1101,8 @@ if __name__ == "__main__":
                             secular_tolerance=secular_tolerance,
                             on_step=step_plotter,            # ← live updates happen here
                         )
+
+                        tau_plotter(npoints, relax_time)
 
                         chi_H_T[B[0],T[0],:] = chi
                         tau_H_T[B[0],T[0]] = relax_time

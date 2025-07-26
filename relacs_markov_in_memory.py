@@ -14,7 +14,7 @@ from typing import Callable, Iterable, Tuple, Sequence, Union
 ArrayLike = Union[Sequence, np.ndarray]
 
 import h5py
-from numba import njit, prange, set_num_threads, get_thread_id
+from numba import njit, prange, set_num_threads, get_thread_id, get_num_threads
 from threadpoolctl import threadpool_limits
 
 import slothpy as slt
@@ -689,9 +689,10 @@ def crystal_field_derivatives(dof_array, group, magnetic_field_vector, displacem
 @njit(nogil=True, cache=True, fastmath=True)
 def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, number_of_kpoints_inv_sqrt, freq, modes_low):
     for j in range(normal_modes.shape[1]):
-        for i in range(dof_array.shape[0]):
-            dof = dof_array[i]
-            Y_q[j] += (1 / np.sqrt(freq[j]/H_CM_1)) * H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * 1/np.sqrt(M_AU) * number_of_kpoints_inv_sqrt * np.exp(-2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
+        if freq[j] >= modes_low:
+            for i in range(dof_array.shape[0]):
+                dof = dof_array[i]
+                Y_q[j] += (1 / np.sqrt(freq[j]/H_CM_1)) * H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * 1/np.sqrt(M_AU) * number_of_kpoints_inv_sqrt * np.exp(-2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
 
 
 def dofs_with_complete_displacements(h5_group: h5py.Group, displacement_number: int):
@@ -936,27 +937,34 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, H_grad: np.
     freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     # scale_freq = np.min(freq)
 
+    Yb_array = np.zeros((grid.shape[0], freq.shape[0], H_grad.shape[1], H_grad.shape[2]), np.complex128)
+    wb_array = np.zeros((grid.shape[0], freq.shape[0]), np.float64)
+    q_0_array = np.zeros((grid.shape[0]), np.bool)
+
     for i in prange(grid.shape[0]):
-        thread_id = get_thread_id()
         q = grid[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
         # freq = freq + scale_freq
         freq *= AU_BOHR_CM_1
 
-        if q_0:
-            freq, modes = freq[3:], modes[:,3:]
-        mask = (freq >= modes_low) & (freq <= modes_high)
+        get_Y_q(Yb_array[i, :, :, :], H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, modes_low)
+        wb_array[i, :] = freq
+        q_0_array[i] = q_0
+
+    for i in prange(grid.shape[0]):
+        thread_id = get_thread_id()
+        Yb, wb, q_0= Yb_array[i], wb_array[i], q_0_array[i]
+        mask = (wb >= modes_low) & (wb <= modes_high)
         idx  = np.where(mask)[0]
-        wb, modes = np.ascontiguousarray(freq[idx]), np.ascontiguousarray(modes[:,idx])
-        Yb = np.zeros((freq.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
-        get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, modes_low)
+        Yb, wb = np.ascontiguousarray(Yb[idx]), np.ascontiguousarray(wb[idx])
 
         bose = bose_occ(wb, beta)
         add_KR_bundle(M_KR, Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, cutoff)
         add_PSI_bundle(M_PSI, A_e, Yb, wb, bose, gamma_fwhm, beta, w_n, q_0, thread_id, cutoff)
         add_rho0_bundle(rho_vec_init, M_rho0_trace, A_e, Yb, wb, bose, beta, w_n, q_0, rho_mat, thread_id)
         add_R21_bundle(R21, Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, sec_tol, cutoff)
+
 
 if __name__ == "__main__":
 

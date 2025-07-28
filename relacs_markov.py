@@ -87,7 +87,9 @@ def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, magne
 
 def full_derivatives(dof_array, group, B_vec, displacement_number, step, degeneracy_tolerance, states_number):
 
-    hamiltonian0 = group[f"0/HAMILTONIAN_MATRIX"][:]+_zdot3d(group[f"0/MAGNETIC_DIPOLE_MOMENTA"][:], -B_vec)
+    magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
+
+    hamiltonian0 = group[f"0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])
     E_tot_0, U_R0 = np.linalg.eigh(hamiltonian0)
 
     k_mch_array = k_mch(dof_array, group, U_R0)
@@ -150,13 +152,11 @@ def export_susceptibility_csv(
         writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
         writer.writerows(rows)
 
-    # print(f"CSV written to {filename.resolve()}")
-
 def export_tau_csv(
     temperatures: ArrayLike,
     fields: ArrayLike,
     tau: np.ndarray,
-    filename: str | Path = "susceptibility_data.csv",
+    filename: str | Path = "tau_data.csv",
 ) -> None:
 
     T  = np.asarray(temperatures, dtype=np.float64)
@@ -182,8 +182,6 @@ def export_tau_csv(
         fp.write("T,H,tau\n")
         writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
         writer.writerows(rows)
-
-    # print(f"CSV written to {filename.resolve()}")
 
 def plot_susceptibility_curves(
         omega_rad_s : np.ndarray,        # (M,)
@@ -376,31 +374,31 @@ def make_tau_plotter(ax, *, label=None):
         line.set_data(xs, ys)
 
         ax.relim();  ax.autoscale_view()
-        plt.pause(0.001)            # let the GUI breathe
+        plt.pause(0.0001)            # let the GUI breathe
     return _update
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jhat_p(w_ab, wq, n_q, d, cutoff):
-    if w_ab > 0 and np.abs(w_ab - wq) < cutoff: # and w_ab - wq < 0:
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
         return -1j / (w_ab - wq - 1j * d) * n_q
-    if w_ab < 0 and np.abs(w_ab + wq) < cutoff: # and w_ab + wq > 0:
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
         return -1j / (w_ab + wq - 1j * d) * (n_q + 1)
     return 0.0 + 0.0 * 1j 
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jhat_m(w_ab, wq, n_q, d, cutoff):
-    if w_ab < 0 and np.abs(w_ab + wq) < cutoff: # and w_ab + wq > 0:
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
         return -1j / (w_ab + wq - 1j * d) * n_q
-    if w_ab > 0 and np.abs(w_ab - wq) < cutoff: # and w_ab - wq < 0:
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
         return -1j / (w_ab - wq - 1j * d) * (n_q + 1)
     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
     u = w_cd + w_ab
-    if u < 0 and np.abs(u + wq) < cutoff: # and w_ab + wq > 0:
+    if u < 0 and np.abs(u + wq) < cutoff:
         return -1j / (u + wq - 1j * d) * n_q * zeta(w_ab + wq, beta, cutoff)
-    if u > 0 and np.abs(u - wq) < cutoff: # and w_ab - wq < 0:
+    if u > 0 and np.abs(u - wq) < cutoff:
         return -1j / (u - wq - 1j * d) * (n_q + 1) * zeta(w_ab - wq, beta, cutoff)
     return 0.0 + 0.0 * 1j
 
@@ -516,12 +514,12 @@ def Iint(w1: float, w2: float, beta: float) -> float:
     term2 = np.expm1(u1)  / (w1 * w2)
     return np.abs(term1 - term2)
 
-@njit(nogil=True, cache=True, inline="always", fastmath=True)
+@njit(nogil=True, cache=True, fastmath=True)
 def bose_occ(freq: float, beta: float) -> float:
     u = beta * freq
     return 1.0/np.expm1(u)
 
-@njit(nogil=True, cache=True, inline="always", fastmath=True)
+@njit(nogil=True, cache=True, fastmath=True)
 def liou(a, b, N):
     return a * N + b
 
@@ -729,21 +727,20 @@ def susceptibility_relax_time(
     A: np.ndarray,
     B: np.ndarray,
     H_grad: np.ndarray,
-    T: float,
+    T: np.ndarray,
     gamma_fwhm: float,
     cutoff: float,
-    hessian, masses_inv_sqrt, grid, modes_low, modes_high,
+    hessian, masses_inv_sqrt, dof_array, grid, modes_low, modes_high,
     *,
     states_number: int = 0,
     degeneracy_tolerance: float = 1e-6,
     secular_tolerance: float = 1e-6,
-    include_init_corr: bool = False,
-    on_step: Callable[[int, float, complex], None] | None = None,
     threads: int = 64,
 ):
 
     omega_grid = omega_grid / S_TIME_PS
     beta = 1.0 / (KB * T)
+    temp_size = beta.shape[0]
 
     # ── diagonalise and truncate to the requested sub-space ─────────────────
     E, U = np.linalg.eigh(Hs)
@@ -763,23 +760,8 @@ def susceptibility_relax_time(
 
     E = (E - np.min(E))
 
-    # print(f"Energies: {E}")
-
-    rho_eq = np.exp(-beta * E)
-    rho_eq /= rho_eq.sum()
-
-    # print(f"Rho_eq: {rho_eq}")
-
     N  = states_number
     N2 = N * N
-
-    rho_vec = np.zeros((N2), dtype=np.complex128)
-
-    rho_mat = np.diag(rho_eq)
-
-    for c in range(N):
-        for d in range(N):
-            rho_vec[liou(c, d, N)] += rho_mat[c,d]
 
     H_s = np.diag(E)
 
@@ -793,86 +775,86 @@ def susceptibility_relax_time(
                     if a == c:
                         M_L[liou(a,b,N), liou(c,d,N)] -= H_s[d,b]
 
-    M_rho0 = np.zeros((N2, N2, threads), dtype=np.complex128)
-    M_KR = np.zeros((N2, N2, threads), dtype=np.complex128)
-    M_PSI = np.zeros((N2, N2, threads), dtype=np.complex128)
-    rho_vec_init = np.zeros((N2, threads), dtype=np.complex128)
-    M_rho0_trace = np.zeros((threads), dtype=np.complex128)
-    R21 = np.zeros((N2, N2, threads), dtype=np.complex128)
-
-    w_n = E[:,np.newaxis] - E[np.newaxis,:]
-
-    start = perf_counter()
-    set_num_threads(threads)
-
-    with threadpool_limits(1):
-        build_matrices(hessian, masses_inv_sqrt, H_grad, grid, modes_low, modes_high, beta, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, secular_tolerance)
-    
-    stop = perf_counter()
-
-    print((stop-start)/grid.shape[0])
-
-    M_rho0 = np.sum(M_rho0, axis=2)
-    M_KR = np.sum(M_KR, axis=2)
-    M_PSI = np.sum(M_PSI, axis=2)
-    rho_vec_init = np.sum(rho_vec_init, axis=1)
-    M_rho0_trace = 1 + np.sum(M_rho0_trace, axis=0)
-    R21 = np.sum(R21, axis=2)
-
+    M_rho0 = np.zeros((N2, N2), dtype=np.complex128)
     for a in range(N):
         for b in range(N):
             for c in range(N):
                 for d in range(N):
                     if d == b:
-                        M_rho0[liou(a,b,N), liou(c,d,N)] += A_e[a,c]
+                        M_rho0[liou(a,b,N),liou(c,d,N)] += A_e[a,c]
                     if a == c:
-                        M_rho0[liou(a,b,N), liou(c,d,N)] -= A_e[d,b]
+                        M_rho0[liou(a,b,N),liou(c,d,N)] -= A_e[d,b]
+
+    rho_vec = np.zeros((temp_size, N2), dtype=np.complex128)
+    rho_mat = np.zeros((temp_size, N, N), dtype=np.complex128)
+    for t in range(temp_size):
+        rho_eq = np.exp(-beta[t] * E)
+        rho_eq /= rho_eq.sum()
+        rho_mat[t] = np.diag(rho_eq)
+        for c in range(N):
+            for d in range(N):
+                rho_vec[t,liou(c, d, N)] += rho_mat[t,c,d]
+
+    M_KR = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
+    M_PSI = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
+    rho_vec_init = np.zeros((temp_size, N2, threads), dtype=np.complex128)
+    M_rho0_trace = np.zeros((temp_size, threads), dtype=np.complex128)
+    R21 = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
+
+    w_n = E[:,np.newaxis] - E[np.newaxis,:]
+
+    
+    set_num_threads(threads)
+
+    with threadpool_limits(1):
+        start = perf_counter()
+        build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, modes_low, modes_high, beta, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, secular_tolerance)
+        stop = perf_counter()
+        print((stop-start)/grid.shape[0]/T.shape[0])
+
+    M_KR = np.sum(M_KR, axis=3)
+    M_PSI = np.sum(M_PSI, axis=3)
+    rho_vec_init = np.sum(rho_vec_init, axis=2)
+    M_rho0_trace = 1.0 + np.sum(M_rho0_trace, axis=1)
+    R21 = np.sum(R21, axis=3)
 
     eye = np.eye(N2, dtype=np.complex128)
-    chi = np.empty_like(omega_grid, dtype=np.complex128)
 
-    # relax time
-    lam = np.linalg.eigvals(R21).real
+    chi_T = np.empty((temp_size, omega_grid.shape[0]), dtype=np.complex128)
+    relax_time_T = np.empty(temp_size, dtype=np.float64)
 
-    lam_size = lam.size
+    for t in range(temp_size):
+        lam = np.linalg.eigvals(R21[t]).real
 
-    i_min = 0
-    best = abs(lam[0])
-    for i in range(1, lam_size):
-        ai = abs(lam[i])
-        if ai < best:
-            best = ai
-            i_min = i
+        lam_size = lam.size
 
-    max_neg = -np.inf
-    for i in range(lam_size):
-        if i == i_min:
-            continue
-        xi = lam[i]
-        if xi < 0.0 and xi > max_neg:
-            max_neg = xi
+        i_min = 0
+        best = abs(lam[0])
+        for i in range(1, lam_size):
+            ai = abs(lam[i])
+            if ai < best:
+                best = ai
+                i_min = i
 
-    relax_time = (-1.0/max_neg)/S_TIME_PS
+        max_neg = -np.inf
+        for i in range(lam_size):
+            if i == i_min:
+                continue
+            xi = lam[i]
+            if xi < 0.0 and xi > max_neg:
+                max_neg = xi
 
-    print(relax_time, np.log10(relax_time))
+        relax_time_T[t] = (-1.0/max_neg)/S_TIME_PS
 
-    # frequency loop
-    for k, omega in enumerate(omega_grid):
+        print(relax_time_T[t], np.log10(relax_time_T[t]))
 
-        Xi       = 1j / H_BAR * M_L + M_KR / (H_BAR ** 2) - 1j * omega * eye
-        num      = (1j / H_BAR * M_PSI) @ rho_vec + (M_rho0 @ rho_vec + rho_vec_init) / M_rho0_trace.real
+        for k, omega in enumerate(omega_grid):
+            Xi       = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2) - 1j * omega * eye
+            num      = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + (M_rho0 @ rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
+            rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
+            chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / H_CM_1 * MU_B_CM_3
 
-        # if k == 0:
-        #     print(np.max(Xi), np.max(num))
-        #     print(np.min(Xi), np.min(num))
-
-        rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
-        chi[k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / H_CM_1 * MU_B_CM_3
-
-        if on_step is not None:
-            on_step(k, omega*S_TIME_PS, chi[k])
-
-    return chi, relax_time
+    return chi_T, relax_time_T
 
 @njit(nogil=True, cache=True, fastmath=True)
 def _build_dynamical_matrix(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, kpoint: np.ndarray):
@@ -925,12 +907,11 @@ def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff):
                         out[ab,cd,i] += prefc * val
 
 @njit(nogil=True, cache=True, fastmath=True, parallel=True)
-def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, H_grad: np.ndarray, grid: np.ndarray, modes_low: float, modes_high: float, beta: float, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, sec_tol):
+def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: np.ndarray, H_grad: np.ndarray, grid: np.ndarray, modes_low: float, modes_high: float, beta: float, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, sec_tol):
     n_k_inv = 1.0 / np.sqrt(grid.shape[0])
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
 
     # modes_high = np.log(1e40)/beta
-    # print(modes_high)
 
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
@@ -949,27 +930,28 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, H_grad: np.
         mask = (freq >= modes_low) & (freq <= modes_high)
         idx  = np.where(mask)[0]
         wb, modes = np.ascontiguousarray(freq[idx]), np.ascontiguousarray(modes[:,idx])
-        Yb = np.zeros((freq.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
+        Yb = np.zeros((wb.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
         get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, modes_low)
 
-        bose = bose_occ(wb, beta)
-        add_KR_bundle(M_KR, Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, cutoff)
-        add_PSI_bundle(M_PSI, A_e, Yb, wb, bose, gamma_fwhm, beta, w_n, q_0, thread_id, cutoff)
-        add_rho0_bundle(rho_vec_init, M_rho0_trace, A_e, Yb, wb, bose, beta, w_n, q_0, rho_mat, thread_id)
-        add_R21_bundle(R21, Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, sec_tol, cutoff)
+        for t_index in range(beta.shape[0]):
+            bose = bose_occ(wb, beta[t_index])
+            add_KR_bundle(M_KR[t_index], Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, cutoff)
+            add_PSI_bundle(M_PSI[t_index], A_e, Yb, wb, bose, gamma_fwhm, beta[t_index], w_n, q_0, thread_id, cutoff)
+            add_rho0_bundle(rho_vec_init[t_index], M_rho0_trace[t_index], A_e, Yb, wb, bose, beta[t_index], w_n, q_0, rho_mat[t_index], thread_id)
+            add_R21_bundle(R21[t_index], Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, sec_tol, cutoff)
 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [33] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [0.8]          # FWHM in cm-1
-    T_list          = [1.9,2.0,2.1] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    npoints_list    = [71] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [0.01]          # FWHM in cm-1
+    T_list          = [1.9,2.0,2.1,2.2] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
-    modes_low       = 1    #cm-1
+    modes_low       = 0.01    #cm-1
     modes_high      = 145 #cm-1
     q_ranges        = [0.5]
-    cutoff_list     = [1.8]
+    cutoff_list     = [15]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True
@@ -983,7 +965,7 @@ if __name__ == "__main__":
     group_name          = "xxx"
     displacement_number = 1
     step                = 0.0001
-    omega_Hz            = np.logspace(0.1, 4, 180)
+    omega_Hz            = np.logspace(0.1, 10, 200)
     chi_H_T = np.zeros((len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)
     tau_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
 
@@ -1008,8 +990,6 @@ if __name__ == "__main__":
     masses_inv_sqrt = slt_hessian._masses_inv_sqrt
     recip_axes = slt_hessian.atoms_object().cell.reciprocal().cellpar()[:3]
     hess_obj        = Hessian(slt_hessian.hessian()[:], np.outer(masses_inv_sqrt, masses_inv_sqrt), np.array([0., 0., 0.]))
-    
-    plt.ion()       # turn interactive mode on once
 
     def make_step_plotter(ax_re, ax_im, label):
         # fresh empty lines, one per curve
@@ -1032,7 +1012,7 @@ if __name__ == "__main__":
                 for ax in (ax_re, ax_im):
                     ax.relim()
                     ax.autoscale_view()
-                plt.pause(0.001)   # let the GUI breathe
+                plt.pause(0.0001)   # let the GUI breathe
 
         return _update
         
@@ -1070,38 +1050,33 @@ if __name__ == "__main__":
                 magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
                 A_op = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2])
                 A_op = A_op * H_CM_1
-                B_op = A_op
+                B_op = - A_op * 2.1142 # (cm-1/T to bohr magneton)
                 H_total = (grp["0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2]))
 
                 H_grad = full_derivatives(dof_array, grp, B_vec, 1, step, degeneracy_tolerance, states_number)
-                # H_grad = crystal_field_derivatives(dof_array, grp, B_vec, 1, step, states_number)
             
             for npoints in npoints_list:
-                # grid = half_bz_grid_aniso(recip_axes, npoints, endpoint=True)
                 grid = multigrid_aniso(recip_axes, npoints, q_ranges, endpoint=True)
-                # grid = hessian.atoms_object.cell.bandpath(npoints=npoints**3).kpts.astype(np.float64)
-                # print(grid.shape[0])
 
+                for gamma_fwhm, cutoff in itertools.product(gamma_fwhm_list, cutoff_list):
 
-                for gamma_fwhm, cutoff, T in itertools.product(gamma_fwhm_list, cutoff_list, enumerate(T_list)):
-                        label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
-                                f"T={T[1]:g} K, B={B[1]:g} T, cut={cutoff}")
-                        step_plotter = make_step_plotter(ax_re, ax_im, label)
-
-                        chi, relax_time = susceptibility_relax_time(
+                        chi_T, relax_time_T = susceptibility_relax_time(
                             omega_Hz, H_total, A_op, B_op, H_grad,
-                            T[1], gamma_fwhm, cutoff, slt_hessian.hessian()[:], masses_inv_sqrt, grid, modes_low, modes_high,
+                            np.asarray(T_list, dtype=np.float64), gamma_fwhm, cutoff, slt_hessian.hessian()[:], masses_inv_sqrt, dof_array, grid, modes_low, modes_high,
                             states_number=states_number,
-                            include_init_corr=True,
                             degeneracy_tolerance=degeneracy_tolerance,
-                            secular_tolerance=secular_tolerance,
-                            on_step=step_plotter,            # ← live updates happen here
-                        )
+                            secular_tolerance=secular_tolerance)
 
-                        tau_plotter(npoints, relax_time)
+                        chi_H_T[B[0],:,:] = chi_T
+                        tau_H_T[B[0],:] = relax_time_T
 
-                        chi_H_T[B[0],T[0],:] = chi
-                        tau_H_T[B[0],T[0]] = relax_time
+                        for T in enumerate(T_list):
+                            label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
+                                    f"T={T[1]:g} K, B={B[1]:g} T, cut={cutoff}")
+                            step_plotter = make_step_plotter(ax_re, ax_im, label)
+                            for omega in enumerate(omega_Hz):
+                                step_plotter(omega[0], omega[1], chi_T[T[0],omega[0]])
+                            tau_plotter(npoints, relax_time_T[T[0]])
 
     B_array = np.asarray(B_list)*T_FILED_OE
     export_susceptibility_csv(T_list, B_array, omega_Hz, chi_H_T, "./seminarium/test_ac_relacs.dat")

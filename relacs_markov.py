@@ -852,9 +852,8 @@ def susceptibility_relax_time(
 
     for t in range(temp_size):
         relax_time_R21_T[t] = get_relax_time(R21[t])
-        relax_time_R41_T[t] = get_relax_time(R41[t])
-
         print("R21:", relax_time_R21_T[t], np.log10(relax_time_R21_T[t]))
+        relax_time_R41_T[t] = get_relax_time(R41[t])
         print("R41:", relax_time_R41_T[t], np.log10(relax_time_R41_T[t]))
 
         for k, omega in enumerate(omega_grid):
@@ -889,7 +888,7 @@ def frequencies_eigenvectors(dynamical_matrix):
 @njit(nogil=True, cache=True, fastmath=True)
 def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff):
     N, J = w_n.shape[0], wb.shape[0]
-    prefc = 1 / H_BAR
+    prefc = 1 / H_BAR / pi
     if q_0:
         prefc *= 0.5
 
@@ -923,13 +922,15 @@ def _R_pm(V1, V2, w_n, sign, freq, lw):
         for j in range(N):
             acc = 0.0+0.0j
             for k in range(N):
-                acc += V1[i,k]*V2[k,j] / (w_n[k,j]+sign*freq-1j*lw)
+                    acc += V1[i,k]*V2[k,j] / (w_n[k,j]+sign*freq-1j*lw)
             out[i,j] = acc
     return out
 
 @njit(cache=True, inline="always")
-def _lorentz(dE: float, lw: float) -> float:
-    return -1j / (dE - 1j * lw)
+def gaussian(dE: float, lw: float) -> float:
+    prefactor = 2.0 * np.sqrt(np.log(2.0) / np.pi) / lw
+    exponent = -4.0 * np.log(2.0) * dE * dE / (lw * lw)
+    return prefactor * np.exp(exponent)
 
 @njit(cache=True)
 def add_R41(R: np.ndarray,
@@ -942,6 +943,8 @@ def add_R41(R: np.ndarray,
              f2:   float,
              lw1:  float,
              lw2:  float,
+             A,
+             B,
              ind:  int,
              correction: bool = False,
              sec_tol: float = 1e-6) -> np.ndarray:
@@ -954,7 +957,7 @@ def add_R41(R: np.ndarray,
     Rbam = _R_pm(V2, V1, w_n, -1, f1, lw1)
 
     prefc = pi / H_BAR
-    lw_total = lw1+lw2
+    lw_total = lw1
 
     for a in range(N):
         b = a
@@ -968,7 +971,7 @@ def add_R41(R: np.ndarray,
             val = 0.0 + 0.0j
 
             # (ω₁ emit, ω₂ absorb)
-            G = n1 * (n2 + 1.0) * _lorentz(w_n[a,c] - f1 + f2, lw_total)
+            G = n1 * (n2 + 1.0) * gaussian(w_n[a,c] - f1 + f2, lw_total) * B
             val += (
                 np.conj(Rabp[b, d]) * Rabp[a, c] +
                 np.conj(Rabp[b, d]) * Rbam[a, c] +
@@ -977,7 +980,7 @@ def add_R41(R: np.ndarray,
             ) * G
 
             # (ω₁ absorb, ω₂ emit)
-            G = n2 * (n1 + 1.0) * _lorentz(w_n[a,c] + f1 - f2, lw_total)
+            G = n2 * (n1 + 1.0) * gaussian(w_n[a,c] + f1 - f2, lw_total) * B
             val += (
                 np.conj(Rabm[b, d]) * Rabm[a, c] +
                 np.conj(Rabm[b, d]) * Rbap[a, c] +
@@ -986,7 +989,7 @@ def add_R41(R: np.ndarray,
             ) * G
 
             # double absorption
-            G = n1 * n2 * _lorentz(w_n[a,c] - f1 - f2, lw_total)
+            G = n1 * n2 * gaussian(w_n[a,c] - f1 - f2, lw_total) * A
             val += (
                 np.conj(Rabm[b, d]) * Rabm[a, c] +
                 np.conj(Rbam[b, d]) * Rbam[a, c] +
@@ -995,7 +998,7 @@ def add_R41(R: np.ndarray,
             ) * G
 
             # double emission
-            G = (n1 + 1.0) * (n2 + 1.0) * _lorentz(w_n[a,c] + f1 + f2, lw_total)
+            G = (n1 + 1.0) * (n2 + 1.0) * gaussian(w_n[a,c] + f1 + f2, lw_total) * A
             val += (
                 np.conj(Rabp[b, d]) * Rabp[a, c] +
                 np.conj(Rbap[b, d]) * Rbap[a, c] +
@@ -1004,11 +1007,11 @@ def add_R41(R: np.ndarray,
             ) * G
 
             # ------------------------------------------------------------------
-            #  Counter‑terms (la == lc) / (lb == ld)  –  identical to Fortran
+            #  Counter‑terms (la == lc) / (lb == ld)
             # ------------------------------------------------------------------
             if a == c:
                 for k in range(N):
-                    G = n1 * (n2 + 1.0) * _lorentz(w_n[k,d] - f1 + f2, lw_total)
+                    G = n1 * (n2 + 1.0) * gaussian(w_n[k,d] - f1 + f2, lw_total)
                     val -= 0.5 * (
                         np.conj(Rabp[k, d]) * Rabp[k, b] +
                         np.conj(Rabp[k, d]) * Rbam[k, b] +
@@ -1016,7 +1019,7 @@ def add_R41(R: np.ndarray,
                         np.conj(Rbam[k, d]) * Rbam[k, b]
                     ) * G
 
-                    G = n2 * (n1 + 1.0) * _lorentz(w_n[k,d] + f1 - f2, lw_total)
+                    G = n2 * (n1 + 1.0) * gaussian(w_n[k,d] + f1 - f2, lw_total)
                     val -= 0.5 * (
                         np.conj(Rabm[k, d]) * Rabm[k, b] +
                         np.conj(Rabm[k, d]) * Rbap[k, b] +
@@ -1024,7 +1027,7 @@ def add_R41(R: np.ndarray,
                         np.conj(Rbap[k, d]) * Rbap[k, b]
                     ) * G
 
-                    G = n1 * n2 * _lorentz(w_n[k,d] - f1 - f2, lw_total)
+                    G = n1 * n2 * gaussian(w_n[k,d] - f1 - f2, lw_total)
                     val -= 0.5 * (
                         np.conj(Rabm[k, d]) * Rabm[k, b] +
                         np.conj(Rabm[k, d]) * Rbam[k, b] +
@@ -1032,7 +1035,7 @@ def add_R41(R: np.ndarray,
                         np.conj(Rbam[k, d]) * Rbam[k, b]
                     ) * G
 
-                    G = (n1 + 1.0) * (n2 + 1.0) * _lorentz(w_n[k,d] + f1 + f2, lw_total)
+                    G = (n1 + 1.0) * (n2 + 1.0) * gaussian(w_n[k,d] + f1 + f2, lw_total)
                     val -= 0.5 * (
                         np.conj(Rabp[k, d]) * Rabp[k, b] +
                         np.conj(Rabp[k, d]) * Rbap[k, b] +
@@ -1042,7 +1045,7 @@ def add_R41(R: np.ndarray,
 
             if b == d:
                 for k in range(N):
-                    G = n1 * (n2 + 1.0) * _lorentz(w_n[k,c] - f1 + f2, lw_total)
+                    G = n1 * (n2 + 1.0) * gaussian(w_n[k,c] - f1 + f2, lw_total)
                     val -= 0.5 * (
                         np.conj(Rabp[k, a]) * Rabp[k, c] +
                         np.conj(Rabp[k, a]) * Rbam[k, c] +
@@ -1050,7 +1053,7 @@ def add_R41(R: np.ndarray,
                         np.conj(Rbam[k, a]) * Rbam[k, c]
                     ) * G
 
-                    G = n2 * (n1 + 1.0) * _lorentz(w_n[k,c] + f1 - f2, lw_total)
+                    G = n2 * (n1 + 1.0) * gaussian(w_n[k,c] + f1 - f2, lw_total)
                     val -= 0.5 * (
                         np.conj(Rabm[k, a]) * Rabm[k, c] +
                         np.conj(Rabm[k, a]) * Rbap[k, c] +
@@ -1058,7 +1061,7 @@ def add_R41(R: np.ndarray,
                         np.conj(Rbap[k, a]) * Rbap[k, c]
                     ) * G
 
-                    G = n1 * n2 * _lorentz(w_n[k,c] - f1 - f2, lw_total)
+                    G = n1 * n2 * gaussian(w_n[k,c] - f1 - f2, lw_total)
                     val -= 0.5 * (
                         np.conj(Rabm[k, a]) * Rabm[k, c] +
                         np.conj(Rabm[k, a]) * Rbam[k, c] +
@@ -1066,47 +1069,13 @@ def add_R41(R: np.ndarray,
                         np.conj(Rbam[k, a]) * Rbam[k, c]
                     ) * G
 
-                    G = (n1 + 1.0) * (n2 + 1.0) * _lorentz(w_n[k,c] + f1 + f2, lw_total)
+                    G = (n1 + 1.0) * (n2 + 1.0) * gaussian(w_n[k,c] + f1 + f2, lw_total)
                     val -= 0.5 * (
                         np.conj(Rabp[k, a]) * Rabp[k, c] +
                         np.conj(Rabp[k, a]) * Rbap[k, c] +
                         np.conj(Rbap[k, a]) * Rabp[k, c] +
                         np.conj(Rbap[k, a]) * Rbap[k, c]
                     ) * G
-
-            # ------------------------------------------------------------------
-            #  Higher‑order corrections (K21, dK21)  –  fully implemented
-            # ------------------------------------------------------------------
-            # if correction:
-            #     lw_tot = lw1 + lw2
-            #     for lk in range(N):
-            #         for ll in range(N):
-            #             sec2 = Ener[a] - Ener[lk] + Ener[ll] - Ener[b]
-            #             sec3 = Ener[lk] - Ener[c] + Ener[d] - Ener[ll]
-            #             if (np.abs(sec2) < sec_tol) and (np.abs(sec3) < sec_tol):
-            #                 #  G2   (built with V2)
-            #                 e_shift = Ener[c] - Ener[d]
-            #                 G2 = get_K21(V2, Ener, T, f2, e_shift, lw_tot, smear, lk, ll, c, d)
-
-            #                 #  K2   (built with V1) – energy denominator ΔE
-            #                 Ediff  = Ener[lk] - Ener[ll] - Ener[c] + Ener[d]
-            #                 if np.abs(Ediff) >= sec_tol:
-            #                     num  = get_K21(V1, Ener, T, f1, Ener[lk] - Ener[ll], lw_tot, smear, a, b, lk, ll)
-            #                     num -= get_K21(V1, Ener, T, f1, e_shift,            lw_tot, smear, a, b, lk, ll)
-            #                     K2   = num / Ediff
-            #                 else:
-            #                     K2   = get_dK21(V1, Ener, T, f1, e_shift, lw_tot, smear, a, b, lk, ll)
-            #                 val -= K2 * G2
-
-            #                 #  Swap V1 ↔ V2
-            #                 G2 = get_K21(V1, Ener, T, f1, e_shift, lw_tot, smear, lk, ll, c, d)
-            #                 if np.abs(Ediff) >= sec_tol:
-            #                     num  = get_K21(V2, Ener, T, f2, Ener[lk] - Ener[ll], lw_tot, smear, a, b, lk, ll)
-            #                     num -= get_K21(V2, Ener, T, f2, e_shift,            lw_tot, smear, a, b, lk, ll)
-            #                     K2   = num / Ediff
-            #                 else:
-            #                     K2   = get_dK21(V2, Ener, T, f2, e_shift, lw_tot, smear, a, b, lk, ll)
-            #                 val -= K2 * G2
 
             R[ab, cd, ind] += prefc * val
 
@@ -1180,22 +1149,24 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
             l = p - k*(k + 1)//2
             if wb_array[k] == 0.0 or wb_array[l] == 0.0:
                 continue
-            add_R41(R41[t_index_raman], w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, sec_tol=sec_tol)
+            A = 1.0 if k!=l else 0.25
+            B = 1.0 if k!=l else 0.5
+            add_R41(R41[t_index_raman], w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, A, B, thread_id, sec_tol=sec_tol)
     # ----------------------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [9] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [4]          # FWHM in cm-1
+    npoints_list    = [7] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [10]          # FWHM in cm-1
     T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_low       = 0.01    #cm-1
     modes_high      = 145 #cm-1
     q_ranges        = [0.5]
-    cutoff_list     = [12]
+    cutoff_list     = [15]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True
@@ -1302,6 +1273,7 @@ if __name__ == "__main__":
             
             for npoints in npoints_list:
                 grid = multigrid_aniso(recip_axes, npoints, q_ranges, endpoint=True)
+                # grid = np.array([[0.0,0.0,0.0]], dtype=np.float64)
 
                 for gamma_fwhm, cutoff in itertools.product(gamma_fwhm_list, cutoff_list):
 

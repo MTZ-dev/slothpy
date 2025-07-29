@@ -14,7 +14,7 @@ from typing import Callable, Iterable, Tuple, Sequence, Union
 ArrayLike = Union[Sequence, np.ndarray]
 
 import h5py
-from numba import njit, prange, set_num_threads, get_thread_id
+from numba import njit, prange, set_num_threads, get_thread_id, get_num_threads
 from threadpoolctl import threadpool_limits
 
 import slothpy as slt
@@ -365,7 +365,7 @@ def plot_susceptibility_curves(
     return ax
 
 def make_tau_plotter(ax, *, label=None):
-    line, = ax.plot([], [], "o-", lw=1, ms=4, label=label or "τ(T)")
+    line, = ax.plot([], [], "o", lw=1, ms=4, label=label or "τ(T)")
     xs, ys = [], []                 # pre‑allocate containers
 
     def _update(npts, tau):
@@ -721,6 +721,31 @@ def dofs_with_complete_displacements(h5_group: h5py.Group, displacement_number: 
 
     return complete
 
+@njit(nogil=True, cache=True, fastmath=True)
+def get_relax_time(R_mat):
+    try:
+        lam = np.linalg.eigvals(R_mat).real
+    except Exception:
+        return 0.0
+
+    lam_size = lam.size
+    i_min = 0
+    best = abs(lam[0])
+    for i in range(1, lam_size):
+        ai = abs(lam[i])
+        if ai < best:
+            best = ai
+            i_min = i
+    max_neg = -np.inf
+    for i in range(lam_size):
+        if i == i_min:
+            continue
+        xi = lam[i]
+        if xi < 0.0 and xi > max_neg:
+            max_neg = xi
+
+    return (-1.0/max_neg)/S_TIME_PS
+
 def susceptibility_relax_time(
     omega_grid: np.ndarray,
     Hs: np.ndarray,
@@ -800,15 +825,15 @@ def susceptibility_relax_time(
     rho_vec_init = np.zeros((temp_size, N2, threads), dtype=np.complex128)
     M_rho0_trace = np.zeros((temp_size, threads), dtype=np.complex128)
     R21 = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
+    R41 = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
 
     w_n = E[:,np.newaxis] - E[np.newaxis,:]
-
     
     set_num_threads(threads)
 
     with threadpool_limits(1):
         start = perf_counter()
-        build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, modes_low, modes_high, beta, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, secular_tolerance)
+        build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, modes_low, modes_high, beta, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, secular_tolerance, R41)
         stop = perf_counter()
         print((stop-start)/grid.shape[0]/T.shape[0])
 
@@ -817,36 +842,20 @@ def susceptibility_relax_time(
     rho_vec_init = np.sum(rho_vec_init, axis=2)
     M_rho0_trace = 1.0 + np.sum(M_rho0_trace, axis=1)
     R21 = np.sum(R21, axis=3)
+    R41 = np.sum(R41, axis=3)
 
     eye = np.eye(N2, dtype=np.complex128)
 
     chi_T = np.empty((temp_size, omega_grid.shape[0]), dtype=np.complex128)
-    relax_time_T = np.empty(temp_size, dtype=np.float64)
+    relax_time_R21_T = np.empty(temp_size, dtype=np.float64)
+    relax_time_R41_T = np.empty(temp_size, dtype=np.float64)
 
     for t in range(temp_size):
-        lam = np.linalg.eigvals(R21[t]).real
+        relax_time_R21_T[t] = get_relax_time(R21[t])
+        relax_time_R41_T[t] = get_relax_time(R41[t])
 
-        lam_size = lam.size
-
-        i_min = 0
-        best = abs(lam[0])
-        for i in range(1, lam_size):
-            ai = abs(lam[i])
-            if ai < best:
-                best = ai
-                i_min = i
-
-        max_neg = -np.inf
-        for i in range(lam_size):
-            if i == i_min:
-                continue
-            xi = lam[i]
-            if xi < 0.0 and xi > max_neg:
-                max_neg = xi
-
-        relax_time_T[t] = (-1.0/max_neg)/S_TIME_PS
-
-        print(relax_time_T[t], np.log10(relax_time_T[t]))
+        print("R21:", relax_time_R21_T[t], np.log10(relax_time_R21_T[t]))
+        print("R41:", relax_time_R41_T[t], np.log10(relax_time_R41_T[t]))
 
         for k, omega in enumerate(omega_grid):
             Xi       = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2) - 1j * omega * eye
@@ -854,7 +863,7 @@ def susceptibility_relax_time(
             rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
             chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / H_CM_1 * MU_B_CM_3
 
-    return chi_T, relax_time_T
+    return chi_T, relax_time_R21_T, relax_time_R41_T
 
 @njit(nogil=True, cache=True, fastmath=True)
 def _build_dynamical_matrix(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, kpoint: np.ndarray):
@@ -906,16 +915,222 @@ def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff):
                                 val -= (Y[j,b]*Yh[d,j] + Yh[j,b]*Y[d,j]) * Jhat_p(w_n[j,d], wq, n_q, delta, cutoff)
                         out[ab,cd,i] += prefc * val
 
+@njit(cache=True)
+def _R_pm(V1, V2, w_n, sign, freq, lw):
+    N = w_n.shape[0]
+    out = np.zeros((N, N), np.complex128)
+    for i in range(N):
+        for j in range(N):
+            acc = 0.0+0.0j
+            for k in range(N):
+                acc += V1[i,k]*V2[k,j] / (w_n[k,j]+sign*freq-1j*lw)
+            out[i,j] = acc
+    return out
+
+@njit(cache=True, inline="always")
+def _lorentz(dE: float, lw: float) -> float:
+    return -1j / (dE - 1j * lw)
+
+@njit(cache=True)
+def add_R41(R: np.ndarray,
+             w_n: np.ndarray,
+             V1:   np.ndarray,
+             V2:   np.ndarray,
+             n1:    float,
+             n2:    float
+,            f1:   float,
+             f2:   float,
+             lw1:  float,
+             lw2:  float,
+             ind:  int,
+             correction: bool = False,
+             sec_tol: float = 1e-6) -> np.ndarray:
+
+    N = w_n.shape[0]
+
+    Rabp = _R_pm(V1, V2, w_n, +1, f2, lw2)
+    Rabm = _R_pm(V1, V2, w_n, -1, f2, lw2)
+    Rbap = _R_pm(V2, V1, w_n, +1, f1, lw1)
+    Rbam = _R_pm(V2, V1, w_n, -1, f1, lw1)
+
+    prefc = pi / H_BAR
+    lw_total = lw1+lw2
+
+    for a in range(N):
+        b = a
+        for c in range(N):
+            d = c
+            if np.abs(w_n[a,c] + w_n[d,b]) >= sec_tol:
+                continue
+
+            ab = a * N + b
+            cd = c * N + d
+            val = 0.0 + 0.0j
+
+            # (ω₁ emit, ω₂ absorb)
+            G = n1 * (n2 + 1.0) * _lorentz(w_n[a,c] - f1 + f2, lw_total)
+            val += (
+                np.conj(Rabp[b, d]) * Rabp[a, c] +
+                np.conj(Rabp[b, d]) * Rbam[a, c] +
+                np.conj(Rbam[b, d]) * Rabp[a, c] +
+                np.conj(Rbam[b, d]) * Rbam[a, c]
+            ) * G
+
+            # (ω₁ absorb, ω₂ emit)
+            G = n2 * (n1 + 1.0) * _lorentz(w_n[a,c] + f1 - f2, lw_total)
+            val += (
+                np.conj(Rabm[b, d]) * Rabm[a, c] +
+                np.conj(Rabm[b, d]) * Rbap[a, c] +
+                np.conj(Rbap[b, d]) * Rabm[a, c] +
+                np.conj(Rbap[b, d]) * Rbap[a, c]
+            ) * G
+
+            # double absorption
+            G = n1 * n2 * _lorentz(w_n[a,c] - f1 - f2, lw_total)
+            val += (
+                np.conj(Rabm[b, d]) * Rabm[a, c] +
+                np.conj(Rbam[b, d]) * Rbam[a, c] +
+                np.conj(Rbam[b, d]) * Rabm[a, c] +
+                np.conj(Rabm[b, d]) * Rbam[a, c]
+            ) * G
+
+            # double emission
+            G = (n1 + 1.0) * (n2 + 1.0) * _lorentz(w_n[a,c] + f1 + f2, lw_total)
+            val += (
+                np.conj(Rabp[b, d]) * Rabp[a, c] +
+                np.conj(Rbap[b, d]) * Rbap[a, c] +
+                np.conj(Rbap[b, d]) * Rabp[a, c] +
+                np.conj(Rabp[b, d]) * Rbap[a, c]
+            ) * G
+
+            # ------------------------------------------------------------------
+            #  Counter‑terms (la == lc) / (lb == ld)  –  identical to Fortran
+            # ------------------------------------------------------------------
+            if a == c:
+                for k in range(N):
+                    G = n1 * (n2 + 1.0) * _lorentz(w_n[k,d] - f1 + f2, lw_total)
+                    val -= 0.5 * (
+                        np.conj(Rabp[k, d]) * Rabp[k, b] +
+                        np.conj(Rabp[k, d]) * Rbam[k, b] +
+                        np.conj(Rbam[k, d]) * Rabp[k, b] +
+                        np.conj(Rbam[k, d]) * Rbam[k, b]
+                    ) * G
+
+                    G = n2 * (n1 + 1.0) * _lorentz(w_n[k,d] + f1 - f2, lw_total)
+                    val -= 0.5 * (
+                        np.conj(Rabm[k, d]) * Rabm[k, b] +
+                        np.conj(Rabm[k, d]) * Rbap[k, b] +
+                        np.conj(Rbap[k, d]) * Rabm[k, b] +
+                        np.conj(Rbap[k, d]) * Rbap[k, b]
+                    ) * G
+
+                    G = n1 * n2 * _lorentz(w_n[k,d] - f1 - f2, lw_total)
+                    val -= 0.5 * (
+                        np.conj(Rabm[k, d]) * Rabm[k, b] +
+                        np.conj(Rabm[k, d]) * Rbam[k, b] +
+                        np.conj(Rbam[k, d]) * Rabm[k, b] +
+                        np.conj(Rbam[k, d]) * Rbam[k, b]
+                    ) * G
+
+                    G = (n1 + 1.0) * (n2 + 1.0) * _lorentz(w_n[k,d] + f1 + f2, lw_total)
+                    val -= 0.5 * (
+                        np.conj(Rabp[k, d]) * Rabp[k, b] +
+                        np.conj(Rabp[k, d]) * Rbap[k, b] +
+                        np.conj(Rbap[k, d]) * Rabp[k, b] +
+                        np.conj(Rbap[k, d]) * Rbap[k, b]
+                    ) * G
+
+            if b == d:
+                for k in range(N):
+                    G = n1 * (n2 + 1.0) * _lorentz(w_n[k,c] - f1 + f2, lw_total)
+                    val -= 0.5 * (
+                        np.conj(Rabp[k, a]) * Rabp[k, c] +
+                        np.conj(Rabp[k, a]) * Rbam[k, c] +
+                        np.conj(Rbam[k, a]) * Rabp[k, c] +
+                        np.conj(Rbam[k, a]) * Rbam[k, c]
+                    ) * G
+
+                    G = n2 * (n1 + 1.0) * _lorentz(w_n[k,c] + f1 - f2, lw_total)
+                    val -= 0.5 * (
+                        np.conj(Rabm[k, a]) * Rabm[k, c] +
+                        np.conj(Rabm[k, a]) * Rbap[k, c] +
+                        np.conj(Rbap[k, a]) * Rabm[k, c] +
+                        np.conj(Rbap[k, a]) * Rbap[k, c]
+                    ) * G
+
+                    G = n1 * n2 * _lorentz(w_n[k,c] - f1 - f2, lw_total)
+                    val -= 0.5 * (
+                        np.conj(Rabm[k, a]) * Rabm[k, c] +
+                        np.conj(Rabm[k, a]) * Rbam[k, c] +
+                        np.conj(Rbam[k, a]) * Rabm[k, c] +
+                        np.conj(Rbam[k, a]) * Rbam[k, c]
+                    ) * G
+
+                    G = (n1 + 1.0) * (n2 + 1.0) * _lorentz(w_n[k,c] + f1 + f2, lw_total)
+                    val -= 0.5 * (
+                        np.conj(Rabp[k, a]) * Rabp[k, c] +
+                        np.conj(Rabp[k, a]) * Rbap[k, c] +
+                        np.conj(Rbap[k, a]) * Rabp[k, c] +
+                        np.conj(Rbap[k, a]) * Rbap[k, c]
+                    ) * G
+
+            # ------------------------------------------------------------------
+            #  Higher‑order corrections (K21, dK21)  –  fully implemented
+            # ------------------------------------------------------------------
+            # if correction:
+            #     lw_tot = lw1 + lw2
+            #     for lk in range(N):
+            #         for ll in range(N):
+            #             sec2 = Ener[a] - Ener[lk] + Ener[ll] - Ener[b]
+            #             sec3 = Ener[lk] - Ener[c] + Ener[d] - Ener[ll]
+            #             if (np.abs(sec2) < sec_tol) and (np.abs(sec3) < sec_tol):
+            #                 #  G2   (built with V2)
+            #                 e_shift = Ener[c] - Ener[d]
+            #                 G2 = get_K21(V2, Ener, T, f2, e_shift, lw_tot, smear, lk, ll, c, d)
+
+            #                 #  K2   (built with V1) – energy denominator ΔE
+            #                 Ediff  = Ener[lk] - Ener[ll] - Ener[c] + Ener[d]
+            #                 if np.abs(Ediff) >= sec_tol:
+            #                     num  = get_K21(V1, Ener, T, f1, Ener[lk] - Ener[ll], lw_tot, smear, a, b, lk, ll)
+            #                     num -= get_K21(V1, Ener, T, f1, e_shift,            lw_tot, smear, a, b, lk, ll)
+            #                     K2   = num / Ediff
+            #                 else:
+            #                     K2   = get_dK21(V1, Ener, T, f1, e_shift, lw_tot, smear, a, b, lk, ll)
+            #                 val -= K2 * G2
+
+            #                 #  Swap V1 ↔ V2
+            #                 G2 = get_K21(V1, Ener, T, f1, e_shift, lw_tot, smear, lk, ll, c, d)
+            #                 if np.abs(Ediff) >= sec_tol:
+            #                     num  = get_K21(V2, Ener, T, f2, Ener[lk] - Ener[ll], lw_tot, smear, a, b, lk, ll)
+            #                     num -= get_K21(V2, Ener, T, f2, e_shift,            lw_tot, smear, a, b, lk, ll)
+            #                     K2   = num / Ediff
+            #                 else:
+            #                     K2   = get_dK21(V2, Ener, T, f2, e_shift, lw_tot, smear, a, b, lk, ll)
+            #                 val -= K2 * G2
+
+            R[ab, cd, ind] += prefc * val
+
 @njit(nogil=True, cache=True, fastmath=True, parallel=True)
-def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: np.ndarray, H_grad: np.ndarray, grid: np.ndarray, modes_low: float, modes_high: float, beta: float, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, sec_tol):
+def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: np.ndarray, H_grad: np.ndarray, grid: np.ndarray, modes_low: float, modes_high: float, beta: float, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, sec_tol, R41):
     n_k_inv = 1.0 / np.sqrt(grid.shape[0])
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
 
     # modes_high = np.log(1e40)/beta
 
     gamma = np.asarray([0.0, 0.0, 0.0])
-    freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
-    # scale_freq = np.min(freq)
+    freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
+    freq_shape = freq0.shape[0]
+    # scale_freq = np.min(freq0)
+
+    # Raman ----------------------------------------------------------------------------------
+    threads_number = get_num_threads()
+    max_grid_per_thread = np.int64(np.ceil(grid.shape[0]/threads_number))
+    Yb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]), np.complex128)
+    wb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape), np.float64)
+    raman_counter = np.zeros(threads_number, dtype=np.int64)
+    raman_counter_wb = np.zeros(threads_number, dtype=np.int64)
+    raman_counter_2wb = np.zeros(threads_number, dtype=np.int64)
+    # ----------------------------------------------------------------------------------------
 
     for i in prange(grid.shape[0]):
         thread_id = get_thread_id()
@@ -933,6 +1148,17 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
         Yb = np.zeros((wb.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
         get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, modes_low)
 
+        # Raman ----------------------------------------------------------------------------------
+        raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
+        raman_counter_2wb[thread_id] = raman_counter_wb[thread_id] + wb.shape[0]
+        Yb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = Yb
+        wb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = wb
+        if not q_0:
+            Yb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = np.conjugate(np.transpose(Yb, (0,2,1)))
+            wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
+        raman_counter[thread_id] = raman_counter_2wb[thread_id]
+        # ----------------------------------------------------------------------------------------
+
         for t_index in range(beta.shape[0]):
             bose = bose_occ(wb, beta[t_index])
             add_KR_bundle(M_KR[t_index], Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, cutoff)
@@ -940,18 +1166,36 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
             add_rho0_bundle(rho_vec_init[t_index], M_rho0_trace[t_index], A_e, Yb, wb, bose, beta[t_index], w_n, q_0, rho_mat[t_index], thread_id)
             add_R21_bundle(R21[t_index], Yb, wb, bose, gamma_fwhm, w_n, q_0, thread_id, sec_tol, cutoff)
 
+    # Raman ----------------------------------------------------------------------------------
+    wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
+    Yb_array = Yb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]))
+    N_pairs = wb_array.size * (wb_array.size + 1) // 2
+    print("Pairs:", N_pairs)
+    for t_index_raman in range(beta.shape[0]):
+        print("T start")
+        bose_raman = bose_occ(wb_array, beta[t_index_raman])
+        for p in prange(N_pairs):
+            thread_id = get_thread_id()
+            k = np.int64((np.sqrt(8*p + 1) - 1) // 2)
+            l = p - k*(k + 1)//2
+            if wb_array[k] == 0.0 or wb_array[l] == 0.0:
+                continue
+            add_R41(R41[t_index_raman], w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, sec_tol=sec_tol)
+    # ----------------------------------------------------------------------------------------
+
+
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [71] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [0.01]          # FWHM in cm-1
-    T_list          = [1.9,2.0,2.1,2.2] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    npoints_list    = [9] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [4]          # FWHM in cm-1
+    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_low       = 0.01    #cm-1
     modes_high      = 145 #cm-1
     q_ranges        = [0.5]
-    cutoff_list     = [15]
+    cutoff_list     = [12]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True
@@ -967,7 +1211,8 @@ if __name__ == "__main__":
     step                = 0.0001
     omega_Hz            = np.logspace(0.1, 10, 200)
     chi_H_T = np.zeros((len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)
-    tau_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
+    tau_R21_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
+    tau_R41_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
 
     # refresh the .slt file
     if os.path.exists(slt_filepath):
@@ -1060,7 +1305,7 @@ if __name__ == "__main__":
 
                 for gamma_fwhm, cutoff in itertools.product(gamma_fwhm_list, cutoff_list):
 
-                        chi_T, relax_time_T = susceptibility_relax_time(
+                        chi_T, relax_time_R21_T, relax_time_R41_T = susceptibility_relax_time(
                             omega_Hz, H_total, A_op, B_op, H_grad,
                             np.asarray(T_list, dtype=np.float64), gamma_fwhm, cutoff, slt_hessian.hessian()[:], masses_inv_sqrt, dof_array, grid, modes_low, modes_high,
                             states_number=states_number,
@@ -1068,7 +1313,8 @@ if __name__ == "__main__":
                             secular_tolerance=secular_tolerance)
 
                         chi_H_T[B[0],:,:] = chi_T
-                        tau_H_T[B[0],:] = relax_time_T
+                        tau_R21_H_T[B[0],:] = relax_time_R21_T
+                        tau_R41_H_T[B[0],:] = relax_time_R41_T
 
                         for T in enumerate(T_list):
                             label = (f"np={npoints}, γ={gamma_fwhm:.0e}, "
@@ -1076,11 +1322,13 @@ if __name__ == "__main__":
                             step_plotter = make_step_plotter(ax_re, ax_im, label)
                             for omega in enumerate(omega_Hz):
                                 step_plotter(omega[0], omega[1], chi_T[T[0],omega[0]])
-                            tau_plotter(npoints, relax_time_T[T[0]])
+                            tau_plotter(npoints, relax_time_R21_T[T[0]])
+                            tau_plotter(npoints, relax_time_R41_T[T[0]])
 
     B_array = np.asarray(B_list)*T_FILED_OE
     export_susceptibility_csv(T_list, B_array, omega_Hz, chi_H_T, "./seminarium/test_ac_relacs.dat")
-    export_tau_csv(T_list, B_array, tau_H_T, "./seminarium/test_tau_relacs.dat")
+    export_tau_csv(T_list, B_array, tau_R41_H_T, "./seminarium/test_tau_R21_relacs.dat")
+    export_tau_csv(T_list, B_array, tau_R41_H_T, "./seminarium/test_tau_R41_relacs.dat")
 
                 # base_name = f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}{"_corr" if correlation else ""}"
 

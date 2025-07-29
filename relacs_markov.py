@@ -1154,19 +1154,18 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
             add_R41(R41[t_index_raman], w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, A, B, thread_id, sec_tol=sec_tol)
     # ----------------------------------------------------------------------------------------
 
-
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [7] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [10]          # FWHM in cm-1
+    npoints_list    = [9] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [7]          # FWHM in cm-1
     T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_low       = 0.01    #cm-1
     modes_high      = 145 #cm-1
     q_ranges        = [0.5]
-    cutoff_list     = [15]
+    cutoff_list     = [10]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True
@@ -1299,7 +1298,7 @@ if __name__ == "__main__":
 
     B_array = np.asarray(B_list)*T_FILED_OE
     export_susceptibility_csv(T_list, B_array, omega_Hz, chi_H_T, "./seminarium/test_ac_relacs.dat")
-    export_tau_csv(T_list, B_array, tau_R41_H_T, "./seminarium/test_tau_R21_relacs.dat")
+    export_tau_csv(T_list, B_array, tau_R21_H_T, "./seminarium/test_tau_R21_relacs.dat")
     export_tau_csv(T_list, B_array, tau_R41_H_T, "./seminarium/test_tau_R41_relacs.dat")
 
                 # base_name = f"/home/mikolaj/Documents/PosterECMOLS25/{lanthanide}_{B}_{gamma_fwhm}_{npoints}{"_corr" if correlation else ""}"

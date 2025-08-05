@@ -16,14 +16,14 @@ ArrayLike = Union[Sequence, np.ndarray]
 
 import h5py
 import scipy.special.cython_special
-from numba import njit, prange, set_num_threads, get_thread_id, get_num_threads
+from numba import njit, prange, set_num_threads, get_thread_id
 from numba.extending import get_cython_function_address
-
 from threadpoolctl import threadpool_limits
+import tqdm
+
 import slothpy as slt
 from slothpy._general_utilities._constants import A_BOHR, H_CM_1, B_AU_T, AU_BOHR_CM_1, MU_B_CM_3
 from slothpy._general_utilities._io import _hamiltonian_derivatives_from_dir_to_slt
-from slothpy._general_utilities._lapack import _zdot3d
 from slothpy._general_utilities._math_expresions import _central_finite_difference_stencil
 from slothpy.core._slt_file import SltHessian
 from slothpy.core._hessian_object import Hessian
@@ -57,18 +57,19 @@ def dawsn(x):
 def k_mch(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray):
     k_mch = []
     U_R0_T = U_R0.conj().T
-
-    for dof in dof_array:
+    print("Calculating K_MCH term:")
+    for dof in tqdm.tqdm(dof_array):
         k_mch.append(U_R0_T @ group[f"{dof[0]}_{dof[1]}_{dof[2]}_{dof[3]}"][:] @ U_R0)
 
     return np.asarray(k_mch, dtype=np.complex128)
 
-def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, magnetic_field_vector: np.ndarray, displacement_number: int, step: float, degeneracy_tolerance: float = 1e-9):
+def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, B_vec: np.ndarray, displacement_number: int, step: float, degeneracy_tolerance: float = 1e-9):
     E_grad = []
     k_U = []
     finite_difference_stencil = _central_finite_difference_stencil(1, displacement_number, step * A_BOHR)
 
-    for dof in dof_array:
+    print("Calculating dE + K_U terms:")
+    for dof in tqdm.tqdm(dof_array):
         E_grad_component = np.zeros(U_R0.shape[0], dtype=np.float64)
         k_U_component = np.zeros_like(U_R0)
         stencil_index = -1
@@ -77,7 +78,8 @@ def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, magne
             if displacement == 0:
                 continue
             group_name = f"{dof[0]}_{dof[1]}_{dof[2]}_{dof[3]}_{displacement}"
-            hamiltonian = group[f"{group_name}/HAMILTONIAN_MATRIX"][:]+_zdot3d(group[f"{group_name}/MAGNETIC_DIPOLE_MOMENTA"][:], -magnetic_field_vector)
+            magnetic_momenta = group[f"{group_name}/MAGNETIC_DIPOLE_MOMENTA"][:]
+            hamiltonian = group[f"{group_name}/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])
             E, U_R0_delta = np.linalg.eigh(hamiltonian)
 
             S = U_R0_delta.conj().T @ U_R0
@@ -106,7 +108,9 @@ def full_derivatives(dof_array, group, B_vec, displacement_number, step, degener
     E_grad_array, k_U_array = E_grad_k_U(dof_array, group, U_R0, B_vec, displacement_number, step, degeneracy_tolerance)
     anti_symm_energy = E_tot_0[None, :] - E_tot_0[:, None]
     H_grad = np.empty_like(k_mch_array)
-    for i in range(H_grad.shape[0]):
+    print("Calculating the whole H_grad array:")
+
+    for i in tqdm.tqdm(range(H_grad.shape[0])):
         grad_mch = anti_symm_energy * k_mch_array[i]
         grad_mch = (grad_mch + grad_mch.conj().T) * 0.5
         grad_ku = anti_symm_energy * k_U_array[i]
@@ -117,6 +121,7 @@ def full_derivatives(dof_array, group, B_vec, displacement_number, step, degener
     
     H_grad = np.ascontiguousarray(H_grad[:, :states_number, :states_number]) * H_CM_1
     
+    print("Applying the translational symmetry constraint:")
     dir_idx = dof_array[:, 0] % 3
     for l in (0, 1, 2):
         mask = dir_idx == l
@@ -1115,29 +1120,29 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [111] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1]]          # FWHM in cm-1
-    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
-    B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
-    states_number   = 6                   # electronic sub-space size
-    modes_low       = 0.01    #cm-1
-    modes_high      = 145 #cm-1
+    npoints_list    = [63] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [[0.5,0.51,0.52,0.53,0.54,0.55]]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    T_list          = [24,26,28,30,32,34] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    B_list          = [0.3]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
+    states_number   = 13                   # electronic sub-space size
+    modes_low       = 1    #cm-1
+    modes_high      = 735 #cm-1
     q_ranges        = [0.5]
-    cutoff_list     = [[5,5.5,6,6.5,7,7.5,8.0,8.5,9,9.5,10]]
+    cutoff_list     = [[5,5.1,5.2,5.3,5.4,5.5]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True
     # ────────────────────────────────────────────────────────────────────────
 
     # one-shot data that never changes over the sweep -----------------------
-    lanthanide          = "Yb"
+    lanthanide          = "Tb"
     orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
     dirpath             = f"/home/mikolaj/Data/Displacements_small_0001/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
     slt_filepath        = "./seminarium/import.slt"
     group_name          = "xxx"
     displacement_number = 1
     step                = 0.0001
-    omega_Hz            = np.logspace(0.1, 10, 200)
+    omega_Hz            = np.logspace(-4, 7, 300)
     omega_angular       = 2*pi*omega_Hz
     chi_H_T = np.zeros((len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)
     tau_R21_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
@@ -1318,5 +1323,3 @@ if __name__ == "__main__":
     ax_im.legend(fontsize="x-small", frameon=False, ncols=2)
     plt.ioff()                   # stop live updates
     plt.show()
-            
-# R21 = build_R21(Ener, T, lw, smear, gen, sec_tol=sec_tol)

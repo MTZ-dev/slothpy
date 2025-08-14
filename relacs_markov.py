@@ -400,64 +400,64 @@ def Jhat_p_sec(w_ab, wq, n_q, d, cutoff):
         return gaussian(w_ab + wq, d, cutoff) * (n_q + 1)
     return 0.0 + 0.0 * 1j 
 
-# @njit(nogil=True, cache=True, fastmath=True)
-# def lorentz_hilbert(E, d):
-#     return -1j / (E - 1j * d)
-
-# @njit(nogil=True, cache=True, fastmath=True)
-# def Jhat_p(w_ab, wq, n_q, d, cutoff):
-#     if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
-#         return lorentz_hilbert(w_ab - wq, d) * n_q
-#     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
-#         return lorentz_hilbert(w_ab + wq, d) * (n_q + 1)
-#     return 0.0 + 0.0 * 1j 
-
-# @njit(nogil=True, cache=True, fastmath=True)
-# def Jhat_m(w_ab, wq, n_q, d, cutoff):
-#     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
-#         return lorentz_hilbert(w_ab + wq, d) * n_q
-#     if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
-#         return lorentz_hilbert(w_ab - wq, d) * (n_q + 1)
-#     return 0.0 + 0.0 * 1j
-
-# @njit(nogil=True, cache=True, fastmath=True)
-# def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
-#     u = w_cd + w_ab
-#     if u < 0 and np.abs(u + wq) < cutoff:
-#         return lorentz_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
-#     if u > 0 and np.abs(u - wq) < cutoff:
-#         return lorentz_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
-#     return 0.0 + 0.0 * 1j
-
 @njit(nogil=True, cache=True, fastmath=True)
-def gauss_hilbert(E, d):
-    factor_sqrt = E / (np.sqrt(2)*d)
-    return np.sqrt(np.pi*0.5) / d * (np.exp(-(factor_sqrt*factor_sqrt)) - 2j / np.sqrt(np.pi) * dawsn(factor_sqrt))
+def lorentz_hilbert(E, d):
+    return -1j / (E - 1j * d)
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jhat_p(w_ab, wq, n_q, d, cutoff):
     if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
-        return gauss_hilbert(w_ab - wq, d) * n_q
+        return lorentz_hilbert(w_ab - wq, d) * n_q
     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
-        return gauss_hilbert(w_ab + wq, d) * (n_q + 1)
+        return lorentz_hilbert(w_ab + wq, d) * (n_q + 1)
     return 0.0 + 0.0 * 1j 
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jhat_m(w_ab, wq, n_q, d, cutoff):
     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
-        return gauss_hilbert(w_ab + wq, d) * n_q
+        return lorentz_hilbert(w_ab + wq, d) * n_q
     if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
-        return gauss_hilbert(w_ab - wq, d) * (n_q + 1)
+        return lorentz_hilbert(w_ab - wq, d) * (n_q + 1)
     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
     u = w_cd + w_ab
     if u < 0 and np.abs(u + wq) < cutoff:
-        return gauss_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
+        return lorentz_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
     if u > 0 and np.abs(u - wq) < cutoff:
-        return gauss_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
+        return lorentz_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
     return 0.0 + 0.0 * 1j
+
+# @njit(nogil=True, cache=True, fastmath=True)
+# def gauss_hilbert(E, d):
+#     factor_sqrt = E / (np.sqrt(2)*d)
+#     return np.sqrt(np.pi*0.5) / d * (np.exp(-(factor_sqrt*factor_sqrt)) - 2j / np.sqrt(np.pi) * dawsn(factor_sqrt))
+
+# @njit(nogil=True, cache=True, fastmath=True)
+# def Jhat_p(w_ab, wq, n_q, d, cutoff):
+#     if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
+#         return gauss_hilbert(w_ab - wq, d) * n_q
+#     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
+#         return gauss_hilbert(w_ab + wq, d) * (n_q + 1)
+#     return 0.0 + 0.0 * 1j 
+
+# @njit(nogil=True, cache=True, fastmath=True)
+# def Jhat_m(w_ab, wq, n_q, d, cutoff):
+#     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
+#         return gauss_hilbert(w_ab + wq, d) * n_q
+#     if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
+#         return gauss_hilbert(w_ab - wq, d) * (n_q + 1)
+#     return 0.0 + 0.0 * 1j
+
+# @njit(nogil=True, cache=True, fastmath=True)
+# def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
+#     u = w_cd + w_ab
+#     if u < 0 and np.abs(u + wq) < cutoff:
+#         return gauss_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
+#     if u > 0 and np.abs(u - wq) < cutoff:
+#         return gauss_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
+#     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
 def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff):
@@ -466,7 +466,7 @@ def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff):
     if q_0:
         coeff *= 0.5
     for j in range(J):
-        Y, wq, n_q= Yb[j], wb[j], nb[j]
+        Y, wq, n_q, delta_j, cutoff_j = Yb[j], wb[j], nb[j], delta[j], cutoff[j]
         Yh=np.conjugate(Y.T)
         for a in range(N):
             for b in range(N):
@@ -476,12 +476,12 @@ def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff):
                     cd=liou(c,d,N)
                     val=0.0+0.0j
                     for e in range(N):
-                        val+=Jcorr(w_n[e,c],w_n[d,b],wq,n_q,delta,beta,cutoff)*A[e,c]*(Yh[d,b]*Y[a,e]+Y[d,b]*Yh[a,e])
-                        val-=Jcorr(w_n[a,d],w_n[d,e],wq,n_q,delta,beta,cutoff)*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                        val+=Jcorr(w_n[e,c],w_n[d,b],wq,n_q,delta_j,beta,cutoff_j)*A[e,c]*(Yh[d,b]*Y[a,e]+Y[d,b]*Yh[a,e])
+                        val-=Jcorr(w_n[a,d],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
                         if a == c:
                             for f in range(N):
-                                val+=Jcorr(w_n[e,f],w_n[d,e],wq,n_q,delta,beta,cutoff)*A[e,f]*(Yh[f,b]*Y[d,e]+Y[f,b]*Yh[d,e])
-                        val-=Jcorr(w_n[e,b],w_n[d,e],wq,n_q,delta,beta,cutoff)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
+                                val+=Jcorr(w_n[e,f],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*A[e,f]*(Yh[f,b]*Y[d,e]+Y[f,b]*Yh[d,e])
+                        val-=Jcorr(w_n[e,b],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
                     out[ab,cd,i]+=val*coeff
 
 @njit(nogil=True, cache=True, fastmath=True)
@@ -491,7 +491,7 @@ def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, cutoff):
     if q_0:
         coeff *= 0.5
     for j in range(J):
-        Y, wq, n_q = Yb[j], wb[j], nb[j]
+        Y, wq, n_q, delta_j, cutoff_j = Yb[j], wb[j], nb[j], delta[j], cutoff[j]
         Yh = np.conjugate(Y.T)
         for a in range(N):
             for b in range(N):
@@ -503,15 +503,15 @@ def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, cutoff):
                         if d==b:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_p(w_n[e,d],wq,n_q,delta,cutoff)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
+                                tmp+=Jhat_p(w_n[e,d],wq,n_q,delta_j,cutoff_j)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
                             val+=tmp
-                        val-=Jhat_p(w_n[a,d],wq,n_q,delta,cutoff)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat_p(w_n[a,d],wq,n_q,delta_j,cutoff_j)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         if a==c:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_m(w_n[c,e],wq,n_q,delta,cutoff)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
+                                tmp+=Jhat_m(w_n[c,e],wq,n_q,delta_j,cutoff_j)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
                             val+=tmp
-                        val-=Jhat_m(w_n[c,b],wq,n_q,delta,cutoff)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat_m(w_n[c,b],wq,n_q,delta_j,cutoff_j)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
                         out[ab,cd,i]+=val * coeff
 
 @njit(nogil=True, cache=True, fastmath=True)
@@ -923,7 +923,6 @@ def susceptibility_relax_time(
 
 @njit(nogil=True, cache=True, fastmath=True)
 def _build_dynamical_matrix(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, kpoint: np.ndarray):
-
     dyn_mat = np.zeros(masses_inv_sqrt.shape, dtype=np.complex128)
 
     for nx in prange(hessian.shape[0]):
@@ -949,7 +948,7 @@ def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff):
     if q_0:
         prefc *= 0.5
     for j in range(J):
-        Y, wq, n_q = Yb[j], wb[j], nb[j]
+        Y, wq, n_q, delta_j, cutoff_j = Yb[j], wb[j], nb[j], delta[j], cutoff[j]
         Yh = np.conjugate(Y.T)
         for a in range(N):
             for b in range(N):
@@ -960,14 +959,14 @@ def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff):
                         if abs(w_n[a,c]+w_n[d,b]) > sec_tol:
                             continue
                         val = 0.0 + 0.0j
-                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[b,d], wq, n_q, delta, cutoff)
-                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[a,c], wq, n_q, delta, cutoff)
+                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[b,d], wq, n_q, delta_j, cutoff_j)
+                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[a,c], wq, n_q, delta_j, cutoff_j)
                         if d == b:
                             for j in range(N):
-                                val -= (Yh[a,j]*Y[j,c] + Y[a,j]*Yh[j,c]) * Jhat_p(w_n[j,c], wq, n_q, delta, cutoff)
+                                val -= (Yh[a,j]*Y[j,c] + Y[a,j]*Yh[j,c]) * Jhat_p(w_n[j,c], wq, n_q, delta_j, cutoff_j)
                         if c == a:
                             for j in range(N):
-                                val -= (Y[j,b]*Yh[d,j] + Yh[j,b]*Y[d,j]) * Jhat_p(w_n[j,d], wq, n_q, delta, cutoff)
+                                val -= (Y[j,b]*Yh[d,j] + Yh[j,b]*Y[d,j]) * Jhat_p(w_n[j,d], wq, n_q, delta_j, cutoff_j)
                         out[ab,cd,i] += prefc * val
 
 @njit(cache=True)
@@ -1053,7 +1052,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     freq_shape = freq0.shape[0]
-    # scale_freq = np.min(freq0)
+    scale_freq = np.min(freq0)
 
     # Raman ----------------------------------------------------------------------------------
     # threads_number = get_num_threads()
@@ -1070,7 +1069,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
         q = grid[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
-        # freq = freq + scale_freq
+        freq = freq + scale_freq
         freq *= AU_BOHR_CM_1
 
         if q_0:
@@ -1094,10 +1093,17 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 
         for t_index in range(beta.shape[0]):
             bose = bose_occ(wb, beta[t_index])
-            add_KR_bundle(M_KR[t_index], Yb, wb, bose, gamma_fwhm[t_index], w_n, q_0, thread_id, cutoff[t_index])
-            add_PSI_bundle(M_PSI[t_index], A_e, Yb, wb, bose, gamma_fwhm[t_index], beta[t_index], w_n, q_0, thread_id, cutoff[t_index])
+            # change here because now t_index zero must be the smallest temp, also you should take minimum wb accros all the q points - impossible here that is why we use ones
+            fwhm_j = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * wb * (2 / np.expm1(0.5 * wb * beta[t_index]) + 1)
+            if not q_0:
+                fwhm_j[:3] = gamma_fwhm[t_index] / modes_high**2 / (1/beta[-1]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3
+            # print(thread_id, 1/beta[t_index]/KB, fwhm_j)
+            cutoff_j = np.minimum(fwhm_j * 40.0, 21)
+            # print(thread_id, 1/beta[t_index]/KB, cutoff_j)
+            add_KR_bundle(M_KR[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, cutoff_j)
+            add_PSI_bundle(M_PSI[t_index], A_e, Yb, wb, bose, fwhm_j, beta[t_index], w_n, q_0, thread_id, cutoff_j)
             add_rho0_bundle(rho_vec_init[t_index], M_rho0_trace[t_index], A_e, Yb, wb, bose, beta[t_index], w_n, q_0, rho_mat[t_index], thread_id)
-            add_R21_bundle(R21[t_index], Yb, wb, bose, gamma_fwhm[t_index], w_n, q_0, thread_id, sec_tol, cutoff[t_index])
+            add_R21_bundle(R21[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, sec_tol, cutoff_j)
 
     # Raman ----------------------------------------------------------------------------------
     # wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
@@ -1120,22 +1126,22 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [63] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[0.5,0.51,0.52,0.53,0.54,0.55]]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
-    T_list          = [24,26,28,30,32,34] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
-    B_list          = [0.3]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
-    states_number   = 13                   # electronic sub-space size
-    modes_low       = 1    #cm-1
-    modes_high      = 735 #cm-1
+    npoints_list    = [61] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [[0.5,0.5,0.5,0.5,0.5,0.5]]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
+    states_number   = 6                   # electronic sub-space size
+    modes_low       = 0.001    #cm-1
+    modes_high      = 145 #cm-1
     q_ranges        = [0.5]
-    cutoff_list     = [[5,5.1,5.2,5.3,5.4,5.5]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
+    cutoff_list     = [[1,1,1,1,1,1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True
     # ────────────────────────────────────────────────────────────────────────
 
     # one-shot data that never changes over the sweep -----------------------
-    lanthanide          = "Tb"
+    lanthanide          = "Yb"
     orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
     dirpath             = f"/home/mikolaj/Data/Displacements_small_0001/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
     slt_filepath        = "./seminarium/import.slt"

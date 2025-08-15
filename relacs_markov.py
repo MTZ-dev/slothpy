@@ -1055,7 +1055,6 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     freq_shape = freq0.shape[0]
     scale_freq = np.min(freq0)
-    max_freq_acoustic = np.min(freq0[3:]+scale_freq)*AU_BOHR_CM_1
     arr = np.diag(w_n, k=1)
     w_n_qtm_max = arr[0]
     for i in range(2, arr.size, 2):  # step of 2
@@ -1094,6 +1093,11 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
         Yb = np.zeros((wb.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
         get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, modes_low)
 
+        if q_0:
+            max_freq_acoustic = np.min(wb)
+        else:
+            max_freq_acoustic = np.min(wb[3:])
+
         # Raman ----------------------------------------------------------------------------------
         # raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
         # raman_counter_2wb[thread_id] = raman_counter_wb[thread_id] + wb.shape[0]
@@ -1107,13 +1111,12 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 
         for t_index in range(beta.shape[0]):
             bose = bose_occ(wb, beta[t_index])
-            # change here because now t_index zero must be the smallest temp, also you should take minimum wb accros all the q points - impossible here that is why we use ones
-            fwhm_j = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * wb * (2 / np.expm1(0.5 * wb * beta[t_index]) + 1)
+            fwhm_j = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[0]) + 1) * wb * (2 / np.expm1(0.5 * wb * beta[t_index]) + 1)
             if not q_0:
-                fwhm_j[:3] = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * max_freq_acoustic * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[-1]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3
-            # if thread_id == 0:
-            #     print(max_freq_acoustic, wb, 1/beta[t_index]/KB, fwhm_j)
+                fwhm_j[:3] = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[0]) + 1) * max_freq_acoustic * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[0]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3
             cutoff_j = np.minimum(fwhm_j * 100, np.abs(wb + 1.01 * w_n_qtm_max))
+            # if thread_id == 0:
+            #     print(max_freq_acoustic, 1/beta[t_index]/KB, wb, fwhm_j, cutoff_j)
             # if thread_id == 0:
             #     print(wb, 1/beta[t_index]/KB, cutoff_j)
             add_KR_bundle(M_KR[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, cutoff_j)
@@ -1142,15 +1145,15 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [41] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[1,1,1,1,1,1]]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
-    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    npoints_list    = [37] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [[0.05]*12]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_low       = 0.00001    #cm-1
     modes_high      = 145 #cm-1
-    q_ranges        = [0.5]
-    cutoff_list     = [[1,1,1,1,1,1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
+    q_ranges        = [0.125,0.25,0.5]
+    cutoff_list     = [[1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
     correlation = True

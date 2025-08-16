@@ -460,9 +460,9 @@ def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
 #     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff):
+def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff, weight):
     N=w_n.shape[0]; J=wb.size
-    coeff = H_BAR * 0.5
+    coeff = H_BAR * 0.5 * weight
     if q_0:
         coeff *= 0.5
     for j in range(J):
@@ -485,9 +485,9 @@ def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff):
                     out[ab,cd,i]+=val*coeff
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, cutoff):
+def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, cutoff, weight):
     N = w_n.shape[0]; J = wb.size
-    coeff = H_BAR * 0.5
+    coeff = H_BAR * 0.5 * weight
     if q_0:
         coeff *= 0.5
     for j in range(J):
@@ -583,13 +583,15 @@ def liou(a, b, N):
 def half_bz_grid_aniso(
     b_len: Sequence[float],
     n_ref: int,
-    q_range: float,
+    start_q: float,
+    end_q: float = 0.0,
     *,
     endpoint: bool = True,
     tol: float = 1e-12
 ) -> np.ndarray:
     """
-    Anisotropic first-BZ mesh with equal point density in Cartesian q-space.
+    Anisotropic first-BZ mesh with equal point density in Cartesian q-space,
+    optionally excluding the central region per axis.
 
     Parameters
     ----------
@@ -597,17 +599,24 @@ def half_bz_grid_aniso(
         Lengths |b1|, |b2|, |b3| of the reciprocal-lattice vectors.
     n_ref    : int (odd)
         Points along the *shortest* axis in the *full* mesh (must be odd).
+    start_q  : float
+        Outer limit per axis; grid spans [-start_q, start_q] on each axis.
+    end_q    : float, optional
+        Inner exclusion half-width per axis. If 0 (default), nothing is
+        excluded and the grid is continuous. If > 0, per-axis domain is
+        [-start_q,-end_q] ∪ [end_q,start_q] (Γ excluded unless end_q≈0).
     endpoint : bool, optional
-        If True,  +0.5  is included on every axis (closed grid);
-        if False (default), the grid is half-open on the +0.5 side.
-        In both cases 0 is centred on all axes.
+        If True, the positive end (+start_q) is included (closed grid);
+        if False, the grid is half-open on the +start_q side.
+        In both cases 0 is centred on all axes (since n is odd).
     tol      : float, optional
         Tolerance for zero / symmetry tests.
 
     Returns
     -------
     q : (M, 3) ndarray
-        Unique q-points (fractional coords), one per {+q, –q}, Γ included.
+        Unique q-points (fractional coords), one per {+q, –q}.
+        Γ is included only when end_q <= tol.
     """
     # ---- 0. sanity checks -------------------------------------------------
     if n_ref % 2 == 0:
@@ -616,6 +625,11 @@ def half_bz_grid_aniso(
     b_len = np.asarray(b_len, float)
     if b_len.size != 3 or np.any(b_len <= 0):
         raise ValueError("b_len must contain three positive numbers.")
+
+    if not (start_q > 0):
+        raise ValueError("start_q must be positive.")
+    if end_q < 0 or end_q >= start_q:
+        raise ValueError("Require 0 <= end_q < start_q.")
 
     # ---- 1. choose n_i so that |b_i|/(n_i – 1) ≈ const -------------------
     b_min = b_len.min()
@@ -626,21 +640,33 @@ def half_bz_grid_aniso(
             n += 1
         n_axis.append(n)
 
-    # ---- 2. build the full tensor-product grid ---------------------------
+    # ---- 2. build per-axis arrays over [-start_q, start_q] ---------------
+    # Use linspace for both closed and half-open (endpoint=False) variants.
+    # Then, if end_q > 0, drop the inner segment (-end_q, end_q) per axis.
     ax = []
     for n in n_axis:
-        if endpoint:                         # closed grid: ±0.5 both included
-            ax.append(np.linspace(-q_range, q_range, n, endpoint=True, dtype=float))
-        else:                                # half-open: +0.5 excluded, 0 centred
-            k  = n // (1/q_range)                      # n = 2·k + 1  (odd!)
-            ax.append(np.arange(-k, k + 1, dtype=float) / n)  # step = 1/n
+        arr = np.linspace(-start_q, start_q, n, endpoint=endpoint, dtype=np.float64)
+        if end_q > tol:
+            # keep values in [-start_q,-end_q] ∪ [end_q,start_q] (within tol)
+            mask = (arr <= -end_q + tol) | (arr >= end_q - tol)
+            arr = arr[mask]
+            if arr.size == 0:
+                raise ValueError(
+                    "After excluding the inner region, an axis became empty. "
+                    "Increase n_ref or reduce end_q."
+                )
+        ax.append(arr)
+
+    # ---- 3. full tensor-product grid -------------------------------------
     full = np.array(np.meshgrid(*ax, indexing="ij")).reshape(3, -1).T  # (N, 3)
 
-    # ---- 3. inversion-symmetry reduction ---------------------------------
+    # ---- 4. inversion-symmetry reduction ---------------------------------
     keep = np.zeros(full.shape[0], dtype=bool)
+    include_gamma = (end_q <= tol)
+
     for i, (x, y, z) in enumerate(full):
-        # Γ is always kept
-        if abs(x) < tol and abs(y) < tol and abs(z) < tol:
+        # Γ kept only when inner region is not excluded
+        if include_gamma and abs(x) < tol and abs(y) < tol and abs(z) < tol:
             keep[i] = True
             continue
         # first non-zero component decides the (+) half
@@ -653,7 +679,7 @@ def half_bz_grid_aniso(
 
     q_unique = full[keep]
 
-    # ---- 4. sort for reproducibility -------------------------------------
+    # ---- 5. sort for reproducibility -------------------------------------
     idx = np.lexsort(q_unique.T[::-1])
     return q_unique[idx]
 
@@ -665,8 +691,17 @@ def multigrid_aniso(
     endpoint: bool = True,
     tol: float = 1e-12
 ) -> np.ndarray:
+    grids_list = []
+    weights_list = []
+    q_ranges.insert(0, 0.0)
+    for i_q in range(1,len(q_ranges)):
+        aniso_grid = half_bz_grid_aniso(b_len, n_ref, q_ranges[i_q], q_ranges[i_q-1], endpoint=endpoint, tol=tol)
+        grid_weight = (2*q_ranges[i_q])**3
+        aniso_weights = np.full(aniso_grid.shape[0], grid_weight)
+        grids_list.append(aniso_grid)
+        weights_list.append(aniso_weights)
     
-    return np.vstack([half_bz_grid_aniso(b_len, n_ref, q_range, endpoint=endpoint, tol=tol) for q_range in q_ranges])
+    return np.vstack(grids_list), np.concatenate(weights_list)
 
 def phase_correction_eigenvectors(momenta_matrix):
 
@@ -812,7 +847,7 @@ def susceptibility_relax_time(
     T: np.ndarray,
     gamma_fwhm: float,
     cutoff: float,
-    hessian, masses_inv_sqrt, dof_array, grid, modes_low, modes_high,
+    hessian, masses_inv_sqrt, dof_array, grid, weights, modes_low, modes_high,
     *,
     states_number: int = 0,
     degeneracy_tolerance: float = 1e-6,
@@ -890,7 +925,7 @@ def susceptibility_relax_time(
 
     with threadpool_limits(1):
         start = perf_counter()
-        build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, modes_low, modes_high, beta, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, secular_tolerance, R41)
+        build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, modes_low, modes_high, beta, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, secular_tolerance, R41)
         stop = perf_counter()
         print((stop-start)/grid.shape[0]/T.shape[0])
 
@@ -942,9 +977,9 @@ def frequencies_eigenvectors(dynamical_matrix):
         return np.where(frequencies_squared >= 0, np.sqrt(np.abs(frequencies_squared)), -np.sqrt(np.abs(frequencies_squared))), eigenvectors
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff):
+def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff, weight):
     N, J = w_n.shape[0], wb.shape[0]
-    prefc = pi / H # pi * pi / H with Jhat_p_sec
+    prefc = pi / H * weight # pi * pi / H with Jhat_p_sec
     if q_0:
         prefc *= 0.5
     for j in range(J):
@@ -990,9 +1025,9 @@ def gaussian(dE: float, lw: float, cutoff: float) -> float:
     return prefactor * np.exp(exponent)
 
 @njit(cache=True)
-def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1: float, n2: float, f1: float, f2: float, lw1: float, lw2: float, ind: int, cutoff: float, A: float, B: float, sec_tol: float = 1e-6) -> np.ndarray:
+def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1: float, n2: float, f1: float, f2: float, lw1: float, lw2: float, ind: int, cutoff: float, A: float, B: float, weight: float, sec_tol: float = 1e-6) -> np.ndarray:
     N = w_n.shape[0]
-    prefc = pi * pi / H
+    prefc = pi * pi / H * weight
     lw_total = lw1
 
     Rabp = _R_pm(V1, V2, w_n, +1, f2, lw2)
@@ -1043,7 +1078,7 @@ def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1
                     out[ab, cd, ind] += prefc * val
 
 @njit(nogil=True, cache=True, fastmath=True, parallel=True)
-def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: np.ndarray, H_grad: np.ndarray, grid: np.ndarray, modes_low: float, modes_high: float, beta: float, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, sec_tol, R41):
+def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: np.ndarray, H_grad: np.ndarray, grid: np.ndarray, weights: np.ndarray, modes_low: float, modes_high: float, beta: float, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, sec_tol, R41):
     n_k_inv = 1.0 / np.sqrt(grid.shape[0])
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
 
@@ -1077,6 +1112,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
     for i in prange(grid.shape[0]):
         thread_id = get_thread_id()
         q = grid[i]
+        weight = weights[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
         freq = freq - scale_freq
@@ -1111,18 +1147,18 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 
         for t_index in range(beta.shape[0]):
             bose = bose_occ(wb, beta[t_index])
-            fwhm_j = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[0]) + 1) * wb * (2 / np.expm1(0.5 * wb * beta[t_index]) + 1)
+            fwhm_j = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[0]) + 1) * wb * (2 / np.expm1(0.5 * wb * beta[t_index]) + 1) # * weight
             if not q_0:
-                fwhm_j[:3] = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[0]) + 1) * max_freq_acoustic * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[0]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3
-            cutoff_j = np.minimum(fwhm_j * 100, np.abs(wb + 1.01 * w_n_qtm_max))
+                fwhm_j[:3] = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[0]) + 1) * max_freq_acoustic * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[0]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3 # * weight
+            cutoff_j = np.minimum(fwhm_j * 50, np.abs(wb + 1.01 * w_n_qtm_max)) 
             # if thread_id == 0:
             #     print(max_freq_acoustic, 1/beta[t_index]/KB, wb, fwhm_j, cutoff_j)
             # if thread_id == 0:
             #     print(wb, 1/beta[t_index]/KB, cutoff_j)
-            add_KR_bundle(M_KR[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, cutoff_j)
-            add_PSI_bundle(M_PSI[t_index], A_e, Yb, wb, bose, fwhm_j, beta[t_index], w_n, q_0, thread_id, cutoff_j)
+            add_KR_bundle(M_KR[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, cutoff_j, weight)
+            add_PSI_bundle(M_PSI[t_index], A_e, Yb, wb, bose, fwhm_j, beta[t_index], w_n, q_0, thread_id, cutoff_j, weight)
             add_rho0_bundle(rho_vec_init[t_index], M_rho0_trace[t_index], A_e, Yb, wb, bose, beta[t_index], w_n, q_0, rho_mat[t_index], thread_id)
-            add_R21_bundle(R21[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, sec_tol, cutoff_j)
+            # add_R21_bundle(R21[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, sec_tol, cutoff_j, weight)
 
     # Raman ----------------------------------------------------------------------------------
     # wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
@@ -1139,20 +1175,20 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
     #             continue
     #         A = 1 if k!=l else 0.25
     #         B = 1 if k!=l else 0.5
-    #         add_R41(R41[t_index_raman], w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff, sec_tol, A, B)
+    #         add_R41(R41[t_index_raman], w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff, A, B, weight, sec_tol=sec_tol)
     # ----------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [37] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[0.05]*12]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
-    T_list          = [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    npoints_list    = [41] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [[0.3]*13]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    T_list          = [1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_low       = 0.00001    #cm-1
     modes_high      = 145 #cm-1
-    q_ranges        = [0.125,0.25,0.5]
+    q_ranges        = [0.125,0.25,0.5] # 0.015625,0.03125,0.0625,0.125,0.25,
     cutoff_list     = [[1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
@@ -1260,14 +1296,14 @@ if __name__ == "__main__":
                 H_grad = full_derivatives(dof_array, grp, B_vec, 1, step, degeneracy_tolerance, states_number)
             
             for npoints in npoints_list:
-                grid = multigrid_aniso(recip_axes, npoints, q_ranges, endpoint=True)
+                grid, weights = multigrid_aniso(recip_axes, npoints, q_ranges, endpoint=True)
                 # grid = np.array([[0.0,0.0,0.0]], dtype=np.float64)
 
                 for gamma_fwhm, cutoff in itertools.product(gamma_fwhm_list, cutoff_list):
 
                         chi_T, relax_time_R21_T, relax_time_R41_T = susceptibility_relax_time(
                             omega_angular, H_total, A_op, B_op, H_grad,
-                            np.asarray(T_list, dtype=np.float64), np.asarray(gamma_fwhm, dtype=np.float64), np.asarray(cutoff, dtype=np.float64), slt_hessian.hessian()[:], masses_inv_sqrt, dof_array, grid, modes_low, modes_high,
+                            np.asarray(T_list, dtype=np.float64), np.asarray(gamma_fwhm, dtype=np.float64), np.asarray(cutoff, dtype=np.float64), slt_hessian.hessian()[:], masses_inv_sqrt, dof_array, grid, weights, modes_low, modes_high,
                             states_number=states_number,
                             degeneracy_tolerance=degeneracy_tolerance,
                             secular_tolerance=secular_tolerance)

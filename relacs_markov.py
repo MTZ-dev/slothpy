@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import os
+os.environ["OMP_PROC_BIND"] = "close"
+os.environ["OMP_PLACES"] = "cores"
+os.environ['NUMBA_OPT'] = '3'
+os.environ['NUMBA_LOOP_VECTORIZE'] = '1'
+os.environ['NUMBA_ENABLE_AVX'] = '1'
+
 import numpy as np
 from numpy import pi
 
-import os
 import re
 import posixpath
 import itertools
@@ -38,7 +44,7 @@ mpl.colormaps.register(cmc.managua, name = "managua")
 import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.ticker import ScalarFormatter, LogLocator, LogFormatterExponent
-
+from matplotlib.colors import LogNorm
 
 KB        = 0.6950347291
 H         = 33.3571775619
@@ -99,7 +105,7 @@ def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray, B_vec
 
 def full_derivatives(dof_array, group, B_vec, displacement_number, step, degeneracy_tolerance, states_number):
 
-    magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
+    magnetic_momenta = group["0/MAGNETIC_DIPOLE_MOMENTA"][:]
 
     hamiltonian0 = group[f"0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2])
     E_tot_0, U_R0 = np.linalg.eigh(hamiltonian0)
@@ -197,6 +203,20 @@ def export_tau_csv(
         fp.write("T,H,tau\n")
         writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
         writer.writerows(rows)
+
+def _set_equal_3d(ax, X, Y, Z):
+    """Make 3D axes scale equal for nicer geometry perception."""
+    x_range = X.max() - X.min()
+    y_range = Y.max() - Y.min()
+    z_range = Z.max() - Z.min()
+    max_range = max(x_range, y_range, z_range)
+    x_mid = 0.5 * (X.max() + X.min())
+    y_mid = 0.5 * (Y.max() + Y.min())
+    z_mid = 0.5 * (Z.max() + Z.min())
+    half = 0.5 * max_range
+    ax.set_xlim(x_mid - half, x_mid + half)
+    ax.set_ylim(y_mid - half, y_mid + half)
+    ax.set_zlim(z_mid - half, z_mid + half)
 
 def plot_susceptibility_curves(
         omega_rad_s : np.ndarray,        # (M,)
@@ -460,14 +480,48 @@ def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
 #     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff, weight):
+def build_Jp_Jm_tables_j(w_n, wb, nb, delta, cutoff):
+    N = w_n.shape[0]
+    J = wb.shape[0]
+    Jp = np.empty((J, N, N), np.complex128)
+    Jm = np.empty((J, N, N), np.complex128)
+
+    for j in range(J):
+        wq, n_q, delta_j, cutoff_j = wb[j], nb[j], delta[j], cutoff[j]
+        for a in range(N):
+            for b in range(N):
+                x = w_n[a, b]
+                Jp[j, a, b] = Jhat_p(x,wq,n_q,delta_j,cutoff_j)
+                Jm[j, a, b] = Jhat_m(x,wq,n_q,delta_j,cutoff_j)
+
+    return Jp, Jm
+
+@njit(nogil=True, cache=True, fastmath=True)
+def build_Y_table_j(Yb):
+    J, N, _ = Yb.shape
+    out = np.empty((J, N, N, N, N), np.complex128)
+
+    for j in prange(J):
+        Y  = Yb[j]
+        Yh = np.conjugate(Y.T).copy()
+        out_j = out[j]
+        for a in range(N):
+            Ya  = Y[a]
+            Yha = Yh[a]
+            for b in range(N):
+                s1 = Ya[b]
+                s2 = Yha[b]
+                out_j[a, b, :, :] = s1 * Yh + s2 * Y
+    return out
+
+@njit(nogil=True, cache=True, fastmath=True)
+def add_PSI_bundle(out, A, Yb_table, wb, nb, delta, beta, w_n, q_0, cutoff, weight):
     N=w_n.shape[0]; J=wb.size
     coeff = H_BAR * 0.5 * weight
     if q_0:
         coeff *= 0.5
     for j in range(J):
-        Y, wq, n_q, delta_j, cutoff_j = Yb[j], wb[j], nb[j], delta[j], cutoff[j]
-        Yh=np.conjugate(Y.T)
+        Y_j, wq, n_q, delta_j, cutoff_j = Yb_table[j], wb[j], nb[j], delta[j], cutoff[j]
         for a in range(N):
             for b in range(N):
                 ab=liou(a,b,N)
@@ -476,23 +530,24 @@ def add_PSI_bundle(out, A, Yb, wb, nb, delta, beta, w_n, q_0, i, cutoff, weight)
                     cd=liou(c,d,N)
                     val=0.0+0.0j
                     for e in range(N):
-                        val+=Jcorr(w_n[e,c],w_n[d,b],wq,n_q,delta_j,beta,cutoff_j)*A[e,c]*(Yh[d,b]*Y[a,e]+Y[d,b]*Yh[a,e])
-                        val-=Jcorr(w_n[a,d],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
+                        val+=Jcorr(w_n[e,c],w_n[d,b],wq,n_q,delta_j,beta,cutoff_j)*A[e,c]*Y_j[d,b,a,e]
+                        val-=Jcorr(w_n[a,d],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*A[a,c]*Y_j[d,e,e,b]
                         if a == c:
                             for f in range(N):
-                                val+=Jcorr(w_n[e,f],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*A[e,f]*(Yh[f,b]*Y[d,e]+Y[f,b]*Yh[d,e])
-                        val-=Jcorr(w_n[e,b],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*(Y[a,c]*Yh[d,e]+Yh[a,c]*Y[d,e])*A[e,b]
-                    out[ab,cd,i]+=val*coeff
+                                val+=Jcorr(w_n[e,f],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*A[e,f]*Y_j[f,b,d,e]
+                        val-=Jcorr(w_n[e,b],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j)*Y_j[a,c,d,e]*A[e,b]
+                    out[ab,cd]+=val*coeff
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, cutoff, weight):
-    N = w_n.shape[0]; J = wb.size
+def add_KR_bundle(out, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight):
+    J = Jhat_p_table.shape[0]; N = Jhat_p_table.shape[1]
     coeff = H_BAR * 0.5 * weight
     if q_0:
         coeff *= 0.5
     for j in range(J):
-        Y, wq, n_q, delta_j, cutoff_j = Yb[j], wb[j], nb[j], delta[j], cutoff[j]
-        Yh = np.conjugate(Y.T)
+        Y_j = Yb_table[j]
+        Jhat_p_j = Jhat_p_table[j]
+        Jhat_m_j = Jhat_m_table[j]
         for a in range(N):
             for b in range(N):
                 ab = liou(a,b,N)
@@ -503,26 +558,25 @@ def add_KR_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, cutoff, weight):
                         if d==b:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_p(w_n[e,d],wq,n_q,delta_j,cutoff_j)*(Y[a,e]*Yh[e,c] + Yh[a,e]*Y[e,c])
+                                tmp+=Jhat_p_j[e,d]*Y_j[a,e,e,c] 
                             val+=tmp
-                        val-=Jhat_p(w_n[a,d],wq,n_q,delta_j,cutoff_j)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
+                        val-=Jhat_p_j[a,d]*Y_j[a,c,d,b]
                         if a==c:
                             tmp=0.0+0.0j
                             for e in range(N):
-                                tmp+=Jhat_m(w_n[c,e],wq,n_q,delta_j,cutoff_j)*(Y[d,e]*Yh[e,b] + Yh[d,e]*Y[e,b])
+                                tmp+=Jhat_m_j[c,e]*Y_j[d,e,e,b]
                             val+=tmp
-                        val-=Jhat_m(w_n[c,b],wq,n_q,delta_j,cutoff_j)*(Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b])
-                        out[ab,cd,i]+=val * coeff
+                        val-=Jhat_m_j[c,b]*Y_j[a,c,d,b]
+                        out[ab,cd]+=val * coeff
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_rho0_bundle(out, trace, A, Yb, wb, nb, beta, w_n, q_0, rho, i):
+def add_rho0_bundle(out, trace, A, Yb_table, wb, nb, beta, w_n, q_0, rho, thread_id, t_index):
     N=w_n.shape[0]; J=wb.size
     coeff = 0.5
     if q_0:
         coeff *= 0.5
     for j in prange(J):
-        Y, wq, n_q = Yb[j], wb[j], nb[j]
-        Yh=np.conjugate(Y.T)
+        Y_j, wq, n_q = Yb_table[j], wb[j], nb[j]
         for a in range(N):
             for b in range(N):
                 ab=liou(a,b,N)
@@ -533,12 +587,12 @@ def add_rho0_bundle(out, trace, A, Yb, wb, nb, beta, w_n, q_0, rho, i):
                         w_de=w_n[d,e]
                         w_eb=w_n[e,b]
                         if b == a:
-                            trace[i]+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,+wq,beta))*rho[c,d]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])
-                        corr+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*A[a,c]*(Y[d,e]*Yh[e,b]+Yh[d,e]*Y[e,b])*rho[c,d]
+                            trace[thread_id,t_index]+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*rho[c,d]*Y_j[d,e,e,b]
+                        corr+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*A[a,c]*Y_j[d,e,e,b]*rho[c,d]
                         for f in range(N):
                             w_ef=w_n[e,f]
-                            corr-=(n_q*Iint(w_de+wq,w_ef-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_ef+wq,beta))*(1.0 if a==c else 0.0)*(Y[d,e]*Yh[e,f] + Yh[d,e]*Y[e,f])*A[f,b]*rho[c,d]
-                    out[ab,i]+=coeff*corr
+                            corr-=(n_q*Iint(w_de+wq,w_ef-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_ef+wq,beta))*(1.0 if a==c else 0.0)*Y_j[d,e,e,f]*A[f,b]*rho[c,d]
+                    out[ab]+=coeff*corr
 
 @njit(nogil=True, cache=True, fastmath=True)
 def zeta(x: float, beta: float) -> float:
@@ -587,99 +641,62 @@ def half_bz_grid_aniso(
     end_q: float = 0.0,
     *,
     endpoint: bool = True,
-    tol: float = 1e-12
+    tol: float = 1e-12,
 ) -> np.ndarray:
     """
-    Anisotropic first-BZ mesh with equal point density in Cartesian q-space,
-    optionally excluding the central region per axis.
-
-    Parameters
-    ----------
-    b_len    : (3,) sequence
-        Lengths |b1|, |b2|, |b3| of the reciprocal-lattice vectors.
-    n_ref    : int (odd)
-        Points along the *shortest* axis in the *full* mesh (must be odd).
-    start_q  : float
-        Outer limit per axis; grid spans [-start_q, start_q] on each axis.
-    end_q    : float, optional
-        Inner exclusion half-width per axis. If 0 (default), nothing is
-        excluded and the grid is continuous. If > 0, per-axis domain is
-        [-start_q,-end_q] ∪ [end_q,start_q] (Γ excluded unless end_q≈0).
-    endpoint : bool, optional
-        If True, the positive end (+start_q) is included (closed grid);
-        if False, the grid is half-open on the +start_q side.
-        In both cases 0 is centred on all axes (since n is odd).
-    tol      : float, optional
-        Tolerance for zero / symmetry tests.
-
-    Returns
-    -------
-    q : (M, 3) ndarray
-        Unique q-points (fractional coords), one per {+q, –q}.
-        Γ is included only when end_q <= tol.
+    Anisotropic half-BZ mesh (unique reps of {+q,−q}) inside an L∞ shell:
+        end_q < max(|qx|,|qy|,|qz|) <= start_q
+    If end_q == 0 the Γ point is included.
     """
-    # ---- 0. sanity checks -------------------------------------------------
-    if n_ref % 2 == 0:
-        raise ValueError("n_ref must be odd so that 0 is on the grid.")
-
+    # ---- sanity -----------------------------------------------------------
+    if n_ref <= 0:
+        raise ValueError("n_ref must be positive.")
     b_len = np.asarray(b_len, float)
     if b_len.size != 3 or np.any(b_len <= 0):
         raise ValueError("b_len must contain three positive numbers.")
-
     if not (start_q > 0):
         raise ValueError("start_q must be positive.")
     if end_q < 0 or end_q >= start_q:
         raise ValueError("Require 0 <= end_q < start_q.")
 
-    # ---- 1. choose n_i so that |b_i|/(n_i – 1) ≈ const -------------------
+    # ---- choose counts (anisotropic density) ------------------------------
     b_min = b_len.min()
     n_axis = []
     for L in b_len:
-        n = int(round(n_ref * L / b_min))    # proportional to length
-        if n % 2 == 0:                       # force odd → includes 0
-            n += 1
+        n = int(round(n_ref * L / b_min))
+        if n % 2 == 0:
+            n += 1                      # keep 0 on-grid for inner shell
         n_axis.append(n)
 
-    # ---- 2. build per-axis arrays over [-start_q, start_q] ---------------
-    # Use linspace for both closed and half-open (endpoint=False) variants.
-    # Then, if end_q > 0, drop the inner segment (-end_q, end_q) per axis.
-    ax = []
-    for n in n_axis:
-        arr = np.linspace(-start_q, start_q, n, endpoint=endpoint, dtype=np.float64)
-        if end_q > tol:
-            # keep values in [-start_q,-end_q] ∪ [end_q,start_q] (within tol)
-            mask = (arr <= -end_q + tol) | (arr >= end_q - tol)
-            arr = arr[mask]
-            if arr.size == 0:
-                raise ValueError(
-                    "After excluding the inner region, an axis became empty. "
-                    "Increase n_ref or reduce end_q."
-                )
-        ax.append(arr)
+    # ---- build full tensor grid over [-start_q, start_q]^3 ----------------
+    ax = [np.linspace(-start_q, start_q, n, endpoint=endpoint, dtype=float)
+          for n in n_axis]
+    full = np.array(np.meshgrid(*ax, indexing="ij")).reshape(3, -1).T  # (N,3)
 
-    # ---- 3. full tensor-product grid -------------------------------------
-    full = np.array(np.meshgrid(*ax, indexing="ij")).reshape(3, -1).T  # (N, 3)
+    # ---- keep L∞ shell: end_q < max|q| <= start_q -------------------------
+    maxabs = np.max(np.abs(full), axis=1)
+    # exclude inner boundary to avoid double-counting across shells
+    mask_shell = (maxabs > end_q + tol) & (maxabs <= start_q + tol)
+    full = full[mask_shell]
+    if full.size == 0:
+        return full
 
-    # ---- 4. inversion-symmetry reduction ---------------------------------
+    # ---- inversion-symmetry reduction (unique rep of {+q,−q}) ------------
     keep = np.zeros(full.shape[0], dtype=bool)
     include_gamma = (end_q <= tol)
-
     for i, (x, y, z) in enumerate(full):
-        # Γ kept only when inner region is not excluded
         if include_gamma and abs(x) < tol and abs(y) < tol and abs(z) < tol:
             keep[i] = True
             continue
-        # first non-zero component decides the (+) half
         if   x >  tol: keep[i] = True
         elif x < -tol: continue
         elif y >  tol: keep[i] = True
         elif y < -tol: continue
         elif z >  tol: keep[i] = True
-        # (z < -tol) → partner already kept
-
+        # else (z < -tol) partner already kept
     q_unique = full[keep]
 
-    # ---- 5. sort for reproducibility -------------------------------------
+    # ---- sort -------------------------------------------------------------
     idx = np.lexsort(q_unique.T[::-1])
     return q_unique[idx]
 
@@ -689,7 +706,12 @@ def multigrid_aniso(
     q_ranges: Sequence[float],
     *,
     endpoint: bool = True,
-    tol: float = 1e-12
+    tol: float = 1e-12,
+    plot: bool = False,
+    ax: mpl.axes.Axes | None = None,
+    cmap: str = "viridis",
+    s: float = 8.0,
+    alpha: float = 0.9,
 ) -> np.ndarray:
     grids_list = []
     weights_list = []
@@ -701,7 +723,35 @@ def multigrid_aniso(
         grids_list.append(aniso_grid)
         weights_list.append(aniso_weights)
     
-    return np.vstack(grids_list), np.concatenate(weights_list)
+    grid = np.vstack(grids_list)
+    weights = np.concatenate(weights_list)
+    
+    # ---- optional plot ----------------------------------------------------
+    if plot:
+        if ax is None:
+            fig = plt.figure(figsize=(6.5, 5.5), constrained_layout=True)
+            ax  = fig.add_subplot(111, projection="3d")
+        # use a gentle log scaling if weights span orders of magnitude
+        vmin, vmax = weights.min(), weights.max()
+        use_log = vmax / max(vmin, 1e-300) > 50
+        norm = LogNorm(vmin=vmin, vmax=vmax) if use_log else None
+
+        sc = ax.scatter(
+            grid[:,0], grid[:,1], grid[:,2],
+            c=weights, cmap=cmap, norm=norm, s=s, alpha=alpha, edgecolors="none"
+        )
+        _set_equal_3d(ax, grid[:,0], grid[:,1], grid[:,2])
+        ax.set_xlabel(r"$q_x$ (frac.)")
+        ax.set_ylabel(r"$q_y$ (frac.)")
+        ax.set_zlabel(r"$q_z$ (frac.)")
+        ax.set_title("Multigrid in fractional BZ (colour = weight)")
+        cbar = plt.colorbar(sc, ax=ax, pad=0.02, shrink=0.8)
+        cbar.set_label("Weight")
+        if ax.figure is not None:
+            ax.figure.canvas.draw_idle()
+            plt.show()
+    
+    return grid, weights
 
 def phase_correction_eigenvectors(momenta_matrix):
 
@@ -912,12 +962,12 @@ def susceptibility_relax_time(
             for d in range(N):
                 rho_vec[t,liou(c, d, N)] += rho_mat[t,c,d]
 
-    M_KR = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
-    M_PSI = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
-    rho_vec_init = np.zeros((temp_size, N2, threads), dtype=np.complex128)
-    M_rho0_trace = np.zeros((temp_size, threads), dtype=np.complex128)
-    R21 = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
-    R41 = np.zeros((temp_size, N2, N2, threads), dtype=np.complex128)
+    M_KR = np.zeros((threads, temp_size, N2, N2), dtype=np.complex128)
+    M_PSI = np.zeros((threads, temp_size, N2, N2), dtype=np.complex128)
+    rho_vec_init = np.zeros((threads, temp_size, N2), dtype=np.complex128)
+    M_rho0_trace = np.zeros((threads, temp_size), dtype=np.complex128)
+    R21 = np.zeros((threads, temp_size, N2, N2), dtype=np.complex128)
+    R41 = np.zeros((threads, temp_size, N2, N2), dtype=np.complex128)
 
     w_n = E[:,np.newaxis] - E[np.newaxis,:]
     
@@ -929,12 +979,12 @@ def susceptibility_relax_time(
         stop = perf_counter()
         print((stop-start)/grid.shape[0]/T.shape[0])
 
-    M_KR = np.sum(M_KR, axis=3)
-    M_PSI = np.sum(M_PSI, axis=3)
-    rho_vec_init = np.sum(rho_vec_init, axis=2)
-    M_rho0_trace = 1.0 + np.sum(M_rho0_trace, axis=1)
-    R21 = np.sum(R21, axis=3)
-    R41 = np.sum(R41, axis=3)
+    M_KR = np.sum(M_KR, axis=0)
+    M_PSI = np.sum(M_PSI, axis=0)
+    rho_vec_init = np.sum(rho_vec_init, axis=0)
+    M_rho0_trace = 1.0 + np.sum(M_rho0_trace, axis=0)
+    R21 = np.sum(R21, axis=0)
+    R41 = np.sum(R41, axis=0)
 
     eye = np.eye(N2, dtype=np.complex128)
 
@@ -977,14 +1027,14 @@ def frequencies_eigenvectors(dynamical_matrix):
         return np.where(frequencies_squared >= 0, np.sqrt(np.abs(frequencies_squared)), -np.sqrt(np.abs(frequencies_squared))), eigenvectors
 
 @njit(nogil=True, cache=True, fastmath=True)
-def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff, weight):
-    N, J = w_n.shape[0], wb.shape[0]
+def add_R21_bundle(out, Yb_table, w_n, Jhat_p_table, q_0, sec_tol, weight):
+    N, J = w_n.shape[0], Jhat_p_table.shape[0]
     prefc = pi / H * weight # pi * pi / H with Jhat_p_sec
     if q_0:
         prefc *= 0.5
     for j in range(J):
-        Y, wq, n_q, delta_j, cutoff_j = Yb[j], wb[j], nb[j], delta[j], cutoff[j]
-        Yh = np.conjugate(Y.T)
+        Y_j = Yb_table[j]
+        Jhat_p_j = Jhat_p_table[j]
         for a in range(N):
             for b in range(N):
                 ab = liou(a,b,N)
@@ -994,15 +1044,15 @@ def add_R21_bundle(out, Yb, wb, nb, delta, w_n, q_0, i, sec_tol, cutoff, weight)
                         if abs(w_n[a,c]+w_n[d,b]) > sec_tol:
                             continue
                         val = 0.0 + 0.0j
-                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[b,d], wq, n_q, delta_j, cutoff_j)
-                        val += (Y[a,c]*Yh[d,b] + Yh[a,c]*Y[d,b]) * Jhat_p(w_n[a,c], wq, n_q, delta_j, cutoff_j)
+                        val += Y_j[a,c,d,b]*Jhat_p_j[b,d]
+                        val += Y_j[a,c,d,b]*Jhat_p_j[a,c]
                         if d == b:
-                            for j in range(N):
-                                val -= (Yh[a,j]*Y[j,c] + Y[a,j]*Yh[j,c]) * Jhat_p(w_n[j,c], wq, n_q, delta_j, cutoff_j)
+                            for e in range(N):
+                                val -= Y_j[a,e,e,c]*Jhat_p_j[e,c]
                         if c == a:
-                            for j in range(N):
-                                val -= (Y[j,b]*Yh[d,j] + Yh[j,b]*Y[d,j]) * Jhat_p(w_n[j,d], wq, n_q, delta_j, cutoff_j)
-                        out[ab,cd,i] += prefc * val
+                            for f in range(N):
+                                val -= Y_j[f,b,d,f]*Jhat_p_j[f,d]
+                        out[ab,cd] += prefc * val
 
 @njit(cache=True)
 def _R_pm(V1, V2, w_n, sign, freq, lw):
@@ -1095,6 +1145,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
     for i in range(2, arr.size, 2):  # step of 2
         if arr[i] < w_n_qtm_max:
             w_n_qtm_max = arr[i]
+    print("W_n_qtm_max = ", w_n_qtm_max)
     # print((freq0-scale_freq)*AU_BOHR_CM_1)
 
     # Raman ----------------------------------------------------------------------------------
@@ -1128,6 +1179,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
         wb, modes = np.ascontiguousarray(freq[idx]), np.ascontiguousarray(modes[:,idx])
         Yb = np.zeros((wb.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
         get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, modes_low)
+        Yb_table = build_Y_table_j(Yb)
 
         if q_0:
             max_freq_acoustic = np.min(wb)
@@ -1144,21 +1196,30 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
         #     wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
         # raman_counter[thread_id] = raman_counter_2wb[thread_id]
         # ----------------------------------------------------------------------------------------
+        p = 1
 
         for t_index in range(beta.shape[0]):
+            beta_t = beta[t_index]
+            rho_mat_t = rho_mat[t_index]
+
+            M_KR_i_t = M_KR[thread_id, t_index]
+            M_PSI_i_t = M_PSI[thread_id, t_index]
+            rho_vec_init_i_t = rho_vec_init[thread_id, t_index]
+            R21_i_t = R21[thread_id, t_index]
+
             bose = bose_occ(wb, beta[t_index])
-            fwhm_j = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[0]) + 1) * wb * (2 / np.expm1(0.5 * wb * beta[t_index]) + 1) # * weight
+            # Make this 2 in the exponents as p - parameter
+            fwhm_j = gamma_fwhm[t_index] / modes_high**p / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * wb**p * (2 / np.expm1(0.5 * wb * beta[t_index]) + 1) # * weight
             if not q_0:
-                fwhm_j[:3] = gamma_fwhm[t_index] / modes_high / (2 / np.expm1(0.5 * modes_high * beta[0]) + 1) * max_freq_acoustic * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[0]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3 # * weight
-            cutoff_j = np.minimum(fwhm_j * 45, np.abs(wb + 1.01 * w_n_qtm_max)) 
-            # if thread_id == 0:
-            #     print(max_freq_acoustic, 1/beta[t_index]/KB, wb, fwhm_j, cutoff_j)
-            # if thread_id == 0:
-            #     print(wb, 1/beta[t_index]/KB, cutoff_j)
-            add_KR_bundle(M_KR[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, cutoff_j, weight)
-            add_PSI_bundle(M_PSI[t_index], A_e, Yb, wb, bose, fwhm_j, beta[t_index], w_n, q_0, thread_id, cutoff_j, weight)
-            add_rho0_bundle(rho_vec_init[t_index], M_rho0_trace[t_index], A_e, Yb, wb, bose, beta[t_index], w_n, q_0, rho_mat[t_index], thread_id)
-            # add_R21_bundle(R21[t_index], Yb, wb, bose, fwhm_j, w_n, q_0, thread_id, sec_tol, cutoff_j, weight)
+                fwhm_j[:3] = gamma_fwhm[t_index] / modes_high**p / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * max_freq_acoustic**p * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[-1]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3 # * weight
+            cutoff_j = np.minimum(fwhm_j * 200, np.abs(wb + 1.01 * w_n_qtm_max))
+
+            Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j)
+
+            add_KR_bundle(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight)
+            add_PSI_bundle(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight)
+            add_rho0_bundle(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index)
+            add_R21_bundle(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, sec_tol, weight)
 
     # Raman ----------------------------------------------------------------------------------
     # wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
@@ -1181,14 +1242,14 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [51] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[0.38]*13]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
-    T_list          = [1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
-    B_list          = [0.1]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
-    states_number   = 6                   # electronic sub-space size
+    npoints_list    = [37] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [[2]*9]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    T_list          = [23,25,26,27.5,30,32.5,35,37.5,40] # [23,25,26,27.5,30,32.5,35,37.5,40] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    B_list          = [0.3]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
+    states_number   = 13                   # electronic sub-space size
     modes_low       = 0.00001    #cm-1
-    modes_high      = 145 #cm-1
-    q_ranges        = [0.125,0.25,0.5] # 0.015625,0.03125,0.0625,0.125,0.25,
+    modes_high      = 800 #cm-1
+    q_ranges        = [0.5] # 0.015625,0.03125,0.0625,0.125,0.25,
     cutoff_list     = [[1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5
@@ -1196,7 +1257,7 @@ if __name__ == "__main__":
     # ────────────────────────────────────────────────────────────────────────
 
     # one-shot data that never changes over the sweep -----------------------
-    lanthanide          = "Yb"
+    lanthanide          = "Tb"
     orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
     dirpath             = f"/home/mikolaj/Data/Displacements_small_0001/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
     slt_filepath        = "./seminarium/import.slt"
@@ -1296,7 +1357,7 @@ if __name__ == "__main__":
                 H_grad = full_derivatives(dof_array, grp, B_vec, 1, step, degeneracy_tolerance, states_number)
             
             for npoints in npoints_list:
-                grid, weights = multigrid_aniso(recip_axes, npoints, q_ranges, endpoint=True)
+                grid, weights = multigrid_aniso(recip_axes, npoints, q_ranges, endpoint=True, plot=False)
                 # grid = np.array([[0.0,0.0,0.0]], dtype=np.float64)
 
                 for gamma_fwhm, cutoff in itertools.product(gamma_fwhm_list, cutoff_list):

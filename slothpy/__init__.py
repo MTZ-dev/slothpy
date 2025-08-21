@@ -37,7 +37,7 @@ if settings.sysexit:
 
 import os
 
-os.environ['NUMBA_OPT'] = 'max'
+os.environ['NUMBA_OPT'] = '3'
 os.environ['NUMBA_LOOP_VECTORIZE'] = '1'
 os.environ['NUMBA_ENABLE_AVX'] = '1'
 

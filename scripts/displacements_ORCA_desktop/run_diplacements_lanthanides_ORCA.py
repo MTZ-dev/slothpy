@@ -45,7 +45,7 @@ element_to_atomic_number = {
     'Pa': 91, 'U': 92
 }
 
-lanthanide_data = {
+lanthanide_data_all = {
     'Ce': {'nel':1, 'S_list':[0.5], 'NDoubGtensor':3},
     'Pr': {'nel':2, 'S_list':[1, 0], 'NDoubGtensor':5},
     'Nd': {'nel':3, 'S_list':[1.5, 0.5], 'NDoubGtensor':5},
@@ -61,10 +61,26 @@ lanthanide_data = {
     'Yb': {'nel':13, 'S_list':[0.5], 'NDoubGtensor':4}
 }
 
+lanthanide_data_single = {
+    'Ce': {'nel':1, 'S_list':[0.5], 'NDoubGtensor':3},
+    'Pr': {'nel':2, 'S_list':[1], 'NDoubGtensor':5},
+    'Nd': {'nel':3, 'S_list':[1.5], 'NDoubGtensor':5},
+    'Pm': {'nel':4, 'S_list':[2], 'NDoubGtensor':5},
+    'Sm': {'nel':5, 'S_list':[2.5], 'NDoubGtensor':3},
+    'Eu': {'nel':6, 'S_list':[3], 'NDoubGtensor':1},
+    'Gd': {'nel':7, 'S_list':[3.5], 'NDoubGtensor':4},
+    'Tb': {'nel':8, 'S_list':[3], 'NDoubGtensor':7},
+    'Dy': {'nel':9, 'S_list':[2.5], 'NDoubGtensor':8},
+    'Ho': {'nel':10, 'S_list':[2], 'NDoubGtensor':9},
+    'Er': {'nel':11, 'S_list':[1.5], 'NDoubGtensor':8},
+    'Tm': {'nel':12, 'S_list':[1], 'NDoubGtensor':7},
+    'Yb': {'nel':13, 'S_list':[0.5], 'NDoubGtensor':4}
+    }
+
 def weyl_formula(n, S, N):
     return int((2*S+1)/(n+1) * binom(n+1, N/2 - S) * binom(n+1, N/2 + S + 1))
 
-def parse_xyz_file(xyz_filename):
+def parse_xyz_file(xyz_filename, lanthanide_data):
     # Function to extract charge, multiplicity, atoms, and lanthanide information from the XYZ file
     with open(xyz_filename, 'r') as xyz_file:
         lines = xyz_file.readlines()
@@ -142,14 +158,15 @@ def build_basis_section(atoms, lanthanide_element, expbas=False):
 
     return basis_section
 
-def generate_input_file_pbe_guess(cpus, max_memory, tmp_dir):
+def generate_input_file_pbe_guess(cpus, max_memory, tmp_dir, lanthanide_data, exc_func=None):
     # Function to generate the initial PBE input file for dof_0_disp_0_guess
     project_name = 'dof_0_disp_0_guess'
     input_filename = f'{project_name}.inp' 
     input_file = os.path.join(tmp_dir, input_filename)
     xyz_filename = os.path.join('dof_0_disp_0.xyz')
-
-    charge, multiplicity, atoms, lanthanide_element, lanthanide_index = parse_xyz_file(xyz_filename)
+    
+    exc_func = "PBE" if exc_func is None else exc_func
+    charge, multiplicity, atoms, lanthanide_element, lanthanide_index = parse_xyz_file(xyz_filename, lanthanide_data)
 
     nel = lanthanide_data[lanthanide_element]['nel']
     norb = 7  # Always 7 f orbitals
@@ -166,7 +183,7 @@ def generate_input_file_pbe_guess(cpus, max_memory, tmp_dir):
     xyz_filename = os.path.join('..', f'dof_0_disp_0.xyz')
 
     # Build the ORCA input content for the initial PBE calculation
-    input_content = f"""! PBE DKH2 DKH-def2-SVP AutoAux RIJCOSX NormalSCF NoFrozenCore SlowConv UNO
+    input_content = f"""! {exc_func} DKH2 DKH-def2-SVP AutoAux RIJCOSX NormalSCF NoFrozenCore SlowConv UNO
 
 {basis_section}
 
@@ -200,13 +217,13 @@ end
 
     return input_filename
 
-def generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, moinp_file, tmp_dir, expbas, expbas_guess=False, run_expbas=False, nofrozencore=False):
+def generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, moinp_file, tmp_dir, expbas, lanthanide_data, expbas_guess=False, run_expbas=False, nofrozencore=False):
     # Function to generate the CASSCF input file using the specified %moinp file
     input_filename = f'{project_name}.inp' 
     input_file = os.path.join(tmp_dir, input_filename)
     xyz_filename = os.path.join(f'{project_name}.xyz')
 
-    charge, multiplicity, atoms, lanthanide_element, lanthanide_index = parse_xyz_file(xyz_filename)
+    charge, multiplicity, atoms, lanthanide_element, lanthanide_index = parse_xyz_file(xyz_filename, lanthanide_data)
 
     nel = lanthanide_data[lanthanide_element]['nel']
     S_list = lanthanide_data[lanthanide_element]['S_list']
@@ -245,8 +262,8 @@ def generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, 
  rel
   printlevel 4
   dosoc true{"\ndossc true" if ssc else ""}
-  # gtensor true
-  # NDoubGtensor {NDoubGtensor}
+  dogtensor true
+  NDoubGtensor {NDoubGtensor}
  end"""
     
     avas = "" if moinp_file.endswith(".gbw") and not run_expbas else f"""AVAS
@@ -298,10 +315,10 @@ end
  DoCD false
  DoDipoleLength false
  DoDipoleVelocity false
- DoHigherMoments false
- DecomposeFoscLength false
- DecomposeFoscVelocity false
- DoFullSemiclassical false
+ # DoHigherMoments false
+ # DecomposeFoscLength false
+ # DecomposeFoscVelocity false
+ # DoFullSemiclassical false
 {ptmethod_line}
 
 end
@@ -356,7 +373,7 @@ def cleanup_files(tmp_dir, project_name):
             print(f"Error moving .out file or deleting temporary directory {tmp_dir}: {e}")
             raise
 
-def process_initial_pbe_guess(cpus, max_memory, orca_path):
+def process_initial_pbe_guess(cpus, max_memory, orca_path, lanthanide_data, exc_func=None):
     project_name = 'dof_0_disp_0_guess'
     qro_file = f'{project_name}.qro'
     gbw_file = f'dof_0_disp_0.gbw'
@@ -370,7 +387,7 @@ def process_initial_pbe_guess(cpus, max_memory, orca_path):
     raise_on_exit = False
 
     try:
-        input_file = generate_input_file_pbe_guess(cpus, max_memory, tmp_dir)
+        input_file = generate_input_file_pbe_guess(cpus, max_memory, tmp_dir, lanthanide_data, exc_func)
         output_file = os.path.join(tmp_dir, f'{project_name}.out')
 
         run_orca(input_file, output_file, orca_path, tmp_dir)
@@ -389,7 +406,7 @@ def process_initial_pbe_guess(cpus, max_memory, orca_path):
         if raise_on_exit:
             raise ValueError(f"Calculation for {project_name} failed to generate the .qro file. Cannot proceed.")
 
-def process_initial_casscf(cpus, max_memory, orca_path, use_nevpt2, ssc, start_from_different_lanthanide, expbas):
+def process_initial_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nevpt2, ssc, start_from_different_lanthanide, expbas):
     project_name = 'dof_0_disp_0'
     gbw_file = f'{project_name}.gbw'
     if os.path.exists(gbw_file) and not start_from_different_lanthanide:
@@ -413,7 +430,7 @@ def process_initial_casscf(cpus, max_memory, orca_path, use_nevpt2, ssc, start_f
             start_file_tmp = start_file
         shutil.copy(start_file,  os.path.join(tmp_dir, start_file_tmp))
 
-        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, start_file_tmp, tmp_dir, False, expbas, nofrozencore=True)
+        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, start_file_tmp, tmp_dir, False, lanthanide_data, expbas, nofrozencore=True)
         output_file = os.path.join(tmp_dir, f'{project_name}.out')
 
         run_orca(input_file, output_file, orca_path, tmp_dir)
@@ -432,7 +449,7 @@ def process_initial_casscf(cpus, max_memory, orca_path, use_nevpt2, ssc, start_f
         if raise_on_exit:
             raise ValueError(f"Calculation for {project_name} failed to generate the .gbw file. Cannot proceed.")
 
-def process_expbas_casscf(cpus, max_memory, orca_path, use_nevpt2, ssc):
+def process_expbas_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nevpt2, ssc):
     project_name = 'dof_0_disp_0'
     gbw_file = f'{project_name}.gbw'
     if not os.path.exists(gbw_file):
@@ -445,7 +462,7 @@ def process_expbas_casscf(cpus, max_memory, orca_path, use_nevpt2, ssc):
         gbw_file_tmp = os.path.join(tmp_dir, 'dof_0_disp_0_guess.gbw')
         shutil.copy(gbw_file, gbw_file_tmp)
 
-        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, 'dof_0_disp_0_guess.gbw', tmp_dir, True, run_expbas=True, nofrozencore=True)
+        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, 'dof_0_disp_0_guess.gbw', tmp_dir, True, lanthanide_data, run_expbas=True, nofrozencore=True)
         output_file = os.path.join(tmp_dir, f'{project_name}.out')
 
         run_orca(input_file, output_file, orca_path, tmp_dir)
@@ -464,7 +481,7 @@ def process_expbas_casscf(cpus, max_memory, orca_path, use_nevpt2, ssc):
 
 def process_dof_disp(args_tuple):
 
-    dof_disp, cpus, max_memory, orca_path, use_nevpt2, ssc, expbas, nofrozencore = args_tuple
+    dof_disp, cpus, max_memory, orca_path, lanthanide_data, use_nevpt2, ssc, expbas, nofrozencore = args_tuple
     dof_number = dof_disp['dof_number']
     disp_number = dof_disp['disp_number']
     nx = dof_disp.get('nx')
@@ -493,7 +510,7 @@ def process_dof_disp(args_tuple):
         # Copy the .gbw file into the temporary directory
         shutil.copy(gbw_file, tmp_dir)
 
-        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, gbw_file, tmp_dir, expbas, nofrozencore)
+        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, gbw_file, tmp_dir, expbas, lanthanide_data, nofrozencore=nofrozencore)
         output_file = os.path.join(tmp_dir, f'{project_name}.out')
 
         run_orca(input_file, output_file, orca_path, tmp_dir)
@@ -518,6 +535,8 @@ def main():
     parser.add_argument('--expbas', action='store_true', help='Expand basis to SARC2-DKH-QZVP for the lanthanide ion and ma-DKH-def2-SVP for others up to Kr.')
     parser.add_argument('--start_from_different_lanthanide', action='store_true', help='If a .gbw file is present in the directory the script recalculates the guess assuming that it corresponds to a different lanthanide ion from a previous calculation. The initial .gbw file is being overwritten! (This can also be simply used to recalculate the guess)')
     parser.add_argument('--nofrozencore', action='store_true', help="Use ORCA's NoFrozenCore option during CASSCF calualtions.")
+    parser.add_argument('--exc_func', type=str, default=None, help="Change the exchange-correlation functional from the default PBE to a given one.")
+    parser.add_argument('--single_mult', action='store_true', help="Use only the gorund lanthanide's multiplicity.")
 
     args = parser.parse_args()
 
@@ -525,20 +544,22 @@ def main():
     processes = args.processes
     max_memory = args.max_memory
 
+    lanthanide_data = lanthanide_data_single if args.single_mult else lanthanide_data_all
+
     if (args.start_from_different_lanthanide):
         print("Skipping the initial PBE calculation for dof_0_disp_0_guess as restart from different lanthanide's .gbw was requested.")
     else:
         # First, process the initial PBE calculation for dof_0_disp_0_guess using all CPUs
         print("Starting initial PBE calculation for dof_0_disp_0_guess...")
-        process_initial_pbe_guess(total_cpus, max_memory, args.orca_path)
+        process_initial_pbe_guess(total_cpus, max_memory, args.orca_path, lanthanide_data, args.exc_func)
 
     # Then, process the CASSCF calculation for dof_0_disp_0 using all CPUs
     print("Starting CASSCF calculation for dof_0_disp_0...")
-    process_initial_casscf(total_cpus, max_memory, args.orca_path, args.use_nevpt2, args.ssc, args.start_from_different_lanthanide, args.expbas)
+    process_initial_casscf(total_cpus, max_memory, args.orca_path, lanthanide_data, args.use_nevpt2, args.ssc, args.start_from_different_lanthanide, args.expbas)
 
     if args.expbas:
         print("Starting expand basis CASSCF calculation for dof_0_disp_0...")
-        process_expbas_casscf(total_cpus, max_memory, args.orca_path, args.use_nevpt2, args.ssc)
+        process_expbas_casscf(total_cpus, max_memory, args.orca_path, lanthanide_data, args.use_nevpt2, args.ssc)
 
     # Prepare the list of dof_disp combinations to process in parallel (excluding dof_0_disp_0)
     xyz_files = glob.glob('dof_*.xyz')
@@ -588,7 +609,7 @@ def main():
                 processes = number_of_dof_disp
             cpus_per_process = total_cpus // processes
             memory_per_process = max_memory // processes
-            pool_args = [(dof_disp_list[i], cpus_per_process, memory_per_process, args.orca_path, args.use_nevpt2, args.ssc, args.expbas, args.nofrozencore) for i in range(len(dof_disp_list))]
+            pool_args = [(dof_disp_list[i], cpus_per_process, memory_per_process, args.orca_path, lanthanide_data, args.use_nevpt2, args.ssc, args.expbas, args.nofrozencore) for i in range(len(dof_disp_list))]
 
             with Pool(processes=processes) as pool:
                 for _ in tqdm(pool.imap_unordered(process_dof_disp, pool_args), total=len(pool_args)):

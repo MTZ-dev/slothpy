@@ -422,60 +422,60 @@ def Jhat_p_sec(w_ab, wq, n_q, d, cutoff):
 
 @njit(nogil=True, cache=True, fastmath=True)
 def lorentz_hilbert(E, d):
-    return -1j / (E - 1j * d)
+    return 1j / (E - 1j * d)
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jhat_p(w_ab, wq, n_q, d, cutoff):
-    if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
+    if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
         return lorentz_hilbert(w_ab - wq, d) * n_q
-    if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
+    if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
         return lorentz_hilbert(w_ab + wq, d) * (n_q + 1)
     return 0.0 + 0.0 * 1j 
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jhat_m(w_ab, wq, n_q, d, cutoff):
-    if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
+    if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
         return lorentz_hilbert(w_ab + wq, d) * n_q
-    if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
+    if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
         return lorentz_hilbert(w_ab - wq, d) * (n_q + 1)
     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
     u = w_cd + w_ab
-    if u < 0 and np.abs(u + wq) < cutoff:
+    if u < 0 and u + wq < cutoff and u + wq > 0:
         return lorentz_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
-    if u > 0 and np.abs(u - wq) < cutoff:
+    if u > 0 and u - wq > -cutoff and u - wq < 0:
         return lorentz_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
     return 0.0 + 0.0 * 1j
 
 # @njit(nogil=True, cache=True, fastmath=True)
 # def gauss_hilbert(E, d):
 #     factor_sqrt = E / (np.sqrt(2)*d)
-#     return np.sqrt(np.pi*0.5) / d * (np.exp(-(factor_sqrt*factor_sqrt)) - 2j / np.sqrt(np.pi) * dawsn(factor_sqrt))
+#     return np.sqrt(np.pi*0.5) / d * (np.exp(-(factor_sqrt*factor_sqrt)) + 2j / np.sqrt(np.pi) * dawsn(factor_sqrt))
 
 # @njit(nogil=True, cache=True, fastmath=True)
 # def Jhat_p(w_ab, wq, n_q, d, cutoff):
-#     if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
+#     if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
 #         return gauss_hilbert(w_ab - wq, d) * n_q
-#     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
+#     if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
 #         return gauss_hilbert(w_ab + wq, d) * (n_q + 1)
 #     return 0.0 + 0.0 * 1j 
 
 # @njit(nogil=True, cache=True, fastmath=True)
 # def Jhat_m(w_ab, wq, n_q, d, cutoff):
-#     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
+#     if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
 #         return gauss_hilbert(w_ab + wq, d) * n_q
-#     if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
+#     if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
 #         return gauss_hilbert(w_ab - wq, d) * (n_q + 1)
 #     return 0.0 + 0.0 * 1j
 
 # @njit(nogil=True, cache=True, fastmath=True)
 # def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
 #     u = w_cd + w_ab
-#     if u < 0 and np.abs(u + wq) < cutoff:
+#     if u < 0 and u + wq < cutoff and u + wq > 0:
 #         return gauss_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
-#     if u > 0 and np.abs(u - wq) < cutoff:
+#     if u > 0 and u - wq > -cutoff and u - wq < 0:
 #         return gauss_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
 #     return 0.0 + 0.0 * 1j
 
@@ -587,7 +587,7 @@ def add_rho0_bundle(out, trace, A, Yb_table, wb, nb, beta, w_n, q_0, rho, thread
                         w_de=w_n[d,e]
                         w_eb=w_n[e,b]
                         if b == a:
-                            trace[thread_id,t_index]+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*rho[c,d]*Y_j[d,e,e,b]
+                            trace[thread_id,t_index]+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*rho[a,d]*Y_j[d,e,e,b]
                         corr+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*A[a,c]*Y_j[d,e,e,b]*rho[c,d]
                         for f in range(N):
                             w_ef=w_n[e,f]
@@ -725,7 +725,9 @@ def multigrid_aniso(
     
     grid = np.vstack(grids_list)
     weights = np.concatenate(weights_list)
-    
+
+    q_ranges.pop(0)
+
     # ---- optional plot ----------------------------------------------------
     if plot:
         if ax is None:
@@ -1145,7 +1147,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
     for i in range(2, arr.size, 2):  # step of 2
         if arr[i] < w_n_qtm_max:
             w_n_qtm_max = arr[i]
-    print("W_n_qtm_max = ", w_n_qtm_max)
+    # print("W_n_qtm_max = ", w_n_qtm_max)
     # print((freq0-scale_freq)*AU_BOHR_CM_1)
 
     # Raman ----------------------------------------------------------------------------------
@@ -1209,10 +1211,11 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 
             bose = bose_occ(wb, beta[t_index])
             # Make this 2 in the exponents as p - parameter
-            fwhm_j = gamma_fwhm[t_index] / modes_high**p / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * wb**p * (2 / np.expm1(0.5 * wb * beta[t_index]) + 1) # * weight
-            if not q_0:
-                fwhm_j[:3] = gamma_fwhm[t_index] / modes_high**p / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * max_freq_acoustic**p * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[-1]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3 # * weight
-            cutoff_j = np.minimum(fwhm_j * 200, np.abs(wb + 1.01 * w_n_qtm_max))
+            fwhm_j = gamma_fwhm[t_index] * np.ones_like(wb) # / (1/beta[-1]/KB)**3 * (1/beta[t_index]/KB)**3 * wb / modes_high # * weight
+            # if not q_0:
+            #     fwhm_j[:3] = gamma_fwhm[t_index] / modes_high**p / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * max_freq_acoustic**p * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[-1]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3 # * weight
+            
+            cutoff_j = np.minimum(fwhm_j * 1000, np.abs(wb + 1.01 * w_n_qtm_max))
 
             Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j)
 
@@ -1242,13 +1245,13 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [37] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[2]*9]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
-    T_list          = [23,25,26,27.5,30,32.5,35,37.5,40] # [23,25,26,27.5,30,32.5,35,37.5,40] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    npoints_list    = [19] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [[0.06]*6]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    T_list          = [27.5,30,32.5,35,37.5,40] # [23,25,26,27.5,30,32.5,35,37.5,40] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.3]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
-    states_number   = 13                   # electronic sub-space size
+    states_number   = 6                   # electronic sub-space size
     modes_low       = 0.00001    #cm-1
-    modes_high      = 800 #cm-1
+    modes_high      = 600 #cm-1
     q_ranges        = [0.5] # 0.015625,0.03125,0.0625,0.125,0.25,
     cutoff_list     = [[1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5
@@ -1258,12 +1261,12 @@ if __name__ == "__main__":
 
     # one-shot data that never changes over the sweep -----------------------
     lanthanide          = "Tb"
-    orca_fragovl_path   = "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl"
-    dirpath             = f"/home/mikolaj/Data/Displacements_small_0001/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
+    orca_fragovl_path   = "/home/mikolaj/orca_6_1_0_avx2/orca_fragovl"
+    dirpath             = f"/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/{lanthanide}Co" # f"/home/mikolaj/Data/Displacements_small_0001/{lanthanide}Co_displ" # "/home/mikolaj/Data/Displacements_cluster/CeCo_displ_cluster"
     slt_filepath        = "./seminarium/import.slt"
     group_name          = "xxx"
     displacement_number = 1
-    step                = 0.0001
+    step                = 0.0005
     omega_Hz            = np.logspace(-4, 7, 300)
     omega_angular       = 2*pi*omega_Hz
     chi_H_T = np.zeros((len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)

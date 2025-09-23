@@ -1364,7 +1364,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 
             add_KR_bundle(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight)
             add_PSI_bundle(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight)
-            add_rho0_bundle(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index)
+            # add_rho0_bundle(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index)
             add_R21_bundle(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, sec_tol, weight)
 
     # Raman ----------------------------------------------------------------------------------
@@ -1388,14 +1388,14 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [19] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[0.6]*6]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
-    T_list          = [27.5,30,32.5,35,37.5,40] # [23,25,26,27.5,30,32.5,35,37.5,40] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
-    B_list          = [0.00001]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
+    npoints_list    = [27] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [[0.6]*15]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    T_list          = [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [23,25,26,27.5,30,32.5,35,37.5,40] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
+    B_list          = [0.0001]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
-    modes_low       = 0.00001    #cm-1
+    modes_low       = 0.000001    #cm-1
     modes_high      = 600 #cm-1
-    q_ranges        = [0.5] # 0.015625,0.03125,0.0625,0.125,0.25,
+    q_ranges        = [0.0625,0.125,0.25,0.5] # 0.015625,0.03125,0.0625,0.125,0.25,
     cutoff_list     = [[1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5
     secular_tolerance = 1e-5

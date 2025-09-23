@@ -28,7 +28,7 @@ from threadpoolctl import threadpool_limits
 import tqdm
 
 import slothpy as slt
-from slothpy._general_utilities._constants import A_BOHR, H_CM_1, B_AU_T, AU_BOHR_CM_1, MU_B_CM_3
+from slothpy._general_utilities._constants import A_BOHR, H_CM_1, B_AU_T, AU_BOHR_CM_1, MU_B_CM_3, MU_B_AU
 from slothpy._general_utilities._io import _hamiltonian_derivatives_from_dir_to_slt
 from slothpy._general_utilities._math_expresions import _central_finite_difference_stencil
 from slothpy.core._slt_file import SltHessian
@@ -890,16 +890,150 @@ def get_relax_time(R_mat):
 
     return (-1.0/max_neg)/S_TIME_PS
 
+
+def boltzmann_weights(E, T, k_B=KB):
+    """
+    Stable Boltzmann weights p_n = exp(-β E_n) / Z
+    """
+    E = np.asarray(E, dtype=float)
+    beta = 1.0 / (k_B * T)
+    Emin = E.min()
+    w = np.exp(-beta * (E - Emin))  # shift to avoid underflow
+    Z = w.sum()
+    return w / Z
+
+def van_vleck_scalar(E, T, M, k_B=KB, denom_tol=1e-12):
+    """
+    Van Vleck paramagnetic susceptibility for a single operator M (N x N).
+    χ_vv = 2 Σ_n p_n Σ_{m≠n} M_{n m} M_{m n} / (E_m - E_n).
+
+    Parameters
+    ----------
+    E : (N,) array_like
+        Energy eigenvalues (units consistent with k_B*T).
+    T : float
+        Temperature (K).
+    M : (N,N) array_like (complex allowed)
+        Matrix of the magnetic-moment operator along the chosen direction,
+        expressed in the eigenbasis of H0. (Hermitian typically.)
+    k_B : float
+        Boltzmann constant in the same energy units as E (default SI J/K).
+        If E is in cm^-1, pass k_B=0.69503476.
+    denom_tol : float
+        Threshold below which denominators |E_m - E_n| are considered zero
+        (degeneracy). Such terms are skipped (degenerate subspace needs a
+        separate treatment).
+
+    Returns
+    -------
+    chi_vv : float
+        Van Vleck paramagnetic susceptibility (same units as M^2 / energy).
+    """
+    E = np.asarray(E, dtype=float)
+    M = np.asarray(M, dtype=complex)
+    assert M.shape == (E.size, E.size), "M must be NxN with N=len(E)."
+
+    p = boltzmann_weights(E, T, k_B=k_B)
+
+    # Denominator Δ_{n m} = E_m - E_n (matrix with row n, col m)
+    Delta = E[None, :] - E[:, None]
+
+    # Mask diagonal & (near-)degenerate denominators
+    mask = np.abs(Delta) > denom_tol
+
+    # Numerator for scalar case: elementwise product M_{n m} * M_{m n} = (M * M^T)_{n m} elementwise, NOT a matrix product
+    numer = M * M.T
+
+    term = np.zeros_like(Delta, dtype=complex)
+    term[mask] = numer[mask] / Delta[mask]
+
+    # Sum over m for each n, weight by p_n, and multiply by 2
+    chi_vv = 2.0 * np.sum(p * np.sum(term, axis=1))
+
+    # Result should be real; remove tiny imaginary residuals
+    return float(np.real_if_close(chi_vv))
+
+def van_vleck_tensor(E, T, M_components, k_B=KB, denom_tol=1e-12, labels=None):
+    """
+    Van Vleck paramagnetic susceptibility tensor:
+    χ_{αβ} = 2 Σ_n p_n Σ_{m≠n} (M_α)_{n m} (M_β)_{m n} / (E_m - E_n).
+
+    Parameters
+    ----------
+    E : (N,) array_like
+        Energies (units consistent with k_B*T).
+    T : float
+        Temperature (K).
+    M_components : dict or sequence
+        If dict: keys like 'x','y','z' (or any labels) with (N,N) arrays.
+        If sequence: list/tuple of (N,N) arrays; set `labels` to name axes.
+    k_B : float
+        Boltzmann constant in same energy units as E (default SI).
+    denom_tol : float
+        Degeneracy threshold for |E_m - E_n|.
+    labels : list of str, optional
+        Names for components when M_components is a sequence.
+
+    Returns
+    -------
+    chi : (d,d) ndarray
+        Symmetrized real susceptibility tensor over provided components.
+    out_labels : list of str
+        Component labels in the same order as chi’s axes.
+    """
+    E = np.asarray(E, dtype=float)
+    p = boltzmann_weights(E, T, k_B=k_B)
+
+    # Normalize inputs
+    if isinstance(M_components, dict):
+        comps = list(M_components.keys())
+        Ms = [np.asarray(M_components[k], dtype=complex) for k in comps]
+        labels_out = comps
+    else:
+        Ms = [np.asarray(M, dtype=complex) for M in M_components]
+        if labels is None:
+            labels_out = [f"c{i}" for i in range(len(Ms))]
+        else:
+            labels_out = list(labels)
+
+    N = E.size
+    for M in Ms:
+        assert M.shape == (N, N), "All component matrices must be NxN."
+
+    Delta = E[None, :] - E[:, None]
+    mask = np.abs(Delta) > denom_tol
+
+    d = len(Ms)
+    chi = np.zeros((d, d), dtype=complex)
+
+    # Precompute the 1/Δ with mask
+    denom = np.zeros_like(Delta, dtype=float)
+    denom[mask] = 1.0 / Delta[mask]
+
+    # For each pair (α,β): elementwise (Mα ∘ Mβ^T) / Δ, sum as in scalar case
+    for a, Ma in enumerate(Ms):
+        for b, Mb in enumerate(Ms):
+            numer = Ma * Mb.T
+            term = np.zeros_like(Delta, dtype=complex)
+            term[mask] = numer[mask] * denom[mask]
+            chi[a, b] = 2.0 * np.sum(p * np.sum(term, axis=1))
+
+    # Enforce real symmetric tensor (tiny imaginary parts may appear numerically)
+    chi = np.real_if_close(0.5 * (chi + chi.T))
+
+    return chi, labels_out
+
+
 def susceptibility_relax_time(
     omega_grid: np.ndarray,
-    Hs: np.ndarray,
-    A: np.ndarray,
-    B: np.ndarray,
+    E: np.ndarray,
+    A_e: np.ndarray,
+    B_e: np.ndarray,
     H_grad: np.ndarray,
     T: np.ndarray,
     gamma_fwhm: float,
     cutoff: float,
-    hessian, masses_inv_sqrt, dof_array, grid, weights, modes_low, modes_high,
+    hessian, masses_inv_sqrt, dof_array, grid, weights, modes_low, modes_high, chi_isothermal,
     *,
     states_number: int = 0,
     degeneracy_tolerance: float = 1e-6,
@@ -912,14 +1046,12 @@ def susceptibility_relax_time(
     temp_size = beta.shape[0]
 
     # ── diagonalise and truncate to the requested sub-space ─────────────────
-    E, U = np.linalg.eigh(Hs)
-    A_e, B_e = U.conj().T @ A @ U, U.conj().T @ B @ U
     A_e = np.ascontiguousarray(A_e[:states_number, :states_number])
     B_e = np.ascontiguousarray(B_e[:states_number, :states_number])
 
     E = E[:states_number]
 
-    E = (E - np.min(E)) * H_CM_1
+    E = (E - np.min(E))
 
     for i in range(E.shape[0]):
         for j in range(i+1, E.shape[0]):
@@ -1000,11 +1132,22 @@ def susceptibility_relax_time(
         relax_time_R41_T[t] = get_relax_time(R41[t])
         print("R41:", relax_time_R41_T[t], np.log10(relax_time_R41_T[t]))
 
+        chi_S = van_vleck_scalar(E, T[t], A_e)
+        print(chi_S)
+
         for k, omega in enumerate(omega_grid):
             Xi       = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2) - 1j * omega * eye
             num      = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + (M_rho0 @ rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
             rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
             chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / H_CM_1 * MU_B_CM_3
+            
+            # Normalize to dimensionless transfer function
+            if k != 0:
+                chi_T[t,k] /= chi_T[t,0].real
+                chi_T[t,k] *= (chi_isothermal[t] - chi_S)
+                chi_T[t,k] += chi_S
+            
+        chi_T[t,0] = chi_isothermal[t]
 
     return chi_T, relax_time_R21_T, relax_time_R41_T
 
@@ -1215,7 +1358,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
             # if not q_0:
             #     fwhm_j[:3] = gamma_fwhm[t_index] / modes_high**p / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * max_freq_acoustic**p * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[-1]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3 # * weight
             
-            cutoff_j = np.minimum(fwhm_j * 1000, np.abs(wb + 1.01 * w_n_qtm_max))
+            cutoff_j = fwhm_j * 1000 # np.minimum(fwhm_j * 1000, np.abs(wb + 1.01 * w_n_qtm_max))
 
             Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j)
 
@@ -1246,9 +1389,9 @@ if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
     npoints_list    = [19] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[0.06]*6]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    gamma_fwhm_list = [[0.6]*6]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
     T_list          = [27.5,30,32.5,35,37.5,40] # [23,25,26,27.5,30,32.5,35,37.5,40] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
-    B_list          = [0.3]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
+    B_list          = [0.00001]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
     states_number   = 6                   # electronic sub-space size
     modes_low       = 0.00001    #cm-1
     modes_high      = 600 #cm-1
@@ -1267,7 +1410,7 @@ if __name__ == "__main__":
     group_name          = "xxx"
     displacement_number = 1
     step                = 0.0005
-    omega_Hz            = np.logspace(-4, 7, 300)
+    omega_Hz            = np.concatenate((np.array([1e-4], dtype=np.float64),np.logspace(-3, 7, 300)))
     omega_angular       = 2*pi*omega_Hz
     chi_H_T = np.zeros((len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)
     tau_R21_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
@@ -1353,9 +1496,23 @@ if __name__ == "__main__":
                 dof_array = dofs_with_complete_displacements(grp, displacement_number)
                 magnetic_momenta = grp["0/MAGNETIC_DIPOLE_MOMENTA"][:]
                 A_op = (magnetic_momenta[0] * orient[0] + magnetic_momenta[1] * orient[1] + magnetic_momenta[2] * orient[2])
-                A_op = A_op * H_CM_1
-                B_op = - A_op * 2.1142 # (cm-1/T to bohr magneton)
                 H_total = (grp["0/HAMILTONIAN_MATRIX"][:] - (magnetic_momenta[0] * B_vec[0] + magnetic_momenta[1] * B_vec[1] + magnetic_momenta[2] * B_vec[2]))
+
+                # Quick experimentalist chi_T move later
+                E_total, U_total = np.linalg.eigh(H_total)
+                A_op = U_total.conj().T @ A_op @ U_total
+
+                chi_isothermal = np.empty(len(T_list), dtype=np.float64)
+                magnetic_moment_ub = np.diag(A_op).real / MU_B_AU * B_AU_T
+
+                for t_index, temperature in enumerate(T_list):
+                    exp_diff = np.exp(-(E_total - E_total[0]) / (3.166811563e-6 * temperature))
+                    z = np.sum(exp_diff)
+                    m = np.sum(magnetic_moment_ub * exp_diff)
+                    chi_isothermal[t_index] = m / z / B[1] * MU_B_CM_3
+
+                A_op *= H_CM_1
+                B_op = - A_op * 2.1142 # (cm-1/T to bohr magneton)
 
                 H_grad = full_derivatives(dof_array, grp, B_vec, 1, step, degeneracy_tolerance, states_number)
             
@@ -1366,8 +1523,8 @@ if __name__ == "__main__":
                 for gamma_fwhm, cutoff in itertools.product(gamma_fwhm_list, cutoff_list):
 
                         chi_T, relax_time_R21_T, relax_time_R41_T = susceptibility_relax_time(
-                            omega_angular, H_total, A_op, B_op, H_grad,
-                            np.asarray(T_list, dtype=np.float64), np.asarray(gamma_fwhm, dtype=np.float64), np.asarray(cutoff, dtype=np.float64), slt_hessian.hessian()[:], masses_inv_sqrt, dof_array, grid, weights, modes_low, modes_high,
+                            omega_angular, E_total*H_CM_1, A_op, B_op, H_grad,
+                            np.asarray(T_list, dtype=np.float64), np.asarray(gamma_fwhm, dtype=np.float64), np.asarray(cutoff, dtype=np.float64), slt_hessian.hessian()[:], masses_inv_sqrt, dof_array, grid, weights, modes_low, modes_high, chi_isothermal,
                             states_number=states_number,
                             degeneracy_tolerance=degeneracy_tolerance,
                             secular_tolerance=secular_tolerance)

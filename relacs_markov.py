@@ -23,7 +23,14 @@ ArrayLike = Union[Sequence, np.ndarray]
 import h5py
 import scipy.special.cython_special
 from numba import njit, prange, set_num_threads, get_thread_id
-from numba.extending import get_cython_function_address
+from numba import types
+from numba.extending import intrinsic, get_cython_function_address
+from numba.core import cgutils
+from numba.core.base import BaseContext
+from numba.core.errors import TypingError
+from llvmlite import ir as llir
+from llvmlite import binding as llvm
+from llvmlite.ir import IRBuilder
 from threadpoolctl import threadpool_limits
 import tqdm
 
@@ -53,12 +60,84 @@ S_TIME_PS = 1e12
 T_FILED_OE = 10000
 M_AU = 1822.89
 
-addr = get_cython_function_address("scipy.special.cython_special", "__pyx_fuse_1dawsn")
-c_dawsn = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_int)(addr)
+# addr = int(get_cython_function_address("scipy.special.cython_special", "__pyx_fuse_1dawsn"))
+# llvm.add_symbol("dawsn_double", addr)
+# c_dawsn = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_int)(addr)
 
-@njit(nogil=True, cache=True, fastmath=True)
-def dawsn(x):
-    return c_dawsn(x, 0)
+# @njit(nogil=True, cache=True, fastmath=True)
+# def dawsn(x):
+#     return c_dawsn(x, 0)
+
+_DAWSN_ALIASES = {}  # {'f64': 'alias', 'f32': 'alias'}
+
+def _register_dawsn_symbols():
+    try:
+        addr_d = int(get_cython_function_address(
+            "scipy.special.cython_special", "__pyx_fuse_1dawsn"))
+        llvm.add_symbol("pybridge_dawsn_d", addr_d)
+        _DAWSN_ALIASES['f64'] = "pybridge_dawsn_d"
+    except Exception:
+        pass
+
+    try:
+        addr_f = int(get_cython_function_address(
+            "scipy.special.cython_special", "__pyx_fuse_0dawsn"))
+        llvm.add_symbol("pybridge_dawsn_f", addr_f)
+        _DAWSN_ALIASES['f32'] = "pybridge_dawsn_f"
+    except Exception:
+        # not fatal; we'll call the double version and cast if needed
+        pass
+
+# run at import (silently OK if SciPy's symbol is absent)
+_register_dawsn_symbols()
+
+@intrinsic
+def dawsn(typingctx, x_ty):
+    """
+    Dawson's integral F(x), fastcall via SciPy C-API.
+
+    Parameters
+    ----------
+    x : float32 or float64
+
+    Returns
+    -------
+    same dtype as x
+    """
+    if x_ty not in (types.float32, types.float64):
+        raise TypingError("dawsn(x): x must be float32 or float64")
+
+    # return type matches input type
+    sig = x_ty(x_ty)
+
+    def codegen(ctx: BaseContext, builder: IRBuilder, signature, args):
+        (xval,) = args
+        i32 = llir.IntType(32)
+        zero = llir.Constant(i32, 0)
+
+        if x_ty == types.float32 and 'f32' in _DAWSN_ALIASES:
+            # call float(float, int)
+            fnty = llir.FunctionType(llir.FloatType(),
+                                     [llir.FloatType(), i32])
+            callee = cgutils.get_or_insert_function(builder.module, fnty,
+                                                    name=_DAWSN_ALIASES['f32'])
+            return builder.call(callee, [xval, zero])
+
+        # fallback: call double(double, int), cast as needed
+        fnty = llir.FunctionType(llir.DoubleType(),
+                                 [llir.DoubleType(), i32])
+        callee = cgutils.get_or_insert_function(builder.module, fnty,
+                                                name=_DAWSN_ALIASES.get('f64', 'pybridge_dawsn_d'))
+
+        x_as_f64 = (xval if x_ty == types.float64
+                    else builder.fpext(xval, llir.DoubleType()))
+        res_f64 = builder.call(callee, [x_as_f64, zero])
+        if x_ty == types.float64:
+            return res_f64
+        else:
+            return builder.fptrunc(res_f64, llir.FloatType())
+
+    return sig, codegen
 
 def k_mch(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray):
     k_mch = []
@@ -420,64 +499,64 @@ def Jhat_p_sec(w_ab, wq, n_q, d, cutoff):
         return gaussian(w_ab + wq, d, cutoff) * (n_q + 1)
     return 0.0 + 0.0 * 1j 
 
-@njit(nogil=True, cache=True, fastmath=True)
-def lorentz_hilbert(E, d):
-    return 1j / (E - 1j * d)
-
-@njit(nogil=True, cache=True, fastmath=True)
-def Jhat_p(w_ab, wq, n_q, d, cutoff):
-    if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
-        return lorentz_hilbert(w_ab - wq, d) * n_q
-    if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
-        return lorentz_hilbert(w_ab + wq, d) * (n_q + 1)
-    return 0.0 + 0.0 * 1j 
-
-@njit(nogil=True, cache=True, fastmath=True)
-def Jhat_m(w_ab, wq, n_q, d, cutoff):
-    if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
-        return lorentz_hilbert(w_ab + wq, d) * n_q
-    if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
-        return lorentz_hilbert(w_ab - wq, d) * (n_q + 1)
-    return 0.0 + 0.0 * 1j
-
-@njit(nogil=True, cache=True, fastmath=True)
-def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
-    u = w_cd + w_ab
-    if u < 0 and u + wq < cutoff and u + wq > 0:
-        return lorentz_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
-    if u > 0 and u - wq > -cutoff and u - wq < 0:
-        return lorentz_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
-    return 0.0 + 0.0 * 1j
-
 # @njit(nogil=True, cache=True, fastmath=True)
-# def gauss_hilbert(E, d):
-#     factor_sqrt = E / (np.sqrt(2)*d)
-#     return np.sqrt(np.pi*0.5) / d * (np.exp(-(factor_sqrt*factor_sqrt)) + 2j / np.sqrt(np.pi) * dawsn(factor_sqrt))
+# def lorentz_hilbert(E, d):
+#     return 1j / (E - 1j * d)
 
 # @njit(nogil=True, cache=True, fastmath=True)
 # def Jhat_p(w_ab, wq, n_q, d, cutoff):
 #     if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
-#         return gauss_hilbert(w_ab - wq, d) * n_q
+#         return lorentz_hilbert(w_ab - wq, d) * n_q
 #     if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
-#         return gauss_hilbert(w_ab + wq, d) * (n_q + 1)
+#         return lorentz_hilbert(w_ab + wq, d) * (n_q + 1)
 #     return 0.0 + 0.0 * 1j 
 
 # @njit(nogil=True, cache=True, fastmath=True)
 # def Jhat_m(w_ab, wq, n_q, d, cutoff):
 #     if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
-#         return gauss_hilbert(w_ab + wq, d) * n_q
+#         return lorentz_hilbert(w_ab + wq, d) * n_q
 #     if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
-#         return gauss_hilbert(w_ab - wq, d) * (n_q + 1)
+#         return lorentz_hilbert(w_ab - wq, d) * (n_q + 1)
 #     return 0.0 + 0.0 * 1j
 
 # @njit(nogil=True, cache=True, fastmath=True)
 # def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
 #     u = w_cd + w_ab
 #     if u < 0 and u + wq < cutoff and u + wq > 0:
-#         return gauss_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
+#         return lorentz_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
 #     if u > 0 and u - wq > -cutoff and u - wq < 0:
-#         return gauss_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
+#         return lorentz_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
 #     return 0.0 + 0.0 * 1j
+
+@njit(nogil=True, cache=True, fastmath=True)
+def gauss_hilbert(E, d):
+    factor_sqrt = E / (np.sqrt(2)*d)
+    return np.sqrt(np.pi*0.5) / d * (np.exp(-(factor_sqrt*factor_sqrt)) + 2j / np.sqrt(np.pi) * dawsn(factor_sqrt))
+
+@njit(nogil=True, cache=True, fastmath=True)
+def Jhat_p(w_ab, wq, n_q, d, cutoff):
+    if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
+        return gauss_hilbert(w_ab - wq, d) * n_q
+    if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
+        return gauss_hilbert(w_ab + wq, d) * (n_q + 1)
+    return 0.0 + 0.0 * 1j 
+
+@njit(nogil=True, cache=True, fastmath=True)
+def Jhat_m(w_ab, wq, n_q, d, cutoff):
+    if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
+        return gauss_hilbert(w_ab + wq, d) * n_q
+    if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
+        return gauss_hilbert(w_ab - wq, d) * (n_q + 1)
+    return 0.0 + 0.0 * 1j
+
+@njit(nogil=True, cache=True, fastmath=True)
+def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff):
+    u = w_cd + w_ab
+    if u < 0 and u + wq < cutoff and u + wq > 0:
+        return gauss_hilbert(u + wq, d) * n_q * zeta(w_ab + wq, beta)
+    if u > 0 and u - wq > -cutoff and u - wq < 0:
+        return gauss_hilbert(u - wq, d) * (n_q + 1) * zeta(w_ab - wq, beta)
+    return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
 def build_Jp_Jm_tables_j(w_n, wb, nb, delta, cutoff):
@@ -596,7 +675,7 @@ def add_rho0_bundle(out, trace, A, Yb_table, wb, nb, beta, w_n, q_0, rho, thread
 
 @njit(nogil=True, cache=True, fastmath=True)
 def zeta(x: float, beta: float) -> float:
-    eps = 1e-14
+    eps = 1e-15
     u = beta * x
     if abs(u) < eps:
         return beta
@@ -606,11 +685,11 @@ def zeta(x: float, beta: float) -> float:
 
 @njit(nogil=True, cache=True, fastmath=True)
 def Iint(w1: float, w2: float, beta: float) -> float:
-    eps = 1e-14
+    eps = 1e-15
     u1 = w1 * beta
     u2 = w2 * beta
     u12 = u1 + u2
-    if abs(u1) > 650 or abs(u2) > 650 or abs(u12) > 650:
+    if abs(u1) > 650 or abs(u12) > 650:
         return 0.0 + 1j * 0.0
     elif abs(u1) < eps and abs(u2) < eps:
         return 0.5 * beta * beta
@@ -619,7 +698,7 @@ def Iint(w1: float, w2: float, beta: float) -> float:
         return beta * num / (w1) - np.expm1(u1) / (w1**2)
     elif abs(u1) < eps:
         return np.expm1(u2) / (w2**2) - beta / (w2)
-    elif abs(u1 + u2) < eps:
+    elif abs(u12) < eps:
         return -(beta - np.expm1(u1) / (1 * w1)) / (w1)
     term1 = np.expm1(u12) / (w2 * (w1 + w2))
     term2 = np.expm1(u1)  / (w1 * w2)
@@ -1132,8 +1211,7 @@ def susceptibility_relax_time(
         relax_time_R41_T[t] = get_relax_time(R41[t])
         print("R41:", relax_time_R41_T[t], np.log10(relax_time_R41_T[t]))
 
-        chi_S = van_vleck_scalar(E, T[t], A_e)
-        print(chi_S)
+        chi_S = 0. + 1j* 0. # van_vleck_scalar(E, T[t], A_e)
 
         for k, omega in enumerate(omega_grid):
             Xi       = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2) - 1j * omega * eye
@@ -1358,7 +1436,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
             # if not q_0:
             #     fwhm_j[:3] = gamma_fwhm[t_index] / modes_high**p / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * max_freq_acoustic**p * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[-1]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3 # * weight
             
-            cutoff_j = fwhm_j * 1000 # np.minimum(fwhm_j * 1000, np.abs(wb + 1.01 * w_n_qtm_max))
+            cutoff_j = fwhm_j * 1000000 # np.minimum(fwhm_j * 1000, np.abs(wb + 1.01 * w_n_qtm_max)) # fwhm_j * 1000 #
 
             Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j)
 
@@ -1388,13 +1466,13 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
 if __name__ == "__main__":
 
     # ── USER-CONFIGURABLE SWEEP LISTS & PARAMETERS ──────────────────────────
-    npoints_list    = [27] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
-    gamma_fwhm_list = [[0.6]*15]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
+    npoints_list    = [5] # 3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,71,77,81,85,91,101,111,121,131,141,151,161,181,201
+    gamma_fwhm_list = [[0.1]*15]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
     T_list          = [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [23,25,26,27.5,30,32.5,35,37.5,40] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.0001]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
-    states_number   = 6                   # electronic sub-space size
+    states_number   = 13                   # electronic sub-space size
     modes_low       = 0.000001    #cm-1
-    modes_high      = 600 #cm-1
+    modes_high      = 2000 #cm-1
     q_ranges        = [0.0625,0.125,0.25,0.5] # 0.015625,0.03125,0.0625,0.125,0.25,
     cutoff_list     = [[1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5
@@ -1412,7 +1490,12 @@ if __name__ == "__main__":
     step                = 0.0005
     omega_Hz            = np.concatenate((np.array([1e-4], dtype=np.float64),np.logspace(-3, 7, 300)))
     omega_angular       = 2*pi*omega_Hz
-    chi_H_T = np.zeros((len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)
+
+    from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere
+    from slothpy._general_utilities._grids_over_sphere import _fibonacci_over_sphere
+
+    orients_weights = np.asarray([[0,0,1,1]], dtype=np.float64) # lebedev_laikov_grid_over_hemisphere(0, "double")
+    chi_orient_H_T = np.zeros((orients_weights.shape[0],len(B_list),len(T_list), omega_Hz.shape[0]), dtype=np.complex128)
     tau_R21_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
     tau_R41_H_T = np.zeros((len(B_list),len(T_list)), dtype=np.float64)
 
@@ -1483,9 +1566,11 @@ if __name__ == "__main__":
     ax_tau.grid(True, ls=":")
     tau_plotter = make_tau_plotter(ax_tau)
 
-    orients = np.array([[0,0,1]], np.float64) # np.array([[0,0,1], [1,0,0], [0,1,0]], np.float64)
+    # orients = np.array([[0,0,1],[0,1,0],[1,0,0]], np.float64) # np.array([[0,0,1], [1,0,0], [0,1,0]], np.float64)
 
-    for orient in orients:
+    orients = np.ascontiguousarray(orients_weights[:,:3])
+
+    for orient_index, orient in enumerate(orients):
         orient /= (np.linalg.norm(orient) * B_AU_T)
     
         for B in enumerate(B_list):
@@ -1529,7 +1614,7 @@ if __name__ == "__main__":
                             degeneracy_tolerance=degeneracy_tolerance,
                             secular_tolerance=secular_tolerance)
 
-                        chi_H_T[B[0],:,:] = chi_T
+                        chi_orient_H_T[orient_index,B[0],:,:] = chi_T * orients_weights[orient_index, 3]
                         tau_R21_H_T[B[0],:] = relax_time_R21_T
                         tau_R41_H_T[B[0],:] = relax_time_R41_T
 
@@ -1541,9 +1626,10 @@ if __name__ == "__main__":
                                 step_plotter(omega[0], omega[1], chi_T[T[0],omega[0]])
                             tau_plotter(npoints, relax_time_R21_T[T[0]])
                             tau_plotter(npoints, relax_time_R41_T[T[0]])
-
+    
+    chi_orient_H_T = np.sum(chi_orient_H_T, axis=0) # / orients.shape[0]
     B_array = np.asarray(B_list)*T_FILED_OE
-    export_susceptibility_csv(T_list, B_array, omega_Hz, chi_H_T, "./seminarium/test_ac_relacs.dat")
+    export_susceptibility_csv(T_list, B_array, omega_Hz, chi_orient_H_T, "./seminarium/test_ac_relacs.dat")
     export_tau_csv(T_list, B_array, tau_R21_H_T, "./seminarium/test_tau_R21_relacs.dat")
     export_tau_csv(T_list, B_array, tau_R41_H_T, "./seminarium/test_tau_R41_relacs.dat")
 

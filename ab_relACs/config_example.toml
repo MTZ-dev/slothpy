@@ -1,0 +1,53 @@
+[relacs]
+slt_filepath = "./seminarium/import.slt"
+
+orientations = [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]]
+fields = [0.3]
+temperatures = [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
+frequencies = "np.logspace(-3, 7, 300)"
+
+states_number = 13
+degeneracy_tolerance = 1e-5
+psi_frequency_shift = false
+initial_correlation = false
+omega_loop = false
+chi_s = false
+
+n_points = [19]
+q_ranges = [0.125,0.25,0.5]
+broadening = "gaussian" # "lorentzian"
+fwhm = [0.021]
+adaptive_fwhm = false
+modes_low = 1e-5
+modes_high = 2000
+cutoff_fwhm = 1000
+qtm = true
+
+chi_csv_path = "./seminarium/test_ac_relacs.dat"
+tau_21_csv_path = "./seminarium/test_tau_R21_relacs.dat"
+tau_41_csv_path = "./seminarium/test_tau_R41_relacs.dat"
+show_plot = true
+
+[supercell]
+xyz_path = "./seminarium/YCo_supercell_from_cell/dof_0_disp_0.xyz"
+group_name = "YCo_supercell"
+cell_params = [22.663134149075237, 22.663134149075233, 25.14851428466812, 90.0, 90.0, 120.0]
+nx = 3
+ny = 3
+nz = 2
+replace_atoms = [0]
+new_atoms = ["Tb"]
+
+[hessian]
+path = "./seminarium/YCo_supercell_from_cell"
+group_name = "YCo_hessian"
+displacement_number = 1
+step = 0.01
+accoustic_sum_rule = "symmetric"
+
+[spin_phonon]
+path = "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/TbCo"
+group_name = "TbCo_spin_phonon"
+orca_fragovl_path = "/home/mikolaj/orca_6_1_0_avx2/orca_fragovl"
+displacement_number = 1
+step = 0.0005

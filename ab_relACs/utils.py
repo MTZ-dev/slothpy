@@ -19,10 +19,14 @@
 import ast
 import posixpath
 import re
+from typing import Sequence
 
 import numpy as np
 import h5py
 from numba import njit
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere
 from slothpy._general_utilities._constants import B_AU_T
@@ -121,5 +125,131 @@ def get_normalized_orientations_weights(cfg: AppConfig):
 @njit
 def dot_3d(M: np.ndarray, N: np.ndarray):
     return M[0] * N[0] + M[1] * N[1] + M[2] * N[2]
+
+def half_bz_grid_aniso(
+    b_len: Sequence[float],
+    n_ref: int,
+    start_q: float,
+    end_q: float = 0.0,
+    *,
+    endpoint: bool = True,
+    tol: float = 1e-12,
+) -> np.ndarray:
+    """
+    Anisotropic half-BZ mesh (unique reps of {+q,−q}) inside an L∞ shell:
+        end_q < max(|qx|,|qy|,|qz|) <= start_q
+    If end_q == 0 the Γ point is included.
+    """
+
+    if n_ref <= 0:
+        raise ValueError("n_ref must be positive.")
+    b_len = np.asarray(b_len, float)
+    if b_len.size != 3 or np.any(b_len <= 0):
+        raise ValueError("b_len must contain three positive numbers.")
+    if not (start_q > 0):
+        raise ValueError("start_q must be positive.")
+    if end_q < 0 or end_q >= start_q:
+        raise ValueError("Require 0 <= end_q < start_q.")
+
+    b_min = b_len.min()
+    n_axis = []
+    for L in b_len:
+        n = int(round(n_ref * L / b_min))
+        if n % 2 == 0:
+            n += 1
+        n_axis.append(n)
+
+    ax = [np.linspace(-start_q, start_q, n, endpoint=endpoint, dtype=float)
+          for n in n_axis]
+    full = np.array(np.meshgrid(*ax, indexing="ij")).reshape(3, -1).T 
+    maxabs = np.max(np.abs(full), axis=1)
+    mask_shell = (maxabs > end_q + tol) & (maxabs <= start_q + tol)
+    full = full[mask_shell]
+    if full.size == 0:
+        return full
+
+    keep = np.zeros(full.shape[0], dtype=bool)
+    include_gamma = (end_q <= tol)
+    for i, (x, y, z) in enumerate(full):
+        if include_gamma and abs(x) < tol and abs(y) < tol and abs(z) < tol:
+            keep[i] = True
+            continue
+        if   x >  tol: keep[i] = True
+        elif x < -tol: continue
+        elif y >  tol: keep[i] = True
+        elif y < -tol: continue
+        elif z >  tol: keep[i] = True
+    q_unique = full[keep]
+
+    idx = np.lexsort(q_unique.T[::-1])
+    return q_unique[idx]
+
+def _set_equal_3d(ax, X, Y, Z):
+    """Make 3D axes scale equal for nicer geometry perception."""
+    x_range = X.max() - X.min()
+    y_range = Y.max() - Y.min()
+    z_range = Z.max() - Z.min()
+    max_range = max(x_range, y_range, z_range)
+    x_mid = 0.5 * (X.max() + X.min())
+    y_mid = 0.5 * (Y.max() + Y.min())
+    z_mid = 0.5 * (Z.max() + Z.min())
+    half = 0.5 * max_range
+    ax.set_xlim(x_mid - half, x_mid + half)
+    ax.set_ylim(y_mid - half, y_mid + half)
+    ax.set_zlim(z_mid - half, z_mid + half)
+
+def multigrid_aniso(
+    b_len: Sequence[float],
+    n_ref: int,
+    q_ranges: Sequence[float],
+    *,
+    endpoint: bool = True,
+    tol: float = 1e-12,
+    plot: bool = False,
+    ax: mpl.axes.Axes | None = None,
+    cmap: str = "viridis",
+    s: float = 8.0,
+    alpha: float = 0.9,
+) -> np.ndarray:
+    grids_list = []
+    weights_list = []
+    q_ranges.insert(0, 0.0)
+    for i_q in range(1,len(q_ranges)):
+        aniso_grid = half_bz_grid_aniso(b_len, n_ref, q_ranges[i_q], q_ranges[i_q-1],
+                                         endpoint=endpoint, tol=tol)
+        grid_weight = (2*q_ranges[i_q])**3
+        aniso_weights = np.full(aniso_grid.shape[0], grid_weight)
+        grids_list.append(aniso_grid)
+        weights_list.append(aniso_weights)
+    
+    grid = np.vstack(grids_list)
+    weights = np.concatenate(weights_list)
+
+    q_ranges.pop(0)
+
+    if plot:
+        if ax is None:
+            fig = plt.figure(figsize=(6.5, 5.5), constrained_layout=True)
+            ax  = fig.add_subplot(111, projection="3d")
+        vmin, vmax = weights.min(), weights.max()
+        use_log = vmax / max(vmin, 1e-300) > 50
+        norm = LogNorm(vmin=vmin, vmax=vmax) if use_log else None
+
+        sc = ax.scatter(
+            grid[:,0], grid[:,1], grid[:,2],
+            c=weights, cmap=cmap, norm=norm, s=s, alpha=alpha, edgecolors="none"
+        )
+        _set_equal_3d(ax, grid[:,0], grid[:,1], grid[:,2])
+        ax.set_xlabel(r"$q_x$ (frac.)")
+        ax.set_ylabel(r"$q_y$ (frac.)")
+        ax.set_zlabel(r"$q_z$ (frac.)")
+        ax.set_title("Multigrid in fractional BZ (colour = weight)")
+        cbar = plt.colorbar(sc, ax=ax, pad=0.02, shrink=0.8)
+        cbar.set_label("Weight")
+        if ax.figure is not None:
+            ax.figure.canvas.draw_idle()
+            plt.show()
+    
+    return grid, weights
 
         

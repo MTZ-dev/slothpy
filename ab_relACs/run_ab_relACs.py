@@ -23,7 +23,8 @@ from slothpy._general_utilities._constants import H_CM_1
 from input_models import AppConfig
 from lattice import get_hessian_recip_axes_spin_phonon
 from spin_system import get_hamiltonian_magnetic_momenta_dof_array, get_chi_T, get_chi_S
-from utils import get_normalized_orientations_weights, dot_3d
+from utils import get_normalized_orientations_weights, dot_3d, multigrid_aniso
+from spin_phonon import spin_phonon_derivatives
 
 def run_relacs(cfg: AppConfig):
     hessian, recip_axes = get_hessian_recip_axes_spin_phonon(cfg)
@@ -31,6 +32,8 @@ def run_relacs(cfg: AppConfig):
     orientations, orientations_weights = get_normalized_orientations_weights(cfg)
     fields = cfg.relacs.fields
     temperatures = cfg.relacs.temperatures
+    n_points_array = cfg.relacs.n_points
+    fwhm_array = cfg.relacs.fwhm
 
     for orientation_index, orientation in enumerate(orientations):
         oriented_momenta = dot_3d(magnetic_momenta, orientation)
@@ -40,8 +43,13 @@ def run_relacs(cfg: AppConfig):
             energies_total, U_total = np.linalg.eigh(hamiltonian_total)
             A = U_total.conj().T @ oriented_momenta @ U_total
             chi_T = get_chi_T(A, energies_total, temperatures, field)
-            chi_S = get_chi_S(temperatures) #TODO: find ab initio model
+            chi_S = get_chi_S(temperatures) #TODO: find an ab initio model
             A *= H_CM_1
             B = - A
+            hamiltonian_gradients = spin_phonon_derivatives(dof_array, field_vector,
+                                                       energies_total, U_total, cfg)
+            for n_points in n_points_array:
+                grid, weights = multigrid_aniso(recip_axes, n_points, cfg.relacs.q_ranges)
+                for gamma_fwhm, cutoff in itertools.product(gamma_fwhm_list, cutoff_list): #tutaj cfg.relacs.cutoff_fwhm jako mnoznik gdzies
 
     return 0

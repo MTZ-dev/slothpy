@@ -18,6 +18,13 @@
 
 from __future__ import annotations
 
+import os
+os.environ["OMP_PROC_BIND"] = "close"
+os.environ["OMP_PLACES"] = "cores"
+os.environ['NUMBA_OPT'] = '3'
+os.environ['NUMBA_LOOP_VECTORIZE'] = '1'
+os.environ['NUMBA_ENABLE_AVX'] = '1'
+
 import argparse
 import json
 import logging

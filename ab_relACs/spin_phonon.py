@@ -17,7 +17,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
-import tqdm
 import h5py
 
 from slothpy._general_utilities._constants import H_CM_1, A_BOHR
@@ -28,8 +27,7 @@ from utils import dot_3d
 def k_mch(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray):
     k_mch = []
     U_R0_T = U_R0.conj().T
-    print("Calculating K_MCH term:")
-    for dof in tqdm.tqdm(dof_array):
+    for dof in dof_array:
         k_mch.append(U_R0_T @ group[f"{dof[0]}_{dof[1]}_{dof[2]}_{dof[3]}"][:] @ U_R0)
 
     return np.asarray(k_mch, dtype=np.complex128)
@@ -42,8 +40,7 @@ def E_grad_k_U(dof_array: np.ndarray, group: h5py.Group, U_R0: np.ndarray,
     finite_difference_stencil = _central_finite_difference_stencil(1,
                                                 displacement_number, step * A_BOHR)
 
-    print("Calculating dE + K_U terms:")
-    for dof in tqdm.tqdm(dof_array):
+    for dof in dof_array:
         E_grad_component = np.zeros(U_R0.shape[0], dtype=np.float64)
         k_U_component = np.zeros_like(U_R0)
         stencil_index = -1
@@ -84,9 +81,8 @@ def spin_phonon_derivatives(dof_array: np.ndarray, B_vec: np.ndarray,
                                               cfg.relacs.degeneracy_tolerance)
     anti_symm_energy = E_tot_0[None, :] - E_tot_0[:, None]
     H_grad = np.empty_like(k_mch_array)
-    print("Calculating the whole H_grad array:")
 
-    for i in tqdm.tqdm(range(H_grad.shape[0])):
+    for i in range(H_grad.shape[0]):
         grad_mch = anti_symm_energy * k_mch_array[i]
         grad_mch = (grad_mch + grad_mch.conj().T) * 0.5
         grad_ku = anti_symm_energy * k_U_array[i]
@@ -98,7 +94,6 @@ def spin_phonon_derivatives(dof_array: np.ndarray, B_vec: np.ndarray,
     states_number = cfg.relacs.states_number
     H_grad = np.ascontiguousarray(H_grad[:, :states_number, :states_number]) * H_CM_1
     
-    print("Applying the translational symmetry constraint:")
     dir_idx = dof_array[:, 0] % 3
     for l in (0, 1, 2):
         mask = dir_idx == l

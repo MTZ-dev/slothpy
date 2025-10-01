@@ -33,7 +33,7 @@ def get_hamiltonian_magnetic_momenta_dof_array(cfg: AppConfig):
         hamiltonian = group["0/HAMILTONIAN_MATRIX"][:]
         return hamiltonian, magnetic_momenta, dof_array
 
-@njit
+@njit(nogil=True, cache=True, fastmath=True)
 def get_chi_T(magnetic_momenta_au: np.ndarray, energies_au: np.ndarray,
               temperatures: np.ndarray, field: np.float64):
     t_shape = temperatures.shape[0]
@@ -45,6 +45,8 @@ def get_chi_T(magnetic_momenta_au: np.ndarray, energies_au: np.ndarray,
         z = np.sum(exp_diff)
         m = np.sum(magnetic_moment_ub * exp_diff)
         chi_T[t] = m / z / field * MU_B_CM_3
+    
+    return chi_T
 
 def get_chi_S(temperatures: np.ndarray):
     return np.zeros_like(temperatures)

@@ -30,7 +30,6 @@ from matplotlib.colors import LogNorm
 
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere
 from slothpy._general_utilities._constants import B_AU_T
-from input_models import AppConfig
 
 _ALLOWED_FUNCS = {
     "linspace": np.linspace,
@@ -103,7 +102,7 @@ def dofs_with_complete_displacements(h5_group: h5py.Group, displacement_number: 
     complete = np.asarray(complete, dtype=np.int64)
     return complete
 
-@njit
+@njit(nogil=True, cache=True, fastmath=True)
 def _normalize_orientations(orientations: np.ndarray):
     for vector_index in range(orientations.shape[0]):
         length = orientations[vector_index][0] ** 2 + orientations[vector_index][1] ** 2 + orientations[vector_index][2] ** 2
@@ -113,8 +112,7 @@ def _normalize_orientations(orientations: np.ndarray):
         orientations[vector_index,:3] = orientations[vector_index,:3] * length
     return orientations
 
-def get_normalized_orientations_weights(cfg: AppConfig):
-    orientations = cfg.relacs.orientations
+def get_normalized_orientations_weights(orientations):
     if isinstance(orientations, int):
         orientations = lebedev_laikov_grid_over_hemisphere(orientations, "double")
     else:
@@ -122,7 +120,7 @@ def get_normalized_orientations_weights(cfg: AppConfig):
     orientations = _normalize_orientations(orientations)
     return np.ascontiguousarray(orientations[:,:3]), np.ascontiguousarray(orientations[:,3])
 
-@njit
+@njit(nogil=True, cache=True, fastmath=True)
 def dot_3d(M: np.ndarray, N: np.ndarray):
     return M[0] * N[0] + M[1] * N[1] + M[2] * N[2]
 

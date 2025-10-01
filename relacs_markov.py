@@ -1401,7 +1401,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
         idx  = np.where(mask)[0]
         wb, modes = np.ascontiguousarray(freq[idx]), np.ascontiguousarray(modes[:,idx])
         Yb = np.zeros((wb.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
-        get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, freq, modes_low)
+        get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, wb, modes_low)
         Yb_table = build_Y_table_j(Yb)
 
         if q_0:

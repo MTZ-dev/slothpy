@@ -49,10 +49,10 @@ class InpRelacs(BaseModel):
     omega_loop: bool = False
     chi_s: bool | np.ndarray | List[float] = False
 
-    n_points: List[int] = [1]
+    n_points: np.ndarray | List[int] = [1]
     q_ranges: List[float] = [0.5]
     broadening: str = "gaussian" # "lorentzian"
-    fwhm: List[float] = [0.1]
+    fwhm: np.ndarray | List[float] = [0.1]
     adaptive_fwhm: bool = False
     modes_low: float = 0.0
     modes_high: float = 0.1
@@ -64,7 +64,7 @@ class InpRelacs(BaseModel):
     tau_41_csv_path: str= ""
     show_plot: bool = True
 
-    @field_validator("fields", "temperatures", "frequencies", mode="before")
+    @field_validator("fields", "temperatures", "frequencies", "fwhm", mode="before")
     @classmethod
     def _coerce_1d_float_arrays(cls, v):
         if isinstance(v, np.ndarray):
@@ -83,6 +83,14 @@ class InpRelacs(BaseModel):
             v = eval_numpy_expr(v)
         arr = _to_ndarray(v, dtype=float)
         return arr
+    
+    @field_validator("n_points", mode="before")
+    @classmethod
+    def _coerce_n_points(cls, v):
+        if isinstance(v, str) and v.strip().startswith("np."):
+            v = eval_numpy_expr(v)
+        arr = _to_ndarray(v, dtype=int)
+        return arr
 
     @field_validator("chi_s", mode="before")
     @classmethod
@@ -93,7 +101,7 @@ class InpRelacs(BaseModel):
             v = eval_numpy_expr(v)
         return _to_ndarray(v, dtype=float)
 
-    @field_serializer("fields", "temperatures", "frequencies", "orientations", "chi_s")
+    @field_serializer("fields", "temperatures", "frequencies", "orientations", "chi_s", "n_points", "fwhm")
     def _serialize_arrays(self, v):
         if isinstance(v, np.ndarray):
             return v.tolist()

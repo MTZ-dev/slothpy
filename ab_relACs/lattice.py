@@ -22,11 +22,11 @@ import numpy as np
 
 from input_models import AppConfig
 import slothpy as slt
+slt.set_default_error_reporting_mode()
 from slothpy.core._slt_file import SltHessian
-from slothpy.core._hessian_object import Hessian
 from slothpy._general_utilities._io import _hamiltonian_derivatives_from_dir_to_slt
 
-def get_hessian_recip_axes_spin_phonon(cfg: AppConfig) -> Tuple[Hessian, np.ndarray]:
+def get_hessian_recip_axes_masses_inv_sqrt_spin_phonon(cfg: AppConfig) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     slt_file = slt.supercell(cfg.supercell.xyz_path, cfg.relacs.slt_filepath,
                             cfg.supercell.group_name, cfg.supercell.nx,
                             cfg.supercell.ny, cfg.supercell.nz,
@@ -42,9 +42,6 @@ def get_hessian_recip_axes_spin_phonon(cfg: AppConfig) -> Tuple[Hessian, np.ndar
     slt_hessian = SltHessian(hessian)
     masses_inv_sqrt = slt_hessian._masses_inv_sqrt
     recip_axes = slt_hessian.atoms_object().cell.reciprocal().cellpar()[:3]
-    hessian_obj = Hessian(slt_hessian.hessian()[:],
-                          np.outer(masses_inv_sqrt, masses_inv_sqrt),
-                          np.array([0., 0., 0.]))
     
     _hamiltonian_derivatives_from_dir_to_slt(cfg.spin_phonon.path,
                           cfg.relacs.slt_filepath, cfg.spin_phonon.group_name,
@@ -52,4 +49,4 @@ def get_hessian_recip_axes_spin_phonon(cfg: AppConfig) -> Tuple[Hessian, np.ndar
                           cfg.relacs.number_cpus, 1, "ORCA",
                           _orca_fragovl_path = cfg.spin_phonon.orca_fragovl_path)
     
-    return hessian_obj, recip_axes
+    return slt_hessian.hessian()[:], recip_axes, masses_inv_sqrt

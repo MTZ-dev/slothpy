@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # SlothPy
 # Copyright (C) 2025 Mikolaj Tadeusz Zychowicz (MTZ)
 

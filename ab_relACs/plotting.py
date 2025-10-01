@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # SlothPy
 # Copyright (C) 2025 Mikolaj Tadeusz Zychowicz (MTZ)
 
@@ -51,7 +49,7 @@ def plot_chi_vs_freq(
     normalize_to_T0=False,
     figsize=(6,4), dpi=150, legend_cols=2, title=None, savepath=None
 ):
-    part_map = {"real": np.real, "imag": np.imag, "abs": np.abs}
+    part_map = {"real": np.real, "imag": (lambda z: np.abs(np.imag(z))), "abs": np.abs}
     if part not in part_map:
         raise ValueError("part must be one of: 'real', 'imag', 'abs'")
     take = part_map[part]
@@ -103,7 +101,7 @@ def plot_cole_cole(
             for b in bi:
                 for t in ti:
                     χ = sus_H_T[i, j, b, t]     # (freqs,)
-                    ax.plot(χ.real, χ.imag, lw=1.2,
+                    ax.plot(χ.real, np.abs(χ.imag), lw=1.2,
                             label=_label_for_combo(n_points_array, fwhm_array, fields, i, j, b)+f", T={temperatures[t]:g} K")
     ax.set_xlabel(r"$\chi'$ (a.u.)")
     ax.set_ylabel(r"$\chi''$ (a.u.)")
@@ -116,13 +114,12 @@ def plot_cole_cole(
     return ax
 
 # ---------- τ plots ---------------------------------------------------------
-def plot_tau_vs_T(
+def plot_tau_vs_inv_T(
     temperatures, fields, n_points_array, fwhm_array,
     tau_R21_H_T, tau_R41_H_T,                   # (npts, fwhm, fields, temps)
     *,
     n_points_sel="all", fwhm_sel="all", field_sel="all",
     which="R21",                                # "R21" or "R41" or "both"
-    yscale="log",                               # "log" or "linear"
     figsize=(6,4), dpi=150, legend_cols=2, title=None, savepath=None
 ):
     tau_src = {"R21": tau_R21_H_T, "R41": tau_R41_H_T}
@@ -139,8 +136,8 @@ def plot_tau_vs_T(
         for i in ni:
             for j in fi:
                 for b in bi:
-                    y = tauH[i, j, b]  # (temps,)
-                    ax.plot(temperatures, y, marker='o', ms=3, lw=1.1,
+                    y = np.log10(tauH[i, j, b])  # (temps,)
+                    ax.plot(1/temperatures, y, marker='o', ms=3, lw=1.1,
                             label=f"{label_prefix} " + _label_for_combo(n_points_array, fwhm_array, fields, i, j, b))
 
     if which in ("R21","both"):
@@ -150,9 +147,6 @@ def plot_tau_vs_T(
 
     ax.set_xlabel("T / K")
     ax.set_ylabel(r"$\tau$ (ps)")
-    if yscale == "log":
-        ax.set_yscale("log")
-        ax.yaxis.set_major_formatter(ScalarFormatter())
     ax.grid(True, which="both", ls=":")
     if title: ax.set_title(title)
     ax.legend(fontsize=8, frameon=False, ncols=legend_cols)

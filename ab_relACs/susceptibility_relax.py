@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # SlothPy
 # Copyright (C) 2025 Mikolaj Tadeusz Zychowicz (MTZ)
 
@@ -114,7 +112,7 @@ def Jhat_p_sec(w_ab, wq, n_q, d, cutoff):
         return gaussian(w_ab - wq, d, cutoff) * n_q
     if w_ab < 0:
         return gaussian(w_ab + wq, d, cutoff) * (n_q + 1)
-    return 0.0 + 0.0 * 1j 
+    return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True)
 def lorentz_hilbert(E, d):

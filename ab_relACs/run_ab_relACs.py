@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # SlothPy
 # Copyright (C) 2025 Mikolaj Tadeusz Zychowicz (MTZ)
 
@@ -31,7 +29,7 @@ from spin_phonon import spin_phonon_derivatives
 from susceptibility_relax import _DAWSN_ALIASES, _register_dawsn_symbols, make_susceptibility_relax_time
 from constants import T_FILED_OE
 from exporting import export_susceptibility_csv, export_tau_csv
-from plotting import plot_chi_vs_freq
+from plotting import plot_chi_vs_freq, plot_tau_vs_inv_T
 
 def run_relacs(cfg: AppConfig):
     _register_dawsn_symbols()
@@ -89,7 +87,9 @@ def run_relacs(cfg: AppConfig):
 
     if cfg.relacs.show_plot:
         import matplotlib.pyplot as plt
-        plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T, part="imag", title="χ''(ν) @ T=temperatures[2]")
+        plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T, part="imag", title="χ''(ν)")
+        plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T, part="real", title="χ'(ν)")
+        plot_tau_vs_inv_T(temperatures, fields, n_points_array, fwhm_array, tau_R21_orient_H_T[:,:,0,:,:], tau_R41_orient_H_T[:,:,0,:,:], which="R21", title="τ(T)")
         plt.show()
   
     return 0

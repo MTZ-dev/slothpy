@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # SlothPy
 # Copyright (C) 2025 Mikolaj Tadeusz Zychowicz (MTZ)
 
@@ -19,6 +17,8 @@
 import ast
 import posixpath
 import re
+import os
+from pathlib import Path
 from typing import Sequence
 
 import numpy as np
@@ -30,6 +30,14 @@ from matplotlib.colors import LogNorm
 
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere
 from slothpy._general_utilities._constants import B_AU_T
+
+def h5_has_group(filepath: str | os.PathLike | Path, group_path: str) -> bool:
+    try:
+        with h5py.File(filepath, "r") as f:
+            cls = f.get(group_path, getclass=True)
+            return cls is h5py.Group
+    except OSError:
+        return False
 
 _ALLOWED_FUNCS = {
     "linspace": np.linspace,

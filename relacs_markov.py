@@ -1190,7 +1190,7 @@ def susceptibility_relax_time(
         start = perf_counter()
         build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, modes_low, modes_high, beta, gamma_fwhm, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat, cutoff, R21, secular_tolerance, R41)
         stop = perf_counter()
-        print((stop-start)/grid.shape[0]/T.shape[0])
+        print((stop-start))
 
     M_KR = np.sum(M_KR, axis=0)
     M_PSI = np.sum(M_PSI, axis=0)
@@ -1470,9 +1470,9 @@ if __name__ == "__main__":
     gamma_fwhm_list = [[0.021]*16] # [[0.0095],[0.01],[0.015],[0.02],[0.025],[0.03],[0.035],[0.04],[0.045],[0.05],[0.055],[0.06],[0.065]]# [[0.5,0.52,0.54,0.56,0.58,0.60,0.62,0.64,0.66,0.68,0.7]]          # FWHM in cm-1
     T_list          = [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [23,25,26,27.5,30,32.5,35,37.5,40] # [4,10,12,15,20,25,30,35,40] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # [1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,3.0] # 2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9
     B_list          = [0.3]  # 0.05,0.1,0.2,0.3        # Tesla 0.001,0.002,0.003,0.004,
-    states_number   = 6                   # electronic sub-space size
+    states_number   = 13                   # electronic sub-space size
     modes_low       = 0.000001    #cm-1
-    modes_high      = 600 #cm-1
+    modes_high      = 2000 #cm-1
     q_ranges        = [0.125,0.25,0.5] # 0.015625,0.03125,0.0625,0.125,0.25,
     cutoff_list     = [[1]]# [[5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7]]
     degeneracy_tolerance = 1e-5

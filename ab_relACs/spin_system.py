@@ -46,5 +46,6 @@ def get_chi_T(magnetic_momenta_au: np.ndarray, energies_au: np.ndarray,
     
     return chi_T
 
+@njit(nogil=True, cache=True, fastmath=True)
 def get_chi_S(temperatures: np.ndarray):
     return np.zeros_like(temperatures)

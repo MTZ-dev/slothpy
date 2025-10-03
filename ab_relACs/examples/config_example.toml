@@ -35,14 +35,14 @@ q_ranges = [0.25,0.5]
 broadening = "gaussian" # "gaussian" # "lorentzian"
 fwhm = [0.025]
 adaptive_fwhm = false
-modes_low = 1e-5
+modes_low = 3
 modes_high = 600
 cutoff_fwhm = 1200
 qtm = true
 
 chi_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/test_ac_relacs.dat"
 tau_21_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/test_tau_R21_relacs.dat"
-tau_41_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/test_tau_R41_relacs.dat"
+tau_41_csv_path = ""
 show_plot = true
 
 [supercell]

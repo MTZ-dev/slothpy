@@ -22,8 +22,8 @@ import numpy as np
 ArrayLike = Union[Sequence, np.ndarray]
 
 def export_susceptibility_csv(
-    temperatures: ArrayLike,
     fields: ArrayLike,
+    temperatures: ArrayLike,
     freqs: ArrayLike,
     chi: np.ndarray,
     filename: str | Path = "susceptibility_data.csv",
@@ -57,8 +57,8 @@ def export_susceptibility_csv(
         writer.writerows(rows)
 
 def export_tau_csv(
-    temperatures: ArrayLike,
     fields: ArrayLike,
+    temperatures: ArrayLike,
     tau: np.ndarray,
     filename: str | Path = "tau_data.csv",
 ) -> None:

@@ -18,8 +18,9 @@ import ast
 import posixpath
 import re
 import os
+import math
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Union
 
 import numpy as np
 import h5py
@@ -257,5 +258,64 @@ def multigrid_aniso(
             plt.show()
     
     return grid, weights
+
+def make_npoints_fwhm_filename(filepath: Union[str, Path], npoints: int, fwhm: float) -> str:
+    p = Path(filepath)
+    suffixes = "".join(p.suffixes)
+    base = p.name[:-len(suffixes)] if suffixes else p.name
+
+    def fmt(v):
+        if isinstance(v, (int, float)):
+            s = f"{v:g}"
+        else:
+            s = str(v)
+        return s.replace(" ", "").replace("/", "-")
+
+    new_name = f"{base}_npoints_{fmt(npoints)}_fwhm_{fmt(fwhm)}{suffixes}"
+    return str(p.with_name(new_name))
+
+def make_npoints_fwhm_orient_filename(
+    filepath: Union[str, Path],
+    npoints: int,
+    fwhm: float,
+    orientation: Sequence[float],
+    sig: int = 6,
+    int_tol: float = 1e-12,
+) -> str:
+
+    p = Path(filepath)
+    suffixes = "".join(p.suffixes)
+    base = p.name[:-len(suffixes)] if suffixes else p.name
+
+    vec = np.asarray(orientation, dtype=float)
+    if vec.shape != (3,):
+        raise ValueError("orientation must be length-3 (x, y, z).")
+    if not np.all(np.isfinite(vec)) or not math.isfinite(fwhm):
+        raise ValueError("Non-finite numbers (NaN/Inf) are not allowed in filenames.")
+
+    def fmt_num(v):
+        # ints stay ints, floats capped to `sig` significant digits
+        if isinstance(v, (np.integer, int)):
+            s = str(int(v))
+        else:
+            fv = float(v)
+            if abs(fv - round(fv)) < int_tol:
+                s = str(int(round(fv)))
+            else:
+                s = f"{fv:.{sig}g}"  # caps total significant digits
+        # clean up filename-unfriendly artifacts
+        if s in ("-0", "-0.0", "+0", "+0.0"): s = "0"
+        return s.replace(" ", "").replace("+", "")
+
+    x, y, z = (fmt_num(v) for v in vec)
+    new_name = (
+        f"{base}"
+        f"_npoints_{fmt_num(npoints)}"
+        f"_fwhm_{fmt_num(fwhm)}"
+        f"_ori_x{x}_y{y}_z{z}"
+        f"{suffixes}"
+    )
+    return str(p.with_name(new_name))
+
 
         

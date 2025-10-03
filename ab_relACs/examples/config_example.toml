@@ -18,7 +18,7 @@
 slt_filepath = "/home/mikolaj/Sloth/Sloth/seminarium/import.slt"
 number_cpus = 64
 
-orientations = [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]]
+orientations = [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]]
 fields = [0.3]
 temperatures = [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
 frequencies = "np.logspace(-3, 7, 300)"

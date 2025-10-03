@@ -21,7 +21,7 @@ import scipy.special.cython_special
 from threadpoolctl import threadpool_limits
 from numba import set_num_threads
 
-from slothpy._general_utilities._constants import H_CM_1
+from slothpy._general_utilities._constants import H_CM_1, B_AU_T
 
 from input_models import AppConfig
 from lattice import get_hessian_recip_axes_masses_inv_sqrt_spin_phonon
@@ -92,17 +92,18 @@ def run_relacs(cfg: AppConfig):
         
     sus_H_T = np.sum(sus_orient_H_T, axis=2)
     B_array = fields * T_FILED_OE
+    orientations *= B_AU_T
     if cfg.relacs.chi_csv_path:
         for n, f in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0])):
             save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f])
             export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[n,f], save_filepath)
     if cfg.relacs.tau_21_csv_path:
         for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
-            save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_21_csv_path, n_points_array[n], fwhm_array[f], orientations[o])
+            save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_21_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
             export_tau_csv(B_array, temperatures, tau_R21_orient_H_T[n,f,o], save_filepath)
     if cfg.relacs.tau_41_csv_path:
         for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
-            save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_41_csv_path, n_points_array[n], fwhm_array[f], orientation[o])
+            save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_41_csv_path, n_points_array[n], fwhm_array[f], orientation[o], sig=6, int_tol=1e-12)
             export_tau_csv(B_array, temperatures, tau_R41_orient_H_T[n,f,o], save_filepath)
 
     if cfg.relacs.show_plot:

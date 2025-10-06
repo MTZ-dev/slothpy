@@ -77,6 +77,7 @@ def run_relacs(cfg: AppConfig):
             hamiltonian_gradients = spin_phonon_derivatives(dof_array, field_vector, energies_total, U_total, cfg)
             energies_total *= H_CM_1
             with threadpool_limits(1):
+                set_num_threads(cfg.relacs.number_cpus)
                 for n_points_index, n_points in enumerate(n_points_array):
                     grid, weights = multigrid_aniso(recip_axes, n_points, cfg.relacs.q_ranges)
                     for fwhm_index, fwhm in enumerate(fwhm_array):

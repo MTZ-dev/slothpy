@@ -18,10 +18,10 @@
 slt_filepath = "/home/mikolaj/Sloth/Sloth/seminarium/import.slt"
 number_cpus = 64
 
-orientations = [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]]
+orientations =[[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]]
 fields = [0.3]
-temperatures = [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
-frequencies = "np.logspace(-3, 7, 300)"
+temperatures = [10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
+frequencies = "np.logspace(-3, 10, 300)"
 
 states_number = 6
 degeneracy_tolerance = 1e-5
@@ -31,13 +31,13 @@ omega_loop = false
 chi_s = false
 
 n_points = [21]
-q_ranges = [0.25,0.5]
+q_ranges = [0.03125,0.0625,0.125,0.25,0.5]
 broadening = "gaussian" # "gaussian" # "lorentzian"
-fwhm = [0.025]
+fwhm = [0.00097]
 adaptive_fwhm = false
-modes_low = 3
+modes_low = 2e-5
 modes_high = 600
-cutoff_fwhm = 1200
+cutoff_fwhm = 10000
 qtm = true
 
 chi_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/test_ac_relacs.dat"

@@ -774,6 +774,6 @@ def susceptibility_relax_time(
                 chi_T[t,k] /= chi_T[t,0].real
                 chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic[t])
                 chi_T[t,k] += chi_adiabatic[t] 
-        chi_T[t,0] = chi_isothermal[t]
+        chi_T[t,0] = chi_T[t,0] / chi_T[t,0].real * chi_isothermal[t]
 
     return chi_T, relax_time_R21_T, relax_time_R41_T

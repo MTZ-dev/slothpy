@@ -30,6 +30,7 @@ import json
 import logging
 import os
 import sys
+import time
 from pathlib import Path
 from importlib.resources import files
 from typing import Any, Dict, List, Optional
@@ -115,7 +116,11 @@ def make_parser() -> argparse.ArgumentParser:
 
 def run_app(cfg: AppConfig) -> int:
     logger.debug("Full config: %s", cfg)
-    return run_relacs(cfg)
+    start = time.perf_counter()
+    status = run_relacs(cfg)
+    end = time.perf_counter()
+    print(f"Running time: {end - start} s")
+    return status
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = make_parser()

@@ -594,6 +594,7 @@ def build_matrices(
     for i in range(2, arr.size, 2):  # step of 2
         if arr[i] < w_n_qtm_max:
             w_n_qtm_max = arr[i]
+    print(w_n_qtm_max)
 
     # Raman ----------------------------------------------------------------------------------
     # threads_number = get_num_threads()

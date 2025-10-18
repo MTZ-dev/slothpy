@@ -117,7 +117,7 @@ def Jhat_p_sec(w_ab, wq, n_q, d, cutoff):
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def lorentz_hilbert(E, d):
-    return 1j / (E - 1j * d)
+    return 1j / (E + 1j * d)
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def gauss_hilbert(E, d):
@@ -227,7 +227,7 @@ def Iint(w1: float, w2: float, beta: float) -> float:
         return -(beta - np.expm1(u1) / (1 * w1)) / (w1)
     term1 = np.expm1(u12) / (w2 * (w1 + w2))
     term2 = np.expm1(u1)  / (w1 * w2)
-    return np.abs(term1 - term2)
+    return term1 - term2
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def bose_occ(freq: float, beta: float) -> float:
@@ -594,7 +594,7 @@ def build_matrices(
     for i in range(2, arr.size, 2):  # step of 2
         if arr[i] < w_n_qtm_max:
             w_n_qtm_max = arr[i]
-    print(w_n_qtm_max)
+    # print(w_n_qtm_max)
 
     # Raman ----------------------------------------------------------------------------------
     # threads_number = get_num_threads()
@@ -612,7 +612,7 @@ def build_matrices(
         weight = weights[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
-        freq = freq - scale_freq
+        # freq = freq - scale_freq
         freq *= AU_BOHR_CM_1
 
         if q_0:

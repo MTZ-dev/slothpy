@@ -22,7 +22,7 @@ from slothpy._general_utilities._constants import AU_BOHR_CM_1
 from slothpy.core._system import shared_memory_proxy
 
 @shared_memory_proxy
-def _phonon_density_of_states_proxy(hessian: ndarray, masses_inv_sqrt: ndarray, kpoints_grid: ndarray, start_frequency: float, stop_frequency: float, progress_array: ndarray, process_index: int, start: int, end: int):
+def _phonon_density_of_states_proxy(hessian: ndarray, masses_inv_sqrt: ndarray, kpoints_grid: ndarray, start_frequency: float, stop_frequency: float, progress_array: ndarray, process_index: int, start: int, end: int, weights: ndarray = None):
     hessian_object = Hessian(hessian, masses_inv_sqrt, start_frequency=start_frequency, stop_frequency=stop_frequency, eigen_range="V")
     au_bohr_cm_1 = asarray(AU_BOHR_CM_1, dtype=kpoints_grid.dtype)
     
@@ -30,7 +30,12 @@ def _phonon_density_of_states_proxy(hessian: ndarray, masses_inv_sqrt: ndarray, 
 
     for i in range(start, end):
         hessian_object.kpoint = kpoints_grid[i]
-        frequencies_list.extend(hessian_object.frequencies * au_bohr_cm_1)
+        freq_to_append = hessian_object.frequencies * au_bohr_cm_1
+        if weights is not None:
+            for _ in range(weights[i]):
+                frequencies_list.extend(freq_to_append)
+        else:
+            frequencies_list.extend(freq_to_append)
         progress_array[process_index] += 1
 
     return frequencies_list

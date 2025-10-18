@@ -257,7 +257,7 @@ class _MultiProcessed(_SingleProcessed):
             self._smm = None
             exit(1)
 
-    @slothpy_exc("SltCompError")
+    # @slothpy_exc("SltCompError")
     def run(self):
         if not self._ready:
             if self._autotune:

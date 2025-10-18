@@ -128,42 +128,42 @@ if current_process().name == "MainProcess":
     use("Qt5Agg")
 
     # Greeting message
-    print(
-        BLUE
-        + "                  ____  _       _   _     "
-        + YELLOW
-        + "____\n"
-        + BLUE
-        + "                 / ___|| | ___ | |_| |__ "
-        + YELLOW
-        + "|  _ \\ _   _\n"
-        + BLUE
-        + "                 \\___ \\| |/ _ \\| __| '_ \\"
-        + YELLOW
-        + "| |_) | | | |\n"
-        + BLUE
-        + "                  ___) | | (_) | |_| | | "
-        + YELLOW
-        + "|  __/| |_| |\n"
-        + BLUE
-        + "                 |____/|_|\\___/ \\__|_| |_"
-        + YELLOW
-        + "|_|    \\__, |\n"
-        + "                                                |___/"
-        + GREEN
-        + "  by MTZ \n"
-        + RESET
-    )
+    # print(
+    #     BLUE
+    #     + "                  ____  _       _   _     "
+    #     + YELLOW
+    #     + "____\n"
+    #     + BLUE
+    #     + "                 / ___|| | ___ | |_| |__ "
+    #     + YELLOW
+    #     + "|  _ \\ _   _\n"
+    #     + BLUE
+    #     + "                 \\___ \\| |/ _ \\| __| '_ \\"
+    #     + YELLOW
+    #     + "| |_) | | | |\n"
+    #     + BLUE
+    #     + "                  ___) | | (_) | |_| | | "
+    #     + YELLOW
+    #     + "|  __/| |_| |\n"
+    #     + BLUE
+    #     + "                 |____/|_|\\___/ \\__|_| |_"
+    #     + YELLOW
+    #     + "|_|    \\__, |\n"
+    #     + "                                                |___/"
+    #     + GREEN
+    #     + "  by MTZ \n"
+    #     + RESET
+    # )
 
-    print(
-        "SlothPy Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ).\nThis"
-        " program comes with ABSOLUTELY NO WARRANTY.\nThis is free software,"
-        " and you are welcome to redistribute it.\nThe default is chosen to"
-        " omit the tracebacks completely. To change it use"
-        " slt.set_default_error_reporting_mode() method for the printing of"
-        " tracebacks.\nTurn on the SlothPy Monitor utility using"
-        " slt.turn_on_monitor()."
-    )
+    # print(
+    #     "SlothPy Copyright (C) 2023 Mikolaj Tadeusz Zychowicz (MTZ).\nThis"
+    #     " program comes with ABSOLUTELY NO WARRANTY.\nThis is free software,"
+    #     " and you are welcome to redistribute it.\nThe default is chosen to"
+    #     " omit the tracebacks completely. To change it use"
+    #     " slt.set_default_error_reporting_mode() method for the printing of"
+    #     " tracebacks.\nTurn on the SlothPy Monitor utility using"
+    #     " slt.turn_on_monitor()."
+    # )
 
 # Set no traceback for nice printing
 if settings.traceback == False:

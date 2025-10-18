@@ -20,7 +20,10 @@ import re
 import os
 import math
 from pathlib import Path
-from typing import Sequence, Union
+from fractions import Fraction
+from math import lcm
+from functools import reduce
+from typing import List, Sequence, Union
 
 import numpy as np
 import h5py
@@ -31,6 +34,19 @@ from matplotlib.colors import LogNorm
 
 from slothpy._general_utilities._grids_over_hemisphere import lebedev_laikov_grid_over_hemisphere
 from slothpy._general_utilities._constants import B_AU_T
+
+def int_vector_proportional_to_weights(weights: List[float]) -> List[int]:
+    """Return the smallest all-integer vector proportional to the given weights."""
+    fracs = [Fraction(w).limit_denominator() for w in weights]
+    # LCM of denominators
+    D = reduce(lcm, (f.denominator for f in fracs), 1)
+    ints = [int(f * D) for f in fracs]
+    # Reduce by gcd if any common factor (optional; usually already coprime)
+    from math import gcd
+    g = 0
+    for x in ints:
+        g = gcd(g, x)
+    return np.array([x // g for x in ints], dtype=np.int64)
 
 def h5_has_group(filepath: str | os.PathLike | Path, group_path: str) -> bool:
     try:
@@ -220,25 +236,46 @@ def multigrid_aniso(
 ) -> np.ndarray:
     grids_list = []
     weights_list = []
+    per_shell_point_weight = []  # store unnormalized w_shell for normalization
+
     q_ranges.insert(0, 0.0)
-    for i_q in range(1,len(q_ranges)):
-        aniso_grid = half_bz_grid_aniso(b_len, n_ref, q_ranges[i_q], q_ranges[i_q-1],
-                                         endpoint=endpoint, tol=tol)
-        grid_weight = (2*q_ranges[i_q])**3
-        aniso_weights = np.full(aniso_grid.shape[0], grid_weight)
+    for i_q in range(1, len(q_ranges)):
+        start_q = q_ranges[i_q]
+        end_q   = q_ranges[i_q-1]
+
+        aniso_grid = half_bz_grid_aniso(
+            b_len, n_ref, start_q, end_q, endpoint=endpoint, tol=tol
+        )
+
+        # Half-shell volume in L∞ norm
+        vol_full = (2.0*start_q)**3 - (2.0*end_q)**3
+        vol_half = 0.5 * vol_full
+
+        N_shell = max(1, aniso_grid.shape[0])
+        w_shell = vol_half / N_shell  # unnormalized per-point weight for this shell
+
+        per_shell_point_weight.append(w_shell)
         grids_list.append(aniso_grid)
-        weights_list.append(aniso_weights)
-    
-    grid = np.vstack(grids_list)
-    weights = np.concatenate(weights_list)
+        weights_list.append(np.full(N_shell, w_shell, dtype=float))
+
+    # Concatenate
+    grid    = np.vstack(grids_list) if grids_list else np.empty((0,3))
+    weights = np.concatenate(weights_list) if weights_list else np.empty((0,))
+
+    # Normalize so the least-dense shell has weight 1
+    if per_shell_point_weight:
+        w_ref = max(per_shell_point_weight)  # coarsest shell
+        if w_ref > 0:
+            weights /= w_ref
 
     q_ranges.pop(0)
 
+    # Optional plotting unchanged except that 'weights' are now normalized
     if plot:
         if ax is None:
             fig = plt.figure(figsize=(6.5, 5.5), constrained_layout=True)
             ax  = fig.add_subplot(111, projection="3d")
-        vmin, vmax = weights.min(), weights.max()
+        vmin, vmax = float(weights.min()), float(weights.max())
         use_log = vmax / max(vmin, 1e-300) > 50
         norm = LogNorm(vmin=vmin, vmax=vmax) if use_log else None
 
@@ -250,14 +287,15 @@ def multigrid_aniso(
         ax.set_xlabel(r"$q_x$ (frac.)")
         ax.set_ylabel(r"$q_y$ (frac.)")
         ax.set_zlabel(r"$q_z$ (frac.)")
-        ax.set_title("Multigrid in fractional BZ (colour = weight)")
+        ax.set_title("Multigrid in fractional BZ (colour = normalized weight)")
         cbar = plt.colorbar(sc, ax=ax, pad=0.02, shrink=0.8)
-        cbar.set_label("Weight")
+        cbar.set_label("Normalized weight (outer=1)")
         if ax.figure is not None:
             ax.figure.canvas.draw_idle()
             plt.show()
-    
+
     return grid, weights
+
 
 def make_npoints_fwhm_filename(filepath: Union[str, Path], npoints: int, fwhm: float) -> str:
     p = Path(filepath)

@@ -56,4 +56,4 @@ def get_hessian_recip_axes_masses_inv_sqrt_spin_phonon(cfg: AppConfig) -> Tuple[
                             cfg.relacs.number_cpus, 1, "ORCA",
                             _orca_fragovl_path = cfg.spin_phonon.orca_fragovl_path)
     
-    return slt_hessian.hessian()[:], recip_axes, masses_inv_sqrt
+    return slt_hessian.hessian()[:], recip_axes, masses_inv_sqrt, hessian

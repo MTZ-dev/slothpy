@@ -123,6 +123,7 @@ class InpHessian(BaseModel):
     displacement_number: int = 0
     step: float = 0.0
     accoustic_sum_rule: str = ""
+    dos: str = ""
 
 class InpSpinPhonon(BaseModel):
     model_config = ConfigDict(extra='forbid')

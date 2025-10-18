@@ -1,0 +1,14 @@
+python /home/mikolaj/Sloth/Sloth/ab_relACs/scripts/bz_conv.py \
+  --runner "/home/mikolaj/Sloth/Sloth/ab_relACs/ab_relACs.py --config" \
+  --base-config /home/mikolaj/Ac_relacs_publication/relacs/bz_conv/TbCo/config_example.toml \
+  --start-fwhm 30 \
+  --fwhm-damp 0.8 \
+  --min-fwhm 0.5 \
+  --max-fwhm-steps 10 \
+  --start-n 3 \
+  --max-n 45 \
+  --batch-n 5 \
+  --consec-ok 2 \
+  --summary-out /home/mikolaj/Ac_relacs_publication/relacs/bz_conv/TbCo/summary.csv \
+  --plots-prefix /home/mikolaj/Ac_relacs_publication/relacs/bz_conv/TbCo/plots \
+  --cleanup-output

@@ -1032,12 +1032,13 @@ class SltPhononDensityOfStates(_MultiProcessed):
     _method_name = "Phonon Density of States"
     _method_type = "PHONON_DENSITY_OF_STATES"
 
-    __slots__ = _MultiProcessed.__slots__ + ["_slt_hessian", "_kpoints_grid", "_start_wavenumber", "_stop_wavenumber", "_resolution", "_convolution", "_fwhm"]
+    __slots__ = _MultiProcessed.__slots__ + ["_slt_hessian", "_kpoints_grid", "_start_wavenumber", "_stop_wavenumber", "_resolution", "_convolution", "_fwhm", "_weights"]
      
-    def __init__(self, slt_group, slt_hessian, kpoints_grid: ndarray, start_wavenumber: float, stop_wavenumber: float, resolution: int, convolution: Optional[Literal["lorentzian", "gaussian"]] = None, fwhm: float = None, number_cpu: int = 1, number_threads: int = 1, autotune: bool = False, slt_save: str = None, smm: SharedMemoryManager = None, terminate_event: Event = None) -> None:
+    def __init__(self, slt_group, slt_hessian, kpoints_grid: ndarray, start_wavenumber: float, stop_wavenumber: float, resolution: int, convolution: Optional[Literal["lorentzian", "gaussian"]] = None, fwhm: float = None, number_cpu: int = 1, number_threads: int = 1, autotune: bool = False, slt_save: str = None, smm: SharedMemoryManager = None, terminate_event: Event = None, weights: ndarray = None) -> None:
         super().__init__(slt_group, len(kpoints_grid), number_cpu, number_threads, autotune, smm, terminate_event, slt_save)
         self._slt_hessian = slt_hessian
         self._kpoints_grid = kpoints_grid
+        self._weights = weights
         self._start_wavenumber = start_wavenumber
         self._stop_wavenumber = stop_wavenumber
         self._convolution = convolution
@@ -1053,6 +1054,7 @@ class SltPhononDensityOfStates(_MultiProcessed):
             "kpoints_grid": self._kpoints_grid,
             "start_frequency": self._start_wavenumber,
             "stop_frequency": self._stop_wavenumber,
+            "weights": self._weights,
             }
 
     def _gather_results(self, result_queue, number_processes):

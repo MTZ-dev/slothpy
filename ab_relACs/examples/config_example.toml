@@ -18,26 +18,26 @@
 slt_filepath = "/home/mikolaj/Sloth/Sloth/seminarium/import.slt"
 number_cpus = 64
 
-orientations = [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]]
+orientations = [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]]
 fields = [0.3]
-temperatures = "np.arange(5,43,5)" # [2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
-frequencies = "np.logspace(-3, 10, 300)"
+temperatures = "np.arange(20,45,1)" # [2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
+frequencies = "np.logspace(-4, 5, 800)"
 
-states_number = 6
-degeneracy_tolerance = 1e-5
+states_number = 13
+degeneracy_tolerance = 1e-3
 psi_frequency_shift = false
 initial_correlation = false
 omega_loop = false
 chi_s = false
 
-n_points = [51]
+n_points = [45]
 q_ranges = [0.5] # 0.00753125,0.015625,0.03125,0.0625,
-broadening = "lorentzian" # "gaussian"
-fwhm = [0.3]
+broadening = "gaussian" # "gaussian" # "lorentzian" #
+fwhm = [3.7778931862]
 adaptive_fwhm = false
-modes_low = 0.01
-modes_high = 600
-cutoff_fwhm = 40
+modes_low = 1
+modes_high = 800
+cutoff_fwhm = 1.0941
 qtm = true
 
 chi_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/ac_Tb.dat"
@@ -61,10 +61,11 @@ group_name = "YCo_hessian"
 displacement_number = 1
 step = 0.01
 accoustic_sum_rule = "symmetric"
+dos = ""
 
 [spin_phonon]
-path = "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/TbCo"
+path = "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/TbCo" # "/home/mikolaj/Data/Displacements_small_0001/DyCo_displ" # "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/DyCo" # 
 group_name = "TbCo_spin_phonon"
-orca_fragovl_path = "/home/mikolaj/orca_6_1_0_avx2/orca_fragovl"
+orca_fragovl_path = "/home/mikolaj/orca_6_1_0_avx2/orca_fragovl" # "/home/mikolaj/orca_6_0_1_avx2/orca_fragovl" #
 displacement_number = 1
 step = 0.0005

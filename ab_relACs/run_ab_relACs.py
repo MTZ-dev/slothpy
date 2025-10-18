@@ -26,24 +26,24 @@ from slothpy._general_utilities._constants import H_CM_1, B_AU_T
 from input_models import AppConfig
 from lattice import get_hessian_recip_axes_masses_inv_sqrt_spin_phonon
 from spin_system import get_hamiltonian_magnetic_momenta_dof_array, get_chi_T, get_chi_S
-from utils import get_normalized_orientations_weights, dot_3d, multigrid_aniso, make_npoints_fwhm_filename, make_npoints_fwhm_orient_filename
+from utils import get_normalized_orientations_weights, dot_3d, multigrid_aniso, make_npoints_fwhm_filename, make_npoints_fwhm_orient_filename, int_vector_proportional_to_weights
 from spin_phonon import spin_phonon_derivatives
 from susceptibility_relax import susceptibility_relax_time
 from constants import T_FILED_OE
-from exporting import export_susceptibility_csv, export_tau_csv
+from exporting import export_susceptibility_csv, export_tau_csv, export_dos_csv
 from plotting import plot_chi_vs_freq, plot_tau_vs_inv_T
 
 def run_relacs(cfg: AppConfig):
     set_num_threads(cfg.relacs.number_cpus)
 
-    hessian, recip_axes, masses_inv_sqrt = get_hessian_recip_axes_masses_inv_sqrt_spin_phonon(cfg)
+    hessian, recip_axes, masses_inv_sqrt, hessian_group = get_hessian_recip_axes_masses_inv_sqrt_spin_phonon(cfg)
     hamiltonian, magnetic_momenta, dof_array = get_hamiltonian_magnetic_momenta_dof_array(cfg)
     orientations, orientations_weights = get_normalized_orientations_weights(cfg.relacs.orientations)
     fields = cfg.relacs.fields
     temperatures = cfg.relacs.temperatures
     n_points_array = cfg.relacs.n_points
     fwhm_array = cfg.relacs.fwhm
-    omega_Hz = np.concatenate((np.array([1e-4]),cfg.relacs.frequencies))
+    omega_Hz = np.concatenate((np.array([np.min(cfg.relacs.frequencies)*0.1]),cfg.relacs.frequencies))
     omega_angular = omega_Hz * 2 * np.pi
     cutoff_mult = cfg.relacs.cutoff_fwhm
     degeneracy_tolerance = cfg.relacs.degeneracy_tolerance
@@ -81,6 +81,13 @@ def run_relacs(cfg: AppConfig):
                 for n_points_index, n_points in enumerate(n_points_array):
                     grid, weights = multigrid_aniso(recip_axes, n_points, cfg.relacs.q_ranges)
                     for fwhm_index, fwhm in enumerate(fwhm_array):
+                        if cfg.hessian.dos:
+                            weights_int = int_vector_proportional_to_weights(weights)
+                            _, bin_edges, hist, frequency_range, convolution = hessian_group.phonon_density_of_states(
+                                grid, modes_low, modes_high, int((modes_high-modes_low)/fwhm*3000), cfg.relacs.broadening, fwhm, threads, 1,
+                                weights=weights_int).eval()
+                            save_filepath = make_npoints_fwhm_filename(cfg.hessian.dos, n_points, fwhm)
+                            export_dos_csv(frequency_range, convolution, save_filepath)
                         sus_T, relax_time_R21_T, relax_time_R41_T = susceptibility_relax_time(
                                             omega_angular, energies_total, A, B, hamiltonian_gradients,
                                             temperatures, hessian, masses_inv_sqrt, dof_array, grid,

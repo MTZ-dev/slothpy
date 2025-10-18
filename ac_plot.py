@@ -23,8 +23,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-from matplotlib.ticker import ScalarFormatter
-
+from matplotlib.ticker import ScalarFormatter, LogLocator, FuncFormatter
 
 ###############################################################################
 # 0. Figure size presets (inches) commonly used in JCP/AIP
@@ -137,6 +136,28 @@ def _auto_ylim_from_exp(log10_tau_exp: np.ndarray, *, pad_top: float = 0.1, pad_
     hi = np.max(log10_tau_exp[finite])
     span = max(1e-12, hi - lo)
     return lo - pad_bot * span, hi + pad_top * span
+
+def _pretty_log_ticks(ax: plt.Axes, plain_until: float = 1e5):
+    """
+    Major ticks at powers of 10; labels as plain numbers up to `plain_until`,
+    then switch to 10^n style. Minor ticks at 2..9 per decade (no labels).
+    """
+    ax.set_xscale("log")
+    ax.xaxis.set_major_locator(LogLocator(base=10, numticks=12))
+    ax.xaxis.set_minor_locator(LogLocator(base=10, subs=tuple(np.arange(2, 10) * 0.1), numticks=12))
+
+    def _fmt(val, pos):
+        if val <= 0: 
+            return ""
+        if val < plain_until:
+            # format 0.1, 1, 10, 100, 1000, 10000 without trailing .0
+            s = f"{val:g}"
+            return s
+        # scientific above threshold: 10^{n}
+        n = int(np.round(np.log10(val)))
+        return r"$10^{{{}}}$".format(n)
+
+    ax.xaxis.set_major_formatter(FuncFormatter(_fmt))
 
 
 def _apply_panel_labels(
@@ -352,6 +373,9 @@ def plot_chi_prime(
     normalize: bool = False,
     logx: bool = True,
     legend_style: str = "colorbar",
+    x_min: float | None = None,
+    x_max: float | None = None,
+    pretty_logx: bool = True,
 ):
     """Plot χ′(ν) for a collection of datasets (varying T or H) — JCP style."""
     ax = _get_ax(ax)
@@ -361,7 +385,7 @@ def plot_chi_prime(
     # use distinct markers to ensure legibility in grayscale
     markers = ["o", "s", "D", "^", "v", "<", ">", "P", "X", "*"]
     for i, (clr, ds) in enumerate(zip(colors, datasets)):
-        ax.plot(ds.nu, ds.chi_prime / max_norm, ls='', marker=markers[i % len(markers)], ms=3, mec='none', color=clr)
+        ax.plot(ds.nu, ds.chi_prime / max_norm, ls='', marker=markers[i % len(markers)], ms=1.5, mec='none', color=clr)
         if ds.nu_model is not None:
             ax.plot(ds.nu_model, ds.chi_prime_model / max_norm, color=clr, lw=1.0)
 
@@ -387,6 +411,14 @@ def plot_chi_prime(
             cbar.set_label(r"$H$ / $\mathrm{Oe}$", labelpad=2)
             cbar.set_ticks([0, len(datasets)-1])
             cbar.set_ticklabels([f"{min(Hs):g}", f"{max(Hs):g}"])
+    if logx:
+        if pretty_logx:
+            _pretty_log_ticks(ax)
+        else:
+            ax.set_xscale("log")
+    if (x_min is not None) or (x_max is not None):
+        ax.set_xlim(left=x_min, right=x_max)
+
     return ax
 
 def plot_chi_bis(
@@ -400,13 +432,17 @@ def plot_chi_bis(
     normalize = kwargs.get("normalize", False)
     cmap = kwargs.get("cmap", "cividis")
     reverse = kwargs.get("reverse_cmap", False)
+    logx = kwargs.get("logx", True)
+    x_min = kwargs.get("x_min", None)
+    x_max = kwargs.get("x_max", None)
+    pretty_logx = kwargs.get("pretty_logx", True)
 
     colors = _build_colors(len(datasets), cmap=cmap, reverse=reverse)
     max_norm = max(d.max_chi_pp() for d in datasets) if normalize else 1.0
     markers = ["o", "s", "D", "^", "v", "<", ">", "P", "X", "*"]
 
     for i, (clr, ds) in enumerate(zip(colors, datasets)):
-        ax.plot(ds.nu, ds.chi_bis / max_norm, ls='', marker=markers[i % len(markers)], ms=3, mec='none', color=clr)
+        ax.plot(ds.nu, ds.chi_bis / max_norm, ls='', marker=markers[i % len(markers)], ms=1.5, mec='none', color=clr)
         if ds.nu_model is not None:
             ax.plot(ds.nu_model, ds.chi_bis_model / max_norm, color=clr, lw=1.0)
 
@@ -433,6 +469,14 @@ def plot_chi_bis(
             cbar.set_label(r"$H$ / $\mathrm{Oe}$", labelpad=2)
             cbar.set_ticks([0, len(datasets)-1])
             cbar.set_ticklabels([f"{min(Hs):g}", f"{max(Hs):g}"])
+    if logx:
+        if pretty_logx:
+            _pretty_log_ticks(ax)
+        else:
+            ax.set_xscale("log")
+    if (x_min is not None) or (x_max is not None):  # NEW
+        ax.set_xlim(left=x_min, right=x_max)
+
     return ax
 
 def plot_cole_cole(
@@ -443,6 +487,10 @@ def plot_cole_cole(
     reverse_cmap: bool = False,
     normalize: bool = False,
     legend_style: str = "colorbar",
+    x_min: float | None = None,
+    x_max: float | None = None,
+    y_min: float | None = None,
+    y_max: float | None = None,
 ):
     """Cole–Cole plot (χ′ vs χ″) — JCP style. No grid; clear markers."""
     ax = _get_ax(ax)
@@ -451,7 +499,7 @@ def plot_cole_cole(
     markers = ["o", "s", "D", "^", "v", "<", ">", "P", "X", "*"]
 
     for i, (clr, ds) in enumerate(zip(colors, datasets)):
-        ax.plot(ds.chi_prime / max_norm, ds.chi_bis / max_norm, ls='', marker=markers[i % len(markers)], ms=3, mec='none', color=clr)
+        ax.plot(ds.chi_prime / max_norm, ds.chi_bis / max_norm, ls='', marker=markers[i % len(markers)], ms=1.5, mec='none', color=clr)
         if ds.chi_prime_model is not None:
             ax.plot(ds.chi_prime_model / max_norm, ds.chi_bis_model / max_norm, color=clr, lw=1.0)
 
@@ -476,6 +524,10 @@ def plot_cole_cole(
             cbar.set_label(r"$H$ / $\mathrm{Oe}$", labelpad=2)
             cbar.set_ticks([0, len(datasets) - 1])
             cbar.set_ticklabels([f"{min(Hs):g}", f"{max(Hs):g}"])
+    if (x_min is not None) or (x_max is not None):
+        ax.set_xlim(left=x_min, right=x_max)
+    if (y_min is not None) or (y_max is not None):
+        ax.set_ylim(bottom=y_min, top=y_max)
     return ax
 
 def plot_tau(
@@ -502,6 +554,8 @@ def plot_tau(
     line_alpha: float = 0.9,
     comp_alpha: float = 0.9,
     add_legend: bool = True,
+    x_min: float | None = None,
+    x_max: float | None = None,
 ):
     """Plot log10 τ vs T^{-1} or H — JCP style (no grid; clear labeling)."""
     ax = _get_ax(ax)
@@ -592,6 +646,9 @@ def plot_tau(
     # only add legend when requested (multi-plot path disables this)
     if add_legend and (components or model):
         ax.legend(frameon=False, fontsize=7, handlelength=1.6)
+    
+    if (x_min is not None) or (x_max is not None):
+        ax.set_xlim(left=x_min, right=x_max)
 
     return ax
 
@@ -599,15 +656,19 @@ def plot_tau_multi(
     entries: Sequence[tuple] | Sequence[Mapping],
     *,
     ax: plt.Axes | None = None,
-    legend: bool = True,
+    legend: bool = True,                  # dataset legend (points)
+    show_component_legend: bool = True,   # NEW: mechanisms/model legend (lines)
+    component_legend_loc: str = "lower right",
     **tau_kwargs,
 ):
     """
     Plot multiple τ datasets on one axis, allowing each entry to choose its own
-    field/temperature selector (or explicit T/H arrays). See your docstring for
-    the accepted entry formats.
+    field/temperature selector (or explicit T/H arrays). Builds TWO legends:
+      - dataset legend (points) using per-entry labels
+      - component/model legend (lines) aggregated across entries
     """
     from collections.abc import Mapping as _Mapping
+    from collections import OrderedDict
 
     ax = _get_ax(ax)
     default_markers = ["o","s","D","^","v","<",">","P","X","*"]
@@ -617,22 +678,22 @@ def plot_tau_multi(
     pad_bottom  = tau_kwargs.get("pad_bottom", 0.10)
     explicit_ymin = tau_kwargs.get("ymin", None)
     explicit_ymax = tau_kwargs.get("ymax", None)
+    explicit_xmin = tau_kwargs.get("x_min", None)
+    explicit_xmax = tau_kwargs.get("x_max", None)
+    model = tau_kwargs.get("model", None)
 
     all_yexp = []
 
     def _collect_yexp_from_spec(spec) -> None:
-        # adds np.log10 of experimental τ (masked ignored) to all_yexp
         if "tg" in spec:
             tg = spec["tg"]
             sel = spec.get("selector") or {}
             if "field" in sel:
-                T_vals, tau_exp, _ = tg.slice_T(float(sel["field"]))
-                y = np.log10(np.ma.asarray(tau_exp).compressed())
-                all_yexp.append(y)
+                _, tau_exp, _ = tg.slice_T(float(sel["field"]))
+                all_yexp.append(np.log10(np.ma.asarray(tau_exp).compressed()))
             elif "temp" in sel:
-                H_vals, tau_exp, _ = tg.slice_H(float(sel["temp"]))
-                y = np.log10(np.ma.asarray(tau_exp).compressed())
-                all_yexp.append(y)
+                _, tau_exp, _ = tg.slice_H(float(sel["temp"]))
+                all_yexp.append(np.log10(np.ma.asarray(tau_exp).compressed()))
         else:
             tau_exp = np.ma.asarray(spec["tau_exp"])
             y = np.log10(tau_exp.compressed() if np.ma.isMaskedArray(tau_exp) else tau_exp[np.isfinite(tau_exp)])
@@ -646,13 +707,11 @@ def plot_tau_multi(
             spec = dict(item)
             style = dict(spec.pop("style", {}) or {})
         else:
-            # TauGrid form?
             if isinstance(item[0], TauGrid):
                 tg = item[0]
                 label = item[1] if len(item) > 1 else None
                 comps = None
                 selector = None
-                # detect comps and selector dicts
                 for part in item[2:]:
                     if isinstance(part, dict) and ("field" in part or "temp" in part):
                         selector = part
@@ -662,7 +721,6 @@ def plot_tau_multi(
                         style = dict(part)
                 spec = dict(tg=tg, label=label, comps=comps, selector=selector)
             else:
-                # explicit arrays form
                 tau_exp = item[0]
                 tau_mod = None
                 comps = None
@@ -686,7 +744,6 @@ def plot_tau_multi(
         normalized_specs.append((spec, style))
         _collect_yexp_from_spec(spec)
 
-    # global auto y-limits from ALL experimental points unless user overrode
     if (explicit_ymin is None or explicit_ymax is None) and len(all_yexp):
         ycat = np.concatenate([y for y in all_yexp if np.size(y)])
         auto = _auto_ylim_from_exp(ycat, pad_top=pad_top, pad_bot=pad_bottom)
@@ -694,22 +751,20 @@ def plot_tau_multi(
             explicit_ymin = auto[0] if explicit_ymin is None else explicit_ymin
             explicit_ymax = auto[1] if explicit_ymax is None else explicit_ymax
 
-    # --------- SECOND PASS: actually plot each entry (with autolimit disabled)
-    handles_for_legend = []
-    labels_for_legend  = []
+    # --------- SECOND PASS: plot each entry; collect legend handles
+    dataset_handles, dataset_labels = [], []
+    component_handles = OrderedDict()  # name -> handle (first seen)
 
     for spec, style in normalized_specs:
         before = len(ax.lines)
 
-        # ensure per-trace styling survives
         local_kwargs = dict(tau_kwargs)
-        # prevent per-call re-scaling; we set global limits above
-        local_kwargs.setdefault("autolimit_on", "none")
+        local_kwargs.setdefault("autolimit_on", "none")  # global limits already set
         local_kwargs["ymin"] = explicit_ymin
         local_kwargs["ymax"] = explicit_ymax
-        # never let plot_tau add its own legend when plotting multi
+        local_kwargs["x_min"] = explicit_xmin
+        local_kwargs["x_max"] = explicit_xmax
         local_kwargs["add_legend"] = False
-        # default soft transparencies unless user overrode
         local_kwargs.setdefault("point_alpha", tau_kwargs.get("point_alpha", 0.9))
         local_kwargs.setdefault("line_alpha",  tau_kwargs.get("line_alpha", 0.6))
         local_kwargs.setdefault("comp_alpha",  tau_kwargs.get("comp_alpha", 0.6))
@@ -720,11 +775,11 @@ def plot_tau_multi(
             if "field" in sel:
                 T_vals, tau_exp, tau_mod = tg.slice_T(float(sel["field"]))
                 plot_tau(tau_exp, tau_mod, T=T_vals, components=comps, ax=ax,
-                         legend_style="none", model=(tau_mod is not None), **style, **local_kwargs)
+                         legend_style="none", **style, **local_kwargs)
             elif "temp" in sel:
                 H_vals, tau_exp, tau_mod = tg.slice_H(float(sel["temp"]))
                 plot_tau(tau_exp, tau_mod, H=H_vals, components=comps, ax=ax,
-                         legend_style="none", model=(tau_mod is not None), **style, **local_kwargs)
+                         legend_style="none", **style, **local_kwargs)
             else:
                 raise ValueError("TauGrid entry needs selector {'field': H} or {'temp': T}.")
         else:
@@ -732,34 +787,54 @@ def plot_tau_multi(
             label   = spec.get("label"); axis_map = spec.get("axis_map") or {}
             if "T" in axis_map:
                 plot_tau(tau_exp, tau_mod, T=np.asarray(axis_map["T"]), components=comps, ax=ax,
-                         legend_style="none", model=(tau_mod is not None), **style, **local_kwargs)
+                         legend_style="none", **style, **local_kwargs)
             elif "H" in axis_map:
                 plot_tau(tau_exp, tau_mod, H=np.asarray(axis_map["H"]), components=comps, ax=ax,
-                         legend_style="none", model=(tau_mod is not None), **style, **local_kwargs)
+                         legend_style="none", **style, **local_kwargs)
             else:
                 raise ValueError("Explicit-array entry needs axis_map with {'T': ...} or {'H': ...}.")
 
-        # pick a point artist among the newly added artists for the legend
+        # newly added lines:
+        new_lines = ax.lines[before:]
+
+        # dataset handle: pick the first point-like line among new lines
+        label = spec.get("label")
         if label:
-            new_lines = ax.lines[before:]
             point_like = None
             for ln in new_lines:
-                # lines representing points have linestyle 'None' ('' in mpl) and a marker
                 if (ln.get_linestyle() in ('', 'None')) and (ln.get_marker() not in (None, 'None', '')):
                     point_like = ln
                     break
             if point_like is None and new_lines:
                 point_like = new_lines[0]
             if point_like is not None:
-                handles_for_legend.append(point_like)
-                labels_for_legend.append(label)
+                dataset_handles.append(point_like)
+                dataset_labels.append(label)
 
-    if legend and handles_for_legend:
-        ax.legend(handles_for_legend, labels_for_legend, frameon=False, fontsize=7, handlelength=1.6)
+        # component/model handles: collect first occurrence per name
+        for ln in new_lines:
+            name = ln.get_label()
+            if not name or name.startswith("_"):
+                continue
+            # heuristics: solid/visible lines with no markers are mechanisms/model
+            if (ln.get_linestyle() not in ('', 'None')) and (ln.get_marker() in (None, 'None', '')):
+                if name not in component_handles:
+                    component_handles[name] = ln
 
-    # apply the global limits explicitly (useful if user passed them)
+    # Apply global limits
     if explicit_ymin is not None and explicit_ymax is not None:
         ax.set_ylim(explicit_ymin, explicit_ymax)
+
+    # Legends
+    leg1 = None
+    if legend and dataset_handles:
+        leg1 = ax.legend(dataset_handles, dataset_labels,
+                         frameon=False, fontsize=7, handlelength=1.6, loc="upper left")
+    if show_component_legend and component_handles:
+        leg2 = ax.legend(list(component_handles.values()), list(component_handles.keys()),
+                         frameon=False, fontsize=7, handlelength=1.6, loc=component_legend_loc)
+        if leg1 is not None:
+            ax.add_artist(leg1)
 
     return ax
 
@@ -787,6 +862,12 @@ def plot_composite_panel(
     tau_pad_top: float = 0.10,
     tau_pad_bottom: float = 0.10,
     tau_autolimit_on: str = "exp",
+    xlim_im:  Tuple[float,float] | None = None,
+    xlim_re:  Tuple[float,float] | None = None,
+    xlim_cole: Tuple[float,float] | None = None,
+    ylim_cole: Tuple[float,float] | None = None,
+    xlim_tau: Tuple[float,float] | None = None,
+    pretty_logx: bool = True,  
 ):
     """
     Create the standard 4-panel figure (χ″, χ′, Cole–Cole, log10 τ) — JCP style.
@@ -807,17 +888,24 @@ def plot_composite_panel(
     else:
         raise ValueError("One of: field_sel or temp_sel must be provided.")
 
-    plot_chi_bis(datasets, ax=ax_im, cmap=cmap, reverse_cmap=reverse_cmap, normalize=normalize_chi)
-    plot_chi_prime(datasets, ax=ax_re, cmap=cmap, reverse_cmap=reverse_cmap, normalize=normalize_chi)
-    plot_cole_cole(datasets, ax=ax_cole, cmap=cmap, reverse_cmap=reverse_cmap, normalize=normalize_chi)
+    plot_chi_bis(datasets, ax=ax_im, cmap=cmap, reverse_cmap=reverse_cmap, normalize=normalize_chi,pretty_logx=pretty_logx,
+                 x_min=(xlim_im[0] if xlim_im else None), x_max=(xlim_im[1] if xlim_im else None))
+    plot_chi_prime(datasets, ax=ax_re, cmap=cmap, reverse_cmap=reverse_cmap, normalize=normalize_chi, pretty_logx=pretty_logx,
+                   x_min=(xlim_re[0] if xlim_re else None), x_max=(xlim_re[1] if xlim_re else None))
+    plot_cole_cole(datasets, ax=ax_cole, cmap=cmap, reverse_cmap=reverse_cmap, normalize=normalize_chi,
+                   x_min=(xlim_cole[0] if xlim_cole else None), x_max=(xlim_cole[1] if xlim_cole else None),
+                   y_min=(xlim_cole[0] if xlim_cole else None), y_max=(xlim_cole[1] if xlim_cole else None))
 
     # ---------------- τ panel(s) ----------------
     tau_common_kwargs = dict(
         ymin=(tau_ylim[0] if tau_ylim else None),
         ymax=(tau_ylim[1] if tau_ylim else None),
+        x_min=(xlim_tau[0] if xlim_tau else None),
+        x_max=(xlim_tau[1] if xlim_tau else None),
         pad_top=tau_pad_top,
         pad_bottom=tau_pad_bottom,
         autolimit_on=tau_autolimit_on,
+        model=model,
     )
 
     # Single-grid path unchanged
@@ -889,15 +977,21 @@ if __name__ == "__main__":
     set_jcp_style(figsize=double_column_size(0.78))
 
     base_dir = _pl.Path(__file__).with_suffix("").parent
-    ac_file = base_dir / "ac_TbCo_3000_Oe.csv"
-    tau_file = base_dir / "tau_TbCo_3000_Oe.csv"
-    tau_file2 = base_dir / "test_fit_tau.csv"
+    ac_file = base_dir / "ac_Tb_npoints_21_fwhm_7.45_no_corr.csv" # "ac_Tb_npoints_21_fwhm_7.45_no_corr.csv" # "ac_TbCo_3000_Oe.csv" "tau_TbCo_0_Oe.csv"
+    tau_file = base_dir / "tau_TbCo_0_Oe_ab_initio.csv"
+    tau_file2 = base_dir / "1.csv" # "test_fit_tau2.csv"
+    tau_file3 = base_dir / "2.csv" # "tau_TbCo_3000_Oe.csv"
+    tau_file4 = base_dir / "ac_Tb_npoints_41_fwhm_20_grid_4_gauss_1.82_550.csv"
+    tau_file5 = base_dir / "tau_TbCo_0_Oe.csv"
     if not ac_file.exists() or not tau_file.exists():
         raise SystemExit("Sample CSV files not found next to ac_plotting.py")
 
     ac_datasets = read_ac_csv(ac_file)
     tau_grid = read_tau_csv(tau_file)
     tau_grid2 = read_tau_csv(tau_file2)
+    tau_grid3 = read_tau_csv(tau_file3)
+    tau_grid4 = read_tau_csv(tau_file4)
+    tau_grid5 = read_tau_csv(tau_file5)
 
     field_sel = 3000.0  # Oe
     suptitle = f"TbCo  (H = {field_sel:g} Oe)"
@@ -907,8 +1001,15 @@ if __name__ == "__main__":
         # tau_grid=tau_grid, # SINGLE WAY
         tau_grids_multi=[
         # TauGrid + per-entry selector + its own mechanisms + (optional) style
-        (tau_grid,  "Exp",  {"Orbach": tau_grid.mechanisms.get("Orbach"), "V_d": tau_grid.mechanisms.get("V_d")}, {"field": 3000.0}, {"marker": "o"}),
-        (tau_grid2, "Theo", {},  {"field": 3000.0}, {"marker": "s"}),
+        # (tau_grid,  "Exp",  {"Orbach": tau_grid.mechanisms.get("Orbach"), "V_d": tau_grid.mechanisms.get("V_d")}, {"field": 0.0}, {"marker": "o"}),
+        (tau_grid2,  "Ab initio",  {}, {"field": 3000.0}, {"marker": "o"}),
+        (tau_grid3,  "Exp",  {}, {"field": 3000.0}, {"marker": "X"}),
+        # (tau_grid,  "Ab initio",  {}, {"field": 0.0}, {"marker": "s"}),
+        # (tau_grid5,  "Exp",  {}, {"field": 0.0}, {"marker": "v"}),
+        # (tau_grid2, "Theo", {},  {"field": 3000.0}, {"marker": "s"}),
+        # (tau_grid3, "Theo", {},  {"field": 3000.0}, {"marker": "X"}),
+        # (tau_grid4, "Theo", {},  {"field": 0.0}, {"marker": "s"}),
+        # (tau_grid5, "Theo", {},  {"field": 0.0}, {"marker": "X"}),
         # …or pass explicit arrays if you’ve already sliced them
         # (tau_exp_arr, tau_mod_arr, None, "Sample C", {"T": T_vals}, {"marker":"D"}),
     ],
@@ -918,11 +1019,14 @@ if __name__ == "__main__":
         cmap="cividis",
         suptitle=suptitle,
         reverse_cmap=False,
+        model=False,
+        xlim_im=(0.01,1e4),
+        xlim_re=(0.01,1e4),
     )
 
     out_dir = base_dir / "seminarium"
     out_dir.mkdir(exist_ok=True)
     # Save composite in PDF/EPS; single panels in PDF
     _, _, _, _, fig_comb = figs
-    savefig_jcp(fig_comb, out_dir / "TbCo_ac_composite", formats=("pdf", "eps"))
+    savefig_jcp(fig_comb, out_dir / "TbCo_ac_all_ed", formats=("pdf",))
     print("Saved composite (PDF/EPS) to", out_dir)

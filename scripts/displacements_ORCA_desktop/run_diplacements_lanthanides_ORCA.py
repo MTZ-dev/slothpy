@@ -195,7 +195,7 @@ end
 
 %scf
  guess HCore
- AutoTrahIter 400
+ AutoTrahIter 40
  maxiter 2000
  AVAS
    system
@@ -289,7 +289,7 @@ def generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, 
 end
 
 %scf
-  AutoTrahIter 150
+  AutoTrahIter 30
   maxiter 3000
   {avas}
 end
@@ -406,7 +406,7 @@ def process_initial_pbe_guess(cpus, max_memory, orca_path, lanthanide_data, exc_
         if raise_on_exit:
             raise ValueError(f"Calculation for {project_name} failed to generate the .qro file. Cannot proceed.")
 
-def process_initial_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nevpt2, ssc, start_from_different_lanthanide, expbas):
+def process_initial_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nevpt2, ssc, start_from_different_lanthanide, expbas, nofrozencore):
     project_name = 'dof_0_disp_0'
     gbw_file = f'{project_name}.gbw'
     if os.path.exists(gbw_file) and not start_from_different_lanthanide:
@@ -430,7 +430,7 @@ def process_initial_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nev
             start_file_tmp = start_file
         shutil.copy(start_file,  os.path.join(tmp_dir, start_file_tmp))
 
-        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, start_file_tmp, tmp_dir, False, lanthanide_data, expbas, nofrozencore=True)
+        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, start_file_tmp, tmp_dir, False, lanthanide_data, expbas, nofrozencore=nofrozencore)
         output_file = os.path.join(tmp_dir, f'{project_name}.out')
 
         run_orca(input_file, output_file, orca_path, tmp_dir)
@@ -449,7 +449,7 @@ def process_initial_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nev
         if raise_on_exit:
             raise ValueError(f"Calculation for {project_name} failed to generate the .gbw file. Cannot proceed.")
 
-def process_expbas_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nevpt2, ssc):
+def process_expbas_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nevpt2, ssc, nofrozencore):
     project_name = 'dof_0_disp_0'
     gbw_file = f'{project_name}.gbw'
     if not os.path.exists(gbw_file):
@@ -462,7 +462,7 @@ def process_expbas_casscf(cpus, max_memory, orca_path, lanthanide_data, use_nevp
         gbw_file_tmp = os.path.join(tmp_dir, 'dof_0_disp_0_guess.gbw')
         shutil.copy(gbw_file, gbw_file_tmp)
 
-        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, 'dof_0_disp_0_guess.gbw', tmp_dir, True, lanthanide_data, run_expbas=True, nofrozencore=True)
+        input_file = generate_input_file_casscf(project_name, cpus, max_memory, use_nevpt2, ssc, 'dof_0_disp_0_guess.gbw', tmp_dir, True, lanthanide_data, run_expbas=True, nofrozencore=nofrozencore)
         output_file = os.path.join(tmp_dir, f'{project_name}.out')
 
         run_orca(input_file, output_file, orca_path, tmp_dir)
@@ -555,11 +555,11 @@ def main():
 
     # Then, process the CASSCF calculation for dof_0_disp_0 using all CPUs
     print("Starting CASSCF calculation for dof_0_disp_0...")
-    process_initial_casscf(total_cpus, max_memory, args.orca_path, lanthanide_data, args.use_nevpt2, args.ssc, args.start_from_different_lanthanide, args.expbas)
+    process_initial_casscf(total_cpus, max_memory, args.orca_path, lanthanide_data, args.use_nevpt2, args.ssc, args.start_from_different_lanthanide, args.expbas, args.nofrozencore)
 
     if args.expbas:
         print("Starting expand basis CASSCF calculation for dof_0_disp_0...")
-        process_expbas_casscf(total_cpus, max_memory, args.orca_path, lanthanide_data, args.use_nevpt2, args.ssc)
+        process_expbas_casscf(total_cpus, max_memory, args.orca_path, lanthanide_data, args.use_nevpt2, args.ssc, args.nofrozencore)
 
     # Prepare the list of dof_disp combinations to process in parallel (excluding dof_0_disp_0)
     xyz_files = glob.glob('dof_*.xyz')

@@ -87,3 +87,18 @@ def export_tau_csv(
         fp.write("T,H,tau\n")
         writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
         writer.writerows(rows)
+
+
+def export_dos_csv(frequency: Sequence[float], convolution: Sequence[float], filepath: Path | str) -> None:
+    """
+    Save phonon DOS convolution vs frequency as a simple CSV.
+    Header lines keep the same style as your AC files.
+    """
+    p = Path(filepath)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with p.open("w", encoding="utf-8", newline="") as f:
+        f.write("[DOS]\n")
+        w = csv.writer(f)
+        w.writerow(["Frequency", "Convolution"])
+        for x, y in zip(frequency, convolution):
+            w.writerow([x, y])

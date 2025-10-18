@@ -22,7 +22,7 @@ from numpy import pi
 from typing import Sequence, Union
 ArrayLike = Union[Sequence, np.ndarray]
 
-from numba import njit, prange, get_thread_id, literally
+from numba import njit, prange, get_thread_id, literally, get_num_threads
 from numba import types
 from numba.extending import intrinsic, get_cython_function_address, overload
 from numba.core import cgutils
@@ -129,7 +129,7 @@ def build_Y_table_j(Yb):
     J, N, _ = Yb.shape
     out = np.empty((J, N, N, N, N), np.complex128)
 
-    for j in prange(J):
+    for j in range(J):
         Y  = Yb[j]
         Yh = np.conjugate(Y.T).copy()
         out_j = out[j]
@@ -174,12 +174,12 @@ def add_KR_bundle(out, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight):
                         out[ab,cd]+=val * coeff
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
-def add_rho0_bundle(out, trace, A, Yb_table, wb, nb, beta, w_n, q_0, rho, thread_id, t_index):
+def add_rho0_bundle(out, trace, A, Yb_table, wb, nb, beta, w_n, q_0, rho, thread_id, t_index, weight):
     N=w_n.shape[0]; J=wb.size
-    coeff = 0.5
+    coeff = 0.5 * weight
     if q_0:
         coeff *= 0.5
-    for j in prange(J):
+    for j in range(J):
         Y_j, wq, n_q = Yb_table[j], wb[j], nb[j]
         for a in range(N):
             for b in range(N):
@@ -191,7 +191,7 @@ def add_rho0_bundle(out, trace, A, Yb_table, wb, nb, beta, w_n, q_0, rho, thread
                         w_de=w_n[d,e]
                         w_eb=w_n[e,b]
                         if b == a:
-                            trace[thread_id,t_index]+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*rho[a,d]*Y_j[d,e,e,b]
+                            trace[thread_id,t_index]+=coeff*(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*rho[a,d]*Y_j[d,e,e,b]
                         corr+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*A[a,c]*Y_j[d,e,e,b]*rho[c,d]
                         for f in range(N):
                             w_ef=w_n[e,f]
@@ -249,7 +249,7 @@ def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, numb
 def _build_dynamical_matrix(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, kpoint: np.ndarray):
     dyn_mat = np.zeros(masses_inv_sqrt.shape, dtype=np.complex128)
 
-    for nx in prange(hessian.shape[0]):
+    for nx in range(hessian.shape[0]):
         for ny in range(hessian.shape[1]):
             for nz in range(hessian.shape[2]):
                 dyn_mat += hessian[nx, ny, nz, :, :] * np.exp(2j * pi * (kpoint[0] * nx + kpoint[1] * ny + kpoint[2] * nz))
@@ -527,15 +527,15 @@ def add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose
     raise NotImplementedError
 
 @overload(add_rho0_bundle_comp, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
-def ov_add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, run_rho0):
+def ov_add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0):
     if isinstance(run_rho0, types.Literal):
         if run_rho0.literal_value == 0:
-            def impl(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, run_rho0):
+            def impl(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0):
                 return
             return impl
         elif run_rho0.literal_value == 1:
-            def impl(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, run_rho0):
-                return add_rho0_bundle(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index)
+            def impl(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0):
+                return add_rho0_bundle(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight)
             return impl
 
 def add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy_tolerance, weight, run_R21):
@@ -587,8 +587,8 @@ def build_matrices(
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
-    freq_shape = freq0.shape[0]
-    scale_freq = np.min(freq0)
+    # freq_shape = freq0.shape[0]
+    # scale_freq = np.min(freq0)
     arr = np.diag(w_n, k=1)
     w_n_qtm_max = arr[0]
     for i in range(2, arr.size, 2):  # step of 2
@@ -653,7 +653,7 @@ def build_matrices(
 
             add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR)
             add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI)
-            add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, run_rho0)
+            add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0)
             add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy_tolerance, weight, run_R21)
 
     # Raman ----------------------------------------------------------------------------------

@@ -20,11 +20,11 @@ number_cpus = 64
 
 orientations = [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]]
 fields = [0.3]
-temperatures = "np.arange(20,45,1)" # [2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
-frequencies = "np.logspace(-4, 5, 800)"
+temperatures = "np.arange(23,46,1)" # [2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
+frequencies = "np.logspace(-4, 6, 800)"
 
 states_number = 13
-degeneracy_tolerance = 1e-3
+degeneracy_tolerance = 1e-4
 psi_frequency_shift = false
 initial_correlation = false
 omega_loop = false

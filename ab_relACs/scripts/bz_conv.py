@@ -150,7 +150,7 @@ def read_peak_from_csv(csv_path: Path) -> PeakResult:
         median_step = diffs[len(diffs)//2]
     else:
         median_step = 0.0
-    thr = 5.0 * median_step if median_step > 0 else 0.0
+    thr = 4.0 * median_step if median_step > 0 else 0.0
     return PeakResult(f_peak, log_peak, thr)
 
 # ---------------- DOS & utilities ----------------

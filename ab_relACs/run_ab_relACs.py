@@ -88,10 +88,14 @@ def run_relacs(cfg: AppConfig):
                                 weights=weights_int).eval()
                             save_filepath = make_npoints_fwhm_filename(cfg.hessian.dos, n_points, fwhm)
                             export_dos_csv(frequency_range, convolution, save_filepath)
+                        if kind == 1:
+                            gamma_fwhm = fwhm / (2 * np.sqrt(2*np.log(2)))
+                        elif kind == 0:
+                            gamma_fwhm = fwhm / 2
                         sus_T, relax_time_R21_T, relax_time_R41_T = susceptibility_relax_time(
                                             omega_angular, energies_total, A, B, hamiltonian_gradients,
                                             temperatures, hessian, masses_inv_sqrt, dof_array, grid,
-                                            weights, fwhm, chi_T, chi_S, cutoff_mult, degeneracy_tolerance,
+                                            weights, gamma_fwhm, chi_T, chi_S, cutoff_mult, degeneracy_tolerance,
                                             states_number, modes_low, modes_high, threads, kind, qtm,
                                             run_KR, run_PSI, run_rho0, run_R21)
                         sus_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T * orientations_weights[orientation_index]

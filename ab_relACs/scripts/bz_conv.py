@@ -56,6 +56,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from mpmath import erfinv, sqrt as mp_sqrt, log as mp_log
 
 # ---------------- TOML patch (regex; only touch [relacs]) ----------------
 
@@ -73,7 +74,7 @@ def _replace_relacs_key(toml_text: str, key: str, new_value_src: str) -> str:
         raise RuntimeError("No [relacs] section found.")
     relacs_block = m.group("relacs")
     key_line = rf"(^\s*{re.escape(key)}\s*=\s*).*$"
-    new_relacs = re.sub(key_line, rf"\1{new_value_src}", relacs_block, count=1, flags=re.MULTILINE)
+    new_relacs = re.sub(key_line, rf"\g<1>{new_value_src}", relacs_block, count=1, flags=re.MULTILINE)
     if new_relacs == relacs_block:
         raise RuntimeError(f"Key '{key}' not found in [relacs].")
     return m.group("head") + new_relacs + m.group("tail")
@@ -86,10 +87,12 @@ def to_toml_array(vals: List) -> str:
         return f"{float(x):g}"
     return "[" + ",".join(fmt(v) for v in vals) + "]"
 
-def patch_relacs_lists(base_text: str, n_points_list: List[int], fwhm_list: List[float]) -> str:
+def patch_relacs_lists(base_text: str, n_points_list: List[int], fwhm_list: List[float],
+                       cutoff_override: Optional[float] = None) -> str:
     out = _replace_relacs_key(base_text, "n_points", to_toml_array(n_points_list))
     out = _replace_relacs_key(out, "fwhm", to_toml_array(fwhm_list))
-    # NOTE: chi_csv_path is left intact; your program appends suffixes.
+    if cutoff_override is not None:
+        out = _replace_relacs_key(out, "cutoff_fwhm", f"{cutoff_override:.10g}")
     return out
 
 def extract_chi_base_path(base_text: str) -> Path:
@@ -150,7 +153,7 @@ def read_peak_from_csv(csv_path: Path) -> PeakResult:
         median_step = diffs[len(diffs)//2]
     else:
         median_step = 0.0
-    thr = 4.0 * median_step if median_step > 0 else 0.0
+    thr = 10.0 * median_step if median_step > 0 else 0.0
     return PeakResult(f_peak, log_peak, thr)
 
 # ---------------- DOS & utilities ----------------
@@ -199,6 +202,23 @@ def read_dos_csv(csv_path: Path) -> Tuple[List[float], List[float]]:
                 continue
     return xs, ys
 
+def half_support_fwhm_gaussian(p: float) -> float:
+    """Return half-support in units of FWHM that encloses central fraction p of a normalized Gaussian."""
+    if not 0.0 < p < 1.0:
+        raise ValueError("p must be in (0,1)")
+    # H/FWHM = erfinv(p) / (2*sqrt(ln 2))
+    return float(erfinv(p) / (2 * mp_sqrt(mp_log(2))))
+
+def half_support_fwhm_lorentzian(p: float) -> float:
+    """Return half-support in units of FWHM that encloses central fraction p of a normalized Lorentzian."""
+    if not 0.0 < p < 1.0:
+        raise ValueError("p must be in (0,1)")
+    return 0.5 * math.tan(math.pi * p / 2.0)
+
+def extract_broadening(base_text: str) -> Optional[str]:
+    m = re.search(r'^\s*broadening\s*=\s*"([^"]+)"', base_text, flags=re.MULTILINE | re.IGNORECASE)
+    return m.group(1).strip().lower() if m else None
+
 # ---------------- Records & utilities ----------------
 
 @dataclass
@@ -209,9 +229,13 @@ class RunRecord:
     log10_f: float
     thr_log10: float
 
+# def odd_seq_from(start: int, max_n: int) -> List[int]:
+#     s = start if start % 2 == 1 else start + 1
+#     return list(range(s, max_n + 1, 2))
+
 def odd_seq_from(start: int, max_n: int) -> List[int]:
-    s = start if start % 2 == 1 else start + 1
-    return list(range(s, max_n + 1, 2))
+    # s = start if start % 2 == 1 else start + 1
+    return list(range(start, max_n + 1, 1))
 
 def chunk(lst: List[int], size: int) -> List[List[int]]:
     return [lst[i:i+size] for i in range(0, len(lst), size)]
@@ -228,6 +252,7 @@ def run_batch(runner_prefix: str,
               *,
               dos_base_path: Optional[Path] = None,
               dos_sink: Optional[List[DosCurve]] = None,
+              cutoff_override: Optional[float] = None,
             ) -> List[RunRecord]:
     """
     Run a single process with lists of n_points and fwhm.
@@ -237,7 +262,8 @@ def run_batch(runner_prefix: str,
     # Prepare temp config with lists
     with tempfile.TemporaryDirectory(prefix="bzconv_cfg_") as tdir:
         tmp_cfg = Path(tdir) / f"{base_config_path.stem}_batched.toml"
-        patched = patch_relacs_lists(base_toml_text, n_points_batch, fwhm_batch)
+        patched = patch_relacs_lists(base_toml_text, n_points_batch, fwhm_batch,
+                                     cutoff_override=cutoff_override)
         write_text(tmp_cfg, patched)
 
         chi_dir = chi_base_path.parent
@@ -356,6 +382,7 @@ def recheck_tail_for_new_fwhm(
     cleanup_csv: bool,
     dos_base_path: str = "",
     dos_sink: list = None,
+    cutoff_override: Optional[float] = None,
 ) -> Tuple[bool, Optional[RunRecord], List[RunRecord]]:
     """
     Quick pass: re-run ONLY the minimal tail window of n_points that was sufficient
@@ -393,6 +420,7 @@ def recheck_tail_for_new_fwhm(
         cleanup_csv=cleanup_csv,
         dos_base_path=dos_base_path,
         dos_sink=dos_sink,
+        cutoff_override=cutoff_override,
     )
     for r in recs: r.fwhm = fwhm
     recs.sort(key=lambda r: r.n_points)
@@ -431,6 +459,7 @@ def converge_for_fwhm(runner_prefix: str,
                       cleanup_csv: bool,
                       dos_base_path: str = "",
                       dos_sink: list = None,
+                      cutoff_override: Optional[float] = None,
                     ) -> Tuple[Optional[RunRecord], List[RunRecord]]:
     """
     For a fixed FWHM: grow n_points in odd batches until convergence streak is met.
@@ -454,6 +483,7 @@ def converge_for_fwhm(runner_prefix: str,
             cleanup_csv=cleanup_csv,
             dos_base_path=dos_base_path,
             dos_sink=dos_sink,
+            cutoff_override=cutoff_override,
         )
         # fill missing fwhm field
         for r in recs:
@@ -600,11 +630,9 @@ def main():
     ap.add_argument("--consec-ok", type=int, default=2)
     ap.add_argument("--cross-consec-ok", type=int, default=3,
                     help="Stop when the converged peak frequency stays within the convergence window "
-                        "for this many consecutive FWHM steps (default: 3)."
-                    )
+                         "for this many consecutive FWHM steps (default: 3).")
     ap.add_argument("--cross-eps", type=float, default=0.0,
-                    help="Optional absolute tolerance in log10(Hz) added to the cross-FWHM window (default: 0.0)."
-                    )
+                    help="Optional absolute tolerance in log10(Hz) added to the cross-FWHM window (default: 0.0).")
 
     ap.add_argument("--cleanup-output", action="store_true", default=True)
     ap.add_argument("--no-cleanup-output", action="store_false", dest="cleanup_output")
@@ -613,13 +641,33 @@ def main():
     ap.add_argument("--plots-prefix", type=Path, default=Path("./convergence_runs/plots/conv"))
 
     ap.add_argument("--show-3d", action="store_true",
-                help="Show the final 3D convergence plot in an interactive window.")
+                    help="Show the final 3D convergence plot in an interactive window.")
     ap.add_argument("--mpl-backend", type=str, default=None,
                     help="Matplotlib backend for interactive window, e.g. 'QtAgg' or 'TkAgg'.")
-
+    ap.add_argument("--cutoff-p", type=float, default=None,
+                help="If given (0<p<1), override [relacs].cutoff_fwhm to the half-support multiplier "
+                     "that encloses fraction p of the kernel (Gaussian/Lorentzian chosen from TOML).")
 
     args = ap.parse_args()
     base_text = read_text(args.base_config)
+    broadening = extract_broadening(base_text)
+    cutoff_override: Optional[float] = None
+
+    if args.cutoff_p is not None:
+        p = args.cutoff_p
+        if not 0.0 < p < 1.0:
+            raise SystemExit("--cutoff-p must be in (0,1)")
+        if broadening is None:
+            print("[cutoff] Broadening not found in TOML; ignoring --cutoff-p")
+        elif broadening == "gaussian":
+            cutoff_override = half_support_fwhm_gaussian(p)
+            print(f"[cutoff] broadening=gaussian, p={p:g} -> cutoff_fwhm={cutoff_override:.6g} (half-support per side, in FWHM)")
+        elif broadening == "lorentzian":
+            cutoff_override = half_support_fwhm_lorentzian(p)
+            print(f"[cutoff] broadening=lorentzian, p={p:g} -> cutoff_fwhm={cutoff_override:.6g} (half-support per side, in FWHM)")
+        else:
+            print(f"[cutoff] Unknown broadening '{broadening}'; ignoring --cutoff-p")
+
     dos_base_path = extract_hessian_dos_path(base_text)  # may be None if not set
     all_dos: List[DosCurve] = []
     converged_fwhms: set[float] = set()
@@ -637,141 +685,159 @@ def main():
     final_reason: Optional[str] = None
     ok_fast = False
 
-    for step in range(args.max_fwhm_steps):
-        print(f"\n=== FWHM step {step+1}: FWHM={fwhm:g} ===")
-        # --- FAST PATH: revalidate at the same n_points tail from previous step ---
-        conv_rec = None
-        if step > 0:  # we have a previous convergence
-            ok_fast, conv_fast, recs_fast = recheck_tail_for_new_fwhm(
-                runner_prefix=args.runner,
-                base_toml_text=base_text,
-                base_config_path=args.base_config,
-                chi_base_path=chi_base_path,
-                fwhm=fwhm,
-                last_tail_end_n=curr_start_n,   # last converged N
-                start_n=args.start_n,
-                max_n=args.max_n,
-                consec_ok=args.consec_ok,
-                cleanup_csv=args.cleanup_output,
-                dos_base_path=dos_base_path,
-                dos_sink=all_dos,
-            )
-            all_records.extend(recs_fast)
-            if ok_fast:
-                conv_rec = conv_fast
-                print(f"[FAST] FWHM={fwhm:g} converged with tail ending at n={curr_start_n}: "
-                    f"f*={conv_fast.f_peak:.6g} Hz  (log10={conv_fast.log10_f:.6f}), "
-                    f"window={conv_fast.thr_log10:.6g}")
+    try:
+        for step in range(args.max_fwhm_steps):
+            print(f"\n=== FWHM step {step+1}: FWHM={fwhm:g} ===")
+            # --- FAST PATH: revalidate at the same n_points tail from previous step ---
+            conv_rec = None
+            if step > 0:  # we have a previous convergence
+                ok_fast, conv_fast, recs_fast = recheck_tail_for_new_fwhm(
+                    runner_prefix=args.runner,
+                    base_toml_text=base_text,
+                    base_config_path=args.base_config,
+                    chi_base_path=chi_base_path,
+                    fwhm=fwhm,
+                    last_tail_end_n=curr_start_n,   # last converged N
+                    start_n=args.start_n,
+                    max_n=args.max_n,
+                    consec_ok=args.consec_ok,
+                    cleanup_csv=args.cleanup_output,
+                    dos_base_path=dos_base_path,
+                    dos_sink=all_dos,
+                    cutoff_override=cutoff_override,
+                )
+                all_records.extend(recs_fast)
+                if ok_fast:
+                    conv_rec = conv_fast
+                    print(f"[FAST] FWHM={fwhm:g} converged with tail ending at n={curr_start_n}: "
+                          f"f*={conv_fast.f_peak:.6g} Hz  (log10={conv_fast.log10_f:.6f}), "
+                          f"window={conv_fast.thr_log10:.6g}")
+                    final_rec = conv_rec
+                else:
+                    print(f"[FAST] Tail check not sufficient; growing n_points...")
+
+            # --- SLOW PATH (only if fast path failed or it's the first FWHM) ---
+            if conv_rec is None:
+                conv_rec, recs_slow = converge_for_fwhm(
+                    runner_prefix=args.runner,
+                    base_toml_text=base_text,
+                    base_config_path=args.base_config,
+                    chi_base_path=chi_base_path,
+                    fwhm=fwhm,
+                    start_n=curr_start_n,
+                    max_n=args.max_n,
+                    batch_n=max(3, args.batch_n),
+                    consec_ok=args.consec_ok,
+                    cleanup_csv=args.cleanup_output,
+                    dos_base_path=dos_base_path,
+                    dos_sink=all_dos,
+                    cutoff_override=cutoff_override,
+                )
+                all_records.extend(recs_slow)
+
+            if conv_rec is not None:
+                converged_fwhms.add(float(fwhm))
+
+            if conv_rec is not None and not ok_fast:
+                print(f"[SLOW] FWHM={fwhm:g} converged at n_points={conv_rec.n_points}: "
+                      f"f*={conv_rec.f_peak:.6g} Hz  (log10={conv_rec.log10_f:.6f}), "
+                      f"window={conv_rec.thr_log10:.6g}")
                 final_rec = conv_rec
-            else:
-                print(f"[FAST] Tail check not sufficient; growing n_points...")
 
-        # --- SLOW PATH (only if fast path failed or it's the first FWHM) ---
-        if conv_rec is None:
-            conv_rec, recs_slow = converge_for_fwhm(
-                runner_prefix=args.runner,
-                base_toml_text=base_text,
-                base_config_path=args.base_config,
-                chi_base_path=chi_base_path,
-                fwhm=fwhm,
-                start_n=curr_start_n,
-                max_n=args.max_n,
-                batch_n=max(3, args.batch_n),
-                consec_ok=args.consec_ok,
-                cleanup_csv=args.cleanup_output,
-                dos_base_path=dos_base_path,
-                dos_sink=all_dos,
-            )
-            all_records.extend(recs_slow)
-
-        if conv_rec is not None:
-            converged_fwhms.add(float(fwhm))
-        
-        if conv_rec is not None and not ok_fast:
-            print(f"[SLOW] FWHM={fwhm:g} converged at n_points={conv_rec.n_points}: "
-                f"f*={conv_rec.f_peak:.6g} Hz  (log10={conv_rec.log10_f:.6f}), "
-                f"window={conv_rec.thr_log10:.6g}")
-            # ↓↓↓ add this
-            final_rec = conv_rec
-
-        if conv_rec is None:
-            print("Reached max_n without satisfying per-FWHM convergence; stopping.")
-            final_reason = "max-n"
-            break
-
-        # cross-FWHM stabilization window
-        if last_converged_log is not None:
-            # Use a conservative window: max of previous and current per-CSV thresholds
-            thr_cross = max(last_converged_thr or 0.0, conv_rec.thr_log10)
-            # Optional absolute pad
-            thr_cross += getattr(args, "cross_eps", 0.0)
-
-            delta_cross = abs(conv_rec.log10_f - last_converged_log)
-            ok = (thr_cross > 0.0) and (delta_cross <= thr_cross)
-
-            cross_ok_streak = cross_ok_streak + 1 if ok else 0
-            print(f"Cross-FWHM Δ={delta_cross:.6g} vs window={thr_cross:.6g} "
-                f"-> {'OK' if ok else 'NO'} (streak {cross_ok_streak}/{args.cross_consec_ok})")
-
-            if cross_ok_streak >= args.cross_consec_ok:
-                print("Cross-FWHM stabilized for required consecutive steps. Stopping.")
-                final_reason = "cross-stable"
+            if conv_rec is None:
+                print("Reached max_n without satisfying per-FWHM convergence; stopping.")
+                final_reason = "max-n"
                 break
-        else:
-            # first FWHM has no previous to compare
-            cross_ok_streak = 0
 
-        # update “previous” references for the next FWHM step
-        last_converged_log = conv_rec.log10_f
-        last_converged_thr = conv_rec.thr_log10
-        curr_start_n = conv_rec.n_points
+            # cross-FWHM stabilization window
+            if last_converged_log is not None:
+                thr_cross = max(last_converged_thr or 0.0, conv_rec.thr_log10) + getattr(args, "cross_eps", 0.0)
+                delta_cross = abs(conv_rec.log10_f - last_converged_log)
+                ok = (thr_cross > 0.0) and (delta_cross <= thr_cross)
 
-        # next FWHM
-        nf = fwhm * args.fwhm_damp
-        if nf < args.min_fwhm:
-            print(f"Next FWHM={nf:g} < min_fwhm={args.min_fwhm:g}. Stopping.")
-            final_reason = "min-fwhm"
-            break
-        fwhm = nf
+                cross_ok_streak = cross_ok_streak + 1 if ok else 0
+                print(f"Cross-FWHM Δ={delta_cross:.6g} vs window={thr_cross:.6g} "
+                      f"-> {'OK' if ok else 'NO'} (streak {cross_ok_streak}/{args.cross_consec_ok})")
 
-    # ---------- Final summary print ----------
-    print("\n=== FINAL CONVERGENCE SUMMARY ===")
-    if final_rec is not None:
-        print(
-            f"Reason: {final_reason or 'loop-end'}\n"
-            f"Converged FWHM: {final_rec.fwhm:g}\n"
-            f"Converged n_points: {final_rec.n_points}\n"
-            f"Peak frequency f*: {final_rec.f_peak:.9g} Hz\n"
-            f"log10(f*): {final_rec.log10_f:.9f}\n"
-            f"Convergence window (Δlog10): {final_rec.thr_log10:.9g}\n"
-            f"Total (fwhm, n_points) runs used: {len(all_records)}"
-        )
-    else:
-        # Fallback: pick the last recorded point if nothing was marked converged
-        if all_records:
-            last = all_records[-1]
+                if cross_ok_streak >= args.cross_consec_ok:
+                    print("Cross-FWHM stabilized for required consecutive steps. Stopping.")
+                    final_reason = "cross-stable"
+                    break
+            else:
+                # first FWHM has no previous to compare
+                cross_ok_streak = 0
+
+            # update “previous” references for the next FWHM step
+            last_converged_log = conv_rec.log10_f
+            last_converged_thr = conv_rec.thr_log10
+            curr_start_n = conv_rec.n_points
+
+            # next FWHM
+            nf = fwhm * args.fwhm_damp
+            if nf < args.min_fwhm:
+                print(f"Next FWHM={nf:g} < min_fwhm={args.min_fwhm:g}. Stopping.")
+                final_reason = "min-fwhm"
+                break
+            fwhm = nf
+
+        # ---------- Final summary print ----------
+        print("\n=== FINAL CONVERGENCE SUMMARY ===")
+        if final_rec is not None:
             print(
-                f"Reason: {final_reason or 'no-convergence'} (showing last point)\n"
-                f"FWHM: {last.fwhm:g}  n_points: {last.n_points}\n"
-                f"f*: {last.f_peak:.9g} Hz  log10(f*): {last.log10_f:.9f}\n"
-                f"Window (Δlog10): {last.thr_log10:.9g}\n"
-                f"Total runs: {len(all_records)}"
+                f"Reason: {final_reason or 'loop-end'}\n"
+                f"Converged FWHM: {final_rec.fwhm:g}\n"
+                f"Converged n_points: {final_rec.n_points}\n"
+                f"Peak frequency f*: {final_rec.f_peak:.9g} Hz\n"
+                f"log10(f*): {final_rec.log10_f:.9f}\n"
+                f"Convergence window (Δlog10): {final_rec.thr_log10:.9g}\n"
+                f"Total (fwhm, n_points) runs used: {len(all_records)}"
             )
         else:
-            print("No runs executed.")
+            if all_records:
+                last = all_records[-1]
+                print(
+                    f"Reason: {final_reason or 'no-convergence'} (showing last point)\n"
+                    f"FWHM: {last.fwhm:g}  n_points: {last.n_points}\n"
+                    f"f*: {last.f_peak:.9g} Hz  log10(f*): {last.log10_f:.9f}\n"
+                    f"Window (Δlog10): {last.thr_log10:.9g}\n"
+                    f"Total runs: {len(all_records)}"
+                )
+            else:
+                print("No runs executed.")
 
-    save_summary(args.summary_out, all_records)
-    make_plots(all_records, args.plots_prefix, show_3d=args.show_3d, mpl_backend=args.mpl_backend)
-    plot_dos_for_converged_fwhm(
-        dos_curves=all_dos,
-        converged_fwhms=converged_fwhms,
-        plots_prefix=args.plots_prefix,
-        show=True,
-        mpl_backend=args.mpl_backend
-    )
-    print("\nDone.")
-    print(f"Summary: {args.summary_out}")
-    print(f"Plots: {args.plots_prefix}_[...].png")
+        save_summary(args.summary_out, all_records)
+        make_plots(all_records, args.plots_prefix, show_3d=args.show_3d, mpl_backend=args.mpl_backend)
+        plot_dos_for_converged_fwhm(
+            dos_curves=all_dos,
+            converged_fwhms=converged_fwhms,
+            plots_prefix=args.plots_prefix,
+            show=True,
+            mpl_backend=args.mpl_backend
+        )
+        print("\nDone.")
+        print(f"Summary: {args.summary_out}")
+        print(f"Plots: {args.plots_prefix}_[...].png")
+
+    except KeyboardInterrupt:
+        # ---- Graceful interrupt: dump what we have so far ----
+        print("\n[INTERRUPTED] Ctrl+C received — saving partial summary and plots...", flush=True)
+        try:
+            if all_records:
+                save_summary(args.summary_out, all_records)
+                # Non-blocking plots (windows disabled on interrupt)
+                make_plots(all_records, args.plots_prefix, show_3d=False, mpl_backend=args.mpl_backend)
+            if all_dos:
+                plot_dos_for_converged_fwhm(
+                    dos_curves=all_dos,
+                    converged_fwhms=converged_fwhms,
+                    plots_prefix=args.plots_prefix,
+                    show=False,
+                    mpl_backend=args.mpl_backend
+                )
+        finally:
+            print(f"Partial summary saved to: {args.summary_out}")
+            print(f"Partial plots written under: {args.plots_prefix}_[...].png")
+            raise SystemExit(130)  # conventional exit code for SIGINT
 
 if __name__ == "__main__":
     main()

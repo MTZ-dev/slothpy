@@ -292,7 +292,7 @@ def add_R21_bundle(out, Yb_table, w_n, Jhat_p_table, q_0, sec_tol, weight):
                                 val -= Y_j[f,b,d,f]*Jhat_p_j[f,d]
                         out[ab,cd] += prefc * val
 
-@njit(cache=True)
+@njit(nogil=True, cache=True, fastmath=True, inline="never")
 def _R_pm(V1, V2, w_n, sign, freq, lw):
     N = w_n.shape[0]
     out = np.zeros((N, N), np.complex128)
@@ -304,7 +304,7 @@ def _R_pm(V1, V2, w_n, sign, freq, lw):
             out[i,j] = acc
     return out
 
-@njit(cache=True, inline="always", fastmath=True)
+@njit(nogil=True, cache=True, inline="always", fastmath=True)
 def gaussian(dE: float, lw: float, cutoff: float) -> float:
     if np.abs(dE) >= cutoff:
         return 0.0
@@ -312,10 +312,10 @@ def gaussian(dE: float, lw: float, cutoff: float) -> float:
     exponent = -0.5 * dE * dE / (lw * lw)
     return prefactor * np.exp(exponent)
 
-@njit(cache=True)
+@njit(nogil=True, cache=True, fastmath=True, inline="never")
 def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1: float, n2: float, f1: float, f2: float, lw1: float, lw2: float, ind: int, cutoff: float, A: float, B: float, weight: float, sec_tol: float = 1e-6) -> np.ndarray:
     N = w_n.shape[0]
-    prefc = pi * pi / H * weight
+    prefc = pi * pi / (H*H*H) * weight
     lw_total = lw1
 
     Rabp = _R_pm(V1, V2, w_n, +1, f2, lw2)
@@ -334,36 +334,173 @@ def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1
                     val = 0.0 + 0.0j
 
                     G = n1 * (n2 + 1.0) * gaussian(w_n[a,c] - f1 + f2, lw_total, cutoff)
-                    val += (np.conj(Rabp[b,d]) * Rabp[a,c] + np.conj(Rabp[b,d]) * Rbam[a,c] + np.conj(Rbam[b,d]) * Rabp[a,c] + np.conj(Rbam[b,d]) * Rbam[a,c]) * G * B
+                    val += (np.conj(Rabp[b,d]) * Rabp[a,c] + np.conj(Rabp[b,d]) * Rbam[a,c] + np.conj(Rbam[b,d]) * Rabp[a,c] + np.conj(Rbam[b,d]) * Rbam[a,c]) * G 
                     G = n2 * (n1 + 1.0) * gaussian(w_n[a,c] + f1 - f2, lw_total, cutoff)
-                    val += (np.conj(Rabm[b,d]) * Rabm[a,c] + np.conj(Rabm[b,d]) * Rbap[a,c] + np.conj(Rbap[b,d]) * Rabm[a,c] + np.conj(Rbap[b,d]) * Rbap[a,c]) * G * B
+                    val += (np.conj(Rabm[b,d]) * Rabm[a,c] + np.conj(Rabm[b,d]) * Rbap[a,c] + np.conj(Rbap[b,d]) * Rabm[a,c] + np.conj(Rbap[b,d]) * Rbap[a,c]) * G 
                     G = n1 * n2 * gaussian(w_n[a,c] - f1 - f2, lw_total, cutoff)
-                    val += (np.conj(Rabm[b,d]) * Rabm[a,c] + np.conj(Rbam[b,d]) * Rbam[a,c] + np.conj(Rbam[b,d]) * Rabm[a,c] + np.conj(Rabm[b,d]) * Rbam[a,c]) * G * A
+                    val += (np.conj(Rabm[b,d]) * Rabm[a,c] + np.conj(Rbam[b,d]) * Rbam[a,c] + np.conj(Rbam[b,d]) * Rabm[a,c] + np.conj(Rabm[b,d]) * Rbam[a,c]) * G
                     G = (n1 + 1.0) * (n2 + 1.0) * gaussian(w_n[a,c] + f1 + f2, lw_total, cutoff)
-                    val += (np.conj(Rabp[b,d]) * Rabp[a,c] + np.conj(Rbap[b,d]) * Rbap[a,c] + np.conj(Rbap[b,d]) * Rabp[a,c] + np.conj(Rabp[b,d]) * Rbap[a,c]) * G * A
+                    val += (np.conj(Rabp[b,d]) * Rabp[a,c] + np.conj(Rbap[b,d]) * Rbap[a,c] + np.conj(Rbap[b,d]) * Rabp[a,c] + np.conj(Rabp[b,d]) * Rbap[a,c]) * G
 
-                    # if a == c:
-                    #     for k in range(N):
-                    #         G = n1 * (n2 + 1.0) * gaussian(w_n[k,d] - f1 + f2, lw_total, cutoff)
-                    #         val -= 0.5 * (np.conj(Rabp[k,d]) * Rabp[k,b] + np.conj(Rabp[k,d]) * Rbam[k,b] + np.conj(Rbam[k,d]) * Rabp[k,b] + np.conj(Rbam[k,d]) * Rbam[k,b]) * G
-                    #         G = n2 * (n1 + 1.0) * gaussian(w_n[k,d] + f1 - f2, lw_total, cutoff)
-                    #         val -= 0.5 * (np.conj(Rabm[k,d]) * Rabm[k,b] + np.conj(Rabm[k,d]) * Rbap[k,b] + np.conj(Rbap[k,d]) * Rabm[k,b] + np.conj(Rbap[k,d]) * Rbap[k,b]) * G
-                    #         G = n1 * n2 * gaussian(w_n[k,d] - f1 - f2, lw_total, cutoff)
-                    #         val -= 0.5 * (np.conj(Rabm[k,d]) * Rabm[k,b] + np.conj(Rabm[k,d]) * Rbam[k,b] + np.conj(Rbam[k,d]) * Rabm[k,b] + np.conj(Rbam[k,d]) * Rbam[k,b]) * G
-                    #         G = (n1 + 1.0) * (n2 + 1.0) * gaussian(w_n[k,d] + f1 + f2, lw_total, cutoff)
-                    #         val -= 0.5 * (np.conj(Rabp[k,d]) * Rabp[k,b] + np.conj(Rabp[k,d]) * Rbap[k,b] + np.conj(Rbap[k,d]) * Rabp[k,b] + np.conj(Rbap[k,d]) * Rbap[k,b]) * G
-                    # if b == d:
-                    #     for k in range(N):
-                    #         G = n1 * (n2 + 1.0) * gaussian(w_n[k,c] - f1 + f2, lw_total, cutoff)
-                    #         val -= 0.5 * (np.conj(Rabp[k,a]) * Rabp[k,c] + np.conj(Rabp[k,a]) * Rbam[k,c] + np.conj(Rbam[k,a]) * Rabp[k,c] + np.conj(Rbam[k,a]) * Rbam[k,c]) * G
-                    #         G = n2 * (n1 + 1.0) * gaussian(w_n[k,c] + f1 - f2, lw_total, cutoff)
-                    #         val -= 0.5 * (np.conj(Rabm[k,a]) * Rabm[k,c] + np.conj(Rabm[k,a]) * Rbap[k,c] + np.conj(Rbap[k,a]) * Rabm[k,c] + np.conj(Rbap[k,a]) * Rbap[k,c]) * G
-                    #         G = n1 * n2 * gaussian(w_n[k,c] - f1 - f2, lw_total, cutoff)
-                    #         val -= 0.5 * (np.conj(Rabm[k,a]) * Rabm[k,c] + np.conj(Rabm[k,a]) * Rbam[k,c] + np.conj(Rbam[k,a]) * Rabm[k,c] + np.conj(Rbam[k,a]) * Rbam[k,c]) * G
-                    #         G = (n1 + 1.0) * (n2 + 1.0) * gaussian(w_n[k,c] + f1 + f2, lw_total, cutoff)
-                    #         val -= 0.5 * (np.conj(Rabp[k,a]) * Rabp[k,c] + np.conj(Rabp[k,a]) * Rbap[k,c] + np.conj(Rbap[k,a]) * Rabp[k,c] + np.conj(Rbap[k,a]) * Rbap[k,c]) * G
+                    if a == c:
+                        for k in range(N):
+                            G = n1 * (n2 + 1.0) * gaussian(w_n[k,d] - f1 + f2, lw_total, cutoff)
+                            val -= 0.5 * (np.conj(Rabp[k,d]) * Rabp[k,b] + np.conj(Rabp[k,d]) * Rbam[k,b] + np.conj(Rbam[k,d]) * Rabp[k,b] + np.conj(Rbam[k,d]) * Rbam[k,b]) * G
+                            G = n2 * (n1 + 1.0) * gaussian(w_n[k,d] + f1 - f2, lw_total, cutoff)
+                            val -= 0.5 * (np.conj(Rabm[k,d]) * Rabm[k,b] + np.conj(Rabm[k,d]) * Rbap[k,b] + np.conj(Rbap[k,d]) * Rabm[k,b] + np.conj(Rbap[k,d]) * Rbap[k,b]) * G
+                            G = n1 * n2 * gaussian(w_n[k,d] - f1 - f2, lw_total, cutoff)
+                            val -= 0.5 * (np.conj(Rabm[k,d]) * Rabm[k,b] + np.conj(Rabm[k,d]) * Rbam[k,b] + np.conj(Rbam[k,d]) * Rabm[k,b] + np.conj(Rbam[k,d]) * Rbam[k,b]) * G
+                            G = (n1 + 1.0) * (n2 + 1.0) * gaussian(w_n[k,d] + f1 + f2, lw_total, cutoff)
+                            val -= 0.5 * (np.conj(Rabp[k,d]) * Rabp[k,b] + np.conj(Rabp[k,d]) * Rbap[k,b] + np.conj(Rbap[k,d]) * Rabp[k,b] + np.conj(Rbap[k,d]) * Rbap[k,b]) * G
+                    if b == d:
+                        for k in range(N):
+                            G = n1 * (n2 + 1.0) * gaussian(w_n[k,c] - f1 + f2, lw_total, cutoff)
+                            val -= 0.5 * (np.conj(Rabp[k,a]) * Rabp[k,c] + np.conj(Rabp[k,a]) * Rbam[k,c] + np.conj(Rbam[k,a]) * Rabp[k,c] + np.conj(Rbam[k,a]) * Rbam[k,c]) * G
+                            G = n2 * (n1 + 1.0) * gaussian(w_n[k,c] + f1 - f2, lw_total, cutoff)
+                            val -= 0.5 * (np.conj(Rabm[k,a]) * Rabm[k,c] + np.conj(Rabm[k,a]) * Rbap[k,c] + np.conj(Rbap[k,a]) * Rabm[k,c] + np.conj(Rbap[k,a]) * Rbap[k,c]) * G
+                            G = n1 * n2 * gaussian(w_n[k,c] - f1 - f2, lw_total, cutoff)
+                            val -= 0.5 * (np.conj(Rabm[k,a]) * Rabm[k,c] + np.conj(Rabm[k,a]) * Rbam[k,c] + np.conj(Rbam[k,a]) * Rabm[k,c] + np.conj(Rbam[k,a]) * Rbam[k,c]) * G
+                            G = (n1 + 1.0) * (n2 + 1.0) * gaussian(w_n[k,c] + f1 + f2, lw_total, cutoff)
+                            val -= 0.5 * (np.conj(Rabp[k,a]) * Rabp[k,c] + np.conj(Rabp[k,a]) * Rbap[k,c] + np.conj(Rbap[k,a]) * Rabp[k,c] + np.conj(Rbap[k,a]) * Rbap[k,c]) * G
 
-                    out[ab, cd, ind] += prefc * val
+                    out[ind, ab, cd] += prefc * val
+
+# @njit(nogil=True, cache=True, fastmath=True, inline="never")
+# def add_R41(out: np.ndarray,
+#             w_n: np.ndarray,
+#             V1: np.ndarray,
+#             V2: np.ndarray,
+#             n1: float,
+#             n2: float,
+#             f1: float,
+#             f2: float,
+#             lw1: float,
+#             lw2: float,
+#             ind: int,
+#             cutoff: float,
+#             A: float,
+#             B: float,
+#             weight: float,
+#             sec_tol: float = 1e-6) -> np.ndarray:
+#     """
+#     Raman 4th–order population kernel (secular, Markov) in Liouville space.
+
+#     - out:  R41 slice for all threads, shape (threads, N^2, N^2)
+#     - w_n:  energy differences w_n[a,b] = E_a - E_b
+#     - V1,V2: spin–phonon coupling matrices for the two modes (complex N×N)
+#     - n1,n2: Bose occupancies of modes with frequencies f1,f2
+#     - f1,f2: phonon frequencies
+#     - lw1,lw2: broadenings (used in denominators and Gaussian δ)
+#     - ind:   thread id (first index of `out`)
+#     - cutoff: energy cutoff for Gaussian δ
+#     - A,B:   degeneracy factors (A for ++/--, B for +-/-+)
+#     - weight: integration weight for this phonon pair
+#     - sec_tol: secular tolerance on level spacing |ω_ab|
+#     """
+
+#     N = w_n.shape[0]
+
+#     # Local population rate matrix R_ab (a,b = 0..N-1), for this phonon pair
+#     # R[a,b] is the rate from level b to a.
+#     R = np.zeros((N, N), dtype=np.float64)
+
+#     # Loop over level pairs (a,b). Only populations (a,a) ← (b,b) will be non-zero.
+#     for a in range(N):
+#         for b in range(N):
+#             if a == b:
+#                 continue
+
+#             w_ab = w_n[a, b]  # E_a - E_b
+
+#             # Secular approximation: skip nearly degenerate transitions
+#             if np.abs(w_ab) < sec_tol:
+#                 continue
+
+#             # Build complex amplitudes for the four Raman channels:
+#             # Rpm, Rmp, Rpp, Rmm  (following the Fortran logic)
+#             Rpm = 0.0 + 0.0j
+#             Rmp = 0.0 + 0.0j
+#             Rpp = 0.0 + 0.0j
+#             Rmm = 0.0 + 0.0j
+
+#             for c in range(N):
+#                 V1ac = V1[a, c]
+#                 V2cb = V2[c, b]
+#                 V2ac = V2[a, c]
+#                 V1cb = V1[c, b]
+
+#                 w_cb = w_n[c, b]  # E_c - E_b
+
+#                 # --- "+-" channel (pm) ---
+#                 #   1st term: V1 V2 / (E_c - E_b - f2 - i lw2)
+#                 #   2nd term: V2 V1 / (E_c - E_b + f1 - i lw1)
+#                 Rpm += V1ac * V2cb / (w_cb - f2 - 1j * lw2)
+#                 Rpm += V2ac * V1cb / (w_cb + f1 - 1j * lw1)
+
+#                 # --- "-+" channel (mp) ---
+#                 #   1st term: V1 V2 / (E_c - E_b + f2 - i lw2)
+#                 #   2nd term: V2 V1 / (E_c - E_b - f1 - i lw1)
+#                 Rmp += V1ac * V2cb / (w_cb + f2 - 1j * lw2)
+#                 Rmp += V2ac * V1cb / (w_cb - f1 - 1j * lw1)
+
+#                 # --- "++" channel (pp) ---
+#                 #   both denominators with +f1,+f2
+#                 Rpp += V1ac * V2cb / (w_cb + f2 - 1j * lw2)
+#                 Rpp += V2ac * V1cb / (w_cb + f1 - 1j * lw1)
+
+#                 # --- "--" channel (mm) ---
+#                 #   both denominators with -f1,-f2
+#                 Rmm += V1ac * V2cb / (w_cb - f2 - 1j * lw2)
+#                 Rmm += V2ac * V1cb / (w_cb - f1 - 1j * lw1)
+
+#             lw_delta = lw1
+
+#             DE_pm = w_ab - f2 + f1
+#             G_pm = n2 * (n1 + 1.0) * gaussian(DE_pm, lw_delta, cutoff)
+
+#             DE_mp = w_ab + f2 - f1
+#             G_mp = (n2 + 1.0) * n1 * gaussian(DE_mp, lw_delta, cutoff)
+
+#             DE_mm = w_ab - f2 - f1
+#             G_mm = n2 * n1 * gaussian(DE_mm, lw_delta, cutoff)
+
+#             DE_pp = w_ab + f2 + f1
+#             G_pp = (n2 + 1.0) * (n1 + 1.0) * gaussian(DE_pp, lw_delta, cutoff)
+
+#             Rpm2 = (Rpm.real * Rpm.real) + (Rpm.imag * Rpm.imag)
+#             Rmp2 = (Rmp.real * Rmp.real) + (Rmp.imag * Rmp.imag)
+#             Rmm2 = (Rmm.real * Rmm.real) + (Rmm.imag * Rmm.imag)
+#             Rpp2 = (Rpp.real * Rpp.real) + (Rpp.imag * Rpp.imag)
+
+#             rate_ab = 0.0
+#             rate_ab += B * (G_pm * Rpm2 + G_mp * Rmp2)
+#             rate_ab += A * (G_mm * Rmm2 + G_pp * Rpp2)
+
+#             R[a, b] += rate_ab
+
+#     prefc = pi * pi / (H*H*H) * weight
+
+#     for a in range(N):
+#         for b in range(N):
+#             R[a, b] *= prefc
+
+#     # Trace preservation for populations:
+#     # for each "source" level b, impose Σ_a R[a,b] = 0
+#     # for b in range(N):
+#     #     loss = 0.0
+#     #     for a in range(N):
+#     #         if a != b:
+#     #             loss += R[a, b]
+#     #     R[b, b] -= loss
+
+#     for a in range(N):
+#         ab = liou(a, a, N)
+#         for b in range(N):
+#             cd = liou(b, b, N)
+#             out[ind, ab, cd] += R[a, b]
+
+#     return out
+
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
 def get_relax_time(R_mat):
@@ -523,7 +660,7 @@ def ov_add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w
                 return add_PSI_bundle(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind)
             return impl
 
-def add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, run_rho0):
+def add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0):
     raise NotImplementedError
 
 @overload(add_rho0_bundle_comp, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
@@ -582,12 +719,13 @@ def build_matrices(
     run_PSI: types.Literal,
     run_rho0: types.Literal,
     run_R21: types.Literal,
+    # run_R41: types.Literal,
     ):
     n_k_inv = 1.0 / np.sqrt(grid.shape[0])
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
-    # freq_shape = freq0.shape[0]
+    freq_shape = freq0.shape[0]
     # scale_freq = np.min(freq0)
     arr = np.diag(w_n, k=1)
     w_n_qtm_max = arr[0]
@@ -597,13 +735,13 @@ def build_matrices(
     # print(w_n_qtm_max)
 
     # Raman ----------------------------------------------------------------------------------
-    # threads_number = get_num_threads()
-    # max_grid_per_thread = np.int64(np.ceil(grid.shape[0]/threads_number))
-    # Yb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]), np.complex128)
-    # wb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape), np.float64)
-    # raman_counter = np.zeros(threads_number, dtype=np.int64)
-    # raman_counter_wb = np.zeros(threads_number, dtype=np.int64)
-    # raman_counter_2wb = np.zeros(threads_number, dtype=np.int64)
+    threads_number = get_num_threads()
+    max_grid_per_thread = np.int64(np.ceil(grid.shape[0]/threads_number))
+    Yb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]), np.complex128)
+    wb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape), np.float64)
+    raman_counter = np.zeros(threads_number, dtype=np.int64)
+    raman_counter_wb = np.zeros(threads_number, dtype=np.int64)
+    raman_counter_2wb = np.zeros(threads_number, dtype=np.int64)
     # ----------------------------------------------------------------------------------------
 
     for i in prange(grid.shape[0]):
@@ -628,14 +766,14 @@ def build_matrices(
         cutoff_j = get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_qtm_max, qtm)
 
         # Raman ----------------------------------------------------------------------------------
-        # raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
-        # raman_counter_2wb[thread_id] = raman_counter_wb[thread_id] + wb.shape[0]
-        # Yb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = Yb
-        # wb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = wb
-        # if not q_0:
-        #     Yb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = np.conjugate(np.transpose(Yb, (0,2,1)))
-        #     wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
-        # raman_counter[thread_id] = raman_counter_2wb[thread_id]
+        raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
+        raman_counter_2wb[thread_id] = raman_counter_wb[thread_id] + wb.shape[0]
+        Yb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = Yb
+        wb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = wb
+        if not q_0:
+            Yb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = np.conjugate(np.transpose(Yb, (0,2,1)))
+            wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
+        raman_counter[thread_id] = raman_counter_2wb[thread_id]
         # ----------------------------------------------------------------------------------------
 
         for t_index in range(beta.shape[0]):
@@ -657,21 +795,24 @@ def build_matrices(
             add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy_tolerance, weight, run_R21)
 
     # Raman ----------------------------------------------------------------------------------
-    # wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
-    # Yb_array = Yb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]))
-    # N_pairs = wb_array.size * (wb_array.size + 1) // 2
-    # for t_index_raman in range(beta.shape[0]):
-    #     print("T start")
-    #     bose_raman = bose_occ(wb_array, beta[t_index_raman])
-    #     for p in prange(N_pairs):
-    #         thread_id = get_thread_id()
-    #         k = np.int64((np.sqrt(8*p + 1) - 1) // 2)
-    #         l = p - k*(k + 1)//2
-    #         if wb_array[k] == 0.0 or wb_array[l] == 0.0:
-    #             continue
-    #         A = 1 if k!=l else 0.25
-    #         B = 1 if k!=l else 0.5
-    #         add_R41(R41[t_index_raman], w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff, A, B, weight, sec_tol=sec_tol)
+    wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
+    Yb_array = Yb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]))
+    N_pairs = wb_array.size * (wb_array.size + 1) // 2
+    cutoff_raman = gamma_fwhm * cutoff_mult
+    raman_weight = 1.0
+    for t_index_raman in range(beta.shape[0]):
+        print(t_index_raman)
+        bose_raman = bose_occ(wb_array, beta[t_index_raman])
+        for p in prange(N_pairs):
+            thread_id = get_thread_id()
+            R_41_t = R41[:,t_index_raman,:,:]
+            k = np.int64((np.sqrt(8*p + 1) - 1) // 2)
+            l = p - k*(k + 1)//2
+            if wb_array[k] == 0.0 or wb_array[l] == 0.0:
+                continue
+            A = 1 if k!=l else 0.25
+            B = 1 if k!=l else 0.5
+            add_R41(R_41_t, w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, A, B, raman_weight, sec_tol=degeneracy_tolerance)
     # ----------------------------------------------------------------------------------------
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
@@ -765,6 +906,7 @@ def susceptibility_relax_time(
     for t in range(temp_size):
         relax_time_R21_T[t] = get_relax_time(R21[t])
         relax_time_R41_T[t] = get_relax_time(R41[t])
+        print(relax_time_R41_T[t])
         for k, omega in enumerate(omega_grid):
             Xi       = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2) - 1j * omega * eye
             num      = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + (M_rho0 @ rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real

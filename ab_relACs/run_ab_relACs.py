@@ -115,12 +115,12 @@ def run_relacs(cfg: AppConfig):
             export_tau_csv(B_array, temperatures, tau_R21_orient_H_T[n,f,o], save_filepath)
     if cfg.relacs.tau_41_csv_path:
         for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
-            save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_41_csv_path, n_points_array[n], fwhm_array[f], orientation[o], sig=6, int_tol=1e-12)
+            save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_41_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
             export_tau_csv(B_array, temperatures, tau_R41_orient_H_T[n,f,o], save_filepath)
 
     if cfg.relacs.show_plot:
         import matplotlib.pyplot as plt
         plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T, part="imag", title="χ''(ν)")
         plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T, part="real", title="χ'(ν)")
-        plot_tau_vs_inv_T(temperatures, fields, n_points_array, fwhm_array, tau_R21_orient_H_T[:,:,0,:,:], tau_R41_orient_H_T[:,:,0,:,:], which="R21", title="τ(T)")
+        plot_tau_vs_inv_T(temperatures, fields, n_points_array, fwhm_array, tau_R21_orient_H_T[:,:,0,:,:], tau_R41_orient_H_T[:,:,0,:,:], which="both", title="τ(T)")
         plt.show()

@@ -234,6 +234,9 @@ def multigrid_aniso(
     s: float = 8.0,
     alpha: float = 0.9,
 ) -> np.ndarray:
+    if n_ref == 1:
+        return np.asarray([[0,0,0]], dtype=np.float64), np.asarray([1], dtype=np.float64)
+
     grids_list = []
     weights_list = []
     per_shell_point_weight = []  # store unnormalized w_shell for normalization

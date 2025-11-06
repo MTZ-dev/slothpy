@@ -407,8 +407,6 @@ def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1
 #     # Loop over level pairs (a,b). Only populations (a,a) ← (b,b) will be non-zero.
 #     for a in range(N):
 #         for b in range(N):
-#             if a == b:
-#                 continue
 
 #             w_ab = w_n[a, b]  # E_a - E_b
 
@@ -486,12 +484,12 @@ def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1
 
 #     # Trace preservation for populations:
 #     # for each "source" level b, impose Σ_a R[a,b] = 0
-#     # for b in range(N):
-#     #     loss = 0.0
-#     #     for a in range(N):
-#     #         if a != b:
-#     #             loss += R[a, b]
-#     #     R[b, b] -= loss
+#     for b in range(N):
+#         loss = 0.0
+#         for a in range(N):
+#             if a != b:
+#                 loss += R[a, b]
+#         R[b, b] -= loss
 
 #     for a in range(N):
 #         ab = liou(a, a, N)

@@ -981,7 +981,7 @@ if __name__ == "__main__":
     tau_file = base_dir / "Tb_3000_45_r21.csv" # "tau_TbCo_0_Oe_ab_initio.csv"
     tau_file2 = base_dir / "Tb_3000_45.csv" # "1.csv" # "test_fit_tau2.csv"
     tau_file3 = base_dir / "tau_TbCo_3000_Oe.csv" # "2.csv" #
-    tau_file4 = base_dir / "ac_Tb_npoints_41_fwhm_20_grid_4_gauss_1.82_550.csv"
+    tau_file4 = base_dir / "raman_3000_13_1_5.csv"
     tau_file5 = base_dir / "tau_TbCo_0_Oe.csv"
     if not ac_file.exists() or not tau_file.exists():
         raise SystemExit("Sample CSV files not found next to ac_plotting.py")
@@ -1003,6 +1003,7 @@ if __name__ == "__main__":
         # TauGrid + per-entry selector + its own mechanisms + (optional) style
         # (tau_grid,  "Exp",  {"Orbach": tau_grid.mechanisms.get("Orbach"), "V_d": tau_grid.mechanisms.get("V_d")}, {"field": 0.0}, {"marker": "o"}),
         (tau_grid,  "Ab initio R21",  {}, {"field": 3000.0}, {"marker": "s"}),
+        (tau_grid4,  "Ab initio R41",  {}, {"field": 3000.0}, {"marker": "v"}),
         (tau_grid2,  "Ab initio",  {}, {"field": 3000.0}, {"marker": "o"}),
         (tau_grid3,  "Exp",  {}, {"field": 3000.0}, {"marker": "X"}),
         # (tau_grid,  "Ab initio",  {}, {"field": 0.0}, {"marker": "s"}),
@@ -1029,5 +1030,5 @@ if __name__ == "__main__":
     out_dir.mkdir(exist_ok=True)
     # Save composite in PDF/EPS; single panels in PDF
     _, _, _, _, fig_comb = figs
-    savefig_jcp(fig_comb, out_dir / "TbCo_ac_comparison", formats=("pdf",))
+    savefig_jcp(fig_comb, out_dir / "TbCo_ac_comparison_r41_13_1_5", formats=("pdf",))
     print("Saved composite (PDF/EPS) to", out_dir)

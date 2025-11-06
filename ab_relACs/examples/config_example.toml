@@ -20,24 +20,24 @@ number_cpus = 64
 
 orientations = [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]]
 fields = [0.3]
-temperatures = "np.arange(10,50,5)" # [2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
+temperatures = "np.arange(10,45,1)" # [2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
 frequencies = "np.logspace(-4, 6, 1000)"
 
-states_number = 6
+states_number = 13
 degeneracy_tolerance = 1e-6
 psi_frequency_shift = false
 initial_correlation = false
 omega_loop = false
 chi_s = false
 
-n_points = [8]
+n_points = [1]
 q_ranges = [0.5]
 broadening = "gaussian" # "gaussian" # "lorentzian" #
-fwhm = [30]
+fwhm = [5]
 adaptive_fwhm = false
 modes_low = 1e-5
 modes_high = 3000
-cutoff_fwhm = 1.09
+cutoff_fwhm = 1.1
 qtm = true
 
 chi_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/ac_Tb.dat"

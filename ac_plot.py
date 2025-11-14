@@ -981,7 +981,7 @@ if __name__ == "__main__":
     tau_file = base_dir / "Tb_3000_45_r21.csv" # "tau_TbCo_0_Oe_ab_initio.csv"
     tau_file2 = base_dir / "Tb_3000_45.csv" # "1.csv" # "test_fit_tau2.csv"
     tau_file3 = base_dir / "tau_TbCo_3000_Oe.csv" # "2.csv" #
-    tau_file4 = base_dir / "raman_3000_13_1_5.csv"
+    tau_file4 = base_dir / "raman_3000_8_3_1_tt.csv"
     tau_file5 = base_dir / "tau_TbCo_0_Oe.csv"
     if not ac_file.exists() or not tau_file.exists():
         raise SystemExit("Sample CSV files not found next to ac_plotting.py")
@@ -1030,5 +1030,5 @@ if __name__ == "__main__":
     out_dir.mkdir(exist_ok=True)
     # Save composite in PDF/EPS; single panels in PDF
     _, _, _, _, fig_comb = figs
-    savefig_jcp(fig_comb, out_dir / "TbCo_ac_comparison_r41_13_1_5", formats=("pdf",))
+    savefig_jcp(fig_comb, out_dir / "TbCo_ac_comparison_r41_8_3_1_tt", formats=("pdf",))
     print("Saved composite (PDF/EPS) to", out_dir)

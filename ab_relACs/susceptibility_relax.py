@@ -724,7 +724,8 @@ def build_matrices(
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     freq_shape = freq0.shape[0]
-    # scale_freq = np.min(freq0)
+    scale_freq = np.min(freq0)
+    # print(scale_freq*AU_BOHR_CM_1)
     arr = np.diag(w_n, k=1)
     w_n_qtm_max = arr[0]
     for i in range(2, arr.size, 2):  # step of 2
@@ -733,13 +734,13 @@ def build_matrices(
     # print(w_n_qtm_max)
 
     # Raman ----------------------------------------------------------------------------------
-    threads_number = get_num_threads()
-    max_grid_per_thread = np.int64(np.ceil(grid.shape[0]/threads_number))
-    Yb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]), np.complex128)
-    wb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape), np.float64)
-    raman_counter = np.zeros(threads_number, dtype=np.int64)
-    raman_counter_wb = np.zeros(threads_number, dtype=np.int64)
-    raman_counter_2wb = np.zeros(threads_number, dtype=np.int64)
+    # threads_number = get_num_threads()
+    # max_grid_per_thread = np.int64(np.ceil(grid.shape[0]/threads_number))
+    # Yb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]), np.complex128)
+    # wb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape), np.float64)
+    # raman_counter = np.zeros(threads_number, dtype=np.int64)
+    # raman_counter_wb = np.zeros(threads_number, dtype=np.int64)
+    # raman_counter_2wb = np.zeros(threads_number, dtype=np.int64)
     # ----------------------------------------------------------------------------------------
 
     for i in prange(grid.shape[0]):
@@ -748,7 +749,7 @@ def build_matrices(
         weight = weights[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
-        # freq = freq - scale_freq
+        freq = freq - scale_freq
         freq *= AU_BOHR_CM_1
 
         if q_0:
@@ -764,14 +765,14 @@ def build_matrices(
         cutoff_j = get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_qtm_max, qtm)
 
         # Raman ----------------------------------------------------------------------------------
-        raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
-        raman_counter_2wb[thread_id] = raman_counter_wb[thread_id] + wb.shape[0]
-        Yb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = Yb
-        wb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = wb
-        if not q_0:
-            Yb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = np.conjugate(np.transpose(Yb, (0,2,1)))
-            wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
-        raman_counter[thread_id] = raman_counter_2wb[thread_id]
+        # raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
+        # raman_counter_2wb[thread_id] = raman_counter_wb[thread_id] + wb.shape[0]
+        # Yb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = Yb
+        # wb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = wb
+        # if not q_0:
+        #     Yb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = np.conjugate(np.transpose(Yb, (0,2,1)))
+        #     wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
+        # raman_counter[thread_id] = raman_counter_2wb[thread_id]
         # ----------------------------------------------------------------------------------------
 
         for t_index in range(beta.shape[0]):
@@ -793,24 +794,24 @@ def build_matrices(
             add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy_tolerance, weight, run_R21)
 
     # Raman ----------------------------------------------------------------------------------
-    wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
-    Yb_array = Yb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]))
-    N_pairs = wb_array.size * (wb_array.size + 1) // 2
-    cutoff_raman = gamma_fwhm * cutoff_mult
-    raman_weight = 1.0
-    for t_index_raman in range(beta.shape[0]):
-        print(t_index_raman)
-        bose_raman = bose_occ(wb_array, beta[t_index_raman])
-        for p in prange(N_pairs):
-            thread_id = get_thread_id()
-            R_41_t = R41[:,t_index_raman,:,:]
-            k = np.int64((np.sqrt(8*p + 1) - 1) // 2)
-            l = p - k*(k + 1)//2
-            if wb_array[k] == 0.0 or wb_array[l] == 0.0:
-                continue
-            A = 1 if k!=l else 0.25
-            B = 1 if k!=l else 0.5
-            add_R41(R_41_t, w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, A, B, raman_weight, sec_tol=degeneracy_tolerance)
+    # wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
+    # Yb_array = Yb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]))
+    # N_pairs = wb_array.size * (wb_array.size + 1) // 2
+    # cutoff_raman = gamma_fwhm * cutoff_mult
+    # raman_weight = 1.0
+    # for t_index_raman in range(beta.shape[0]):
+    #     print(t_index_raman)
+    #     bose_raman = bose_occ(wb_array, beta[t_index_raman])
+    #     for p in prange(N_pairs):
+    #         thread_id = get_thread_id()
+    #         R_41_t = R41[:,t_index_raman,:,:]
+    #         k = np.int64((np.sqrt(8*p + 1) - 1) // 2)
+    #         l = p - k*(k + 1)//2
+    #         if wb_array[k] == 0.0 or wb_array[l] == 0.0:
+    #             continue
+    #         A = 1 if k!=l else 0.25
+    #         B = 1 if k!=l else 0.5
+    #         add_R41(R_41_t, w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, A, B, raman_weight, sec_tol=degeneracy_tolerance)
     # ----------------------------------------------------------------------------------------
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
@@ -909,12 +910,13 @@ def susceptibility_relax_time(
             Xi       = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2) - 1j * omega * eye
             num      = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + (M_rho0 @ rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
             rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
-            chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / H_CM_1 * MU_B_CM_3
-            
-            if k != 0:
-                chi_T[t,k] /= chi_T[t,0].real
-                chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic[t])
-                chi_T[t,k] += chi_adiabatic[t] 
-        chi_T[t,0] = chi_T[t,0] / chi_T[t,0].real * chi_isothermal[t]
+            chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3 # / H_CM_1 
+
+        # # Normalization to the transfer function    
+        #     if k != 0:
+        #         chi_T[t,k] /= chi_T[t,0].real
+        #         chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic[t])
+        #         chi_T[t,k] += chi_adiabatic[t] 
+        # chi_T[t,0] = chi_T[t,0] / chi_T[t,0].real * chi_isothermal[t]
 
     return chi_T, relax_time_R21_T, relax_time_R41_T

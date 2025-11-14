@@ -174,29 +174,27 @@ def add_KR_bundle(out, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight):
                         out[ab,cd]+=val * coeff
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
-def add_rho0_bundle(out, trace, A, Yb_table, wb, nb, beta, w_n, q_0, rho, thread_id, t_index, weight):
+def add_rho0_bundle(out, trace, Yb_table, wb, nb, beta, w_n, q_0, rho, thread_id, t_index, weight, cutoff_j):
     N=w_n.shape[0]; J=wb.size
     coeff = 0.5 * weight
     if q_0:
         coeff *= 0.5
     for j in range(J):
-        Y_j, wq, n_q = Yb_table[j], wb[j], nb[j]
+        Y_j, wq, n_q, cutoff = Yb_table[j], wb[j], nb[j], cutoff_j[j]
         for a in range(N):
+            rho_aa = rho[a, a]
             for b in range(N):
-                ab=liou(a,b,N)
-                for c in range(N):
-                    d = c
-                    corr=0.0+0.0j
-                    for e in range(N):
-                        w_de=w_n[d,e]
-                        w_eb=w_n[e,b]
-                        if b == a:
-                            trace[thread_id,t_index]+=coeff*(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*rho[a,d]*Y_j[d,e,e,b]
-                        corr+=(n_q*Iint(w_de+wq,w_eb-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_eb+wq,beta))*A[a,c]*Y_j[d,e,e,b]*rho[c,d]
-                        for f in range(N):
-                            w_ef=w_n[e,f]
-                            corr-=(n_q*Iint(w_de+wq,w_ef-wq,beta)+(n_q+1.0)*Iint(w_de-wq,w_ef+wq,beta))*(1.0 if a==c else 0.0)*Y_j[d,e,e,f]*A[f,b]*rho[c,d]
-                    out[ab]+=coeff*corr
+                ab = liou(a, b, N)
+                corr = 0.0 + 0.0j
+                for e in range(N):
+                    w_de = w_n[a, e]
+                    w_eb = w_n[e, b]
+                    kernel = n_q * Iint(w_de + wq, w_eb - wq, beta, cutoff) + (n_q + 1.0) * Iint(w_de - wq, w_eb + wq, beta, cutoff)
+                    corr += kernel * Y_j[a, e, e, b] * rho_aa
+                    if b == a:
+                        trace[thread_id, t_index] += coeff * kernel * rho_aa * Y_j[a, e, e, a]
+                out[ab] += coeff * corr
+
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def zeta(x: float, beta: float) -> float:
@@ -209,14 +207,16 @@ def zeta(x: float, beta: float) -> float:
     return np.expm1(u) / (x)
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
-def Iint(w1: float, w2: float, beta: float) -> float:
+def Iint(w1: float, w2: float, beta: float, cutoff: float) -> float:
+    if np.abs(w1) > 100*cutoff or np.abs(w2) > 100*cutoff:
+        return 0.0 + 1j * 0.0
     eps = 1e-15
     u1 = w1 * beta
     u2 = w2 * beta
     u12 = u1 + u2
     if abs(u1) > 650 or abs(u12) > 650:
         return 0.0 + 1j * 0.0
-    elif abs(u1) < eps and abs(u2) < eps:
+    if abs(u1) < eps and abs(u2) < eps:
         return 0.5 * beta * beta
     elif abs(u2) < eps:
         num = np.exp(u1)
@@ -224,7 +224,7 @@ def Iint(w1: float, w2: float, beta: float) -> float:
     elif abs(u1) < eps:
         return np.expm1(u2) / (w2**2) - beta / (w2)
     elif abs(u12) < eps:
-        return -(beta - np.expm1(u1) / (1 * w1)) / (w1)
+        return -(beta - np.expm1(u1) / (w1)) / (w1)
     term1 = np.expm1(u12) / (w2 * (w1 + w2))
     term2 = np.expm1(u1)  / (w1 * w2)
     return term1 - term2
@@ -658,19 +658,19 @@ def ov_add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w
                 return add_PSI_bundle(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind)
             return impl
 
-def add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0):
+def add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff, run_rho0):
     raise NotImplementedError
 
 @overload(add_rho0_bundle_comp, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
-def ov_add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0):
+def ov_add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff, run_rho0):
     if isinstance(run_rho0, types.Literal):
         if run_rho0.literal_value == 0:
-            def impl(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0):
+            def impl(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff, run_rho0):
                 return
             return impl
         elif run_rho0.literal_value == 1:
-            def impl(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0):
-                return add_rho0_bundle(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight)
+            def impl(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff, run_rho0):
+                return add_rho0_bundle(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff)
             return impl
 
 def add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy_tolerance, weight, run_R21):
@@ -790,7 +790,7 @@ def build_matrices(
 
             add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR)
             add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI)
-            add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, A_e, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, run_rho0)
+            add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff_j, run_rho0)
             add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy_tolerance, weight, run_R21)
 
     # Raman ----------------------------------------------------------------------------------
@@ -905,14 +905,15 @@ def susceptibility_relax_time(
     for t in range(temp_size):
         relax_time_R21_T[t] = get_relax_time(R21[t])
         relax_time_R41_T[t] = get_relax_time(R41[t])
-        print(relax_time_R41_T[t])
+
         for k, omega in enumerate(omega_grid):
             Xi       = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2) - 1j * omega * eye
-            num      = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + (M_rho0 @ rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
+            rho_vec_t = (rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
+            num      = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + M_rho0 @ rho_vec_t
             rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
             chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3 # / H_CM_1 
 
-        # # Normalization to the transfer function    
+        # Normalization to the transfer function    
         #     if k != 0:
         #         chi_T[t,k] /= chi_T[t,0].real
         #         chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic[t])

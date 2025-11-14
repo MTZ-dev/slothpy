@@ -20,23 +20,23 @@ number_cpus = 64
 
 orientations = [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]]
 fields = [0.3]
-temperatures = [30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50] # "np.arange(10,55,5)" # [2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
+temperatures = [35,36,37] # [30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50] # "np.arange(10,55,5)" # [2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40] # [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40]
 frequencies = "np.logspace(-3, 5, 300)"
 
-states_number = 6
+states_number = 13
 degeneracy_tolerance = 1e-6
-psi_frequency_shift = true
+psi_frequency_shift = false
 initial_correlation = false
 omega_loop = false
 chi_s = false
 
-n_points = [111]
-q_ranges = [0.5]
+n_points = [33]
+q_ranges = [0.125,0.25,0.5]
 broadening = "gaussian" # "gaussian" # "lorentzian" #
-fwhm = [0.04]
+fwhm = [0.05]
 adaptive_fwhm = false
 modes_low = 1e-5
-modes_high = 540
+modes_high = 750
 cutoff_fwhm = 1.09
 qtm = true
 

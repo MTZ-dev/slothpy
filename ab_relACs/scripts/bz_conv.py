@@ -22,8 +22,8 @@ Batched convergence of n_points and (optionally) FWHM for BZ integration.
 Key points
 ----------
 - Uses a TemporaryDirectory for patched configs; no config clutter.
-- Runs your program with *lists*:
-    [relacs].n_points = [odd, odd, ...]   (batched)
+- Runs the program with *lists*:
+    [relacs].n_points = [n1, n2, ...]   (batched)
     [relacs].fwhm     = [f1, f2, ...]     (optional batching; default single)
 - Detects all newly created chi CSVs per batch by directory diff, parses peaks,
   and (optionally) deletes them immediately.
@@ -229,12 +229,10 @@ class RunRecord:
     log10_f: float
     thr_log10: float
 
-# def odd_seq_from(start: int, max_n: int) -> List[int]:
-#     s = start if start % 2 == 1 else start + 1
-#     return list(range(s, max_n + 1, 2))
-
-def odd_seq_from(start: int, max_n: int) -> List[int]:
-    # s = start if start % 2 == 1 else start + 1
+def seq_from(start: int, max_n: int) -> List[int]:
+    """Return all integer n_points from start to max_n inclusive (step=1)."""
+    if start > max_n:
+        return []
     return list(range(start, max_n + 1, 1))
 
 def chunk(lst: List[int], size: int) -> List[List[int]]:
@@ -392,18 +390,26 @@ def recheck_tail_for_new_fwhm(
     The tail window size in points is (consec_ok + 1).
     For consec_ok=2 -> we need [N-4, N-2, N] (3 points) to produce two consecutive OK deltas.
     """
-    # Build the minimal odd-valued tail
-    window_pts = consec_ok + 1
-    # Ideal tail: [N - 2*(window_pts-1), ..., N-2, N]
-    raw_tail = [last_tail_end_n - 2*(window_pts - 1 - i) for i in range(window_pts)]
-    # Clamp to [start_n, max_n] & keep odd uniqueness sorted
-    tail = sorted({n for n in raw_tail if n >= start_n and n <= max_n and (n % 2 == 1)})
-    # If we dropped too low (e.g., < start_n), shift up to preserve count if possible
-    while len(tail) < window_pts:
-        cand = (tail[-1] + 2) if tail else start_n
-        if cand > max_n: break
-        if cand % 2 == 0: cand += 1
-        tail.append(cand)
+
+    # Build the minimal contiguous tail of length (consec_ok + 1)
+    window_pts = max(1, consec_ok + 1)
+
+    # If previous N is below start_n, build a fresh tail from start_n
+    if last_tail_end_n < start_n:
+        base_end = start_n + window_pts - 1
+        if base_end > max_n:
+            return False, None, []
+        tail = list(range(start_n, base_end + 1))
+    else:
+        raw_start = last_tail_end_n - (window_pts - 1)
+        tail = list(range(raw_start, last_tail_end_n + 1))
+        # clamp to [start_n, max_n]
+        tail = [n for n in tail if start_n <= n <= max_n]
+        # if clamping removed early elements (e.g., hit start_n), extend to the right
+        while len(tail) < window_pts and tail and tail[-1] < max_n:
+            tail.append(tail[-1] + 1)
+
+    # final sanity
     tail = sorted(set(tail))
     if len(tail) < window_pts:
         # Not enough points to form a full streak window; fall back to slow path
@@ -462,7 +468,7 @@ def converge_for_fwhm(runner_prefix: str,
                       cutoff_override: Optional[float] = None,
                     ) -> Tuple[Optional[RunRecord], List[RunRecord]]:
     """
-    For a fixed FWHM: grow n_points in odd batches until convergence streak is met.
+    For a fixed FWHM: grow n_points in batches until convergence streak is met.
     Returns (last_converged_record, all_records_at_this_fwhm)
     """
     all_recs: List[RunRecord] = []
@@ -471,8 +477,9 @@ def converge_for_fwhm(runner_prefix: str,
     last_log: Optional[float] = None
     converged: Optional[RunRecord] = None
 
-    all_odds = odd_seq_from(start_n, max_n)
-    for batch in chunk(all_odds, max(3, batch_n)):
+    all_ns = seq_from(start_n, max_n)
+    window_pts = max(1, consec_ok + 1)
+    for batch in chunk(all_ns, max(window_pts, batch_n)):
         recs = run_batch(
             runner_prefix=runner_prefix,
             base_toml_text=base_toml_text,
@@ -545,7 +552,7 @@ def make_plots(recs: List[RunRecord], plots_prefix: Path, show_3d: bool = False,
         ys = [a.log10_f for a in arr]
         fig2d = plt.figure()
         plt.plot(xs, ys, marker="o")
-        plt.xlabel("n_points (odd)")
+        plt.xlabel("n_points")
         plt.ylabel("log10 peak frequency (Hz)")
         plt.title(f"Peak vs n_points @ FWHM={f:g}")
         plt.grid(True, which="both", linestyle=":")

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from itertools import product
+import time
 
 import numpy as np
 import scipy.special.cython_special
@@ -34,7 +35,7 @@ from exporting import export_susceptibility_csv, export_tau_csv, export_dos_csv
 from plotting import plot_chi_vs_freq, plot_tau_vs_inv_T
 
 def run_relacs(cfg: AppConfig):
-    set_num_threads(cfg.relacs.number_cpus)
+    start = time.perf_counter()
 
     hessian, recip_axes, masses_inv_sqrt, hessian_group = get_hessian_recip_axes_masses_inv_sqrt_spin_phonon(cfg)
     hamiltonian, magnetic_momenta, dof_array = get_hamiltonian_magnetic_momenta_dof_array(cfg)
@@ -76,31 +77,32 @@ def run_relacs(cfg: AppConfig):
             B = - A
             hamiltonian_gradients = spin_phonon_derivatives(dof_array, field_vector, energies_total, U_total, cfg)
             energies_total *= H_CM_1
-            with threadpool_limits(1):
-                set_num_threads(cfg.relacs.number_cpus)
-                for n_points_index, n_points in enumerate(n_points_array):
-                    grid, weights = multigrid_aniso(recip_axes, n_points, cfg.relacs.q_ranges)
-                    for fwhm_index, fwhm in enumerate(fwhm_array):
-                        if cfg.hessian.dos:
-                            weights_int = int_vector_proportional_to_weights(weights)
-                            _, bin_edges, hist, frequency_range, convolution = hessian_group.phonon_density_of_states(
-                                grid, modes_low, modes_high, int((modes_high-modes_low)/fwhm*3000), cfg.relacs.broadening, fwhm, threads, 1,
-                                weights=weights_int).eval()
-                            save_filepath = make_npoints_fwhm_filename(cfg.hessian.dos, n_points, fwhm)
-                            export_dos_csv(frequency_range, convolution, save_filepath)
-                        if kind == 1:
-                            gamma_fwhm = fwhm / (2 * np.sqrt(2*np.log(2)))
-                        elif kind == 0:
-                            gamma_fwhm = fwhm / 2
+
+            for n_points_index, n_points in enumerate(n_points_array):
+                grid, weights = multigrid_aniso(recip_axes, n_points, cfg.relacs.q_ranges)
+                for fwhm_index, fwhm in enumerate(fwhm_array):
+                    if cfg.hessian.dos:
+                        weights_int = int_vector_proportional_to_weights(weights)
+                        _, bin_edges, hist, frequency_range, convolution = hessian_group.phonon_density_of_states(
+                            grid, modes_low, modes_high, int((modes_high-modes_low)/fwhm*3000), cfg.relacs.broadening, fwhm, threads, 1,
+                            weights=weights_int).eval()
+                        save_filepath = make_npoints_fwhm_filename(cfg.hessian.dos, n_points, fwhm)
+                        export_dos_csv(frequency_range, convolution, save_filepath)
+                    if kind == 1:
+                        gamma_fwhm = fwhm / (2 * np.sqrt(2*np.log(2)))
+                    elif kind == 0:
+                        gamma_fwhm = fwhm / 2
+                    with threadpool_limits(1):
                         sus_T, relax_time_R21_T, relax_time_R41_T = susceptibility_relax_time(
                                             omega_angular, energies_total, A, B, hamiltonian_gradients,
                                             temperatures, hessian, masses_inv_sqrt, dof_array, grid,
                                             weights, gamma_fwhm, chi_T, chi_S, cutoff_mult, degeneracy_tolerance,
                                             states_number, modes_low, modes_high, threads, kind, qtm,
                                             run_KR, run_PSI, run_rho0, run_R21)
-                        sus_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T * orientations_weights[orientation_index]
-                        tau_R21_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R21_T
-                        tau_R41_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R41_T             
+                    sus_T_p = np.abs(sus_T.real) + 1j*np.abs(sus_T.imag)
+                    sus_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T_p * orientations_weights[orientation_index]
+                    tau_R21_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R21_T
+                    tau_R41_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R41_T             
         
     sus_H_T = np.sum(sus_orient_H_T, axis=2)
     B_array = fields * T_FILED_OE
@@ -117,6 +119,9 @@ def run_relacs(cfg: AppConfig):
         for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
             save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_41_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
             export_tau_csv(B_array, temperatures, tau_R41_orient_H_T[n,f,o], save_filepath)
+
+    end = time.perf_counter()
+    print(f"Running time: {end - start} s")
 
     if cfg.relacs.show_plot:
         import matplotlib.pyplot as plt

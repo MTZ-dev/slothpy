@@ -116,10 +116,10 @@ def make_parser() -> argparse.ArgumentParser:
 
 def run_app(cfg: AppConfig) -> int:
     logger.debug("Full config: %s", cfg)
-    start = time.perf_counter()
+    # start = time.perf_counter()
     status = run_relacs(cfg)
-    end = time.perf_counter()
-    print(f"Running time: {end - start} s")
+    # end = time.perf_counter()
+    # print(f"Running time: {end - start} s")
     return status
 
 def main(argv: Optional[List[str]] = None) -> int:

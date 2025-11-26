@@ -22,8 +22,7 @@ from numpy import pi
 from typing import Sequence, Union
 ArrayLike = Union[Sequence, np.ndarray]
 
-from numba import njit, prange, get_thread_id, literally, get_num_threads
-from numba import types
+from numba import njit, prange, types, get_thread_id, literally, set_num_threads, get_num_threads
 from numba.extending import intrinsic, get_cython_function_address, overload
 from numba.core import cgutils
 from numba.core.base import BaseContext
@@ -814,7 +813,7 @@ def build_matrices(
     #         add_R41(R_41_t, w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k], wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, A, B, raman_weight, sec_tol=degeneracy_tolerance)
     # ----------------------------------------------------------------------------------------
 
-@njit(nogil=True, cache=True, fastmath=True, inline="never")
+@njit(nogil=True, fastmath=True, inline="never")
 def susceptibility_relax_time(
     omega_grid: np.ndarray,
     E: np.ndarray,
@@ -842,7 +841,9 @@ def susceptibility_relax_time(
     run_PSI: int,
     run_rho0: int,
     run_R21: int,
-):
+):  
+    set_num_threads(threads)
+    threads = get_num_threads()
     omega_grid = omega_grid / S_TIME_PS
     beta = 1.0 / (KB * T)
     temp_size = beta.shape[0]

@@ -207,13 +207,13 @@ def zeta(x: float, beta: float) -> float:
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Iint(w1: float, w2: float, beta: float, cutoff: float) -> float:
-    if np.abs(w1) > 100*cutoff or np.abs(w2) > 100*cutoff:
-        return 0.0 + 1j * 0.0
+    # if np.abs(w1) > 650*cutoff or np.abs(w2) > 650*cutoff:
+    #     return 0.0 + 1j * 0.0
     eps = 1e-15
     u1 = w1 * beta
     u2 = w2 * beta
     u12 = u1 + u2
-    if abs(u1) > 650 or abs(u12) > 650:
+    if abs(u1) > 50 or abs(u12) > 50:
         return 0.0 + 1j * 0.0
     if abs(u1) < eps and abs(u2) < eps:
         return 0.5 * beta * beta
@@ -605,26 +605,26 @@ def add_PSI_bundle(out, A, Yb_table, wb, nb, delta, beta, w_n, q_0, cutoff, weig
                     out[ab,cd]+=val*coeff
 
 @njit(nogil=True, fastmath=True, cache=True, inline="always")
-def cutoff_j_qtm(fwhm, cutoff_mult):
+def cutoff_j_direct(fwhm, cutoff_mult):
     return fwhm * cutoff_mult
 
 @njit(nogil=True, fastmath=True, cache=True, inline="always")
-def cutoff_j_no_qtm(fwhm, cutoff_mult, wb, w_n_qtm_max):
-    return np.minimum(fwhm * cutoff_mult, np.abs(wb + 1.01 * w_n_qtm_max))
+def cutoff_j_no_direct(fwhm, cutoff_mult, wb, w_n_direct_max):
+    return np.minimum(fwhm * cutoff_mult, np.abs(wb + 1.01 * w_n_direct_max))
 
-def get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_qtm_max, qtm):
+def get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_direct_max, direct):
     raise NotImplementedError
 
 @overload(get_cutoff_j, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
-def ov_get_cutoff_j(fwhm, cutoff_mult, wb, w_n_qtm_max, qtm):
-    if isinstance(qtm, types.Literal):
-        if qtm.literal_value == 0:
-            def impl(fwhm, cutoff_mult, wb, w_n_qtm_max, qtm):
-                return cutoff_j_no_qtm(fwhm, cutoff_mult, wb, w_n_qtm_max)
+def ov_get_cutoff_j(fwhm, cutoff_mult, wb, w_n_direct_max, direct):
+    if isinstance(direct, types.Literal):
+        if direct.literal_value == 0:
+            def impl(fwhm, cutoff_mult, wb, w_n_direct_max, direct):
+                return cutoff_j_no_direct(fwhm, cutoff_mult, wb, w_n_direct_max)
             return impl
-        elif qtm.literal_value == 1:
-            def impl(fwhm, cutoff_mult, wb, w_n_qtm_max, qtm):
-                return cutoff_j_qtm(fwhm, cutoff_mult)
+        elif direct.literal_value == 1:
+            def impl(fwhm, cutoff_mult, wb, w_n_direct_max, direct):
+                return cutoff_j_direct(fwhm, cutoff_mult)
             return impl
         
 def add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR):
@@ -711,7 +711,7 @@ def build_matrices(
     modes_low: float,
     modes_high: float,
     kind: types.Literal,
-    qtm: types.Literal,
+    direct: types.Literal,
     run_KR: types.Literal,
     run_PSI: types.Literal,
     run_rho0: types.Literal,
@@ -723,14 +723,14 @@ def build_matrices(
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     freq_shape = freq0.shape[0]
-    # scale_freq = np.min(freq0)
+    scale_freq = np.min(freq0)
     # print(scale_freq*AU_BOHR_CM_1)
     arr = np.diag(w_n, k=1)
-    w_n_qtm_max = arr[0]
+    w_n_direct_max = arr[0]
     for i in range(2, arr.size, 2):  # step of 2
-        if arr[i] < w_n_qtm_max:
-            w_n_qtm_max = arr[i]
-    # print(w_n_qtm_max)
+        if arr[i] < w_n_direct_max:
+            w_n_direct_max = arr[i]
+    # print(w_n_direct_max)
 
     if run_R41:
         threads_number = get_num_threads()
@@ -747,7 +747,7 @@ def build_matrices(
         weight = weights[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
-        # freq = freq - scale_freq
+        freq = freq - scale_freq
         freq *= AU_BOHR_CM_1
 
         if q_0:
@@ -760,7 +760,7 @@ def build_matrices(
         Yb_table = build_Y_table_j(Yb)
 
         fwhm_j = gamma_fwhm * np.ones_like(wb) # TODO: can implement ab inito model for different wb and T (move into the loop) - adaptive_fwhm in config
-        cutoff_j = get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_qtm_max, qtm)
+        cutoff_j = get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_direct_max, direct)
 
         if run_R41:
             raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
@@ -812,6 +812,20 @@ def build_matrices(
                         wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, A, B, raman_weight,
                         sec_tol=degeneracy_tolerance)
 
+@njit(nogil=True, fastmath=True, cache=True, inline="never")
+def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, chi_adiabatic, eye, normalize):
+    for k, omega in enumerate(omega_grid):
+        Xi = Xi - 1j * omega * eye
+        rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
+        chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3
+        if normalize:    
+            if k != 0:
+                chi_T[t,k] /= chi_T[t,0].real
+                chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic[t])
+                chi_T[t,k] += chi_adiabatic[t]
+    if normalize:
+        chi_T[t,0] = chi_T[t,0] / chi_T[t,0].real * chi_isothermal[t]
+
 @njit(nogil=True, fastmath=True, inline="never")
 def susceptibility_relax_time(
     omega_grid: np.ndarray,
@@ -835,7 +849,7 @@ def susceptibility_relax_time(
     modes_high: float,
     threads: int,
     kind: int,
-    qtm: int,
+    direct: int,
     run_KR: int,
     run_PSI: int,
     run_rho0: int,
@@ -843,7 +857,7 @@ def susceptibility_relax_time(
     run_R41: int,
 ):  
     kind_lit = literally(kind)
-    qtm_lit = literally(qtm)
+    direct_lit = literally(direct)
     run_KR_lit = literally(run_KR)
     run_PSI_lit = literally(run_PSI)
     run_rho0_lit = literally(run_rho0)
@@ -895,7 +909,7 @@ def susceptibility_relax_time(
     build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights,
                     gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace,
                     rho_mat, R21, R41, cutoff_mult, degeneracy_tolerance, modes_low,
-                    modes_high, kind_lit, qtm_lit, run_KR_lit, run_PSI_lit, run_rho0_lit,
+                    modes_high, kind_lit, direct_lit, run_KR_lit, run_PSI_lit, run_rho0_lit,
                     run_R21_lit, run_R41_lit)
 
     M_KR = np.sum(M_KR, axis=0)
@@ -907,7 +921,7 @@ def susceptibility_relax_time(
 
     eye = np.eye(N2, dtype=np.complex128)
 
-    chi_T = np.empty((temp_size, omega_grid.shape[0]), dtype=np.complex128)
+    chi_T = np.empty((3,temp_size, omega_grid.shape[0]), dtype=np.complex128)
     relax_time_R21_T = np.empty(temp_size, dtype=np.float64)
     relax_time_R41_T = np.empty(temp_size, dtype=np.float64)
 
@@ -915,18 +929,18 @@ def susceptibility_relax_time(
         relax_time_R21_T[t] = get_relax_time(R21[t])
         relax_time_R41_T[t] = get_relax_time(R41[t])
 
-        for k, omega in enumerate(omega_grid):
-            Xi       = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2) - 1j * omega * eye
-            rho_vec_t = (rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
-            num      = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + M_rho0 @ rho_vec_t
-            rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
-            chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3 # / H_CM_1 
+        if run_KR_lit:
+            Xi = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2)
+            num = M_rho0 @ rho_vec[t]
+            solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[0], chi_isothermal, chi_adiabatic, eye, True)
 
-        # Normalization to the transfer function    
-            if k != 0:
-                chi_T[t,k] /= chi_T[t,0].real
-                chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic[t])
-                chi_T[t,k] += chi_adiabatic[t] 
-        chi_T[t,0] = chi_T[t,0] / chi_T[t,0].real * chi_isothermal[t]
+            if run_PSI_lit:
+                num = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + M_rho0 @ rho_vec[t]
+                solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[1], chi_isothermal, chi_adiabatic, eye, False)
+
+                if run_rho0_lit:
+                    rho_vec_t = (rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
+                    num = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + M_rho0 @ rho_vec_t
+                    solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[2], chi_isothermal, chi_adiabatic, eye, False)
 
     return chi_T, relax_time_R21_T, relax_time_R41_T

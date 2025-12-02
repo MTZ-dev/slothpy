@@ -300,7 +300,7 @@ def multigrid_aniso(
     return grid, weights
 
 
-def make_npoints_fwhm_filename(filepath: Union[str, Path], npoints: int, fwhm: float) -> str:
+def make_npoints_fwhm_filename(filepath: Union[str, Path], npoints: int, fwhm: float, additional: str = "") -> str:
     p = Path(filepath)
     suffixes = "".join(p.suffixes)
     base = p.name[:-len(suffixes)] if suffixes else p.name
@@ -312,7 +312,7 @@ def make_npoints_fwhm_filename(filepath: Union[str, Path], npoints: int, fwhm: f
             s = str(v)
         return s.replace(" ", "").replace("/", "-")
 
-    new_name = f"{base}_npoints_{fmt(npoints)}_fwhm_{fmt(fwhm)}{suffixes}"
+    new_name = f"{base}_npoints_{fmt(npoints)}_fwhm_{fmt(fwhm)}_{additional}{suffixes}"
     return str(p.with_name(new_name))
 
 def make_npoints_fwhm_orient_filename(

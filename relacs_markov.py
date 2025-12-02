@@ -1364,11 +1364,11 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
     freq_shape = freq0.shape[0]
     scale_freq = np.min(freq0)
     arr = np.diag(w_n, k=1)
-    w_n_qtm_max = arr[0]
+    w_n_direct_max = arr[0]
     for i in range(2, arr.size, 2):  # step of 2
-        if arr[i] < w_n_qtm_max:
-            w_n_qtm_max = arr[i]
-    # print("W_n_qtm_max = ", w_n_qtm_max)
+        if arr[i] < w_n_direct_max:
+            w_n_direct_max = arr[i]
+    # print("W_n_direct_max = ", w_n_direct_max)
     # print((freq0-scale_freq)*AU_BOHR_CM_1)
 
     # Raman ----------------------------------------------------------------------------------
@@ -1436,7 +1436,7 @@ def build_matrices(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, dof_array: 
             # if not q_0:
             #     fwhm_j[:3] = gamma_fwhm[t_index] / modes_high**p / (2 / np.expm1(0.5 * modes_high * beta[-1]) + 1) * max_freq_acoustic**p * (2 / np.expm1(0.5 * max_freq_acoustic * beta[t_index]) + 1) / max_freq_acoustic**2 / (1/beta[-1]/KB)**3 * wb[:3]**2 * (1/beta[t_index]/KB)**3 # * weight
             
-            cutoff_j = fwhm_j * 1000 # np.minimum(fwhm_j * 1000, np.abs(wb + 1.01 * w_n_qtm_max)) # fwhm_j * 1000 #
+            cutoff_j = fwhm_j * 1000 # np.minimum(fwhm_j * 1000, np.abs(wb + 1.01 * w_n_direct_max)) # fwhm_j * 1000 #
 
             Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j)
 

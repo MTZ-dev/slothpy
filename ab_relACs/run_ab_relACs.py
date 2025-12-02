@@ -54,14 +54,14 @@ def run_relacs(cfg: AppConfig):
     threads = cfg.relacs.number_cpus
 
     kind = 1 if cfg.relacs.broadening == "gaussian" else 0
-    qtm = 1 if cfg.relacs.qtm else 0
+    direct = 1 if cfg.relacs.direct else 0
     run_KR = 1 if cfg.relacs.chi_csv_path else 0
     run_PSI = 1 if cfg.relacs.psi_frequency_shift else 0
     run_rho0 = 1 if cfg.relacs.initial_correlation else 0
     run_R21 = 1 if cfg.relacs.tau_21_csv_path else 0
     run_R41 = 1 if cfg.relacs.tau_41_csv_path else 0
 
-    sus_orient_H_T = np.zeros((n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0], omega_angular.shape[0]), dtype=np.complex128)
+    sus_orient_H_T = np.zeros((3,n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0], omega_angular.shape[0]), dtype=np.complex128)
     tau_R21_orient_H_T = np.zeros((n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0]), dtype=np.float64)
     tau_R41_orient_H_T = np.zeros((n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0]), dtype=np.float64)
     
@@ -98,20 +98,26 @@ def run_relacs(cfg: AppConfig):
                                             omega_angular, energies_total, A, B, hamiltonian_gradients,
                                             temperatures, hessian, masses_inv_sqrt, dof_array, grid,
                                             weights, gamma_fwhm, chi_T, chi_S, cutoff_mult, degeneracy_tolerance,
-                                            states_number, modes_low, modes_high, threads, kind, qtm,
+                                            states_number, modes_low, modes_high, threads, kind, direct,
                                             run_KR, run_PSI, run_rho0, run_R21, run_R41)
                     sus_T_p = np.abs(sus_T.real) + 1j*np.abs(sus_T.imag)
-                    sus_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T_p * orientations_weights[orientation_index]
+                    sus_orient_H_T[:,n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T_p * orientations_weights[orientation_index]
                     tau_R21_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R21_T
                     tau_R41_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R41_T             
         
-    sus_H_T = np.sum(sus_orient_H_T, axis=2)
+    sus_H_T = np.sum(sus_orient_H_T, axis=3)
     B_array = fields * T_FILED_OE
     orientations *= B_AU_T
     if cfg.relacs.chi_csv_path:
         for n, f in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0])):
             save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f])
-            export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[n,f], save_filepath)
+            export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[0,n,f], save_filepath)
+            if cfg.relacs.psi_frequency_shift:
+                save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "psi")
+                export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[1,n,f], save_filepath)
+                if cfg.relacs.initial_correlation:
+                    save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "psi_init")
+                    export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[2,n,f], save_filepath)
     if cfg.relacs.tau_21_csv_path:
         for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
             save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_21_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
@@ -126,7 +132,15 @@ def run_relacs(cfg: AppConfig):
 
     if cfg.relacs.show_plot:
         import matplotlib.pyplot as plt
-        plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T, part="imag", title="χ''(ν)")
-        plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T, part="real", title="χ'(ν)")
-        plot_tau_vs_inv_T(temperatures, fields, n_points_array, fwhm_array, tau_R21_orient_H_T[:,:,0,:,:], tau_R41_orient_H_T[:,:,0,:,:], which="both", title="τ(T)")
+        if cfg.relacs.chi_csv_path:
+            plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[0], part="imag", title="χ''(ν)")
+            plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[0], part="real", title="χ'(ν)")
+            if cfg.relacs.psi_frequency_shift:
+                plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[1], part="imag", title="χ''(psi)(ν)")
+                plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[1], part="real", title="χ'(psi)(ν)")
+                if cfg.relacs.initial_correlation:
+                    plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[2], part="imag", title="χ''(init)(ν)")
+                    plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[2], part="real", title="χ'(init)(ν)")
+        if cfg.relacs.tau_21_csv_path or cfg.relacs.tau_21_csv_path:
+            plot_tau_vs_inv_T(temperatures, fields, n_points_array, fwhm_array, tau_R21_orient_H_T[:,:,0,:,:], tau_R41_orient_H_T[:,:,0,:,:], which="both", title="τ(T)")
         plt.show()

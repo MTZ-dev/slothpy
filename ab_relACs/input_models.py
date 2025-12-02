@@ -55,7 +55,7 @@ class InpRelacs(BaseModel):
     modes_low: float = 0.0
     modes_high: float = 0.1
     cutoff_fwhm: float = 1000
-    qtm: bool = True
+    direct: bool = True
 
     chi_csv_path: str = ""
     tau_21_csv_path: str = ""

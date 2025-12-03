@@ -61,7 +61,7 @@ def run_relacs(cfg: AppConfig):
     run_R21 = 1 if cfg.relacs.tau_21_csv_path else 0
     run_R41 = 1 if cfg.relacs.tau_41_csv_path else 0
 
-    sus_orient_H_T = np.zeros((3,n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0], omega_angular.shape[0]), dtype=np.complex128)
+    sus_orient_H_T = np.zeros((4,n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0], omega_angular.shape[0]), dtype=np.complex128)
     tau_R21_orient_H_T = np.zeros((n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0]), dtype=np.float64)
     tau_R41_orient_H_T = np.zeros((n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0]), dtype=np.float64)
     
@@ -112,12 +112,14 @@ def run_relacs(cfg: AppConfig):
         for n, f in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0])):
             save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f])
             export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[0,n,f], save_filepath)
+            save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "no_chit")
+            export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[1,n,f], save_filepath)
             if cfg.relacs.psi_frequency_shift:
                 save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "psi")
-                export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[1,n,f], save_filepath)
+                export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[2,n,f], save_filepath)
                 if cfg.relacs.initial_correlation:
                     save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "psi_init")
-                    export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[2,n,f], save_filepath)
+                    export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[3,n,f], save_filepath)
     if cfg.relacs.tau_21_csv_path:
         for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
             save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_21_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
@@ -135,12 +137,14 @@ def run_relacs(cfg: AppConfig):
         if cfg.relacs.chi_csv_path:
             plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[0], part="imag", title="χ''(ν)")
             plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[0], part="real", title="χ'(ν)")
+            plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[1], part="imag", title="χ''(no_chiT)(ν)")
+            plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[1], part="real", title="χ'(no_chiT)(ν)")
             if cfg.relacs.psi_frequency_shift:
-                plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[1], part="imag", title="χ''(psi)(ν)")
-                plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[1], part="real", title="χ'(psi)(ν)")
+                plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[2], part="imag", title="χ''(psi)(ν)")
+                plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[2], part="real", title="χ'(psi)(ν)")
                 if cfg.relacs.initial_correlation:
-                    plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[2], part="imag", title="χ''(init)(ν)")
-                    plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[2], part="real", title="χ'(init)(ν)")
+                    plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[3], part="imag", title="χ''(init)(ν)")
+                    plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[3], part="real", title="χ'(init)(ν)")
         if cfg.relacs.tau_21_csv_path or cfg.relacs.tau_21_csv_path:
             plot_tau_vs_inv_T(temperatures, fields, n_points_array, fwhm_array, tau_R21_orient_H_T[:,:,0,:,:], tau_R41_orient_H_T[:,:,0,:,:], which="both", title="τ(T)")
         plt.show()

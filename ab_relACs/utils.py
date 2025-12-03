@@ -312,7 +312,7 @@ def make_npoints_fwhm_filename(filepath: Union[str, Path], npoints: int, fwhm: f
             s = str(v)
         return s.replace(" ", "").replace("/", "-")
 
-    new_name = f"{base}_npoints_{fmt(npoints)}_fwhm_{fmt(fwhm)}_{additional}{suffixes}"
+    new_name = f"{base}_npoints_{fmt(npoints)}_fwhm_{fmt(fwhm)}{"_" if additional else ""}{additional}{suffixes}"
     return str(p.with_name(new_name))
 
 def make_npoints_fwhm_orient_filename(

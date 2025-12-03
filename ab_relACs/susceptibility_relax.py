@@ -207,13 +207,13 @@ def zeta(x: float, beta: float) -> float:
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Iint(w1: float, w2: float, beta: float, cutoff: float) -> float:
-    # if np.abs(w1) > 650*cutoff or np.abs(w2) > 650*cutoff:
-    #     return 0.0 + 1j * 0.0
+    if np.abs(w1) > 2500*cutoff or np.abs(w2) > 2500*cutoff:
+        return 0.0 + 1j * 0.0
     eps = 1e-15
     u1 = w1 * beta
     u2 = w2 * beta
     u12 = u1 + u2
-    if abs(u1) > 50 or abs(u12) > 50:
+    if abs(u1) > 650 or abs(u12) > 650:
         return 0.0 + 1j * 0.0
     if abs(u1) < eps and abs(u2) < eps:
         return 0.5 * beta * beta
@@ -540,6 +540,14 @@ def ov_hilbert(E, d, kind):
             return impl
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
+def Jhat_p_symm(w_ab, wq, n_q, d, cutoff, kind):
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
+        return hilbert(w_ab - wq, d, kind) * n_q
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
+        return hilbert(w_ab + wq, d, kind) * (n_q + 1)
+    return 0.0 + 0.0 * 1j 
+
+@njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Jhat_p(w_ab, wq, n_q, d, cutoff, kind):
     if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
         return hilbert(w_ab - wq, d, kind) * n_q
@@ -563,6 +571,20 @@ def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind):
     if u > 0 and u - wq > -cutoff and u - wq < 0:
         return hilbert(u - wq, d, kind) * (n_q + 1) * zeta(w_ab - wq, beta)
     return 0.0 + 0.0 * 1j
+
+@njit(nogil=True, cache=True, fastmath=True, inline="never")
+def build_Jp_symm_table_j(w_n, wb, nb, delta, cutoff, kind):
+    N = w_n.shape[0]
+    J = wb.shape[0]
+    Jp = np.empty((J, N, N), np.complex128)
+
+    for j in range(J):
+        wq, n_q, delta_j, cutoff_j = wb[j], nb[j], delta[j], cutoff[j]
+        for a in range(N):
+            for b in range(N):
+                x = w_n[a, b]
+                Jp[j, a, b] = Jhat_p_symm(x,wq,n_q,delta_j,cutoff_j,kind)
+    return Jp
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
 def build_Jp_Jm_tables_j(w_n, wb, nb, delta, cutoff, kind):
@@ -724,13 +746,11 @@ def build_matrices(
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     freq_shape = freq0.shape[0]
     scale_freq = np.min(freq0)
-    # print(scale_freq*AU_BOHR_CM_1)
     arr = np.diag(w_n, k=1)
     w_n_direct_max = arr[0]
     for i in range(2, arr.size, 2):  # step of 2
         if arr[i] < w_n_direct_max:
             w_n_direct_max = arr[i]
-    # print(w_n_direct_max)
 
     if run_R41:
         threads_number = get_num_threads()
@@ -784,11 +804,13 @@ def build_matrices(
             bose = bose_occ(wb, beta[t_index])
 
             Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
+            if run_R21:
+                Jhat_p_symm_table = build_Jp_symm_table_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
 
             add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR)
             add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI)
             add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff_j, run_rho0)
-            add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy_tolerance, weight, run_R21)
+            add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_symm_table, q_0, degeneracy_tolerance, weight, run_R21)
 
     if run_R41:
         wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
@@ -921,7 +943,7 @@ def susceptibility_relax_time(
 
     eye = np.eye(N2, dtype=np.complex128)
 
-    chi_T = np.empty((3,temp_size, omega_grid.shape[0]), dtype=np.complex128)
+    chi_T = np.empty((4,temp_size, omega_grid.shape[0]), dtype=np.complex128)
     relax_time_R21_T = np.empty(temp_size, dtype=np.float64)
     relax_time_R41_T = np.empty(temp_size, dtype=np.float64)
 
@@ -933,14 +955,15 @@ def susceptibility_relax_time(
             Xi = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2)
             num = M_rho0 @ rho_vec[t]
             solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[0], chi_isothermal, chi_adiabatic, eye, True)
+            solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[1], chi_isothermal, chi_adiabatic, eye, False)
 
             if run_PSI_lit:
                 num = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + M_rho0 @ rho_vec[t]
-                solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[1], chi_isothermal, chi_adiabatic, eye, False)
+                solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[2], chi_isothermal, chi_adiabatic, eye, False)
 
                 if run_rho0_lit:
                     rho_vec_t = (rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
                     num = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + M_rho0 @ rho_vec_t
-                    solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[2], chi_isothermal, chi_adiabatic, eye, False)
+                    solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[3], chi_isothermal, chi_adiabatic, eye, False)
 
     return chi_T, relax_time_R21_T, relax_time_R41_T

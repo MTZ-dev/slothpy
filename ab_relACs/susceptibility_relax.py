@@ -207,7 +207,7 @@ def zeta(x: float, beta: float) -> float:
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Iint(w1: float, w2: float, beta: float, cutoff: float) -> float:
-    if np.abs(w1) > 2500*cutoff or np.abs(w2) > 2500*cutoff:
+    if np.abs(w1) > 1500*cutoff or np.abs(w2) > 1500*cutoff:
         return 0.0 + 1j * 0.0
     eps = 1e-15
     u1 = w1 * beta
@@ -709,7 +709,6 @@ def ov_add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy
                 return add_R21_bundle(R21_i_t, Yb_table, w_n, Jhat_p_table, q_0, degeneracy_tolerance, weight)
             return impl
 
-@njit(nogil=True, fastmath=True, cache=True, parallel=True, inline="never")
 def build_matrices(
     hessian: np.ndarray,
     masses_inv_sqrt: np.ndarray,
@@ -740,26 +739,64 @@ def build_matrices(
     run_R21: types.Literal,
     run_R41: types.Literal,
     ):
+    raise NotImplementedError
+
+@overload(build_matrices, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
+def ov_build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
+                      R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41):
+    if isinstance(run_R41, types.Literal):
+        if run_R41.literal_value == 0:
+            def impl(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
+                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41):
+                return build_matrices_no_R41(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
+                                             R21, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21)
+            return impl
+        elif run_R41.literal_value == 1:
+            def impl(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
+                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41):
+                return build_matrices_R41(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
+                                          R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21)
+            return impl
+
+@njit(nogil=True, fastmath=True, parallel=True, inline="never")
+def build_matrices_no_R41(
+    hessian: np.ndarray,
+    masses_inv_sqrt: np.ndarray,
+    dof_array: np.ndarray,
+    H_grad: np.ndarray,
+    grid: np.ndarray,
+    weights: np.ndarray,
+    gamma_fwhm: float,
+    beta: float,
+    w_n: np.ndarray,
+    M_KR: np.ndarray,
+    M_PSI: np.ndarray,
+    A_e: np.ndarray,
+    rho_vec_init: np.ndarray,
+    M_rho0_trace: np.ndarray,
+    rho_mat: np.ndarray,
+    R21: np.ndarray,
+    cutoff_mult: float,
+    degeneracy_tolerance: float,
+    modes_low: float,
+    modes_high: float,
+    kind: types.Literal,
+    direct: types.Literal,
+    run_KR: types.Literal,
+    run_PSI: types.Literal,
+    run_rho0: types.Literal,
+    run_R21: types.Literal,
+    ):
     n_k_inv = 1.0 / np.sqrt(grid.shape[0])
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
-    freq_shape = freq0.shape[0]
     scale_freq = np.min(freq0)
     arr = np.diag(w_n, k=1)
     w_n_direct_max = arr[0]
     for i in range(2, arr.size, 2):  # step of 2
         if arr[i] < w_n_direct_max:
             w_n_direct_max = arr[i]
-
-    if run_R41:
-        threads_number = get_num_threads()
-        max_grid_per_thread = np.int64(np.ceil(grid.shape[0]/threads_number))
-        Yb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]), np.complex128)
-        wb_array = np.zeros((threads_number,2*max_grid_per_thread*freq_shape), np.float64)
-        raman_counter = np.zeros(threads_number, dtype=np.int64)
-        raman_counter_wb = np.zeros(threads_number, dtype=np.int64)
-        raman_counter_2wb = np.zeros(threads_number, dtype=np.int64)
 
     for i in prange(grid.shape[0]):
         thread_id = get_thread_id()
@@ -782,15 +819,108 @@ def build_matrices(
         fwhm_j = gamma_fwhm * np.ones_like(wb) # TODO: can implement ab inito model for different wb and T (move into the loop) - adaptive_fwhm in config
         cutoff_j = get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_direct_max, direct)
 
-        if run_R41:
-            raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
-            raman_counter_2wb[thread_id] = raman_counter_wb[thread_id] + wb.shape[0]
-            Yb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = Yb
-            wb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = wb
-            if not q_0:
-                Yb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = np.conjugate(np.transpose(Yb, (0,2,1)))
-                wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
-            raman_counter[thread_id] = raman_counter_2wb[thread_id]
+        for t_index in range(beta.shape[0]):
+            beta_t = beta[t_index]
+            rho_mat_t = rho_mat[t_index]
+
+            M_KR_i_t = M_KR[thread_id, t_index]
+            M_PSI_i_t = M_PSI[thread_id, t_index]
+            rho_vec_init_i_t = rho_vec_init[thread_id, t_index]
+            R21_i_t = R21[thread_id, t_index]
+
+            bose = bose_occ(wb, beta[t_index])
+
+            Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
+            if run_R21:
+                Jhat_p_symm_table = build_Jp_symm_table_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
+
+            add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR)
+            add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI)
+            add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff_j, run_rho0)
+            add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_symm_table, q_0, degeneracy_tolerance, weight, run_R21)
+
+@njit(nogil=True, fastmath=True, parallel=True, inline="never")
+def build_matrices_R41(
+    hessian: np.ndarray,
+    masses_inv_sqrt: np.ndarray,
+    dof_array: np.ndarray,
+    H_grad: np.ndarray,
+    grid: np.ndarray,
+    weights: np.ndarray,
+    gamma_fwhm: float,
+    beta: float,
+    w_n: np.ndarray,
+    M_KR: np.ndarray,
+    M_PSI: np.ndarray,
+    A_e: np.ndarray,
+    rho_vec_init: np.ndarray,
+    M_rho0_trace: np.ndarray,
+    rho_mat: np.ndarray,
+    R21: np.ndarray,
+    R41: np.ndarray,
+    cutoff_mult: float,
+    degeneracy_tolerance: float,
+    modes_low: float,
+    modes_high: float,
+    kind: types.Literal,
+    direct: types.Literal,
+    run_KR: types.Literal,
+    run_PSI: types.Literal,
+    run_rho0: types.Literal,
+    run_R21: types.Literal,
+    ):
+    n_k_inv = 1.0 / np.sqrt(grid.shape[0])
+    masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
+    gamma = np.asarray([0.0, 0.0, 0.0])
+    freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
+    freq_shape = freq0.shape[0]
+    scale_freq = np.min(freq0)
+    arr = np.diag(w_n, k=1)
+    w_n_direct_max = arr[0]
+    for i in range(2, arr.size, 2):  # step of 2
+        if arr[i] < w_n_direct_max:
+            w_n_direct_max = arr[i]
+    
+    threads_number = get_num_threads()
+    max_grid_per_thread = np.int64(np.ceil(grid.shape[0]/threads_number))
+    max_grid_size = 2*max_grid_per_thread*freq_shape
+    reshape_size = threads_number * max_grid_size
+
+    Yb_array = np.zeros((threads_number, max_grid_size, H_grad.shape[1], H_grad.shape[2]), np.complex128)
+    wb_array = np.zeros((threads_number, max_grid_size), np.float64)
+    raman_counter = np.zeros(threads_number, dtype=np.int64)
+    raman_counter_wb = np.zeros(threads_number, dtype=np.int64)
+    raman_counter_2wb = np.zeros(threads_number, dtype=np.int64)
+
+    for i in prange(grid.shape[0]):
+        thread_id = get_thread_id()
+        q = grid[i]
+        weight = weights[i]
+        q_0 = np.allclose(q, gamma, atol=1e-6)
+        freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
+        freq = freq - scale_freq
+        freq *= AU_BOHR_CM_1
+
+        if q_0:
+            freq, modes = freq[3:], modes[:,3:]
+        mask = (freq >= modes_low) & (freq <= modes_high)
+        idx  = np.where(mask)[0]
+        wb, modes = np.ascontiguousarray(freq[idx]), np.ascontiguousarray(modes[:,idx])
+        Yb = np.zeros((wb.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
+        get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, wb)
+        Yb_table = build_Y_table_j(Yb)
+
+        fwhm_j = gamma_fwhm * np.ones_like(wb) # TODO: can implement ab inito model for different wb and T (move into the loop) - adaptive_fwhm in config
+        cutoff_j = get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_direct_max, direct)
+
+        raman_counter_wb[thread_id] = raman_counter[thread_id] + wb.shape[0]
+        raman_counter_2wb[thread_id] = raman_counter_wb[thread_id] + wb.shape[0]
+        Yb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = Yb
+        wb_array[thread_id,raman_counter[thread_id]:raman_counter_wb[thread_id]] = wb
+        if not q_0:
+            Yb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = np.conjugate(np.transpose(Yb, (0,2,1)))
+            wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
+        raman_counter[thread_id] = raman_counter_2wb[thread_id]
 
         for t_index in range(beta.shape[0]):
             beta_t = beta[t_index]
@@ -812,27 +942,25 @@ def build_matrices(
             add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff_j, run_rho0)
             add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_symm_table, q_0, degeneracy_tolerance, weight, run_R21)
 
-    if run_R41:
-        wb_array = wb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape))
-        Yb_array = Yb_array.reshape((threads_number*2*max_grid_per_thread*freq_shape, H_grad.shape[1], H_grad.shape[2]))
-        N_pairs = wb_array.size * (wb_array.size + 1) // 2
-        cutoff_raman = gamma_fwhm * cutoff_mult
-        raman_weight = 1.0
-        for t_index_raman in range(beta.shape[0]):
-            print(t_index_raman)
-            bose_raman = bose_occ(wb_array, beta[t_index_raman])
-            for p in prange(N_pairs):
-                thread_id = get_thread_id()
-                R_41_t = R41[:,t_index_raman,:,:]
-                k = np.int64((np.sqrt(8*p + 1) - 1) // 2)
-                l = p - k*(k + 1)//2
-                if wb_array[k] == 0.0 or wb_array[l] == 0.0:
-                    continue
-                A = 1 if k!=l else 0.25
-                B = 1 if k!=l else 0.5
-                add_R41(R_41_t, w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k],
-                        wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, A, B, raman_weight,
-                        sec_tol=degeneracy_tolerance)
+    wb_array = wb_array.reshape((reshape_size))
+    Yb_array = Yb_array.reshape((reshape_size, H_grad.shape[1], H_grad.shape[2]))
+    N_pairs = wb_array.size * (wb_array.size + 1) // 2
+    cutoff_raman = gamma_fwhm * cutoff_mult
+    raman_weight = 1.0
+    for t_index_raman in range(beta.shape[0]):
+        bose_raman = bose_occ(wb_array, beta[t_index_raman])
+        for p in prange(N_pairs):
+            thread_id = get_thread_id()
+            R_41_t = R41[:,t_index_raman,:,:]
+            k = np.int64((np.sqrt(8*p + 1) - 1) // 2)
+            l = p - k*(k + 1)//2
+            if wb_array[k] == 0.0 or wb_array[l] == 0.0:
+                continue
+            A = 1 if k!=l else 0.25
+            B = 1 if k!=l else 0.5
+            add_R41(R_41_t, w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k],
+                    wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, A, B, raman_weight,
+                    sec_tol=degeneracy_tolerance)
 
 @njit(nogil=True, fastmath=True, cache=True, inline="never")
 def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, chi_adiabatic, eye, normalize):

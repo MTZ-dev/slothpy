@@ -145,6 +145,6 @@ def run_relacs(cfg: AppConfig):
                 if cfg.relacs.initial_correlation:
                     plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[3], part="imag", title="χ''(init)(ν)")
                     plot_chi_vs_freq(omega_Hz, temperatures, fields, n_points_array, fwhm_array, sus_H_T[3], part="real", title="χ'(init)(ν)")
-        if cfg.relacs.tau_21_csv_path or cfg.relacs.tau_21_csv_path:
+        if cfg.relacs.tau_21_csv_path or cfg.relacs.tau_41_csv_path:
             plot_tau_vs_inv_T(temperatures, fields, n_points_array, fwhm_array, tau_R21_orient_H_T[:,:,0,:,:], tau_R41_orient_H_T[:,:,0,:,:], which="both", title="τ(T)")
         plt.show()

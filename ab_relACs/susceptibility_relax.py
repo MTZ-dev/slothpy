@@ -31,7 +31,7 @@ from llvmlite import ir as llir
 from llvmlite import binding as llvm
 from llvmlite.ir import IRBuilder
 
-from slothpy._general_utilities._constants import H_CM_1, AU_BOHR_CM_1, MU_B_CM_3
+from slothpy._general_utilities._constants import H_CM_1, AU_BOHR_CM_1, MU_B_CM_3, B_AU_T
 from constants import KB, H, H_BAR, S_TIME_PS, M_AU
 
 _DAWSN_ALIASES = {} 
@@ -965,8 +965,8 @@ def build_matrices_R41(
 @njit(nogil=True, fastmath=True, cache=True, inline="never")
 def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, chi_adiabatic, eye, normalize):
     for k, omega in enumerate(omega_grid):
-        Xi = Xi - 1j * omega * eye
-        rho_hat  = np.linalg.solve(Xi, num).reshape((N, N))
+        Xi_temp = Xi - 1j * omega * eye
+        rho_hat  = np.linalg.solve(Xi_temp, num).reshape((N, N))
         chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3
         if normalize:    
             if k != 0:

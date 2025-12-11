@@ -74,8 +74,8 @@ def run_relacs(cfg: AppConfig):
             A = U_total.conj().T @ oriented_momenta @ U_total
             chi_T = get_chi_T(A, energies_total, temperatures, field)
             chi_S = get_chi_S(temperatures) #TODO: find an ab initio model
-            A *= H_CM_1
-            B = - A
+            A *= B_AU_T
+            B = A
             hamiltonian_gradients = spin_phonon_derivatives(dof_array, field_vector, energies_total, U_total, cfg)
             energies_total *= H_CM_1
 

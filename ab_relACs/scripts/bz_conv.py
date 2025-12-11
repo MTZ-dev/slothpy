@@ -316,7 +316,12 @@ def run_batch(runner_prefix: str,
         recs: List[RunRecord] = []
         for p in new_paths:
             s = p.stem
-            if "_npoints_" not in s or "_fwhm_" not in s:
+            if "_npoints_" not in s or "_fwhm_" not in s or "no_chit" in s:
+                if cleanup_csv:
+                    try:
+                        p.unlink()
+                    except Exception as e:
+                        print(f"[WARN] Could not delete {p}: {e}")
                 continue
             try:
                 # npoints

@@ -16,27 +16,27 @@
 
 [relacs]
 slt_filepath = "/home/mikolaj/Sloth/Sloth/seminarium/import.slt"
-number_cpus = 64
+number_cpus = 24
 
 orientations = [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]]
 fields = [0.2] # [0.02,0.03,0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8,1,2] # [0.001] 30 10 ^3 or [0.003] 35 10^3
-temperatures = [9,10,11] # [36,38,40,42,44,46]
+temperatures = [10] # [36,38,40,42,44,46]
 frequencies = "np.logspace(-5, 8, 1300)"
 
-states_number = 10 ############### 8 i 200 perfect!
+states_number = 6 ############### 8 i 200 perfect!
 degeneracy_tolerance = 1e-6
-psi_frequency_shift = false
-initial_correlation = false
+psi_frequency_shift = true
+initial_correlation = true
 omega_loop = false
 chi_s = false
 
-n_points = [131] # more than 0.14 for 38 about 0.4 would be perfect ##### 1500 0.28, 2000 ???
-q_ranges = [0.25,0.5]
+n_points = [61] # more than 0.14 for 38 about 0.4 would be perfect ##### 1500 0.28, 2000 ???
+q_ranges = [0.005,0.05,0.5]
 broadening = "gaussian" # "lorentzian" #
 fwhm = [0.0242650853264796]
 adaptive_fwhm = false
-modes_low = 1e-5 # 0.7553
-modes_high = 350
+modes_low = 0.7553
+modes_high = 250
 cutoff_fwhm = 2.07729 # 3.15984 # 2.43362
 direct = true
 

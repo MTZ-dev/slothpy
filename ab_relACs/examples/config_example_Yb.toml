@@ -16,12 +16,12 @@
 
 [relacs]
 slt_filepath = "/home/mikolaj/Sloth/Sloth/seminarium/import.slt"
-number_cpus = 24
+number_cpus = 64
 
 orientations = [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]]
-fields = [0.2] # [0.02,0.03,0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8,1,2] # [0.001] 30 10 ^3 or [0.003] 35 10^3
-temperatures = [10] # [36,38,40,42,44,46]
-frequencies = "np.logspace(-5, 8, 1300)"
+fields = [0.3] # [0.02,0.03,0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8,1,2] # [0.001] 30 10 ^3 or [0.003] 35 10^3
+temperatures = [2,3] # [36,38,40,42,44,46]
+frequencies = "np.logspace(1, 5, 40)"
 
 states_number = 6 ############### 8 i 200 perfect!
 degeneracy_tolerance = 1e-6
@@ -31,18 +31,18 @@ omega_loop = false
 chi_s = false
 
 n_points = [61] # more than 0.14 for 38 about 0.4 would be perfect ##### 1500 0.28, 2000 ???
-q_ranges = [0.005,0.05,0.5]
+q_ranges = [0.025,0.5]
 broadening = "gaussian" # "lorentzian" #
-fwhm = [0.0242650853264796]
+fwhm = [1.0292493]
 adaptive_fwhm = false
-modes_low = 0.7553
-modes_high = 250
-cutoff_fwhm = 2.07729 # 3.15984 # 2.43362
+modes_low = 0.000147
+modes_high = 150
+cutoff_fwhm = 2.43362 # 2.07729 # 3.15984 # 2.43362
 direct = true
 
-chi_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/ac_Dy_whatever.dat"
-tau_21_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/tau_R21_Dy_whatever.dat"
-tau_41_csv_path = "" # "/home/mikolaj/Sloth/Sloth/seminarium/tau_R41_Tb_3000_whatever_r.dat"
+chi_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/ac_Yb_whatever_re.dat"
+tau_21_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/tau_R21_Yb_whatever_re.dat"
+tau_41_csv_path = "" # "/home/mikolaj/Sloth/Sloth/seminarium/tau_R41_Yb_whatever_raman.dat" # "/home/mikolaj/Sloth/Sloth/seminarium/tau_R41_Tb_3000_whatever_r.dat"
 show_plot = true
 
 [supercell]
@@ -53,7 +53,7 @@ nx = 3
 ny = 3
 nz = 2
 replace_atoms = [0]
-new_atoms = ["Dy"]
+new_atoms = ["Yb"]
 
 [hessian]
 path = "/home/mikolaj/Sloth/Sloth/seminarium/YCo_supercell_from_cell"
@@ -64,8 +64,8 @@ accoustic_sum_rule = "symmetric"
 dos = ""
 
 [spin_phonon]
-path = "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/DyCo" # "/home/mikolaj/Data/Displacements_small_0001/DyCo_displ" # "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/DyCo" # 
-group_name = "DyCo_spin_phonon"
+path = "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/YbCo" # "/home/mikolaj/Data/Displacements_small_0001/YbCo_displ" # "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/YbCo" # 
+group_name = "YbCo_spin_phonon"
 orca_fragovl_path =  "/home/mikolaj/orca_6_1_0_avx2/orca_fragovl" # "/home/mikolaj/orca_6_1_0_avx2/orca_fragovl" #
 displacement_number = 1
 step = 0.0005

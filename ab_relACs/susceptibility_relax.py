@@ -127,7 +127,6 @@ def gauss_hilbert(E, d):
 def build_Y_table_j(Yb):
     J, N, _ = Yb.shape
     out = np.empty((J, N, N, N, N), np.complex128)
-
     for j in range(J):
         Y  = Yb[j]
         Yh = np.conjugate(Y.T).copy()
@@ -172,27 +171,64 @@ def add_KR_bundle(out, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight):
                         val-=Jhat_m_j[c,b]*Y_j[a,c,d,b]
                         out[ab,cd]+=val * coeff
 
+# @njit(nogil=True, cache=True, fastmath=True, inline="never")
+# def add_rho0_bundle(out, trace, Yb_table, wb, nb, beta, w_n, q_0, rho, thread_id, t_index, weight, cutoff_j):
+#     N=w_n.shape[0]; J=wb.size
+#     coeff = 0.5 * weight
+#     if q_0:
+#         coeff *= 0.5
+#     for j in range(J):
+#         Y_j, wq, n_q, cutoff = Yb_table[j], wb[j], nb[j], cutoff_j[j]
+#         for a in range(N):
+#             rho_aa = rho[a, a]
+#             for b in range(N):
+#                 ab = liou(a, b, N)
+#                 corr = 0.0 + 0.0j
+#                 for e in range(N):
+#                     w_de = w_n[a, e]
+#                     w_eb = w_n[e, b]
+#                     kernel = n_q * Iint(w_de + wq, w_eb - wq, beta, cutoff) + (n_q + 1.0) * Iint(w_de - wq, w_eb + wq, beta, cutoff)
+#                     corr += kernel * Y_j[a, e, e, b] * rho_aa
+#                     if b == a:
+#                         trace[thread_id, t_index] += coeff * kernel * rho_aa * Y_j[a, e, e, a]
+#                 out[ab] += coeff * corr
+
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
-def add_rho0_bundle(out, trace, Yb_table, wb, nb, beta, w_n, q_0, rho, thread_id, t_index, weight, cutoff_j):
-    N=w_n.shape[0]; J=wb.size
+def add_rho0_bundle(out, trace, Yb_table, wb, nb, beta, w_n,
+                    q_0, rho, thread_id, t_index, weight, cutoff_j):
+    N = w_n.shape[0]
+    J = wb.size
     coeff = 0.5 * weight
     if q_0:
         coeff *= 0.5
+
     for j in range(J):
-        Y_j, wq, n_q, cutoff = Yb_table[j], wb[j], nb[j], cutoff_j[j]
+        Y_j = Yb_table[j]
+        wq = wb[j]
+        n_q = nb[j]
+        cutoff = cutoff_j[j]
+
         for a in range(N):
-            rho_aa = rho[a, a]
             for b in range(N):
                 ab = liou(a, b, N)
+                rho_bb = rho[b, b]
                 corr = 0.0 + 0.0j
                 for e in range(N):
-                    w_de = w_n[a, e]
+                    w_ae = w_n[a, e]
                     w_eb = w_n[e, b]
-                    kernel = n_q * Iint(w_de + wq, w_eb - wq, beta, cutoff) + (n_q + 1.0) * Iint(w_de - wq, w_eb + wq, beta, cutoff)
-                    corr += kernel * Y_j[a, e, e, b] * rho_aa
-                    if b == a:
-                        trace[thread_id, t_index] += coeff * kernel * rho_aa * Y_j[a, e, e, a]
+                    k = 0.0
+                    if np.abs(w_ae + wq) < cutoff and np.abs(w_eb - wq) < cutoff:
+                        k += n_q * Iint(w_ae + wq, w_eb - wq, beta)
+                    if np.abs(w_ae - wq) < cutoff and np.abs(w_eb + wq) < cutoff:
+                        k += (n_q + 1.0) * Iint(w_ae - wq, w_eb + wq, beta)
+
+                    if k != 0.0:
+                        corr += k * Y_j[a, e, e, b] * rho_bb
+                        if b == a:
+                            trace[thread_id, t_index] += coeff * k * rho_bb * Y_j[a, e, e, a]
+
                 out[ab] += coeff * corr
+
 
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
@@ -206,9 +242,7 @@ def zeta(x: float, beta: float) -> float:
     return np.expm1(u) / (x)
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
-def Iint(w1: float, w2: float, beta: float, cutoff: float) -> float:
-    if np.abs(w1) > 1500*cutoff or np.abs(w2) > 1500*cutoff:
-        return 0.0 + 1j * 0.0
+def Iint(w1: float, w2: float, beta: float) -> float:
     eps = 1e-15
     u1 = w1 * beta
     u2 = w2 * beta
@@ -314,7 +348,7 @@ def gaussian(dE: float, lw: float, cutoff: float) -> float:
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
 def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1: float, n2: float, f1: float, f2: float, lw1: float, lw2: float, ind: int, cutoff: float, A: float, B: float, weight: float, sec_tol: float = 1e-6) -> np.ndarray:
     N = w_n.shape[0]
-    prefc = pi * pi / (H*H*H) * weight
+    prefc = pi * pi / H * weight
     lw_total = lw1
 
     Rabp = _R_pm(V1, V2, w_n, +1, f2, lw2)
@@ -549,26 +583,26 @@ def Jhat_p_symm(w_ab, wq, n_q, d, cutoff, kind):
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Jhat_p(w_ab, wq, n_q, d, cutoff, kind):
-    if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff: # and w_ab - wq < 0:
         return hilbert(w_ab - wq, d, kind) * n_q
-    if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff: # and w_ab + wq > 0:
         return hilbert(w_ab + wq, d, kind) * (n_q + 1)
     return 0.0 + 0.0 * 1j 
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Jhat_m(w_ab, wq, n_q, d, cutoff, kind):
-    if w_ab < 0 and w_ab + wq < cutoff and w_ab + wq > 0:
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff: # and w_ab + wq > 0:
         return hilbert(w_ab + wq, d, kind) * n_q
-    if w_ab > 0 and w_ab - wq > -cutoff and w_ab - wq < 0:
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff: # and w_ab - wq < 0:
         return hilbert(w_ab - wq, d, kind) * (n_q + 1)
     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind):
     u = w_cd + w_ab
-    if u < 0 and u + wq < cutoff and u + wq > 0:
+    if u < 0 and np.abs(u + wq) < cutoff: # and u + wq > 0:
         return hilbert(u + wq, d, kind) * n_q * zeta(w_ab + wq, beta)
-    if u > 0 and u - wq > -cutoff and u - wq < 0:
+    if u > 0 and np.abs(u - wq) < cutoff: # and u - wq < 0:
         return hilbert(u - wq, d, kind) * (n_q + 1) * zeta(w_ab - wq, beta)
     return 0.0 + 0.0 * 1j
 
@@ -792,6 +826,7 @@ def build_matrices_no_R41(
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     scale_freq = np.min(freq0)
+    print(scale_freq*AU_BOHR_CM_1)
     arr = np.diag(w_n, k=1)
     w_n_direct_max = arr[0]
     for i in range(2, arr.size, 2):  # step of 2
@@ -1031,6 +1066,7 @@ def susceptibility_relax_time(
                 E[i] = (E[i] + E[j]) * 0.5
                 E[j] = E[i]
     E = (E - np.min(E))
+    print(E)
 
     N  = states_number
     N2 = N * N

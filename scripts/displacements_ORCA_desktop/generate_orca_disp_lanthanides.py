@@ -47,5 +47,5 @@ if __name__ == "__main__":
         Ln = slt.xyz("/home/mikolaj/Sloth/Sloth/seminarium/YCo_1.xyz", "./seminarium/Ln.slt", f"{lanthanide}.xyz", -3, int(2*lanthanide_data[lanthanide]["S_list"][0]+1))
         # Ln = slt.xyz("/home/mikolaj/Sloth/Sloth/seminarium/YCo_3.xyz", "./seminarium/Ln.slt", f"{lanthanide}.xyz", 21, int(2*lanthanide_data[lanthanide]["S_list"][0]+1))
         Ln[f"{lanthanide}.xyz"].replace_atoms([0], [lanthanide])
-        Ln[f"{lanthanide}.xyz"].generate_finite_stencil_displacements_reduced_to_unit_cell("Y_unit_cell", [7.554490, 8.722928, 9.430707], 1, 0.01, custom_directory=f"/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_01_single/{lanthanide}Co")
+        Ln[f"{lanthanide}.xyz"].generate_finite_stencil_displacements_reduced_to_unit_cell("Y_unit_cell", [7.554490, 8.722928, 9.430707], 1, 0.001, custom_directory=f"/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_001_single/{lanthanide}Co")
         # Ln[f"{lanthanide}.xyz"].generate_finite_stencil_displacements_across_unit_cells("Y_unit_cell", [7.554490, 8.722928, 9.430707], 1, 0.0001, custom_directory=f"/home/mikolaj/Data/Displacements_cluster_0001/{lanthanide}Co_displ_cluster")

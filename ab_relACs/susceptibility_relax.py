@@ -206,7 +206,7 @@ def add_rho0_bundle(out, trace, Yb_table, wb, nb, beta, w_n,
         Y_j = Yb_table[j]
         wq = wb[j]
         n_q = nb[j]
-        cutoff = cutoff_j[j]
+        cutoff = 1000 * cutoff_j[j]
 
         for a in range(N):
             for b in range(N):
@@ -247,7 +247,7 @@ def Iint(w1: float, w2: float, beta: float) -> float:
     u1 = w1 * beta
     u2 = w2 * beta
     u12 = u1 + u2
-    if abs(u1) > 650 or abs(u12) > 650:
+    if abs(u1) > 650 or abs(u2) > 650 or abs(u12) > 650:
         return 0.0 + 1j * 0.0
     if abs(u1) < eps and abs(u2) < eps:
         return 0.5 * beta * beta

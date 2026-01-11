@@ -346,7 +346,7 @@ def gaussian(dE: float, lw: float, cutoff: float) -> float:
     return prefactor * np.exp(exponent)
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
-def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1: float, n2: float, f1: float, f2: float, lw1: float, lw2: float, ind: int, cutoff: float, A: float, B: float, weight: float, sec_tol: float = 1e-6) -> np.ndarray:
+def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1: float, n2: float, f1: float, f2: float, lw1: float, lw2: float, ind: int, cutoff: float, weight: float, sec_tol: float = 1e-6) -> np.ndarray:
     N = w_n.shape[0]
     prefc = pi * pi / H * weight
     lw_total = lw1
@@ -772,24 +772,25 @@ def build_matrices(
     run_rho0: types.Literal,
     run_R21: types.Literal,
     run_R41: types.Literal,
+    n_k: int,
     ):
     raise NotImplementedError
 
 @overload(build_matrices, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
 def ov_build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                      R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41):
+                      R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k):
     if isinstance(run_R41, types.Literal):
         if run_R41.literal_value == 0:
             def impl(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41):
+                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k):
                 return build_matrices_no_R41(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                                             R21, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21)
+                                             R21, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, n_k)
             return impl
         elif run_R41.literal_value == 1:
             def impl(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41):
+                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k):
                 return build_matrices_R41(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                                          R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21)
+                                          R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, n_k)
             return impl
 
 @njit(nogil=True, fastmath=True, parallel=True, inline="never")
@@ -820,8 +821,9 @@ def build_matrices_no_R41(
     run_PSI: types.Literal,
     run_rho0: types.Literal,
     run_R21: types.Literal,
+    n_k: int,
     ):
-    n_k_inv = 1.0 / np.sqrt(grid.shape[0])
+    n_k_inv = 1.0 / np.sqrt(n_k)
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
@@ -847,6 +849,8 @@ def build_matrices_no_R41(
         mask = (freq >= modes_low) & (freq <= modes_high)
         idx  = np.where(mask)[0]
         wb, modes = np.ascontiguousarray(freq[idx]), np.ascontiguousarray(modes[:,idx])
+        if wb.shape[0] == 0:
+            continue
         Yb = np.zeros((wb.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
         get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, wb)
         Yb_table = build_Y_table_j(Yb)
@@ -903,8 +907,9 @@ def build_matrices_R41(
     run_PSI: types.Literal,
     run_rho0: types.Literal,
     run_R21: types.Literal,
+    n_k: int,
     ):
-    n_k_inv = 1.0 / np.sqrt(grid.shape[0])
+    n_k_inv = 1.0 / np.sqrt(n_k)
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
@@ -923,6 +928,7 @@ def build_matrices_R41(
 
     Yb_array = np.zeros((threads_number, max_grid_size, H_grad.shape[1], H_grad.shape[2]), np.complex128)
     wb_array = np.zeros((threads_number, max_grid_size), np.float64)
+    wq_array = np.zeros((threads_number, max_grid_size), np.float64)
     raman_counter = np.zeros(threads_number, dtype=np.int64)
     raman_counter_wb = np.zeros(threads_number, dtype=np.int64)
     raman_counter_2wb = np.zeros(threads_number, dtype=np.int64)
@@ -941,6 +947,8 @@ def build_matrices_R41(
         mask = (freq >= modes_low) & (freq <= modes_high)
         idx  = np.where(mask)[0]
         wb, modes = np.ascontiguousarray(freq[idx]), np.ascontiguousarray(modes[:,idx])
+        if wb.shape[0] == 0:
+            continue
         Yb = np.zeros((wb.size, H_grad.shape[1], H_grad.shape[2]), dtype=np.complex128)
         get_Y_q(Yb, H_grad, modes, q, dof_array, masses_inv_sqrt, n_k_inv, wb)
         Yb_table = build_Y_table_j(Yb)
@@ -955,6 +963,19 @@ def build_matrices_R41(
         if not q_0:
             Yb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = np.conjugate(np.transpose(Yb, (0,2,1)))
             wb_array[thread_id,raman_counter_wb[thread_id]:raman_counter_2wb[thread_id]] = wb
+        
+        # Store the BZ weight for each phonon entry
+        s = raman_counter[thread_id]
+        m = raman_counter_wb[thread_id]
+        e = raman_counter_2wb[thread_id]
+
+        for jj in range(s, m):
+            wq_array[thread_id, jj] = weight
+
+        if not q_0:
+            for jj in range(m, e):
+                wq_array[thread_id, jj] = weight
+
         raman_counter[thread_id] = raman_counter_2wb[thread_id]
 
         for t_index in range(beta.shape[0]):
@@ -979,9 +1000,9 @@ def build_matrices_R41(
 
     wb_array = wb_array.reshape((reshape_size))
     Yb_array = Yb_array.reshape((reshape_size, H_grad.shape[1], H_grad.shape[2]))
+    wq_array = wq_array.reshape((reshape_size))
     N_pairs = wb_array.size * (wb_array.size + 1) // 2
     cutoff_raman = gamma_fwhm * cutoff_mult
-    raman_weight = 1.0
     for t_index_raman in range(beta.shape[0]):
         bose_raman = bose_occ(wb_array, beta[t_index_raman])
         for p in prange(N_pairs):
@@ -991,10 +1012,9 @@ def build_matrices_R41(
             l = p - k*(k + 1)//2
             if wb_array[k] == 0.0 or wb_array[l] == 0.0:
                 continue
-            A = 1 if k!=l else 0.25
-            B = 1 if k!=l else 0.5
+            raman_weight = wq_array[k] * wq_array[l]
             add_R41(R_41_t, w_n, Yb_array[k], Yb_array[l], bose_raman[k], bose_raman[l], wb_array[k],
-                    wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, A, B, raman_weight,
+                    wb_array[l], gamma_fwhm, gamma_fwhm, thread_id, cutoff_raman, raman_weight,
                     sec_tol=degeneracy_tolerance)
 
 @njit(nogil=True, fastmath=True, cache=True, inline="never")
@@ -1040,6 +1060,7 @@ def susceptibility_relax_time(
     run_rho0: int,
     run_R21: int,
     run_R41: int,
+    n_k: int,
 ):  
     kind_lit = literally(kind)
     direct_lit = literally(direct)
@@ -1096,7 +1117,7 @@ def susceptibility_relax_time(
                     gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace,
                     rho_mat, R21, R41, cutoff_mult, degeneracy_tolerance, modes_low,
                     modes_high, kind_lit, direct_lit, run_KR_lit, run_PSI_lit, run_rho0_lit,
-                    run_R21_lit, run_R41_lit)
+                    run_R21_lit, run_R41_lit, n_k)
 
     M_KR = np.sum(M_KR, axis=0)
     M_PSI = np.sum(M_PSI, axis=0)

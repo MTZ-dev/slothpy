@@ -80,7 +80,7 @@ def run_relacs(cfg: AppConfig):
             energies_total *= H_CM_1
 
             for n_points_index, n_points in enumerate(n_points_array):
-                grid, weights = multigrid_aniso(recip_axes, n_points, cfg.relacs.q_ranges)
+                grid, weights, n_k = multigrid_aniso(recip_axes, n_points, cfg.relacs.q_ranges)
                 for fwhm_index, fwhm in enumerate(fwhm_array):
                     if cfg.hessian.dos:
                         weights_int = int_vector_proportional_to_weights(weights)
@@ -99,7 +99,7 @@ def run_relacs(cfg: AppConfig):
                                             temperatures, hessian, masses_inv_sqrt, dof_array, grid,
                                             weights, gamma_fwhm, chi_T, chi_S, cutoff_mult, degeneracy_tolerance,
                                             states_number, modes_low, modes_high, threads, kind, direct,
-                                            run_KR, run_PSI, run_rho0, run_R21, run_R41)
+                                            run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k)
                     sus_T_p = np.abs(sus_T.real) + 1j*np.abs(sus_T.imag)
                     sus_orient_H_T[:,n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T_p * orientations_weights[orientation_index]
                     tau_R21_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R21_T

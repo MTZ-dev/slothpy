@@ -157,6 +157,7 @@ def half_bz_grid_aniso(
     *,
     endpoint: bool = True,
     tol: float = 1e-12,
+    return_n_k: bool = False,
 ) -> np.ndarray:
     """
     Anisotropic half-BZ mesh (unique reps of {+q,−q}) inside an L∞ shell:
@@ -205,6 +206,13 @@ def half_bz_grid_aniso(
     q_unique = full[keep]
 
     idx = np.lexsort(q_unique.T[::-1])
+
+    if return_n_k:
+        n_k = 1
+        for n_k_s in n_axis:
+            n_k *= n_k_s
+        return q_unique[idx], n_k
+
     return q_unique[idx]
 
 def _set_equal_3d(ax, X, Y, Z):
@@ -235,7 +243,7 @@ def multigrid_aniso(
     alpha: float = 0.9,
 ) -> np.ndarray:
     if n_ref == 1:
-        return np.asarray([[0,0,0]], dtype=np.float64), np.asarray([1], dtype=np.float64)
+        return np.asarray([[0,0,0]], dtype=np.float64), np.asarray([1], dtype=np.float64), 1
 
     grids_list = []
     weights_list = []
@@ -246,9 +254,12 @@ def multigrid_aniso(
         start_q = q_ranges[i_q]
         end_q   = q_ranges[i_q-1]
 
-        aniso_grid = half_bz_grid_aniso(
-            b_len, n_ref, start_q, end_q, endpoint=endpoint, tol=tol
-        )
+        if i_q == len(q_ranges) - 1:
+            aniso_grid, n_k = half_bz_grid_aniso(
+            b_len, n_ref, start_q, end_q, endpoint=endpoint, tol=tol, return_n_k=True)
+        else:
+            aniso_grid = half_bz_grid_aniso(
+                b_len, n_ref, start_q, end_q, endpoint=endpoint, tol=tol)
 
         # Half-shell volume in L∞ norm
         vol_full = (2.0*start_q)**3 - (2.0*end_q)**3
@@ -297,7 +308,7 @@ def multigrid_aniso(
             ax.figure.canvas.draw_idle()
             plt.show()
 
-    return grid, weights
+    return grid, weights, n_k
 
 
 def make_npoints_fwhm_filename(filepath: Union[str, Path], npoints: int, fwhm: float, additional: str = "") -> str:

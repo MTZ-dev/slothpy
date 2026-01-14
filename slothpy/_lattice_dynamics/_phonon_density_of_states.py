@@ -27,15 +27,14 @@ def _phonon_density_of_states_proxy(hessian: ndarray, masses_inv_sqrt: ndarray, 
     au_bohr_cm_1 = asarray(AU_BOHR_CM_1, dtype=kpoints_grid.dtype)
     
     frequencies_list = []
+    weights_list = []
 
     for i in range(start, end):
         hessian_object.kpoint = kpoints_grid[i]
         freq_to_append = hessian_object.frequencies * au_bohr_cm_1
+        frequencies_list.extend(freq_to_append)
         if weights is not None:
-            for _ in range(weights[i]):
-                frequencies_list.extend(freq_to_append)
-        else:
-            frequencies_list.extend(freq_to_append)
+            weights_list.extend([weights[i] for _ in range(freq_to_append.shape[0])])
         progress_array[process_index] += 1
 
-    return frequencies_list
+    return frequencies_list, weights_list

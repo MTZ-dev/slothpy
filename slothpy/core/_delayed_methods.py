@@ -1015,7 +1015,7 @@ class SltPhononDispersion(_MultiProcessed):
         for mode in range(self._result.shape[1]):
             plt.plot(self._x[:], self._result[:, mode], color='b')
 
-        self._x_labels = ["$\Gamma$" if x == "G" else x for x in self._x_labels]
+        self._x_labels = [r"$\Gamma$" if x == "G" else x for x in self._x_labels]
 
         plt.xticks(self._x_coords, self._x_labels)
         plt.xlabel('Wave Vector Fraction along Path')
@@ -1059,15 +1059,19 @@ class SltPhononDensityOfStates(_MultiProcessed):
 
     def _gather_results(self, result_queue, number_processes):
         all_frequencies = []
+        all_weights = []
         for _ in range(number_processes):
-            all_frequencies.extend(result_queue.get())
+            freqs, wts = result_queue.get()
+            all_frequencies.extend(freqs)
+            all_weights.extend(wts)
 
         all_frequencies = asarray(all_frequencies, order='C', dtype=settings.float)
+        all_weights     = asarray(all_weights, order="C", dtype=settings.float)
         frequencies_min = min(all_frequencies)
         frequencies_max = max(all_frequencies)
         frequencies_min -= frequencies_min/self._resolution
         frequencies_max += frequencies_max/self._resolution
-        hist, bin_edges = histogram(all_frequencies, bins=self._resolution, range=(frequencies_min, frequencies_max), density=False)
+        hist, bin_edges = histogram(all_frequencies, bins=self._resolution, range=(frequencies_min, frequencies_max), density=False, weights=all_weights if self._weights is not None else None)
 
         if self._convolution is None:
             return bin_edges, hist
@@ -1120,57 +1124,57 @@ class SltPhononDensityOfStates(_MultiProcessed):
             self._convolution = True
 
     def _plot(self, **kwargs):
-        if self._convolution is None:
-            plt.figure(figsize=(8, 6))
-            plt.bar(self._result[0][:-1], self._result[1][:], width=diff(self._result[0][:]), edgecolor='black', alpha=0.7)
-            plt.xlabel('Frequency (cm$^{-1}$)')
-            plt.ylabel('Counts')
-            plt.title('Intermediate Histogram of Phonon Frequencies')
-            plt.grid(True, linestyle='--', alpha=0.5)
-            plt.show()
-        else:
-            plt.bar(self._result[0][:-1], self._result[1][:], width=diff(self._result[0][:]), edgecolor='black', alpha=0.7)
-            plt.grid(True, linestyle='--', alpha=0.5)
-            plt.plot(self._result[2][:], self._result[3][:], color='blue')
-            plt.xlabel(r"Frequency / $\mathrm{cm^{-1}}$")
-            plt.ylabel(r'Density of States / $\mathrm{a.u.})')
-            plt.title('Phonon Density of States')
-            plt.grid(True)
-            plt.show()
+        # if self._convolution is None:
+        #     plt.figure(figsize=(8, 6))
+        #     plt.bar(self._result[0][:-1], self._result[1][:], width=diff(self._result[0][:]), edgecolor='black', alpha=0.7)
+        #     plt.xlabel('Frequency (cm$^{-1}$)')
+        #     plt.ylabel('Counts')
+        #     plt.title('Intermediate Histogram of Phonon Frequencies')
+        #     plt.grid(True, linestyle='--', alpha=0.5)
+        #     plt.show()
+        # else:
+        #     plt.bar(self._result[0][:-1], self._result[1][:], width=diff(self._result[0][:]), edgecolor='black', alpha=0.7)
+        #     plt.grid(True, linestyle='--', alpha=0.5)
+        #     plt.plot(self._result[2][:], self._result[3][:], color='blue')
+        #     plt.xlabel(r"Frequency / $\mathrm{cm^{-1}}$")
+        #     plt.ylabel(r'Density of States / $\mathrm{a.u.})')
+        #     plt.title('Phonon Density of States')
+        #     plt.grid(True)
+        #     plt.show()
 
-            # import matplotlib.pyplot as plt
-            # import matplotlib as mpl
+        import matplotlib.pyplot as plt
+        import matplotlib as mpl
 
-            # # ── journal-style defaults (same look as your other helpers) ────────
-            # mpl.rcParams.update({
-            #     "font.family"      : "serif",
-            #     "font.size"        : 10,
-            #     "mathtext.fontset" : "cm",
-            #     "axes.labelsize"   : 10,
-            #     "axes.titlesize"   : 10,
-            #     "xtick.direction"  : "in",
-            #     "ytick.direction"  : "in",
-            #     "xtick.top"        : True,
-            #     "ytick.right"      : True,
-            #     "axes.spines.right": True,
-            #     "axes.spines.top"  : True,
-            #     "figure.dpi"       : 300,
-            # })
+        # ── journal-style defaults (same look as your other helpers) ────────
+        mpl.rcParams.update({
+            "font.family"      : "serif",
+            "font.size"        : 10,
+            "mathtext.fontset" : "cm",
+            "axes.labelsize"   : 10,
+            "axes.titlesize"   : 10,
+            "xtick.direction"  : "in",
+            "ytick.direction"  : "in",
+            "xtick.top"        : True,
+            "ytick.right"      : True,
+            "axes.spines.right": True,
+            "axes.spines.top"  : True,
+            "figure.dpi"       : 300,
+        })
 
-            # # ── create canvas ───────────────────────────────────────────────────
-            # fig, ax = plt.subplots(figsize=(6,4.5), constrained_layout=True)
+        # ── create canvas ───────────────────────────────────────────────────
+        fig, ax = plt.subplots(figsize=(6,4.5), constrained_layout=True)
 
-            # ax.bar(self._result[0][:-1], self._result[1][:], width=diff(self._result[0][:]), color="#F1B960", edgecolor="#F1B960", alpha=0.7)
-            # ax.grid(True, linestyle='--', alpha=0.5)
-            # ax.plot(self._result[2][:], self._result[3][:], color="#69A6D7")
-            # ax.set_xlabel(r"Frequency / $\mathrm{cm^{-1}}$")
-            # ax.set_ylabel(r'Density of States / $\mathrm{a.u.}$')
-            # ax.set_title('Phonon Density of States')
-            # ax.grid(True)
+        ax.bar(self._result[0][:-1], self._result[1][:], width=diff(self._result[0][:]), color="#F1B960", edgecolor="#F1B960", alpha=0.7)
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.plot(self._result[2][:], self._result[3][:], color="#69A6D7")
+        ax.set_xlabel(r"Frequency / $\mathrm{cm^{-1}}$")
+        ax.set_ylabel(r'Density of States / $\mathrm{a.u.}$')
+        ax.set_title('Phonon Density of States')
+        ax.grid(True)
 
-            # # ── export & clean up ───────────────────────────────────────────────
-            # fig.savefig("/home/mikolaj/Documents/PosterECMOLS25/phonon_dos.png", bbox_inches="tight")
-            # plt.close(fig)
+        # ── export & clean up ───────────────────────────────────────────────
+        fig.savefig("/home/mikolaj/Ac_relacs_publication/plots/phonon_dos.png", bbox_inches="tight")
+        plt.close(fig)
 
     def _to_data_frame(self):
         pass

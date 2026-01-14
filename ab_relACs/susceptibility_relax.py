@@ -827,11 +827,9 @@ def build_matrices_no_R41(
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
-    scale_freq = np.min(freq0)
-    print(scale_freq*AU_BOHR_CM_1)
     arr = np.diag(w_n, k=1)
     w_n_direct_max = arr[0]
-    for i in range(2, arr.size, 2):  # step of 2
+    for i in range(2, arr.size, 2):
         if arr[i] < w_n_direct_max:
             w_n_direct_max = arr[i]
 
@@ -841,7 +839,6 @@ def build_matrices_no_R41(
         weight = weights[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
-        freq = freq - scale_freq
         freq *= AU_BOHR_CM_1
 
         if q_0:
@@ -914,10 +911,9 @@ def build_matrices_R41(
     gamma = np.asarray([0.0, 0.0, 0.0])
     freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     freq_shape = freq0.shape[0]
-    scale_freq = np.min(freq0)
     arr = np.diag(w_n, k=1)
     w_n_direct_max = arr[0]
-    for i in range(2, arr.size, 2):  # step of 2
+    for i in range(2, arr.size, 2):
         if arr[i] < w_n_direct_max:
             w_n_direct_max = arr[i]
     
@@ -939,7 +935,6 @@ def build_matrices_R41(
         weight = weights[i]
         q_0 = np.allclose(q, gamma, atol=1e-6)
         freq, modes = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q))
-        freq = freq - scale_freq
         freq *= AU_BOHR_CM_1
 
         if q_0:

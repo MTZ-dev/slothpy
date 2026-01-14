@@ -333,6 +333,7 @@ def make_npoints_fwhm_orient_filename(
     orientation: Sequence[float],
     sig: int = 6,
     int_tol: float = 1e-12,
+    additional: str = "",
 ) -> str:
 
     p = Path(filepath)
@@ -365,6 +366,7 @@ def make_npoints_fwhm_orient_filename(
         f"_npoints_{fmt_num(npoints)}"
         f"_fwhm_{fmt_num(fwhm)}"
         f"_ori_x{x}_y{y}_z{z}"
+        f"{"_" if additional else ""}{additional}"
         f"{suffixes}"
     )
     return str(p.with_name(new_name))

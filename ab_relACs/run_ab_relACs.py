@@ -101,33 +101,42 @@ def run_relacs(cfg: AppConfig):
                                             states_number, modes_low, modes_high, threads, kind, direct,
                                             run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k)
                     sus_T_p = np.abs(sus_T.real) + 1j*np.abs(sus_T.imag)
-                    sus_orient_H_T[:,n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T_p * orientations_weights[orientation_index]
+                    sus_orient_H_T[:,n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T_p
                     tau_R21_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R21_T
                     tau_R41_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R41_T             
         
-    sus_H_T = np.sum(sus_orient_H_T, axis=3)
+    sus_H_T = np.sum(sus_orient_H_T * orientations_weights[np.newaxis,np.newaxis,np.newaxis,:,np.newaxis,np.newaxis,np.newaxis], axis=3)
     B_array = fields * T_FILED_OE
     orientations *= B_AU_T
-    if cfg.relacs.chi_csv_path:
-        for n, f in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0])):
-            save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f])
-            export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[0,n,f], save_filepath)
-            save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "no_chit")
-            export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[1,n,f], save_filepath)
-            if cfg.relacs.psi_frequency_shift:
-                save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "psi")
-                export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[2,n,f], save_filepath)
-                if cfg.relacs.initial_correlation:
-                    save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "psi_init")
-                    export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[3,n,f], save_filepath)
-    if cfg.relacs.tau_21_csv_path:
-        for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
-            save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_21_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
-            export_tau_csv(B_array, temperatures, tau_R21_orient_H_T[n,f,o], save_filepath)
-    if cfg.relacs.tau_41_csv_path:
-        for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
-            save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_41_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
-            export_tau_csv(B_array, temperatures, tau_R41_orient_H_T[n,f,o], save_filepath)
+    for n, f, o in product(range(n_points_array.shape[0]), range(fwhm_array.shape[0]), range(orientations.shape[0])):
+        if cfg.relacs.chi_csv_path:
+                if o == 0:
+                    save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f])
+                    export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[0,n,f], save_filepath)
+                    save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "no_chit")
+                    export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[1,n,f], save_filepath)
+                    if cfg.relacs.psi_frequency_shift:
+                        save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "psi")
+                        export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[2,n,f], save_filepath)
+                        if cfg.relacs.initial_correlation:
+                            save_filepath = make_npoints_fwhm_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], "psi_init")
+                            export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_H_T[3,n,f], save_filepath)
+                save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
+                export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_orient_H_T[0,n,f,o], save_filepath)
+                save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12, additional="no_chit")
+                export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_orient_H_T[1,n,f,o], save_filepath)
+                if cfg.relacs.psi_frequency_shift:
+                    save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12, additional="psi")
+                    export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_orient_H_T[2,n,f,o], save_filepath)
+                    if cfg.relacs.initial_correlation:
+                        save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.chi_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12, additional="psi_init")
+                        export_susceptibility_csv(B_array, temperatures, omega_Hz, sus_orient_H_T[3,n,f,o], save_filepath)
+        if cfg.relacs.tau_21_csv_path:
+                save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_21_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
+                export_tau_csv(B_array, temperatures, tau_R21_orient_H_T[n,f,o], save_filepath)
+        if cfg.relacs.tau_41_csv_path:
+                save_filepath = make_npoints_fwhm_orient_filename(cfg.relacs.tau_41_csv_path, n_points_array[n], fwhm_array[f], orientations[o], sig=6, int_tol=1e-12)
+                export_tau_csv(B_array, temperatures, tau_R41_orient_H_T[n,f,o], save_filepath)
 
     end = time.perf_counter()
     print(f"Running time: {end - start} s")

@@ -60,6 +60,7 @@ def run_relacs(cfg: AppConfig):
     run_rho0 = 1 if cfg.relacs.initial_correlation else 0
     run_R21 = 1 if cfg.relacs.tau_21_csv_path else 0
     run_R41 = 1 if cfg.relacs.tau_41_csv_path else 0
+    symm = 1 if cfg.relacs.symm else 0
 
     sus_orient_H_T = np.zeros((4,n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0], omega_angular.shape[0]), dtype=np.complex128)
     tau_R21_orient_H_T = np.zeros((n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0]), dtype=np.float64)
@@ -99,7 +100,7 @@ def run_relacs(cfg: AppConfig):
                                             temperatures, hessian, masses_inv_sqrt, dof_array, grid,
                                             weights, gamma_fwhm, chi_T, chi_S, cutoff_mult, degeneracy_tolerance,
                                             states_number, modes_low, modes_high, threads, kind, direct,
-                                            run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k)
+                                            run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k, symm)
                     sus_T_p = np.abs(sus_T.real) + 1j*np.abs(sus_T.imag)
                     sus_orient_H_T[:,n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T_p
                     tau_R21_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R21_T

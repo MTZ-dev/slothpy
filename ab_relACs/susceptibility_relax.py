@@ -579,32 +579,94 @@ def Jhat_p_symm(w_ab, wq, n_q, d, cutoff, kind):
         return hilbert(w_ab - wq, d, kind) * n_q
     if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
         return hilbert(w_ab + wq, d, kind) * (n_q + 1)
-    return 0.0 + 0.0 * 1j 
+    return 0.0 + 0.0 * 1j
+
+@njit(nogil=True, cache=True, fastmath=True, inline="always")
+def Jhat_m_symm(w_ab, wq, n_q, d, cutoff, kind):
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff:
+        return hilbert(w_ab + wq, d, kind) * n_q
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff:
+        return hilbert(w_ab - wq, d, kind) * (n_q + 1)
+    return 0.0 + 0.0 * 1j
+
+@njit(nogil=True, cache=True, fastmath=True, inline="always")
+def Jcorr_symm(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind):
+    u = w_cd + w_ab
+    if u < 0 and np.abs(u + wq) < cutoff:
+        return hilbert(u + wq, d, kind) * n_q * zeta(w_ab + wq, beta)
+    if u > 0 and np.abs(u - wq) < cutoff:
+        return hilbert(u - wq, d, kind) * (n_q + 1) * zeta(w_ab - wq, beta)
+    return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Jhat_p(w_ab, wq, n_q, d, cutoff, kind):
-    if w_ab > 0 and np.abs(w_ab - wq) < cutoff: # and w_ab - wq < 0:
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff and w_ab - wq < 0:
         return hilbert(w_ab - wq, d, kind) * n_q
-    if w_ab < 0 and np.abs(w_ab + wq) < cutoff: # and w_ab + wq > 0:
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff and w_ab + wq > 0:
         return hilbert(w_ab + wq, d, kind) * (n_q + 1)
     return 0.0 + 0.0 * 1j 
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Jhat_m(w_ab, wq, n_q, d, cutoff, kind):
-    if w_ab < 0 and np.abs(w_ab + wq) < cutoff: # and w_ab + wq > 0:
+    if w_ab < 0 and np.abs(w_ab + wq) < cutoff and w_ab + wq > 0:
         return hilbert(w_ab + wq, d, kind) * n_q
-    if w_ab > 0 and np.abs(w_ab - wq) < cutoff: # and w_ab - wq < 0:
+    if w_ab > 0 and np.abs(w_ab - wq) < cutoff and w_ab - wq < 0:
         return hilbert(w_ab - wq, d, kind) * (n_q + 1)
     return 0.0 + 0.0 * 1j
 
 @njit(nogil=True, cache=True, fastmath=True, inline="always")
 def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind):
     u = w_cd + w_ab
-    if u < 0 and np.abs(u + wq) < cutoff: # and u + wq > 0:
+    if u < 0 and np.abs(u + wq) < cutoff and u + wq > 0:
         return hilbert(u + wq, d, kind) * n_q * zeta(w_ab + wq, beta)
-    if u > 0 and np.abs(u - wq) < cutoff: # and u - wq < 0:
+    if u > 0 and np.abs(u - wq) < cutoff and u - wq < 0:
         return hilbert(u - wq, d, kind) * (n_q + 1) * zeta(w_ab - wq, beta)
     return 0.0 + 0.0 * 1j
+
+def Jhat_p_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
+    raise NotImplementedError
+
+@overload(Jhat_p_comp, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
+def ov_Jhat_p_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
+    if isinstance(symm, types.Literal):
+        if symm.literal_value == 0:
+            def impl(w_ab, wq, n_q, d, cutoff, kind, symm):
+                return Jhat_p(w_ab, wq, n_q, d, cutoff, kind)
+            return impl
+        elif symm.literal_value == 1:
+            def impl(w_ab, wq, n_q, d, cutoff, kind, symm):
+                return Jhat_p_symm(w_ab, wq, n_q, d, cutoff, kind)
+            return impl
+        
+def Jcorr_comp(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
+    raise NotImplementedError
+
+@overload(Jcorr_comp, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
+def ov_Jcorr_comp(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
+    if isinstance(symm, types.Literal):
+        if symm.literal_value == 0:
+            def impl(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
+                return Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind)
+            return impl
+        elif symm.literal_value == 1:
+            def impl(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
+                return Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind)
+            return impl
+        
+def Jhat_m_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
+    raise NotImplementedError
+
+@overload(Jhat_m_comp, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
+def ov_Jhat_m_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
+    if isinstance(symm, types.Literal):
+        if symm.literal_value == 0:
+            def impl(w_ab, wq, n_q, d, cutoff, kind, symm):
+                return Jhat_m(w_ab, wq, n_q, d, cutoff, kind)
+            return impl
+        elif symm.literal_value == 1:
+            def impl(w_ab, wq, n_q, d, cutoff, kind, symm):
+                return Jhat_m_symm(w_ab, wq, n_q, d, cutoff, kind)
+            return impl
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
 def build_Jp_symm_table_j(w_n, wb, nb, delta, cutoff, kind):
@@ -621,7 +683,7 @@ def build_Jp_symm_table_j(w_n, wb, nb, delta, cutoff, kind):
     return Jp
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
-def build_Jp_Jm_tables_j(w_n, wb, nb, delta, cutoff, kind):
+def build_Jp_Jm_tables_j(w_n, wb, nb, delta, cutoff, kind, symm):
     N = w_n.shape[0]
     J = wb.shape[0]
     Jp = np.empty((J, N, N), np.complex128)
@@ -632,8 +694,8 @@ def build_Jp_Jm_tables_j(w_n, wb, nb, delta, cutoff, kind):
         for a in range(N):
             for b in range(N):
                 x = w_n[a, b]
-                Jp[j, a, b] = Jhat_p(x,wq,n_q,delta_j,cutoff_j,kind)
-                Jm[j, a, b] = Jhat_m(x,wq,n_q,delta_j,cutoff_j,kind)
+                Jp[j, a, b] = Jhat_p_comp(x,wq,n_q,delta_j,cutoff_j,kind,symm)
+                Jm[j, a, b] = Jhat_m_comp(x,wq,n_q,delta_j,cutoff_j,kind,symm)
     return Jp, Jm
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
@@ -773,24 +835,25 @@ def build_matrices(
     run_R21: types.Literal,
     run_R41: types.Literal,
     n_k: int,
+    symm: types.Literal,
     ):
     raise NotImplementedError
 
 @overload(build_matrices, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
 def ov_build_matrices(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                      R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k):
+                      R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k, symm):
     if isinstance(run_R41, types.Literal):
         if run_R41.literal_value == 0:
             def impl(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k):
+                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k, symm):
                 return build_matrices_no_R41(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                                             R21, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, n_k)
+                                             R21, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, n_k, symm)
             return impl
         elif run_R41.literal_value == 1:
             def impl(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k):
+                     R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k, symm):
                 return build_matrices_R41(hessian, masses_inv_sqrt, dof_array, H_grad, grid, weights, gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace, rho_mat,
-                                          R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, n_k)
+                                          R21, R41, cutoff_mult, degeneracy_tolerance, modes_low, modes_high, kind, direct, run_KR, run_PSI, run_rho0, run_R21, n_k, symm)
             return impl
 
 @njit(nogil=True, fastmath=True, parallel=True, inline="never")
@@ -822,11 +885,11 @@ def build_matrices_no_R41(
     run_rho0: types.Literal,
     run_R21: types.Literal,
     n_k: int,
+    symm: types.Literal
     ):
     n_k_inv = 1.0 / np.sqrt(n_k)
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
     gamma = np.asarray([0.0, 0.0, 0.0])
-    freq0, modes0 = frequencies_eigenvectors(_build_dynamical_matrix(hessian, masses_inv_sqrt_outer, gamma))
     arr = np.diag(w_n, k=1)
     w_n_direct_max = arr[0]
     for i in range(2, arr.size, 2):
@@ -866,9 +929,13 @@ def build_matrices_no_R41(
 
             bose = bose_occ(wb, beta[t_index])
 
-            Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
+            Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j, kind, symm)
             if run_R21:
-                Jhat_p_symm_table = build_Jp_symm_table_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
+                if symm:
+                    Jhat_p_symm_table = Jhat_p_table
+                else:
+                    Jhat_p_symm_table = build_Jp_symm_table_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
+                    
 
             add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR)
             add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI)
@@ -905,6 +972,7 @@ def build_matrices_R41(
     run_rho0: types.Literal,
     run_R21: types.Literal,
     n_k: int,
+    symm: types.Literal,
     ):
     n_k_inv = 1.0 / np.sqrt(n_k)
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
@@ -984,9 +1052,12 @@ def build_matrices_R41(
 
             bose = bose_occ(wb, beta[t_index])
 
-            Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
+            Jhat_p_table, Jhat_m_table = build_Jp_Jm_tables_j(w_n, wb, bose, fwhm_j, cutoff_j, kind, symm)
             if run_R21:
-                Jhat_p_symm_table = build_Jp_symm_table_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
+                if symm:
+                    Jhat_p_symm_table = Jhat_p_table
+                else:
+                    Jhat_p_symm_table = build_Jp_symm_table_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
 
             add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR)
             add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI)
@@ -1056,6 +1127,7 @@ def susceptibility_relax_time(
     run_R21: int,
     run_R41: int,
     n_k: int,
+    symm: int,
 ):  
     kind_lit = literally(kind)
     direct_lit = literally(direct)
@@ -1064,6 +1136,7 @@ def susceptibility_relax_time(
     run_rho0_lit = literally(run_rho0)
     run_R21_lit = literally(run_R21)
     run_R41_lit = literally(run_R41)
+    symm_lit = literally(symm)
 
     set_num_threads(threads)
     threads = get_num_threads()
@@ -1082,7 +1155,7 @@ def susceptibility_relax_time(
                 E[i] = (E[i] + E[j]) * 0.5
                 E[j] = E[i]
     E = (E - np.min(E))
-    print(E)
+    print("Energies", E)
 
     N  = states_number
     N2 = N * N
@@ -1112,7 +1185,7 @@ def susceptibility_relax_time(
                     gamma_fwhm, beta, w_n, M_KR, M_PSI, A_e, rho_vec_init, M_rho0_trace,
                     rho_mat, R21, R41, cutoff_mult, degeneracy_tolerance, modes_low,
                     modes_high, kind_lit, direct_lit, run_KR_lit, run_PSI_lit, run_rho0_lit,
-                    run_R21_lit, run_R41_lit, n_k)
+                    run_R21_lit, run_R41_lit, n_k, symm_lit)
 
     M_KR = np.sum(M_KR, axis=0)
     M_PSI = np.sum(M_PSI, axis=0)

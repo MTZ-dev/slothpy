@@ -46,6 +46,7 @@ class InpRelacs(BaseModel):
     initial_correlation: bool = False
     omega_loop: bool = False
     chi_s: bool | np.ndarray | List[float] = False
+    symm: bool = True
 
     n_points: np.ndarray | List[int] = [1]
     q_ranges: List[float] = [0.5]

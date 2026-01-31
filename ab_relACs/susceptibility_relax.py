@@ -1091,11 +1091,11 @@ def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, 
         chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3
         if normalize:    
             if k != 0:
-                chi_T[t,k] /= chi_T[t,0].real
+                chi_T[t,k] /= np.abs(chi_T[t,0].real)
                 chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic[t])
                 chi_T[t,k] += chi_adiabatic[t]
     if normalize:
-        chi_T[t,0] = chi_T[t,0] / chi_T[t,0].real * chi_isothermal[t]
+        chi_T[t,0] = chi_T[t,0] / np.abs(chi_T[t,0].real) * chi_isothermal[t]
 
 @njit(nogil=True, fastmath=True, inline="never")
 def susceptibility_relax_time(

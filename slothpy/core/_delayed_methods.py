@@ -613,11 +613,102 @@ class SltIrSpectrum(_SingleProcessed):
 
     #TODO: plot
     def _plot(self, *args, **kwargs):
+
+        # import numpy as np
+        # import matplotlib.pyplot as plt
+        # import matplotlib as mpl
+
+        # # ── JCP/AIP-like style defaults ───────────────────────────────────────────
+        # mpl.rcParams.update({
+        #     "font.family": "serif",
+        #     "font.size": 10,
+        #     "mathtext.fontset": "cm",
+
+        #     "axes.labelsize": 10,
+        #     "axes.titlesize": 10,
+        #     "axes.linewidth": 0.8,
+
+        #     "xtick.direction": "in",
+        #     "ytick.direction": "in",
+        #     "xtick.top": True,
+        #     "ytick.right": True,
+
+        #     "xtick.major.size": 4.0,
+        #     "ytick.major.size": 4.0,
+        #     "xtick.minor.size": 2.5,
+        #     "ytick.minor.size": 2.5,
+        #     "xtick.major.width": 0.8,
+        #     "ytick.major.width": 0.8,
+        #     "xtick.minor.width": 0.6,
+        #     "ytick.minor.width": 0.6,
+
+        #     "figure.dpi": 300,
+        #     "savefig.dpi": 300,
+        # })
+
+        # # ── data (rename for clarity) ─────────────────────────────────────────────
+        # freq_dense = np.asarray(self._result[1][0], dtype=float)   # continuous/broadened x
+        # abs_dense  = np.asarray(self._result[1][4], dtype=float)   # continuous/broadened y
+
+        # freq_stick = np.asarray(self._result[0][0], dtype=float)   # stick positions
+        # abs_stick  = np.asarray(self._result[0][4], dtype=float)   # stick intensities
+
+        # # Optional: enforce non-negative intensities (IR should be >= 0)
+        # abs_dense = np.clip(abs_dense, 0.0, None)
+        # abs_stick = np.clip(abs_stick, 0.0, None)
+
+        # # ── figure/axes ───────────────────────────────────────────────────────────
+        # fig, ax = plt.subplots(figsize=(6.299, 6.299), constrained_layout=True)
+
+        # # Colors consistent with your other plots
+        # col_dense = "#69A6D7"   # blue
+        # col_stick = "#F1B960"   # orange
+
+        # # ── plot: broadened curve + sticks ────────────────────────────────────────
+        # ax.plot(freq_dense, abs_dense, color=col_dense, lw=1.2)
+
+        # # Sticks: thin, slightly transparent so they don't dominate
+        # ax.vlines(freq_stick, 0.0, abs_stick, color=col_stick, lw=1.6, alpha=0.95)
+
+        # # ── axes labels/title ─────────────────────────────────────────────────────
+        # ax.set_xlabel(r"Frequency (cm$^{-1}$)")
+        # ax.set_ylabel(r"Intensity / a.u. ")
+        # ax.set_title(r"Simulated IR spectrum ($\Gamma$ point)")
+
+        # # ── ticks and limits ──────────────────────────────────────────────────────
+        # ax.minorticks_on()
+
+        # # Tight but safe limits
+        # xpad = 0.02 * (np.nanmax(freq_dense) - np.nanmin(freq_dense) + 1.0)
+        # ax.set_xlim(np.nanmin(freq_dense) - xpad, np.nanmax(freq_dense) + xpad)
+
+        # ymax = float(np.nanmax([np.nanmax(abs_dense), np.nanmax(abs_stick), 1e-12]))
+        # ax.set_ylim(0.0, 1.05 * ymax)
+        # ax.invert_xaxis()
+
+
+        # ax.set_axisbelow(True)  # grid behind curves/sticks
+
+        # # Major grid only (the “guiding” lines)
+        # ax.grid(True, which="major", axis="both",
+        #         linestyle="--", linewidth=0.7, alpha=0.6)
+
+        # # No minor grid (even if you use minor ticks)
+        # ax.grid(False, which="minor")
+
+        # # No grid by default (more “journal”); if you want it, keep it subtle:
+        # # ax.grid(True, ls=":", lw=0.4, alpha=0.6)
+
+        # # ── export (vector first) ────────────────────────────────────────────────
+        # fig.savefig(kwargs.get("save_path"), bbox_inches="tight")   # best for line art
+
+        # plt.close(fig)
+
         # You can add info about FWHM which I left in the attributes
         # This works only for the convolution calculation
         plt.figure(figsize=(8, 6))
-        plt.plot(self._result[1][0], self._result[1][4], color='blue')
-        plt.vlines(x=self._result[0][0], ymin=0, ymax=self._result[0][4], color='red', linestyle='-')
+        plt.plot(self._result[1][0], self._result[1][4], color='#69A6D7')
+        plt.vlines(x=self._result[0][0], ymin=0, ymax=self._result[0][4], color='#F1B960', linestyle='-')
         plt.xlabel('Frequency (cm$^{-1}$)')
         plt.ylabel('Absorbance (arb. units)')
         plt.title('Simulated IR Spectrum at Gamma Point')
@@ -966,10 +1057,11 @@ class SltPhononDispersion(_MultiProcessed):
         self._kpoints = self._slt_group["KPTS_PATH"]
 
     def _plot(self, **kwargs):
+        # import numpy as np
         # import matplotlib.pyplot as plt
         # import matplotlib as mpl
 
-        # # ── journal-style defaults (same look as your other helpers) ────────
+        # # ── journal-style defaults ────────────────────────────────────────────────
         # mpl.rcParams.update({
         #     "font.family"      : "serif",
         #     "font.size"        : 10,
@@ -985,31 +1077,89 @@ class SltPhononDispersion(_MultiProcessed):
         #     "figure.dpi"       : 300,
         # })
 
-        # # ── create canvas ───────────────────────────────────────────────────
-        # fig, ax = plt.subplots(figsize=(4.5, 4.5), constrained_layout=True)
+        # # ── broken-axis limits (adjust if you want tighter) ───────────────────────
+        # y_low_max  = 750
+        # y_high_min = 2050
 
-        # # line colour  (241,185,96) → hex #F1B960
+        # # ── helper: insert NaNs where x does not increase (break segments) ────────
+        # def break_on_nonincreasing_x(x, y, atol=1e-12):
+        #     x = np.asarray(x, dtype=float)
+        #     y = np.asarray(y, dtype=float)
+
+        #     # indices where next x is the same or smaller => would draw a vertical line
+        #     brk = np.where(np.diff(x) <= atol)[0] + 1
+        #     if brk.size == 0:
+        #         return x, y
+
+        #     # build new arrays with NaNs inserted at break positions
+        #     x2 = x
+        #     y2 = y
+        #     for idx in brk[::-1]:
+        #         x2 = np.insert(x2, idx, np.nan)
+        #         y2 = np.insert(y2, idx, np.nan)
+        #     return x2, y2
+
+        # # ── create canvas: broken y-axis (two stacked axes, shared x) ─────────────
+        # fig, (ax_top, ax_bot) = plt.subplots(
+        #     2, 1, sharex=True, figsize=(6.299, 6.299),
+        #     gridspec_kw={"height_ratios": (1, 2), "hspace": 0.05},
+        # )
+
         # line_colour = "#F1B960"
 
-        # # ── plot every phonon branch ────────────────────────────────────────
+        # # ── plot every phonon branch, but break at discontinuities ────────────────
+        # # (precompute broken x once; breaks depend only on x)
+        # x_broken, _ = break_on_nonincreasing_x(self._x, self._result[:, 0])
+
         # for mode in range(self._result.shape[1]):
-        #     ax.plot(self._x, self._result[:, mode],
-        #             lw=0.25, color=line_colour)
+        #     _, y_broken = break_on_nonincreasing_x(self._x, self._result[:, mode])
+        #     ax_bot.plot(x_broken, y_broken, lw=0.25, color=line_colour)
+        #     ax_top.plot(x_broken, y_broken, lw=0.25, color=line_colour)
 
-        # # replace "G" by Γ in labels
-        # labels = [r"$\Gamma$" if lbl == "G" else lbl for lbl in self._x_labels]
+        # # ── ticks: start from your labels, then enforce the two combined symbols ──
+        # labels = [r"$\Gamma$" if lbl == "G" else rf"$\mathrm{{{lbl}}}$" for lbl in self._x_labels]
 
-        # ax.set_xticks(self._x_coords, labels)
-        # ax.set_xlim(self._x_coords[0], self._x_coords[-1])
+        # labels[7]  = ""
+        # labels[8]  = r"$\mathrm{A}\,|\,\mathrm{L}$"
+        # labels[9]  = ""
+        # labels[10] = r"$\mathrm{M}\,|\,\mathrm{K}$"
 
-        # ax.set_xlabel("Wave-vector fraction")
-        # ax.set_ylabel(r"Frequency / $\mathrm{cm^{-1}}$")
-        # ax.set_title("Phonon dispersion")
-        # ax.grid(True, ls=":", lw=0.4)
+        # ax_bot.set_xticks(self._x_coords, labels)
+        # ax_bot.set_xlim(self._x_coords[0], self._x_coords[-1])
 
-        # # ── export & clean up ───────────────────────────────────────────────
-        # fig.savefig("/home/mikolaj/Documents/PosterECMOLS25/phonon_dispersion.png", bbox_inches="tight")
+        # # ── broken y-axis limits ──────────────────────────────────────────────────
+        # ax_bot.set_ylim(0, y_low_max)
+        # ymax = float(np.nanmax(self._result))
+        # ax_top.set_ylim(y_high_min, ymax * 1.02)
+
+        # # ── cosmetics for broken axis ─────────────────────────────────────────────
+        # ax_top.spines.bottom.set_visible(False)
+        # ax_bot.spines.top.set_visible(False)
+        # ax_top.tick_params(labelbottom=False, bottom=False)
+
+        # # diagonal break marks
+        # d = 0.008
+        # kw = dict(color="k", clip_on=False, lw=0.8)
+        # ax_top.plot((-d, +d), (-d, +d), transform=ax_top.transAxes, **kw)
+        # ax_top.plot((1 - d, 1 + d), (-d, +d), transform=ax_top.transAxes, **kw)
+        # ax_bot.plot((-d, +d), (1 - d, 1 + d), transform=ax_bot.transAxes, **kw)
+        # ax_bot.plot((1 - d, 1 + d), (1 - d, 1 + d), transform=ax_bot.transAxes, **kw)
+
+        # # ── labels / title / grid ────────────────────────────────────────────────
+        # ax_bot.set_xlabel(r"Wave vector $\mathbf{q}$ along path")          # <- corrected x-axis title
+        # ax_bot.set_ylabel(r"Frequency (cm$^{-1}$)")    # <- cleaner y-axis label
+        # ax_top.set_title("Phonon dispersion")
+
+        # for a in (ax_top, ax_bot):
+        #     a.grid(True, ls=":", lw=0.4)
+
+        # # ── export & clean up ────────────────────────────────────────────────────
+        # fig.savefig(
+        #     kwargs.get("save_path"),
+        #     bbox_inches="tight"
+        # )
         # plt.close(fig)
+
 
         plt.figure(figsize=(8, 6))
         for mode in range(self._result.shape[1]):

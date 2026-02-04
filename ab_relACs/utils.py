@@ -239,74 +239,171 @@ def multigrid_aniso(
     plot: bool = False,
     ax: mpl.axes.Axes | None = None,
     cmap: str = "viridis",
-    s: float = 8.0,
+    s: float = 3.0,
     alpha: float = 0.9,
+    save_path: str = "",
+    dpi: int = 300,
 ) -> np.ndarray:
+    """
+    Build an anisotropic half-BZ multigrid in fractional coordinates with per-point shell weights.
+    Optionally plot a publication-style 3D scatter (color = normalized weight).
+    """
     if n_ref == 1:
-        return np.asarray([[0,0,0]], dtype=np.float64), np.asarray([1], dtype=np.float64), 1
+        return (np.asarray([[0, 0, 0]], dtype=np.float64),
+                np.asarray([1], dtype=np.float64),
+                1)
 
-    grids_list = []
-    weights_list = []
-    per_shell_point_weight = []  # store unnormalized w_shell for normalization
+    grids_list: list[np.ndarray] = []
+    weights_list: list[np.ndarray] = []
+    per_shell_point_weight: list[float] = []  # store unnormalized w_shell for normalization
+    n_k = None
 
-    q_ranges.insert(0, 0.0)
-    for i_q in range(1, len(q_ranges)):
-        start_q = q_ranges[i_q]
-        end_q   = q_ranges[i_q-1]
+    # IMPORTANT: q_ranges is a Sequence; make a local mutable copy
+    q_ranges_local = list(q_ranges)
+    q_ranges_local.insert(0, 0.0)
 
-        if i_q == len(q_ranges) - 1:
+    for i_q in range(1, len(q_ranges_local)):
+        start_q = q_ranges_local[i_q]
+        end_q   = q_ranges_local[i_q - 1]
+
+        if i_q == len(q_ranges_local) - 1:
             aniso_grid, n_k = half_bz_grid_aniso(
-            b_len, n_ref, start_q, end_q, endpoint=endpoint, tol=tol, return_n_k=True)
+                b_len, n_ref, start_q, end_q,
+                endpoint=endpoint, tol=tol, return_n_k=True
+            )
         else:
             aniso_grid = half_bz_grid_aniso(
-                b_len, n_ref, start_q, end_q, endpoint=endpoint, tol=tol)
+                b_len, n_ref, start_q, end_q,
+                endpoint=endpoint, tol=tol
+            )
 
         # Half-shell volume in L∞ norm
-        vol_full = (2.0*start_q)**3 - (2.0*end_q)**3
+        vol_full = (2.0 * start_q) ** 3 - (2.0 * end_q) ** 3
         vol_half = 0.5 * vol_full
 
         N_shell = max(1, aniso_grid.shape[0])
         w_shell = vol_half / N_shell  # unnormalized per-point weight for this shell
 
-        per_shell_point_weight.append(w_shell)
+        per_shell_point_weight.append(float(w_shell))
         grids_list.append(aniso_grid)
         weights_list.append(np.full(N_shell, w_shell, dtype=float))
 
     # Concatenate
-    grid    = np.vstack(grids_list) if grids_list else np.empty((0,3))
-    weights = np.concatenate(weights_list) if weights_list else np.empty((0,))
+    grid = np.vstack(grids_list) if grids_list else np.empty((0, 3), dtype=float)
+    weights = np.concatenate(weights_list) if weights_list else np.empty((0,), dtype=float)
 
-    # Normalize so the least-dense shell has weight 1
+    # Normalize so the least-dense (coarsest) shell has weight 1
     if per_shell_point_weight:
-        w_ref = max(per_shell_point_weight)  # coarsest shell
+        w_ref = max(per_shell_point_weight)
         if w_ref > 0:
-            weights /= w_ref
+            weights = weights / w_ref
 
-    q_ranges.pop(0)
+    # If for some reason n_k wasn't set (should be set by the last shell), be safe:
+    if n_k is None:
+        n_k = int(grid.shape[0])
 
-    # Optional plotting unchanged except that 'weights' are now normalized
+    # ─────────────────────────── optional plotting ───────────────────────────
     if plot:
-        if ax is None:
-            fig = plt.figure(figsize=(6.5, 5.5), constrained_layout=True)
-            ax  = fig.add_subplot(111, projection="3d")
-        vmin, vmax = float(weights.min()), float(weights.max())
-        use_log = vmax / max(vmin, 1e-300) > 50
-        norm = LogNorm(vmin=vmin, vmax=vmax) if use_log else None
+    # Use a LOCAL rc context so other plots / user rcParams won't inflate fonts
+        pub_rc = {
+            "font.family": "serif",
+            "mathtext.fontset": "cm",
+            "font.size": 10,
+            "axes.titlesize": 11,
+            "axes.labelsize": 10,
+            "xtick.labelsize": 9,
+            "ytick.labelsize": 9,
+            "figure.dpi": 300,
+            "savefig.dpi": 300,
+        }
 
-        sc = ax.scatter(
-            grid[:,0], grid[:,1], grid[:,2],
-            c=weights, cmap=cmap, norm=norm, s=s, alpha=alpha, edgecolors="none"
-        )
-        _set_equal_3d(ax, grid[:,0], grid[:,1], grid[:,2])
-        ax.set_xlabel(r"$q_x$ (frac.)")
-        ax.set_ylabel(r"$q_y$ (frac.)")
-        ax.set_zlabel(r"$q_z$ (frac.)")
-        ax.set_title("Multigrid in fractional BZ (colour = normalized weight)")
-        cbar = plt.colorbar(sc, ax=ax, pad=0.02, shrink=0.8)
-        cbar.set_label("Normalized weight (outer=1)")
-        if ax.figure is not None:
-            ax.figure.canvas.draw_idle()
-            plt.show()
+        with mpl.rc_context(pub_rc):
+            created_fig = False
+            if ax is None:
+                fig = plt.figure(figsize=(6.299, 6.299))
+                ax = fig.add_subplot(111, projection="3d")
+                created_fig = True
+            else:
+                fig = ax.get_figure()
+
+            # Reserve space for the colorbar (3D + constrained_layout is unreliable)
+            fig.subplots_adjust(left=0.06, right=0.82, bottom=0.08, top=0.92)
+
+            vmin, vmax = float(np.nanmin(weights)), float(np.nanmax(weights))
+            safe_vmin = max(vmin, 1e-300)
+            use_log = (vmax / safe_vmin) > 50.0
+            norm = LogNorm(vmin=safe_vmin, vmax=vmax) if (use_log and vmax > 0) else None
+
+            # Clean view + spacing
+            ax.view_init(elev=18, azim=-55)
+            ax.tick_params(direction="in", which="both", pad=1, labelsize=6.5)
+
+            # Lighter panes + subtle grid (optional but looks good)
+            for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
+                try:
+                    axis.pane.set_facecolor((1, 1, 1, 0.0))
+                    axis.pane.set_edgecolor((0, 0, 0, 0.25))
+                    axis._axinfo["grid"]["linewidth"] = 0.4
+                    axis._axinfo["grid"]["linestyle"] = ":"
+                    axis._axinfo["grid"]["color"] = (0, 0, 0, 0.25)
+                except Exception:
+                    pass
+
+            sc = ax.scatter(
+                grid[:, 0], grid[:, 1], grid[:, 2],
+                c=weights, cmap=cmap, norm=norm,
+                s=s, alpha=alpha, edgecolors="none",
+                rasterized=True,  # keeps PDF size sane
+            )
+
+            _set_equal_3d(ax, grid[:, 0], grid[:, 1], grid[:, 2])
+
+            # Shorter labels + smaller pads to prevent collisions
+            ax.set_xlabel(r"$\mathbf{q}_x$ (frac.)", labelpad=6, fontsize=8)
+            ax.set_ylabel(r"$\mathbf{q}_y$ (frac.)", labelpad=6, fontsize=8)
+            ax.set_zlabel(r"$\mathbf{q}_z$ (frac.)", labelpad=6, fontsize=8)
+
+            ax.set_xlim((-0.501,0.501))
+            ax.set_ylim((-0.501,0.501))
+            ax.set_zlim((-0.501,0.501))
+
+            from matplotlib.ticker import MultipleLocator, FuncFormatter
+
+            # --- ticks every 0.1 from -0.5 to 0.5 ---
+            loc = MultipleLocator(0.25)
+
+            def clean_tick(x, pos):
+                # avoid "-0.0" and ugly float tails
+                if abs(x) < 5e-13:
+                    x = 0.0
+                return f"{x:.2f}"
+
+            fmt = FuncFormatter(clean_tick)
+
+            ax.xaxis.set_major_locator(loc)
+            ax.yaxis.set_major_locator(loc)
+            ax.zaxis.set_major_locator(loc)
+
+            ax.xaxis.set_major_formatter(fmt)
+            ax.yaxis.set_major_formatter(fmt)
+            ax.zaxis.set_major_formatter(fmt)
+
+            ax.set_title("Anisotropic Multigrid in fractional BZ", pad=3, fontsize=10)
+
+            # Colorbar placed in reserved right margin
+            cbar = fig.colorbar(sc, ax=ax, pad=0.03, fraction=0.05, shrink=0.75, aspect=25)
+            cbar.ax.tick_params(labelsize=8, direction="in", length=3)
+            cbar.set_label(
+                "Normalized weight",
+                fontsize=9, labelpad=10
+            )
+
+            if created_fig:
+                fig.canvas.draw_idle()
+                plt.show()
+
+            if save_path and created_fig:
+                fig.savefig(save_path, dpi=dpi, bbox_inches=None)
 
     return grid, weights, n_k
 
@@ -371,5 +468,96 @@ def make_npoints_fwhm_orient_filename(
     )
     return str(p.with_name(new_name))
 
+
+def make_wdos_path(base: str, *, n_points: int, field: float, orientation: np.ndarray,
+                    suffix: str = ".pdf") -> str:
+    """
+    If base is a file path -> keep its extension and use it as stem.
+    If base is a directory -> create a file there with default name.
+    """
+    base_p = Path(base)
+    if base_p.suffix:
+        parent = base_p.parent
+        stem   = base_p.stem
+        suffix = base_p.suffix
+    else:
+        parent = base_p
+        stem   = "spinphonon_wdos"
+
+    ox, oy, oz = float(orientation[0]), float(orientation[1]), float(orientation[2])
+    fname = f"{stem}_np{int(n_points)}_H{field:.6g}_ori{ox:.6f}_{oy:.6f}_{oz:.6f}{suffix}"
+    return str(parent / fname)
+
+
+def make_energy_lines_from_levels(
+    energies_cm1: np.ndarray,
+    *,
+    modes_low: float,
+    modes_high: float,
+    tol: float = 1e-6,
+    max_lines: int = 40,
+    A: np.ndarray | None = None,
+    dipole_thresh: float = 0.0,
+) -> np.ndarray:
+    """
+    Build guide lines for DOS plots as spin transition energies |E_a - E_b| in cm^-1.
+
+    - energies_cm1: 1D eigenvalues (already including the DC field), in cm^-1
+    - A: optional operator matrix in the same eigenbasis (e.g. magnetic dipole component);
+         if provided, keep only transitions with |A_ab| > dipole_thresh
+    - modes_low/modes_high: keep only lines inside the plotted DOS window
+    - tol: merge nearly identical lines (degeneracy / numerical noise)
+    - max_lines: cap the number of lines (pick strongest if A provided, else lowest)
+    """
+
+    E = np.asarray(energies_cm1, dtype=float).copy()
+    # shift does not matter for gaps; but helps numerical stability
+    E -= E.min()
+
+    n = E.size
+    # upper-triangular pairwise gaps
+    dE = np.abs(E[:, None] - E[None, :])
+    iu = np.triu_indices(n, k=1)
+    gaps = dE[iu]
+
+    # keep only within DOS range
+    mask = (gaps >= modes_low) & (gaps <= modes_high) & (gaps > tol)
+    gaps = gaps[mask]
+
+    if gaps.size == 0:
+        return np.asarray([], dtype=float)
+
+    # optional: rank by magnetic activity (|A_ab|^2) if A provided
+    if A is not None:
+        A = np.asarray(A)
+        strength = np.abs(A[iu])**2
+        strength = strength[mask]
+        # sort by strength desc
+        order = np.argsort(-strength)
+        gaps = gaps[order]
+        strength = strength[order]
+        # apply threshold if requested
+        if dipole_thresh > 0.0:
+            keep = np.abs(A[iu])[mask][order] > dipole_thresh
+            gaps = gaps[keep]
+            strength = strength[keep]
+    else:
+        # sort by increasing energy
+        gaps = np.sort(gaps)
+
+    # merge nearly equal gaps (within tol)
+    uniq = []
+    for x in gaps:
+        if not uniq or abs(x - uniq[-1]) > tol:
+            uniq.append(float(x))
+        # stop early if we already have many and we're in increasing order
+        if A is None and len(uniq) >= max_lines:
+            break
+
+    # if A-based ranking, take top max_lines after merging
+    if len(uniq) > max_lines:
+        uniq = uniq[:max_lines]
+
+    return np.asarray(uniq, dtype=float)
 
         

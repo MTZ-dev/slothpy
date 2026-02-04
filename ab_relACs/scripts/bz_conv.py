@@ -281,96 +281,70 @@ def run_batch(runner_prefix: str,
         after = {p.name for p in chi_dir.iterdir() if p.is_file()}
         new_names = sorted(after - before)
 
-        # Filter to stems starting with base stem, containing both tokens
-        new_paths = [chi_dir / n for n in new_names if n.startswith(stem_prefix)]
-        if not new_paths:
-            raise FileNotFoundError("No new chi CSVs detected for this batch.")
+        # Only consider chi-like outputs produced by this run.
+        # Use ONE canonical extension to avoid duplicates (.dat in your example).
+        new_all = [
+            chi_dir / n for n in new_names
+            if n.startswith(stem_prefix)
+            and n.endswith(".dat")
+        ]
 
-        if dos_dir:
-            after_dos = {p.name for p in dos_dir.iterdir() if p.is_file()}
-            new_dos = sorted(after_dos - before_dos)
-            dos_paths = [dos_dir / n for n in new_dos if n.startswith(dos_stem)]
-            for p in dos_paths:
-                s = p.stem
-                if "_npoints_" not in s or "_fwhm_" not in s:
-                    continue
-                try:
-                    n_val = int(s.split("_npoints_")[1].split("_")[0])
-                except Exception:
-                    continue
-                # We batch single fwhm; assign the batch value
-                f_curr = float(fwhm_batch[0]) if fwhm_batch else None
-                if f_curr is None:
-                    continue
-                freq, conv = read_dos_csv(p)
-                if dos_sink is not None:
-                    dos_sink.append(DosCurve(fwhm=f_curr, n_points=n_val, freq=freq, conv=conv))
-                if cleanup_csv:
-                    try:
-                        p.unlink()
-                    except Exception as e:
-                        print(f"[WARN] Could not delete DOS {p}: {e}")
-                        
-        # Build records per file by extracting n_points & fwhm tokens from filename
-        # Expected tokens contain `_npoints_` and `_fwhm_`. We'll be permissive with fwhm formatting.
-        recs: List[RunRecord] = []
-        for p in new_paths:
+        if not new_all:
+            raise FileNotFoundError("No new chi outputs detected for this batch.")
+
+        # Parse and deduplicate by (fwhm, n_points)
+        f_val = float(fwhm_batch[0]) if fwhm_batch else None
+        if f_val is None:
+            raise RuntimeError("Empty fwhm_batch is not supported here.")
+
+        recs_by_key: dict[tuple[float, int], RunRecord] = {}
+
+        for p in new_all:
             s = p.stem
-            if "_npoints_" not in s or "_fwhm_" not in s or "no_chit" in s:
+            if "_npoints_" not in s or "_fwhm_" not in s or "_no_chit" not in s:
                 if cleanup_csv:
                     try:
                         p.unlink()
                     except Exception as e:
-                        print(f"[WARN] Could not delete {p}: {e}")
+                        print(f"[WARN] Could not delete non-matching file {p}: {e}")
                 continue
+
             try:
-                # npoints
-                n_str = s.split("_npoints_")[1].split("_")[0]
-                n_val = int(n_str)
-                # fwhm (read token but we don't rely on exact float formatting for matching)
-                f_token = s.split("_fwhm_")[1].split("_")[0]
+                n_val = int(s.split("_npoints_")[1].split("_")[0])
             except Exception:
+                if cleanup_csv:
+                    try:
+                        p.unlink()
+                    except Exception:
+                        pass
                 continue
 
             peak = read_peak_from_csv(p)
-            recs.append(RunRecord(
-                fwhm=None,  # fill below by best match
-                n_points=n_val,
-                f_peak=peak.f_peak,
-                log10_f=peak.log10_f,
-                thr_log10=peak.thr_log10,
-            ))
+
+            key = (f_val, n_val)
+            if key in recs_by_key:
+                pass # print(f"[WARN] Duplicate real output for fwhm={f_val:g}, n_points={n_val}: ignoring {p.name}")
+            else:
+                recs_by_key[key] = RunRecord(
+                    fwhm=f_val,
+                    n_points=n_val,
+                    f_peak=peak.f_peak,
+                    log10_f=peak.log10_f,
+                    thr_log10=peak.thr_log10,
+                )
+
             if cleanup_csv:
                 try:
                     p.unlink()
                 except Exception as e:
                     print(f"[WARN] Could not delete {p}: {e}")
 
-        # Assign fwhm to each record using the batch list and filename token presence.
-        # If multiple fwhm in batch, each file name should include the fwhm token (string).
-        # We'll match by presence of stringified fwhm in filename in a tolerant way.
-        assigned: List[RunRecord] = []
-        for r in recs:
-            matched_f: Optional[float] = None
-            # search again – cheap & safe: use stem of path we just deleted? Keep stems first:
-        # Recreate new_paths mapping because we might have deleted files
-        for p in [chi_dir / n for n in new_names if n.startswith(stem_prefix)]:
-            s = p.stem
-            # collect, but some may be removed; ignore if missing
-        # Better approach: re-parse directly while still present above; already did.
-        # Assign by nearest fwhm comparing log10(f_token) if numeric, else fallback to single batch value.
-        for r in recs:
-            if len(fwhm_batch) == 1:
-                r.fwhm = float(fwhm_batch[0])
-            else:
-                # try to parse fwhm token from filename-like pattern we already used (approximate)
-                # Not perfect across arbitrary formatting; as a fallback, assign closest by peak similarity per fwhm.
-                # But simpler: we cannot reconstruct file stem here (we deleted). Assign by best guess: all fwhm in batch.
-                # Practical compromise: assign None here and let caller group by 'None'—but we need fwhm for loops.
-                # Safer: don't delete before assigning; fix above: move unlink to after we assign.
-                pass  # will never hit because we won't batch fwhm by default unless user asks
+        recs = list(recs_by_key.values())
+        if not recs:
+            raise FileNotFoundError("No parsable chi outputs found (after filtering).")
 
         return recs
+
 
 def recheck_tail_for_new_fwhm(
     runner_prefix: str,

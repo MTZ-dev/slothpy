@@ -133,12 +133,115 @@ class InpSpinPhonon(BaseModel):
     orca_fragovl_path: str = ""
     displacement_number: int = 0
     step: float = 0.0
+
+from typing import Optional
+
+class InpWeightedDOS(BaseModel):
+    model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
+
+    # Histogram / DOS construction
+    resolution: int = 2000
+    density: bool = False
+
+    # Convolution of histogram to smooth curve
+    # Use None to disable convolution
+    convolution: Optional[str] = "gaussian"   # None / "gaussian" / "lorentzian"
+    fwhm: float = 10.0                        # cm^-1 (for convolution curve)
+
+    # Spin–phonon coupling weight definition
+    weight_mode: str = "fro_offdiag"          # "fro", "fro_offdiag", "thermal_sym", "thermal_offdiag"
+    temperature: Optional[float] = None       # required for thermal_* modes
+
+    # Frequency handling on the DOS axis
+    dos_freq: str = "raw"                     # "raw" or "abs"
+    eps_freq_cm1: float = 1e-12               # protects 1/sqrt(0) in Y construction
+
+    # Plot controls
+    save_path: Optional[str] = None
+    show: bool = True
+    title: str = "Spin--phonon weighted phonon DOS"
+    energy_lines: np.ndarray | List[float] | str | float | int = Field(default_factory=list)
+
+    # ---------------- validators ----------------
+
+    @field_validator("resolution")
+    @classmethod
+    def _check_resolution(cls, v):
+        if v < 10:
+            raise ValueError("resolution must be >= 10")
+        return int(v)
+
+    @field_validator("convolution")
+    @classmethod
+    def _check_convolution(cls, v):
+        if v is None:
+            return None
+        v = str(v).strip().lower()
+        if v in ("none", "null"):
+            return None
+        if v not in ("gaussian", "lorentzian"):
+            raise ValueError("convolution must be None, 'gaussian', or 'lorentzian'")
+        return v
+
+    @field_validator("dos_freq")
+    @classmethod
+    def _check_dos_freq(cls, v):
+        v = str(v).strip().lower()
+        if v not in ("raw", "abs"):
+            raise ValueError("dos_freq must be 'raw' or 'abs'")
+        return v
+
+    @field_validator("weight_mode")
+    @classmethod
+    def _check_weight_mode(cls, v):
+        v = str(v).strip().lower()
+        allowed = ("fro", "fro_offdiag", "thermal_sym", "thermal_offdiag")
+        if v not in allowed:
+            raise ValueError(f"weight_mode must be one of {allowed}")
+        return v
+
+    @model_validator(mode="after")
+    def _check_thermal_requires_temperature(self):
+        if self.weight_mode.startswith("thermal") and self.temperature is None:
+            raise ValueError("temperature must be set when weight_mode is thermal_*")
+        return self
+
+    @field_validator("fwhm", "eps_freq_cm1")
+    @classmethod
+    def _check_positive(cls, v, info):
+        v = float(v)
+        if v <= 0.0:
+            raise ValueError(f"{info.field_name} must be > 0")
+        return v
+
+    @field_validator("energy_lines", mode="before")
+    @classmethod
+    def _coerce_energy_lines(cls, v):
+        # Accept: [], scalar, list, np.array, or "np.linspace(...)" etc.
+        if v is None:
+            return np.asarray([], dtype=float)
+        if isinstance(v, (int, float, np.integer, np.floating)):
+            return np.asarray([v], dtype=float)
+        if isinstance(v, np.ndarray):
+            return v.astype(float, copy=False).ravel()
+        if isinstance(v, str) and v.strip().startswith("np."):
+            arr = eval_numpy_expr(v)
+            return _to_ndarray(arr, dtype=float).ravel()
+        return _to_ndarray(v, dtype=float).ravel()
+
+    @field_serializer("energy_lines")
+    def _serialize_energy_lines(self, v):
+        if isinstance(v, np.ndarray):
+            return v.tolist()
+        return v
+
         
 class AppConfig(BaseModel):
     relacs: InpRelacs = Field(default_factory=InpRelacs)
     supercell: InpSupercell = Field(default_factory=InpSupercell)
     hessian: InpHessian = Field(default_factory=InpHessian)
     spin_phonon: InpSpinPhonon = Field(default_factory=InpSpinPhonon)
+    weighted_dos: InpWeightedDOS = Field(default_factory=InpWeightedDOS)
 
     @model_validator(mode="after")
     def _post(self):

@@ -31,6 +31,8 @@ from llvmlite import ir as llir
 from llvmlite import binding as llvm
 from llvmlite.ir import IRBuilder
 
+from tqdm import tqdm
+
 from slothpy._general_utilities._constants import H_CM_1, AU_BOHR_CM_1, MU_B_CM_3, B_AU_T
 from constants import KB, H, H_BAR, S_TIME_PS, M_AU
 
@@ -1220,3 +1222,273 @@ def susceptibility_relax_time(
                     solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[3], chi_isothermal, chi_adiabatic, eye, False)
 
     return chi_T, relax_time_R21_T, relax_time_R41_T
+
+
+def _gauss_kernel(x, x0, sigma):
+    dx = (x - x0) / sigma
+    return np.exp(-0.5 * dx * dx) / (sigma * np.sqrt(2.0 * np.pi))
+
+def _lorentz_kernel(x, x0, gamma):
+    return (gamma / np.pi) / ((x - x0) ** 2 + gamma ** 2)
+
+
+def plot_spinphonon_weighted_phonon_dos(
+    # --- phonons + spin-phonon coupling inputs ---
+    E: np.ndarray,
+    H_grad: np.ndarray,
+    hessian: np.ndarray,
+    masses_inv_sqrt: np.ndarray,
+    dof_array: np.ndarray,
+    grid: np.ndarray,
+    weights: np.ndarray,
+    n_k: int,
+    states_number: int,
+    # --- NEW: mode window (cm^-1) ---
+    modes_low: float,
+    modes_high: float,
+    # --- DOS controls ---
+    resolution: int = 2000,
+    convolution: str | None = "gaussian",   # None / "gaussian" / "lorentzian"
+    fwhm: float = 10.0,                     # cm^-1 (for convolution curve)
+    density: bool = False,
+    # --- weighting controls ---
+    weight_mode: str = "fro_offdiag",       # "fro", "fro_offdiag", "thermal_sym", "thermal_offdiag"
+    temperature: float | None = None,       # required for thermal_* modes
+    # --- frequency handling ---
+    dos_freq: str = "raw",                  # "raw" or "abs"
+    eps_freq_cm1: float = 1e-12,            # prevents 1/sqrt(0) in get_Y_q
+    # --- plot controls ---
+    save_path: str | None = None,
+    show: bool = True,
+    energy_lines=None,
+    title: str = "Spin--phonon weighted phonon DOS",
+):
+    """
+    Compute and plot a phonon DOS weighted by spin–phonon coupling strength,
+    restricted to modes_low <= omega <= modes_high (in cm^-1).
+    """
+
+    # ---------- setup ----------
+    if modes_high <= modes_low:
+        raise ValueError("Require modes_high > modes_low (both in cm^-1).")
+
+    N = int(states_number)
+    E = np.asarray(E[:N], dtype=np.float64)
+    H_grad = np.asarray(H_grad, dtype=np.complex128)[:, :N, :N]
+    dof_array = np.asarray(dof_array, dtype=np.int64)
+    masses_inv_sqrt = np.asarray(masses_inv_sqrt, dtype=np.float64)
+
+    masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
+    n_k_inv = 1.0 / np.sqrt(float(n_k))
+
+    # Thermal weights if requested
+    if weight_mode.startswith("thermal"):
+        if temperature is None:
+            raise ValueError("temperature must be provided for thermal_* weight_mode.")
+        beta = 1.0 / (KB * float(temperature))
+        p = np.exp(-beta * (E - E.min()))
+        p /= p.sum()
+        P_sym = 0.5 * (p[:, None] + p[None, :])
+    else:
+        p = None
+        P_sym = None
+
+    freq_transform = _make_freq_transform(dos_freq)
+    reduce_W, p, P_sym = _make_weight_reducer(weight_mode, E, temperature)
+
+    all_freq = []
+    all_wts  = []
+
+    for i in tqdm(range(grid.shape[0])):   # no tqdm
+        q = grid[i]
+        wq_weight = float(weights[i])
+
+        Dq = _build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q)
+        freq, modes = frequencies_eigenvectors(Dq)
+        freq_cm1 = np.asarray(freq, dtype=np.float64) * AU_BOHR_CM_1
+        modes = np.asarray(modes, dtype=np.complex128)
+
+        freq_dos_all = freq_transform(freq_cm1)
+
+        mask = (freq_dos_all >= modes_low) & (freq_dos_all <= modes_high)
+        if not np.any(mask):
+            continue
+        idx = np.where(mask)[0]
+
+        freq_dos = freq_dos_all[idx]
+        freq_cm1_sel = freq_cm1[idx]
+        modes_sel = np.ascontiguousarray(modes[:, idx])
+
+        freq_for_Y = np.abs(freq_cm1_sel)
+        freq_for_Y = np.where(freq_for_Y > eps_freq_cm1, freq_for_Y, eps_freq_cm1)
+
+        Yb = np.zeros((freq_for_Y.size, N, N), dtype=np.complex128)
+        get_Y_q(Yb, H_grad, modes_sel, q, dof_array, masses_inv_sqrt, n_k_inv, freq_for_Y)
+
+        absY2 = (Yb.real * Yb.real) + (Yb.imag * Yb.imag)
+        W = reduce_W(absY2)
+
+        all_freq.extend(freq_dos.tolist())
+        all_wts.extend((wq_weight * W).tolist())
+
+
+    all_freq = np.asarray(all_freq, dtype=np.float64)
+    all_wts  = np.asarray(all_wts,  dtype=np.float64)
+
+    if all_freq.size == 0:
+        raise RuntimeError("No modes found in the requested [modes_low, modes_high] window.")
+
+    # ---------- histogram (restricted range) ----------
+    fmin = float(modes_low)
+    fmax = float(modes_high)
+    # small padding like your existing code, but keep inside the window feel
+    pad = (fmax - fmin) / max(resolution, 1)
+    fmin_plot = fmin - pad
+    fmax_plot = fmax + pad
+
+    hist, bin_edges = np.histogram(
+        all_freq,
+        bins=int(resolution),
+        range=(fmin_plot, fmax_plot),
+        density=bool(density),
+        weights=all_wts
+    )
+
+    hist_norm = hist / hist.max() if hist.max() > 0 else hist
+
+    # ---------- convolution curve ----------
+    if convolution is None:
+        result = (bin_edges, hist_norm)
+        freq_range = None
+        conv_norm = None
+    else:
+        centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+        freq_range = np.linspace(fmin_plot, fmax_plot, int(resolution), dtype=np.float64)
+
+        if convolution.lower() == "gaussian":
+            sigma = float(fwhm) / (2.0 * np.sqrt(2.0 * np.log(2.0)))
+            conv = np.zeros_like(freq_range)
+            for x0, a0 in zip(centers, hist_norm):
+                conv += a0 * _gauss_kernel(freq_range, x0, sigma)
+
+        elif convolution.lower() == "lorentzian":
+            gamma = float(fwhm) / 2.0
+            conv = np.zeros_like(freq_range)
+            for x0, a0 in zip(centers, hist_norm):
+                conv += a0 * _lorentz_kernel(freq_range, x0, gamma)
+
+        else:
+            raise ValueError("convolution must be None, 'gaussian', or 'lorentzian'.")
+
+        conv_norm = conv / conv.max() if conv.max() > 0 else conv
+        result = (bin_edges, hist_norm, freq_range, conv_norm)
+
+    # ---------- plot ----------
+    if save_path is not None or show:
+        import matplotlib.pyplot as plt
+        import matplotlib as mpl
+        from numpy import diff
+
+        mpl.rcParams.update({
+            "font.family"      : "serif",
+            "font.size"        : 12,
+            "mathtext.fontset" : "cm",
+            "axes.labelsize"   : 12,
+            "axes.titlesize"   : 12,
+            "xtick.direction"  : "in",
+            "ytick.direction"  : "in",
+            "xtick.top"        : True,
+            "ytick.right"      : True,
+            "axes.spines.right": True,
+            "axes.spines.top"  : True,
+            "figure.dpi"       : 300,
+        })
+
+        fig, ax = plt.subplots(figsize=(6.299, 4.1993), constrained_layout=True)
+
+        ax.bar(
+            bin_edges[:-1],
+            hist_norm,
+            width=diff(bin_edges),
+            color="#F1B960",
+            edgecolor="#F1B960",
+            alpha=0.75,
+            rasterized=True,
+        )
+
+        if convolution is not None:
+            ax.plot(freq_range, conv_norm, color="#69A6D7", linewidth=0.9)
+
+        ax.set_xlim(fmin, fmax)
+        ax.set_xlabel(r"Frequency / cm$^{-1}$")
+        ax.set_ylabel(r"Weighted DOS / a.u.")
+        tinfo = f", T={temperature:.1f} K" if (weight_mode.startswith("thermal") and temperature is not None) else ""
+        ax.set_title(f"{title} ({weight_mode}{tinfo})")
+        ax.grid(True, linestyle="--", alpha=0.5)
+
+        if energy_lines is not None:
+            for x0 in energy_lines:
+                ax.axvline(x=float(x0), color="sienna", lw=1.2, alpha=1.0, zorder=10000)
+
+        if save_path is not None:
+            fig.savefig(save_path, bbox_inches="tight")
+        if show:
+            plt.show()
+        plt.close(fig)
+
+    return result
+
+
+import numpy as np
+
+def _make_freq_transform(dos_freq: str):
+    dos_freq = str(dos_freq).strip().lower()
+    if dos_freq == "abs":
+        return lambda x: np.abs(x)
+    if dos_freq == "raw":
+        return lambda x: x
+    raise ValueError("dos_freq must be 'raw' or 'abs'.")
+
+def _make_weight_reducer(weight_mode: str, E: np.ndarray, temperature: float | None):
+    """
+    Returns:
+      reduce_W(absY2) -> 1D array W_j
+      (p, P_sym)      -> maybe needed elsewhere (optional)
+    absY2 shape: (Jm, N, N)
+    """
+    wm = str(weight_mode).strip().lower()
+    N = E.size
+
+    if wm in ("fro", "fro_offdiag"):
+        if wm == "fro":
+            def reduce_W(absY2):
+                return absY2.sum(axis=(1, 2))
+        else:
+            def reduce_W(absY2):
+                diag = np.diagonal(absY2, axis1=1, axis2=2)  # (Jm, N)
+                return absY2.sum(axis=(1, 2)) - diag.sum(axis=1)
+        return reduce_W, None, None
+
+    # thermal modes
+    if temperature is None:
+        raise ValueError("temperature must be provided for thermal_* weight_mode.")
+    beta = 1.0 / (KB * float(temperature))
+    p = np.exp(-beta * (E - E.min()))
+    p /= p.sum()
+    P_sym = 0.5 * (p[:, None] + p[None, :])
+
+    if wm == "thermal_sym":
+        def reduce_W(absY2):
+            return (absY2 * P_sym[None, :, :]).sum(axis=(1, 2))
+        return reduce_W, p, P_sym
+
+    if wm == "thermal_offdiag":
+        def reduce_W(absY2):
+            diag = np.diagonal(absY2, axis1=1, axis2=2)  # (Jm, N)
+            return (absY2 * P_sym[None, :, :]).sum(axis=(1, 2)) - (diag * p[None, :]).sum(axis=1)
+        return reduce_W, p, P_sym
+
+    raise ValueError("weight_mode must be one of: fro, fro_offdiag, thermal_sym, thermal_offdiag")
+
+
+

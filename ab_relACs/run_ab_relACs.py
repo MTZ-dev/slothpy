@@ -27,11 +27,11 @@ from slothpy._general_utilities._constants import H_CM_1, B_AU_T
 from input_models import AppConfig
 from lattice import get_hessian_recip_axes_masses_inv_sqrt_spin_phonon
 from spin_system import get_hamiltonian_magnetic_momenta_dof_array, get_chi_T, get_chi_S
-from utils import get_normalized_orientations_weights, dot_3d, multigrid_aniso, make_npoints_fwhm_filename, make_npoints_fwhm_orient_filename, int_vector_proportional_to_weights
+from utils import get_normalized_orientations_weights, dot_3d, multigrid_aniso, make_npoints_fwhm_filename, make_npoints_fwhm_orient_filename, make_wdos_path, make_energy_lines_from_levels
 from spin_phonon import spin_phonon_derivatives
-from susceptibility_relax import susceptibility_relax_time
+from susceptibility_relax import susceptibility_relax_time, plot_spinphonon_weighted_phonon_dos
 from constants import T_FILED_OE
-from exporting import export_susceptibility_csv, export_tau_csv, export_dos_csv
+from exporting import export_susceptibility_csv, export_tau_csv
 from plotting import plot_chi_vs_freq, plot_tau_vs_inv_T
 
 def run_relacs(cfg: AppConfig):
@@ -65,6 +65,91 @@ def run_relacs(cfg: AppConfig):
     sus_orient_H_T = np.zeros((4,n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0], omega_angular.shape[0]), dtype=np.complex128)
     tau_R21_orient_H_T = np.zeros((n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0]), dtype=np.float64)
     tau_R41_orient_H_T = np.zeros((n_points_array.shape[0],fwhm_array.shape[0],orientations.shape[0],fields.shape[0],temperatures.shape[0]), dtype=np.float64)
+
+    # ---- DOS-only shortcut -------------------------------------------------
+    dos_cfg = cfg.weighted_dos
+    run_only_wdos = (dos_cfg is not None) and bool(dos_cfg.save_path)
+
+    if run_only_wdos:
+        dos_temperature = dos_cfg.temperature
+        if dos_cfg.weight_mode.startswith("thermal") and dos_temperature is None:
+            dos_temperature = float(temperatures[0])
+
+        for orientation_index, orientation in enumerate(orientations):
+            oriented_momenta = dot_3d(magnetic_momenta, orientation)
+
+            for field_index, field in enumerate(fields):
+                field_vector = field * orientation
+
+                hamiltonian_total = hamiltonian - dot_3d(magnetic_momenta, field_vector)
+                energies_total, U_total = np.linalg.eigh(hamiltonian_total)
+
+                hamiltonian_gradients = spin_phonon_derivatives(
+                    dof_array, field_vector, energies_total, U_total, cfg
+                )
+
+                energies_total_cm1 = energies_total * H_CM_1
+
+                energy_lines_auto = make_energy_lines_from_levels(
+                    energies_total_cm1[:states_number],
+                    modes_low=cfg.relacs.modes_low,
+                    modes_high=cfg.relacs.modes_high,
+                    tol=cfg.relacs.degeneracy_tolerance,
+                    max_lines=50,                     
+                    )
+
+                for n_points in n_points_array:
+                    grid_q, w_q, n_k = multigrid_aniso(recip_axes, int(n_points), cfg.relacs.q_ranges)
+
+                    save_path = make_wdos_path(
+                        dos_cfg.save_path,
+                        n_points=int(n_points),
+                        field=float(field),
+                        orientation=orientation,
+                        suffix=".pdf"
+                    )
+
+                    energy_lines = (
+                        energy_lines_auto
+                        if (len(dos_cfg.energy_lines) == 0)
+                        else dos_cfg.energy_lines
+                        )
+
+                    plot_spinphonon_weighted_phonon_dos(
+                        E=energies_total_cm1,
+                        H_grad=hamiltonian_gradients,
+                        hessian=hessian,
+                        masses_inv_sqrt=masses_inv_sqrt,
+                        dof_array=dof_array,
+                        grid=grid_q,
+                        weights=w_q,
+                        n_k=n_k,
+                        states_number=states_number,
+
+                        modes_low=cfg.relacs.modes_low,
+                        modes_high=cfg.relacs.modes_high,
+
+                        resolution=dos_cfg.resolution,
+                        convolution=dos_cfg.convolution,
+                        fwhm=dos_cfg.fwhm,
+                        density=dos_cfg.density,
+
+                        weight_mode=dos_cfg.weight_mode,
+                        temperature=dos_temperature,
+
+                        dos_freq=dos_cfg.dos_freq,
+                        eps_freq_cm1=dos_cfg.eps_freq_cm1,
+
+                        save_path=save_path,
+                        show=bool(dos_cfg.show),
+                        energy_lines=energy_lines,
+                        title=dos_cfg.title,
+                    )
+
+
+        end = time.perf_counter()
+        print(f"Weighted DOS-only runtime: {end - start} s")
+        return
     
     for orientation_index, orientation in enumerate(orientations):
         oriented_momenta = dot_3d(magnetic_momenta, orientation)
@@ -83,13 +168,6 @@ def run_relacs(cfg: AppConfig):
             for n_points_index, n_points in enumerate(n_points_array):
                 grid, weights, n_k = multigrid_aniso(recip_axes, n_points, cfg.relacs.q_ranges)
                 for fwhm_index, fwhm in enumerate(fwhm_array):
-                    if cfg.hessian.dos:
-                        weights_int = int_vector_proportional_to_weights(weights)
-                        _, bin_edges, hist, frequency_range, convolution = hessian_group.phonon_density_of_states(
-                            grid, modes_low, modes_high, int((modes_high-modes_low)/fwhm*3000), cfg.relacs.broadening, fwhm, threads, 1,
-                            weights=weights_int).eval()
-                        save_filepath = make_npoints_fwhm_filename(cfg.hessian.dos, n_points, fwhm)
-                        export_dos_csv(frequency_range, convolution, save_filepath)
                     if kind == 1:
                         gamma_fwhm = fwhm / (2 * np.sqrt(2*np.log(2)))
                     elif kind == 0:

@@ -16,7 +16,7 @@
 
 [relacs]
 slt_filepath = "/home/mikolaj/Sloth/Sloth/seminarium/import.slt"
-number_cpus = 32
+number_cpus = 64
 
 orientations = [[-0.0309986,-0.0095673,-0.9994736,1.0]] # [[-0.2357376,0.9718147,-0.0019912,0.333333333333],[0.9713222,0.2355518,-0.0323803,0.333333333333],[-0.0309986,-0.0095673,-0.9994736,0.333333333333]] # [[-0.0309986,-0.0095673,-0.9994736,1.0]] # [[-0.2357376,0.9718147,-0.0019912,0.333333333333],[0.9713222,0.2355518,-0.0323803,0.333333333333],[-0.0309986,-0.0095673,-0.9994736,0.333333333333]] # [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]] #
 fields = [0.3] # [0.02,0.03,0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8,1,2] # [0.001] 30 10 ^3 or [0.003] 35 10^3
@@ -30,19 +30,19 @@ initial_correlation = false
 omega_loop = false
 chi_s = false
 
-n_points = [10,11,12,13] # 5,6,7,8 good
+n_points = [4] # 5,6,7,8 good
 q_ranges = [0.001,0.005,0.025,0.5]
 broadening = "gaussian" # "lorentzian" #
-fwhm = [5]
+fwhm = [10]
 adaptive_fwhm = false
 modes_low = 1e-3
-modes_high = 100
-cutoff_fwhm = 200000 # 2.59443 # 3.52144 # 2.43362 # 2.07729 # 3.15984 # 2.43362
+modes_high = 200
+cutoff_fwhm = 20000000 # 2.59443 # 3.52144 # 2.43362 # 2.07729 # 3.15984 # 2.43362
 direct = true
 
 chi_csv_path = "" # "/home/mikolaj/Sloth/Sloth/seminarium/ac_Tb_whatever_pubases.dat"
 tau_21_csv_path = "" # "/home/mikolaj/Sloth/Sloth/seminarium/tau_R21_Tb_whatever_pubases.dat"
-tau_41_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/tau_R41_Tb_whatever_raman_1.dat" # "/home/mikolaj/Sloth/Sloth/seminarium/tau_R41_Tb_3000_whatever_r.dat"
+tau_41_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/tau_R41_Tb_whatever_raman_4.dat" # "/home/mikolaj/Sloth/Sloth/seminarium/tau_R41_Tb_3000_whatever_r.dat"
 show_plot = true
 
 [supercell]

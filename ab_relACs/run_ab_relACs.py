@@ -105,7 +105,7 @@ def run_relacs(cfg: AppConfig):
                         dos_cfg.save_path,
                         n_points=int(n_points),
                         field=float(field),
-                        orientation=orientation,
+                        orientation=orientation * B_AU_T,
                         suffix=".pdf"
                     )
 
@@ -115,36 +115,38 @@ def run_relacs(cfg: AppConfig):
                         else dos_cfg.energy_lines
                         )
 
-                    plot_spinphonon_weighted_phonon_dos(
-                        E=energies_total_cm1,
-                        H_grad=hamiltonian_gradients,
-                        hessian=hessian,
-                        masses_inv_sqrt=masses_inv_sqrt,
-                        dof_array=dof_array,
-                        grid=grid_q,
-                        weights=w_q,
-                        n_k=n_k,
-                        states_number=states_number,
+                    with threadpool_limits(1):
+                        plot_spinphonon_weighted_phonon_dos(
+                            E=energies_total_cm1,
+                            H_grad=hamiltonian_gradients,
+                            hessian=hessian,
+                            masses_inv_sqrt=masses_inv_sqrt,
+                            dof_array=dof_array,
+                            grid=grid_q,
+                            weights=w_q,
+                            n_k=n_k,
+                            states_number=states_number,
+                            threads=threads,
 
-                        modes_low=cfg.relacs.modes_low,
-                        modes_high=cfg.relacs.modes_high,
+                            modes_low=cfg.relacs.modes_low,
+                            modes_high=cfg.relacs.modes_high,
 
-                        resolution=dos_cfg.resolution,
-                        convolution=dos_cfg.convolution,
-                        fwhm=dos_cfg.fwhm,
-                        density=dos_cfg.density,
+                            resolution=dos_cfg.resolution,
+                            convolution=dos_cfg.convolution,
+                            fwhm=dos_cfg.fwhm,
+                            density=dos_cfg.density,
 
-                        weight_mode=dos_cfg.weight_mode,
-                        temperature=dos_temperature,
+                            weight_mode=dos_cfg.weight_mode,
+                            temperature=dos_temperature,
 
-                        dos_freq=dos_cfg.dos_freq,
-                        eps_freq_cm1=dos_cfg.eps_freq_cm1,
+                            dos_freq=dos_cfg.dos_freq,
+                            eps_freq_cm1=dos_cfg.eps_freq_cm1,
 
-                        save_path=save_path,
-                        show=bool(dos_cfg.show),
-                        energy_lines=energy_lines,
-                        title=dos_cfg.title,
-                    )
+                            save_path=save_path,
+                            show=bool(dos_cfg.show),
+                            energy_lines=energy_lines,
+                            title=dos_cfg.title,
+                        )
 
 
         end = time.perf_counter()

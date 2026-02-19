@@ -281,6 +281,13 @@ def get_Y_q(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, numb
             Y_q[j] += (1 / np.sqrt(freq[j]/H_CM_1)) * H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * 1/np.sqrt(M_AU) * number_of_kpoints_inv_sqrt * np.exp(-2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
+def get_Y_q_no_freq(Y_q, H_grad, normal_modes, k_point, dof_array, masses_inv_sqrt, number_of_kpoints_inv_sqrt):
+    for j in range(normal_modes.shape[1]):
+        for i in range(dof_array.shape[0]):
+            dof = dof_array[i]
+            Y_q[j] += H_grad[i] * normal_modes[dof[0], j] * masses_inv_sqrt[dof[0]] * 1/np.sqrt(M_AU) * number_of_kpoints_inv_sqrt * np.exp(-2j * np.pi * (k_point[0] * dof[1] + k_point[1] * dof[2] + k_point[2] * dof[3]))
+
+@njit(nogil=True, cache=True, fastmath=True, inline="never")
 def _build_dynamical_matrix(hessian: np.ndarray, masses_inv_sqrt: np.ndarray, kpoint: np.ndarray):
     dyn_mat = np.zeros(masses_inv_sqrt.shape, dtype=np.complex128)
 
@@ -399,141 +406,6 @@ def add_R41(out: np.ndarray, w_n: np.ndarray, V1: np.ndarray, V2: np.ndarray, n1
                             val -= 0.5 * (np.conj(Rabp[k,a]) * Rabp[k,c] + np.conj(Rabp[k,a]) * Rbap[k,c] + np.conj(Rbap[k,a]) * Rabp[k,c] + np.conj(Rbap[k,a]) * Rbap[k,c]) * G
 
                     out[ind, ab, cd] += prefc * val
-
-# @njit(nogil=True, cache=True, fastmath=True, inline="never")
-# def add_R41(out: np.ndarray,
-#             w_n: np.ndarray,
-#             V1: np.ndarray,
-#             V2: np.ndarray,
-#             n1: float,
-#             n2: float,
-#             f1: float,
-#             f2: float,
-#             lw1: float,
-#             lw2: float,
-#             ind: int,
-#             cutoff: float,
-#             A: float,
-#             B: float,
-#             weight: float,
-#             sec_tol: float = 1e-6) -> np.ndarray:
-#     """
-#     Raman 4th–order population kernel (secular, Markov) in Liouville space.
-
-#     - out:  R41 slice for all threads, shape (threads, N^2, N^2)
-#     - w_n:  energy differences w_n[a,b] = E_a - E_b
-#     - V1,V2: spin–phonon coupling matrices for the two modes (complex N×N)
-#     - n1,n2: Bose occupancies of modes with frequencies f1,f2
-#     - f1,f2: phonon frequencies
-#     - lw1,lw2: broadenings (used in denominators and Gaussian δ)
-#     - ind:   thread id (first index of `out`)
-#     - cutoff: energy cutoff for Gaussian δ
-#     - A,B:   degeneracy factors (A for ++/--, B for +-/-+)
-#     - weight: integration weight for this phonon pair
-#     - sec_tol: secular tolerance on level spacing |ω_ab|
-#     """
-
-#     N = w_n.shape[0]
-
-#     # Local population rate matrix R_ab (a,b = 0..N-1), for this phonon pair
-#     # R[a,b] is the rate from level b to a.
-#     R = np.zeros((N, N), dtype=np.float64)
-
-#     # Loop over level pairs (a,b). Only populations (a,a) ← (b,b) will be non-zero.
-#     for a in range(N):
-#         for b in range(N):
-
-#             w_ab = w_n[a, b]  # E_a - E_b
-
-#             # Secular approximation: skip nearly degenerate transitions
-#             if np.abs(w_ab) < sec_tol:
-#                 continue
-
-#             # Build complex amplitudes for the four Raman channels:
-#             # Rpm, Rmp, Rpp, Rmm  (following the Fortran logic)
-#             Rpm = 0.0 + 0.0j
-#             Rmp = 0.0 + 0.0j
-#             Rpp = 0.0 + 0.0j
-#             Rmm = 0.0 + 0.0j
-
-#             for c in range(N):
-#                 V1ac = V1[a, c]
-#                 V2cb = V2[c, b]
-#                 V2ac = V2[a, c]
-#                 V1cb = V1[c, b]
-
-#                 w_cb = w_n[c, b]  # E_c - E_b
-
-#                 # --- "+-" channel (pm) ---
-#                 #   1st term: V1 V2 / (E_c - E_b - f2 - i lw2)
-#                 #   2nd term: V2 V1 / (E_c - E_b + f1 - i lw1)
-#                 Rpm += V1ac * V2cb / (w_cb - f2 - 1j * lw2)
-#                 Rpm += V2ac * V1cb / (w_cb + f1 - 1j * lw1)
-
-#                 # --- "-+" channel (mp) ---
-#                 #   1st term: V1 V2 / (E_c - E_b + f2 - i lw2)
-#                 #   2nd term: V2 V1 / (E_c - E_b - f1 - i lw1)
-#                 Rmp += V1ac * V2cb / (w_cb + f2 - 1j * lw2)
-#                 Rmp += V2ac * V1cb / (w_cb - f1 - 1j * lw1)
-
-#                 # --- "++" channel (pp) ---
-#                 #   both denominators with +f1,+f2
-#                 Rpp += V1ac * V2cb / (w_cb + f2 - 1j * lw2)
-#                 Rpp += V2ac * V1cb / (w_cb + f1 - 1j * lw1)
-
-#                 # --- "--" channel (mm) ---
-#                 #   both denominators with -f1,-f2
-#                 Rmm += V1ac * V2cb / (w_cb - f2 - 1j * lw2)
-#                 Rmm += V2ac * V1cb / (w_cb - f1 - 1j * lw1)
-
-#             lw_delta = lw1
-
-#             DE_pm = w_ab - f2 + f1
-#             G_pm = n2 * (n1 + 1.0) * gaussian(DE_pm, lw_delta, cutoff)
-
-#             DE_mp = w_ab + f2 - f1
-#             G_mp = (n2 + 1.0) * n1 * gaussian(DE_mp, lw_delta, cutoff)
-
-#             DE_mm = w_ab - f2 - f1
-#             G_mm = n2 * n1 * gaussian(DE_mm, lw_delta, cutoff)
-
-#             DE_pp = w_ab + f2 + f1
-#             G_pp = (n2 + 1.0) * (n1 + 1.0) * gaussian(DE_pp, lw_delta, cutoff)
-
-#             Rpm2 = (Rpm.real * Rpm.real) + (Rpm.imag * Rpm.imag)
-#             Rmp2 = (Rmp.real * Rmp.real) + (Rmp.imag * Rmp.imag)
-#             Rmm2 = (Rmm.real * Rmm.real) + (Rmm.imag * Rmm.imag)
-#             Rpp2 = (Rpp.real * Rpp.real) + (Rpp.imag * Rpp.imag)
-
-#             rate_ab = 0.0
-#             rate_ab += B * (G_pm * Rpm2 + G_mp * Rmp2)
-#             rate_ab += A * (G_mm * Rmm2 + G_pp * Rpp2)
-
-#             R[a, b] += rate_ab
-
-#     prefc = pi * pi / (H*H*H) * weight
-
-#     for a in range(N):
-#         for b in range(N):
-#             R[a, b] *= prefc
-
-#     # Trace preservation for populations:
-#     # for each "source" level b, impose Σ_a R[a,b] = 0
-#     for b in range(N):
-#         loss = 0.0
-#         for a in range(N):
-#             if a != b:
-#                 loss += R[a, b]
-#         R[b, b] -= loss
-
-#     for a in range(N):
-#         ab = liou(a, a, N)
-#         for b in range(N):
-#             cd = liou(b, b, N)
-#             out[ind, ab, cd] += R[a, b]
-
-#     return out
-
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
 def get_relax_time(R_mat):
@@ -1243,6 +1115,7 @@ def plot_spinphonon_weighted_phonon_dos(
     weights: np.ndarray,
     n_k: int,
     states_number: int,
+    threads: int,
     # --- NEW: mode window (cm^-1) ---
     modes_low: float,
     modes_high: float,
@@ -1281,59 +1154,30 @@ def plot_spinphonon_weighted_phonon_dos(
     masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
     n_k_inv = 1.0 / np.sqrt(float(n_k))
 
-    # Thermal weights if requested
-    if weight_mode.startswith("thermal"):
-        if temperature is None:
-            raise ValueError("temperature must be provided for thermal_* weight_mode.")
-        beta = 1.0 / (KB * float(temperature))
-        p = np.exp(-beta * (E - E.min()))
-        p /= p.sum()
-        P_sym = 0.5 * (p[:, None] + p[None, :])
-    else:
-        p = None
-        P_sym = None
+    if temperature is None:
+        raise ValueError("temperature must be provided for thermal_* weight_mode.")
+    beta = 1.0 / (KB * float(temperature))
+    p = np.exp(-beta * (E - E.min()))
+    p /= p.sum()
 
-    freq_transform = _make_freq_transform(dos_freq)
-    reduce_W, p, P_sym = _make_weight_reducer(weight_mode, E, temperature)
+    reduce_W, p, _ = _make_weight_reducer(weight_mode, E, temperature)
 
-    all_freq = []
-    all_wts  = []
-
-    for i in tqdm(range(grid.shape[0])):   # no tqdm
-        q = grid[i]
-        wq_weight = float(weights[i])
-
-        Dq = _build_dynamical_matrix(hessian, masses_inv_sqrt_outer, q)
-        freq, modes = frequencies_eigenvectors(Dq)
-        freq_cm1 = np.asarray(freq, dtype=np.float64) * AU_BOHR_CM_1
-        modes = np.asarray(modes, dtype=np.complex128)
-
-        freq_dos_all = freq_transform(freq_cm1)
-
-        mask = (freq_dos_all >= modes_low) & (freq_dos_all <= modes_high)
-        if not np.any(mask):
-            continue
-        idx = np.where(mask)[0]
-
-        freq_dos = freq_dos_all[idx]
-        freq_cm1_sel = freq_cm1[idx]
-        modes_sel = np.ascontiguousarray(modes[:, idx])
-
-        freq_for_Y = np.abs(freq_cm1_sel)
-        freq_for_Y = np.where(freq_for_Y > eps_freq_cm1, freq_for_Y, eps_freq_cm1)
-
-        Yb = np.zeros((freq_for_Y.size, N, N), dtype=np.complex128)
-        get_Y_q(Yb, H_grad, modes_sel, q, dof_array, masses_inv_sqrt, n_k_inv, freq_for_Y)
-
-        absY2 = (Yb.real * Yb.real) + (Yb.imag * Yb.imag)
-        W = reduce_W(absY2)
-
-        all_freq.extend(freq_dos.tolist())
-        all_wts.extend((wq_weight * W).tolist())
-
-
-    all_freq = np.asarray(all_freq, dtype=np.float64)
-    all_wts  = np.asarray(all_wts,  dtype=np.float64)
+    all_freq, all_wts = _gather_spinphonon_weighted_dos_fast(
+        E=E[:N],
+        H_grad=H_grad,
+        hessian=hessian,
+        masses_inv_sqrt=masses_inv_sqrt,
+        dof_array=dof_array,
+        grid=grid,
+        weights=weights,
+        n_k=n_k,
+        modes_low=modes_low,
+        modes_high=modes_high,
+        weight_mode=weight_mode,
+        threads=threads,
+        temperature=temperature,
+        eps_bose_cm1=eps_freq_cm1,   # re-use your existing parameter
+    )
 
     if all_freq.size == 0:
         raise RuntimeError("No modes found in the requested [modes_low, modes_high] window.")
@@ -1341,7 +1185,6 @@ def plot_spinphonon_weighted_phonon_dos(
     # ---------- histogram (restricted range) ----------
     fmin = float(modes_low)
     fmax = float(modes_high)
-    # small padding like your existing code, but keep inside the window feel
     pad = (fmax - fmin) / max(resolution, 1)
     fmin_plot = fmin - pad
     fmax_plot = fmax + pad
@@ -1419,16 +1262,21 @@ def plot_spinphonon_weighted_phonon_dos(
         if convolution is not None:
             ax.plot(freq_range, conv_norm, color="#69A6D7", linewidth=0.9)
 
-        ax.set_xlim(fmin, fmax)
+        ax.set_xlim(fmin-(0.03*fmax), fmax+(0.03*fmax))
         ax.set_xlabel(r"Frequency / cm$^{-1}$")
         ax.set_ylabel(r"Weighted DOS / a.u.")
-        tinfo = f", T={temperature:.1f} K" if (weight_mode.startswith("thermal") and temperature is not None) else ""
-        ax.set_title(f"{title} ({weight_mode}{tinfo})")
+        ax.set_title(f"{title}")
         ax.grid(True, linestyle="--", alpha=0.5)
 
         if energy_lines is not None:
-            for x0 in energy_lines:
-                ax.axvline(x=float(x0), color="sienna", lw=1.2, alpha=1.0, zorder=10000)
+            if isinstance(energy_lines, tuple):
+                for x0 in energy_lines[0]:
+                    ax.axvline(x=float(x0), color="olivedrab", lw=1.4, alpha=1.0, zorder=10000)
+                for x0 in energy_lines[1]:
+                    ax.axvline(x=float(x0), color="sienna", lw=1.1, alpha=1.0, zorder=10000)
+            else:
+                for x0 in energy_lines:
+                    ax.axvline(x=float(x0), color="sienna", lw=1.1, alpha=1.0, zorder=10000)
 
         if save_path is not None:
             fig.savefig(save_path, bbox_inches="tight")
@@ -1437,17 +1285,6 @@ def plot_spinphonon_weighted_phonon_dos(
         plt.close(fig)
 
     return result
-
-
-import numpy as np
-
-def _make_freq_transform(dos_freq: str):
-    dos_freq = str(dos_freq).strip().lower()
-    if dos_freq == "abs":
-        return lambda x: np.abs(x)
-    if dos_freq == "raw":
-        return lambda x: x
-    raise ValueError("dos_freq must be 'raw' or 'abs'.")
 
 def _make_weight_reducer(weight_mode: str, E: np.ndarray, temperature: float | None):
     """
@@ -1475,20 +1312,246 @@ def _make_weight_reducer(weight_mode: str, E: np.ndarray, temperature: float | N
     beta = 1.0 / (KB * float(temperature))
     p = np.exp(-beta * (E - E.min()))
     p /= p.sum()
-    P_sym = 0.5 * (p[:, None] + p[None, :])
+    P_usym = (p[:, None] * np.ones_like(p)[None, :])
 
     if wm == "thermal_sym":
         def reduce_W(absY2):
-            return (absY2 * P_sym[None, :, :]).sum(axis=(1, 2))
-        return reduce_W, p, P_sym
+            return (absY2 * P_usym[None, :, :]).sum(axis=(1, 2))
+        return reduce_W, p, P_usym
 
     if wm == "thermal_offdiag":
         def reduce_W(absY2):
             diag = np.diagonal(absY2, axis1=1, axis2=2)  # (Jm, N)
-            return (absY2 * P_sym[None, :, :]).sum(axis=(1, 2)) - (diag * p[None, :]).sum(axis=1)
-        return reduce_W, p, P_sym
+            return (absY2 * P_usym[None, :, :]).sum(axis=(1, 2)) - (diag * p).sum(axis=1)
+        return reduce_W, p, P_usym
 
     raise ValueError("weight_mode must be one of: fro, fro_offdiag, thermal_sym, thermal_offdiag")
+
+
+# -------------------------------------------------------------------------
+# FAST PARALLEL GATHER FOR WEIGHTED PHONON DOS (drop-in for tqdm loop)
+# -------------------------------------------------------------------------
+
+def _weight_mode_to_code(weight_mode: str) -> int:
+    wm = str(weight_mode).strip().lower()
+    if wm == "fro":
+        return 0
+    if wm == "fro_offdiag":
+        return 1
+    if wm == "thermal_sym":
+        return 2
+    if wm == "thermal_offdiag":
+        return 3
+    raise ValueError("weight_mode must be one of: fro, fro_offdiag, thermal_sym, thermal_offdiag")
+
+
+@njit(nogil=True, cache=True, fastmath=True, inline="always")
+def _abs2(z):
+    return z.real * z.real + z.imag * z.imag
+
+
+@njit(nogil=True, cache=True, fastmath=True, inline="always")
+def _phase_from_phi(phi):
+    # exp(-1j*phi) = cos(phi) - i sin(phi)
+    return np.cos(phi) - 1j * np.sin(phi)
+
+
+@njit(nogil=True, cache=True, fastmath=True, parallel=True, inline="never")
+def _gather_spinphonon_weighted_dos_parallel(
+    H_grad: np.ndarray,              # (n_dof, N, N) complex128
+    hessian: np.ndarray,             # (nx,ny,nz,ndof,ndof) complex128 (your format)
+    masses_inv_sqrt: np.ndarray,     # (ndof,) float64
+    masses_inv_sqrt_outer: np.ndarray,# (ndof,ndof) float64
+    dof_array: np.ndarray,           # (n_dof, 4) int64 : [dof0, tx, ty, tz]
+    grid: np.ndarray,                # (nq, 3) float64
+    weights_bz: np.ndarray,          # (nq,) float64
+    n_k_inv: float,                  # 1/sqrt(n_k)
+    modes_low: float,                # cm^-1
+    modes_high: float,               # cm^-1
+    weight_mode_code: int,           # 0..3
+    p: np.ndarray,                   # (N,) float64 (only used for thermal_*; otherwise ignored)
+    beta: float,                     # 1/(kB*T) (only used for thermal_* phonon factor)
+    eps_bose_cm1: float,             # avoid Bose blowup at 0
+    threads: int,
+):
+    nq = grid.shape[0]
+    ndof = masses_inv_sqrt.shape[0]     # number of phonon modes == dynamical matrix dimension
+    N = H_grad.shape[1]                # spin states number used in DOS
+
+    # Big fixed buffers: each q-point writes to its own slice.
+    out_freq = np.empty(nq * ndof, dtype=np.float64)
+    out_wts  = np.full(nq * ndof, np.nan, dtype=np.float64)  # NaN = unused slot
+
+    inv_sqrt_M_AU = 1.0 / np.sqrt(M_AU)
+
+    # Precompute scale per DOF index used in eigenvectors:
+    # modes[dof0, j] * (masses_inv_sqrt[dof0] * inv_sqrt_M_AU * n_k_inv) * phase[ii]
+    scale_d = masses_inv_sqrt * (inv_sqrt_M_AU * n_k_inv)
+
+    set_num_threads(threads)
+
+    for iq in prange(nq):
+        q0 = grid[iq, 0]
+        q1 = grid[iq, 1]
+        q2 = grid[iq, 2]
+        wq_weight = weights_bz[iq]
+
+        # Build dynamical matrix and diagonalize
+        Dq = _build_dynamical_matrix(hessian, masses_inv_sqrt_outer, grid[iq])
+        freq_au, modes = frequencies_eigenvectors(Dq)   # freq in AU-ish, modes complex
+        # Convert frequencies to cm^-1
+        base = iq * ndof
+
+        # Precompute phase factors for each gradient entry ONCE per q:
+        # phase[ii] = exp(-2j*pi*(q · T_i))
+        phase = np.empty(dof_array.shape[0], dtype=np.complex128)
+        for ii in range(dof_array.shape[0]):
+            tx = dof_array[ii, 1]
+            ty = dof_array[ii, 2]
+            tz = dof_array[ii, 3]
+            phi = 2.0 * np.pi * (q0 * tx + q1 * ty + q2 * tz)
+            phase[ii] = _phase_from_phi(phi)
+
+        # Scratch Y matrix reused for each mode
+        Y = np.empty((N, N), dtype=np.complex128)
+
+        k = 0  # index within this q-slice
+        for j in range(ndof):
+            f_cm1 = freq_au[j] * AU_BOHR_CM_1
+            if f_cm1 < modes_low or f_cm1 > modes_high:
+                continue
+
+            # zero Y
+            for a in range(N):
+                for b in range(N):
+                    Y[a, b] = 0.0 + 0.0j
+
+            # Build Y for this phonon mode j
+            # Y += sum_i H_grad[i] * (modes[dof0,j] * scale[dof0] * phase[i])
+            for ii in range(dof_array.shape[0]):
+                dof0 = dof_array[ii, 0]
+                c = modes[dof0, j] * scale_d[dof0] * phase[ii]
+                # accumulate into Y matrix
+                for a in range(N):
+                    for b in range(N):
+                        Y[a, b] += H_grad[ii, a, b] * c
+
+            W = 0.0
+            if weight_mode_code == 0:
+                # fro: sum_{a,b} |Y_ab|^2
+                for a in range(N):
+                    for b in range(N):
+                        W += _abs2(Y[a, b])
+
+            elif weight_mode_code == 1:
+                # fro_offdiag: sum_{a!=b} |Y_ab|^2
+                for a in range(N):
+                    for b in range(N):
+                        if a != b:
+                            W += _abs2(Y[a, b])
+
+            elif weight_mode_code == 2:
+                # thermal_sym (weights by p[a] for all b)
+                for a in range(N):
+                    pa = p[a]
+                    for b in range(N):
+                        W += pa * _abs2(Y[a, b])
+
+            else:
+                # thermal_offdiag: (thermal_sym) minus diagonal term
+                for a in range(N):
+                    pa = p[a]
+                    for b in range(N):
+                        if a != b:
+                            W += pa * _abs2(Y[a, b])
+
+            ################################################################# Excluding Dy fast Direct ################################
+            # else:
+            #     # thermal_offdiag: (thermal_sym) minus diagonal term
+            #     for a in range(N):
+            #         pa = p[a]
+            #         for b in range(N):
+            #             if a != b:
+            #                 if f_cm1 < 69:
+            #                     if a < 4 and b < 4:
+            #                         W += pa * _abs2(Y[a, b])
+            #                 else:
+            #                     W += pa * _abs2(Y[a, b])
+
+            # Phonon thermal factor (only for thermal_* modes)
+            ph = 1.0
+            if weight_mode_code >= 2:
+                ff = f_cm1
+                if ff < 0.0:
+                    ff = -ff
+                if ff < eps_bose_cm1:
+                    ff = eps_bose_cm1
+                ph = bose_occ(ff, beta)
+
+            out_freq[base + k] = f_cm1
+            out_wts[base + k]  = wq_weight * ph * W
+            k += 1
+
+        # remaining positions in this slice stay NaN (unused)
+
+    return out_freq, out_wts
+
+
+def _gather_spinphonon_weighted_dos_fast(
+    E: np.ndarray,
+    H_grad: np.ndarray,
+    hessian: np.ndarray,
+    masses_inv_sqrt: np.ndarray,
+    dof_array: np.ndarray,
+    grid: np.ndarray,
+    weights: np.ndarray,
+    n_k: int,
+    modes_low: float,
+    modes_high: float,
+    weight_mode: str,
+    threads: int,
+    temperature: float | None,
+    eps_bose_cm1: float = 1e-12,
+):
+    """
+    Python wrapper: prepares p/beta and compresses NaN slots after the Numba gather.
+    Returns: all_freq, all_wts (1D float64)
+    """
+    wm_code = _weight_mode_to_code(weight_mode)
+
+    # Prepare p and beta only if thermal_* modes are requested
+    if wm_code >= 2:
+        if temperature is None:
+            raise ValueError("temperature must be provided for thermal_* weight_mode.")
+        beta = 1.0 / (KB * float(temperature))
+        E = np.asarray(E, dtype=np.float64)
+        p = np.exp(-beta * (E - E.min()))
+        p /= p.sum()
+    else:
+        beta = 0.0
+        # dummy p (won't be used)
+        E = np.asarray(E, dtype=np.float64)
+        p = np.ones(E.shape[0], dtype=np.float64)
+
+    grid = np.asarray(grid, dtype=np.float64)
+    weights = np.asarray(weights, dtype=np.float64)
+    masses_inv_sqrt = np.asarray(masses_inv_sqrt, dtype=np.float64)
+    dof_array = np.asarray(dof_array, dtype=np.int64)
+    H_grad = np.asarray(H_grad, dtype=np.complex128)
+
+    masses_inv_sqrt_outer = np.outer(masses_inv_sqrt, masses_inv_sqrt)
+    n_k_inv = 1.0 / np.sqrt(float(n_k))
+
+    freq_big, wts_big = _gather_spinphonon_weighted_dos_parallel(
+        H_grad, hessian, masses_inv_sqrt, masses_inv_sqrt_outer,
+        dof_array, grid, weights, n_k_inv,
+        float(modes_low), float(modes_high),
+        wm_code, p, float(beta), float(eps_bose_cm1), threads,
+    )
+
+    mask = ~np.isnan(wts_big)
+    return freq_big[mask], wts_big[mask]
+
 
 
 

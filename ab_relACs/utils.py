@@ -485,7 +485,7 @@ def make_wdos_path(base: str, *, n_points: int, field: float, orientation: np.nd
         stem   = "spinphonon_wdos"
 
     ox, oy, oz = float(orientation[0]), float(orientation[1]), float(orientation[2])
-    fname = f"{stem}_np{int(n_points)}_H{field:.6g}_ori{ox:.6f}_{oy:.6f}_{oz:.6f}{suffix}"
+    fname = f"{stem}_npoints_{int(n_points)}_H_{field:.6g}_ori{ox:.6f}_{oy:.6f}_{oz:.6f}{suffix}"
     return str(parent / fname)
 
 
@@ -495,7 +495,7 @@ def make_energy_lines_from_levels(
     modes_low: float,
     modes_high: float,
     tol: float = 1e-6,
-    max_lines: int = 40,
+    max_lines: int = 50,
     A: np.ndarray | None = None,
     dipole_thresh: float = 0.0,
 ) -> np.ndarray:
@@ -519,6 +519,8 @@ def make_energy_lines_from_levels(
     dE = np.abs(E[:, None] - E[None, :])
     iu = np.triu_indices(n, k=1)
     gaps = dE[iu]
+
+    gaps = gaps[n-1:] # eliminate states energies
 
     # keep only within DOS range
     mask = (gaps >= modes_low) & (gaps <= modes_high) & (gaps > tol)
@@ -558,6 +560,31 @@ def make_energy_lines_from_levels(
     if len(uniq) > max_lines:
         uniq = uniq[:max_lines]
 
-    return np.asarray(uniq, dtype=float)
+    return np.asarray(E, dtype=float), np.asarray(uniq, dtype=float)
 
-        
+# def make_energy_lines_from_levels(
+#     energies_cm1: np.ndarray,
+#     A: np.ndarray,
+# ) -> np.ndarray:
+
+#     E = np.asarray(energies_cm1, dtype=float).copy()
+#     # shift does not matter for gaps; but helps numerical stability
+#     E -= E.min()
+
+#     n = E.size
+#     # upper-triangular pairwise gaps
+#     dE = np.abs(E[:, None] - E[None, :])
+#     iu = np.triu_indices(n, k=1)
+#     gaps = dE[iu]
+
+#     A = np.asarray(A)
+#     print(np.abs(A)**2)
+#     strength = np.abs(A[iu])**2
+#     strength /= np.max(strength)
+
+#     print(strength)
+
+#     gaps = gaps[n-1:] # eliminate states energies
+
+#     return np.asarray(E, dtype=float), np.concatenate(np.asarray([0.0], dtype=float),strength[:n-1], dtype=float), np.asarray(gaps, dtype=float), np.asarray(strength[n-1:], dtype=float)
+       

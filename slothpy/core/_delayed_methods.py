@@ -1146,7 +1146,7 @@ class SltPhononDispersion(_MultiProcessed):
         ax_bot.plot((1 - d, 1 + d), (1 - d, 1 + d), transform=ax_bot.transAxes, **kw)
 
         # ── labels / title / grid ────────────────────────────────────────────────
-        ax_bot.set_xlabel(r"Wave vector $\mathbf{q}$ along path")          # <- corrected x-axis title
+        ax_bot.set_xlabel(r"Wavevector $\mathbf{q}$ along path")          # <- corrected x-axis title
         ax_bot.set_ylabel(r"Frequency / cm$^{-1}$")    # <- cleaner y-axis label
         ax_top.set_title("Phonon dispersion")
 
@@ -1319,13 +1319,14 @@ class SltPhononDensityOfStates(_MultiProcessed):
         ax.plot(self._result[2][:], self._result[3][:], color="#69A6D7", linewidth=0.9)
         ax.set_xlabel(r"Frequency / cm$^{-1}$")
         ax.set_ylabel(r'Density of States / a.u.')
-        ax.set_title('Phonon Density of States')
+        title_string = kwargs.get("title", False)
+        ax.set_title('Phonon Density of States' if not title_string else title_string)
         ax.grid(True)
 
         energy_lines = kwargs.get("energy_lines", None)
         if energy_lines:
-            guide_color = "sienna"
-            guide_lw = 1.2
+            guide_color = "olivedrab"
+            guide_lw = 1.4
             guide_ls = "-"
             guide_alpha = 1
 

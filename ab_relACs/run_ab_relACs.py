@@ -22,7 +22,7 @@ import scipy.special.cython_special
 from threadpoolctl import threadpool_limits
 from numba import set_num_threads
 
-from slothpy._general_utilities._constants import H_CM_1, B_AU_T
+from slothpy._general_utilities._constants import H_CM_1, B_AU_T, MU_B_AU
 
 from input_models import AppConfig
 from lattice import get_hessian_recip_axes_masses_inv_sqrt_spin_phonon

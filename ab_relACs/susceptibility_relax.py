@@ -33,7 +33,7 @@ from llvmlite.ir import IRBuilder
 
 from tqdm import tqdm
 
-from slothpy._general_utilities._constants import H_CM_1, AU_BOHR_CM_1, MU_B_CM_3, B_AU_T
+from slothpy._general_utilities._constants import H_CM_1, AU_BOHR_CM_1, MU_B_CM_3, MU_B_AU
 from constants import KB, H, H_BAR, S_TIME_PS, M_AU
 
 _DAWSN_ALIASES = {} 
@@ -573,7 +573,7 @@ def build_Jp_Jm_tables_j(w_n, wb, nb, delta, cutoff, kind, symm):
     return Jp, Jm
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
-def add_PSI_bundle(out, A, Yb_table, wb, nb, delta, beta, w_n, q_0, cutoff, weight, kind):
+def add_PSI_bundle(out, A, Yb_table, wb, nb, delta, beta, w_n, q_0, cutoff, weight, kind, symm):
     N=w_n.shape[0]; J=wb.size
     coeff = H_BAR * 0.5 * weight
     if q_0:
@@ -588,12 +588,12 @@ def add_PSI_bundle(out, A, Yb_table, wb, nb, delta, beta, w_n, q_0, cutoff, weig
                     cd=liou(c,d,N)
                     val=0.0+0.0j
                     for e in range(N):
-                        val+=Jcorr(w_n[e,c],w_n[d,b],wq,n_q,delta_j,beta,cutoff_j,kind)*A[e,c]*Y_j[d,b,a,e]
-                        val-=Jcorr(w_n[a,d],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j,kind)*A[a,c]*Y_j[d,e,e,b]
+                        val+=Jcorr_comp(w_n[e,c],w_n[d,b],wq,n_q,delta_j,beta,cutoff_j,kind,symm)*A[e,c]*Y_j[d,b,a,e]
+                        val-=Jcorr_comp(w_n[a,d],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j,kind,symm)*A[a,c]*Y_j[d,e,e,b]
                         if a == c:
                             for f in range(N):
-                                val+=Jcorr(w_n[e,f],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j,kind)*A[e,f]*Y_j[f,b,d,e]
-                        val-=Jcorr(w_n[e,b],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j,kind)*Y_j[a,c,d,e]*A[e,b]
+                                val+=Jcorr_comp(w_n[e,f],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j,kind,symm)*A[e,f]*Y_j[f,b,d,e]
+                        val-=Jcorr_comp(w_n[e,b],w_n[d,e],wq,n_q,delta_j,beta,cutoff_j,kind,symm)*Y_j[a,c,d,e]*A[e,b]
                     out[ab,cd]+=val*coeff
 
 @njit(nogil=True, fastmath=True, cache=True, inline="always")
@@ -634,19 +634,19 @@ def ov_add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, w
                 return add_KR_bundle(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight)
             return impl
 
-def add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI):
+def add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, symm, run_PSI):
     raise NotImplementedError
 
 @overload(add_PSI_bundle_comp, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
-def ov_add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI):
+def ov_add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, symm, run_PSI):
     if isinstance(run_PSI, types.Literal):
         if run_PSI.literal_value == 0:
-            def impl(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI):
+            def impl(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, symm, run_PSI):
                 return
             return impl
         elif run_PSI.literal_value == 1:
-            def impl(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI):
-                return add_PSI_bundle(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind)
+            def impl(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, symm, run_PSI):
+                return add_PSI_bundle(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, symm)
             return impl
 
 def add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff, run_rho0):
@@ -812,7 +812,7 @@ def build_matrices_no_R41(
                     
 
             add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR)
-            add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI)
+            add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, symm, run_PSI)
             add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff_j, run_rho0)
             add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_symm_table, q_0, degeneracy_tolerance, weight, run_R21)
 
@@ -934,7 +934,7 @@ def build_matrices_R41(
                     Jhat_p_symm_table = build_Jp_symm_table_j(w_n, wb, bose, fwhm_j, cutoff_j, kind)
 
             add_KR_bundle_comp(M_KR_i_t, Yb_table, Jhat_p_table, Jhat_m_table, q_0, weight, run_KR)
-            add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, run_PSI)
+            add_PSI_bundle_comp(M_PSI_i_t, A_e, Yb_table, wb, bose, fwhm_j, beta_t, w_n, q_0, cutoff_j, weight, kind, symm, run_PSI)
             add_rho0_bundle_comp(rho_vec_init_i_t, M_rho0_trace, Yb_table, wb, bose, beta_t, w_n, q_0, rho_mat_t, thread_id, t_index, weight, cutoff_j, run_rho0)
             add_R21_bundle_comp(R21_i_t, Yb_table, w_n, Jhat_p_symm_table, q_0, degeneracy_tolerance, weight, run_R21)
 
@@ -962,7 +962,7 @@ def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, 
     for k, omega in enumerate(omega_grid):
         Xi_temp = Xi - 1j * omega * eye
         rho_hat  = np.linalg.solve(Xi_temp, num).reshape((N, N))
-        chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3
+        chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / MU_B_AU * MU_B_CM_3
         if normalize:    
             if k != 0:
                 chi_T[t,k] /= np.abs(chi_T[t,0].real)

@@ -435,7 +435,7 @@ def get_relax_time(R_mat):
 def hilbert(x, d, kind):
     raise NotImplementedError
 
-@overload(hilbert, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
+@overload(hilbert, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
 def ov_hilbert(E, d, kind):
     if isinstance(kind, types.Literal):
         if kind.literal_value == 1:
@@ -500,7 +500,7 @@ def Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind):
 def Jhat_p_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
     raise NotImplementedError
 
-@overload(Jhat_p_comp, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
+@overload(Jhat_p_comp, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
 def ov_Jhat_p_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
     if isinstance(symm, types.Literal):
         if symm.literal_value == 0:
@@ -515,7 +515,7 @@ def ov_Jhat_p_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
 def Jcorr_comp(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
     raise NotImplementedError
 
-@overload(Jcorr_comp, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
+@overload(Jcorr_comp, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
 def ov_Jcorr_comp(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
     if isinstance(symm, types.Literal):
         if symm.literal_value == 0:
@@ -530,7 +530,7 @@ def ov_Jcorr_comp(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
 def Jhat_m_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
     raise NotImplementedError
 
-@overload(Jhat_m_comp, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
+@overload(Jhat_m_comp, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
 def ov_Jhat_m_comp(w_ab, wq, n_q, d, cutoff, kind, symm):
     if isinstance(symm, types.Literal):
         if symm.literal_value == 0:
@@ -607,7 +607,7 @@ def cutoff_j_no_direct(fwhm, cutoff_mult, wb, w_n_direct_max):
 def get_cutoff_j(fwhm_j, cutoff_mult, wb, w_n_direct_max, direct):
     raise NotImplementedError
 
-@overload(get_cutoff_j, nogil=True, fastmath=True, cache=True, inline="always", prefer_literal=True)
+@overload(get_cutoff_j, nogil=True, fastmath=True, cache=True, inline="never", prefer_literal=True)
 def ov_get_cutoff_j(fwhm, cutoff_mult, wb, w_n_direct_max, direct):
     if isinstance(direct, types.Literal):
         if direct.literal_value == 0:
@@ -962,7 +962,7 @@ def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, 
     for k, omega in enumerate(omega_grid):
         Xi_temp = Xi - 1j * omega * eye
         rho_hat  = np.linalg.solve(Xi_temp, num).reshape((N, N))
-        chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) / MU_B_AU * MU_B_CM_3
+        chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3
         if normalize:    
             if k != 0:
                 chi_T[t,k] /= np.abs(chi_T[t,0].real)

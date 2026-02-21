@@ -52,8 +52,7 @@ def export_susceptibility_csv(
     filename = Path(filename)
     with filename.open(mode="w", newline="") as fp:
         fp.write("[Data]\n")
-        # fp.write("Temperature (K),Magnetic Field (Oe),AC Frequency (Hz),AC X'  (emu/Oe),AC X\" (emu/Oe)\n")
-        fp.write("Temperature (K),Field (Oe),Wave Frequency (Hz),m' (emu),m\" (emu)\n")
+        fp.write("Temperature (K),Field (Oe),Wave Frequency (Hz),AC X' (cm3/mol),AC X\" (cm3/mol)\n")
         writer = csv.writer(fp, quoting=csv.QUOTE_NONE, escapechar="\\")
         writer.writerows(rows)
 

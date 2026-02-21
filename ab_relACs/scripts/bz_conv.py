@@ -125,7 +125,7 @@ def read_peak_from_csv(csv_path: Path) -> PeakResult:
             raise RuntimeError(f"No header in {csv_path}")
         col = {h.strip(): i for i, h in enumerate(header)}
         fk = "Wave Frequency (Hz)"
-        mkp = 'm" (emu)'
+        mkp = 'AC X" (cm3/mol)'
         if fk not in col or mkp not in col:
             raise RuntimeError(f"Expected '{fk}' and '{mkp}' in {csv_path}")
 

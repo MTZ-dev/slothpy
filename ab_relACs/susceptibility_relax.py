@@ -211,9 +211,9 @@ def add_rho0_bundle(out, trace, Yb_table, wb, nb, beta, w_n,
         cutoff = 1000 * cutoff_j[j]
 
         for a in range(N):
+            rho_aa = rho[a, a]
             for b in range(N):
                 ab = liou(a, b, N)
-                rho_bb = rho[b, b]
                 corr = 0.0 + 0.0j
                 for e in range(N):
                     w_ae = w_n[a, e]
@@ -225,9 +225,9 @@ def add_rho0_bundle(out, trace, Yb_table, wb, nb, beta, w_n,
                         k += (n_q + 1.0) * Iint(w_ae - wq, w_eb + wq, beta)
 
                     if k != 0.0:
-                        corr += k * Y_j[a, e, e, b] * rho_bb
+                        corr += k * Y_j[a, e, e, b] * rho_aa
                         if b == a:
-                            trace[thread_id, t_index] += coeff * k * rho_bb * Y_j[a, e, e, a]
+                            trace[thread_id, t_index] += coeff * k * rho_aa * Y_j[a, e, e, a]
 
                 out[ab] += coeff * corr
 
@@ -309,7 +309,7 @@ def frequencies_eigenvectors(dynamical_matrix):
 @njit(nogil=True, cache=True, fastmath=True, inline="never")
 def add_R21_bundle(out, Yb_table, w_n, Jhat_p_table, q_0, sec_tol, weight):
     N, J = w_n.shape[0], Jhat_p_table.shape[0]
-    prefc = pi / H * weight # pi * pi / H with Jhat_p_sec
+    prefc = pi / H * weight
     if q_0:
         prefc *= 0.5
     for j in range(J):
@@ -524,7 +524,7 @@ def ov_Jcorr_comp(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
             return impl
         elif symm.literal_value == 1:
             def impl(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind, symm):
-                return Jcorr(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind)
+                return Jcorr_symm(w_cd, w_ab, wq, n_q, d, beta, cutoff, kind)
             return impl
         
 def Jhat_m_comp(w_ab, wq, n_q, d, cutoff, kind, symm):

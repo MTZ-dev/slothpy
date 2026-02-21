@@ -20,23 +20,23 @@ number_cpus = 32
 
 orientations = [[0.1160578,-0.0019702,-0.9932405,1.0]] # [[-0.7283152,0.6797671,-0.0864504,0.333333333333],[0.6753425,0.7334254,0.0774574,0.333333333333],[0.1160578,-0.0019702,-0.9932405,0.333333333333]] # [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]] # [[0,0,1,1]] #
 fields = [0.2] # [0.02,0.03,0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8,1,2] # [0.001] 30 10 ^3 or [0.003] 35 10^3
-temperatures = [6] # [1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2] # [36,38,40,42,44,46]
+temperatures = [5] # [1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2] # [36,38,40,42,44,46]
 frequencies = "np.logspace(-3, 7, 190)"
 
 states_number = 6 # 4 dobra dla ramana perfect
 degeneracy_tolerance = 1e-6
 psi_frequency_shift = true
-initial_correlation = false
+initial_correlation = true
 omega_loop = false
 chi_s = false
 
-n_points = [31,32,33]
+n_points = [83]
 q_ranges = [0.001,0.005,0.025,0.5]
 broadening = "gaussian" # "lorentzian" #
-fwhm = [0.01]
+fwhm = [0.1,0.05,0.01]
 adaptive_fwhm = false
 modes_low = 1e-3
-modes_high = 77
+modes_high = 83
 cutoff_fwhm = 2.59443 # 2.43362 # 2.07729 # 3.15984 # 2.43362
 direct = true
 

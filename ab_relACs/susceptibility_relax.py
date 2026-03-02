@@ -331,7 +331,7 @@ def add_R21_bundle(out, Yb_table, w_n, Jhat_p_table, q_0, sec_tol, weight):
                                 val -= Y_j[a,e,e,c]*Jhat_p_j[e,c]
                         if c == a:
                             for f in range(N):
-                                val -= Y_j[f,b,d,f]*Jhat_p_j[f,d]
+                                val -= Y_j[d,f,f,b]*Jhat_p_j[f,d]
                         out[ab,cd] += prefc * val
 
 @njit(nogil=True, cache=True, fastmath=True, inline="never")

@@ -181,8 +181,7 @@ def run_relacs(cfg: AppConfig):
                                             weights, gamma_fwhm, chi_T, chi_S, cutoff_mult, degeneracy_tolerance,
                                             states_number, modes_low, modes_high, threads, kind, direct,
                                             run_KR, run_PSI, run_rho0, run_R21, run_R41, n_k, symm)
-                    sus_T_p = np.abs(sus_T.real) + 1j*np.abs(sus_T.imag)
-                    sus_orient_H_T[:,n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T_p
+                    sus_orient_H_T[:,n_points_index,fwhm_index,orientation_index,field_index,:,:] = sus_T
                     tau_R21_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R21_T
                     tau_R41_orient_H_T[n_points_index,fwhm_index,orientation_index,field_index,:] = relax_time_R41_T             
         

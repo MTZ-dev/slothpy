@@ -23,3 +23,4 @@ H_BAR      = 33.3571775619 / (2 * pi)
 S_TIME_PS  = 1e12
 T_FILED_OE = 10000
 M_AU       = 1822.89
+OLD_UNIT_CONV = 1.86745764 # conversion from older version of programm to cm3/mol for AC sus

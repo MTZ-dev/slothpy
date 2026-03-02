@@ -958,18 +958,25 @@ def build_matrices_R41(
                     sec_tol=degeneracy_tolerance)
 
 @njit(nogil=True, fastmath=True, cache=True, inline="never")
-def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, chi_adiabatic, eye, normalize):
+def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, chi_adiabatic, eye, normalize, M_L, rho0):
     for k, omega in enumerate(omega_grid):
         Xi_temp = Xi - 1j * omega * eye
         rho_hat  = np.linalg.solve(Xi_temp, num).reshape((N, N))
         chi_T[t,k]   = 1j / H_BAR * np.trace(B_e @ rho_hat) * MU_B_CM_3
-        if normalize:    
-            if k != 0:
-                chi_T[t,k] /= np.abs(chi_T[t,0].real)
-                chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic[t])
-                chi_T[t,k] += chi_adiabatic[t]
     if normalize:
-        chi_T[t,0] = chi_T[t,0] / np.abs(chi_T[t,0].real) * chi_isothermal[t]
+        chi_max = chi_T[t,0].real
+        chi_min = chi_T[t,-1].real
+        for k, omega in enumerate(omega_grid):
+            Xi_chi = 1j / H_BAR * M_L - 1j * omega * eye
+            rho_chi = np.linalg.solve(Xi_chi, rho0).reshape((N, N))
+            chi_adiabatic = 1j / H_BAR * np.trace(B_e @ rho_chi) * MU_B_CM_3 
+            chi_adiabatic = np.abs(chi_adiabatic.real)
+            chi_T[t,k] -= chi_min
+            chi_T[t,k] /= chi_max
+            chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic)
+            chi_T[t,k] += chi_adiabatic
+    else:
+        chi_T[:,:] = np.sign(chi_T[:,0].real)[:,np.newaxis] * chi_T[:,:].real + 1j * np.sign(chi_T[:,0].imag)[:,np.newaxis] * chi_T[:,:].imag
 
 @njit(nogil=True, fastmath=True, inline="never")
 def susceptibility_relax_time(
@@ -1081,17 +1088,17 @@ def susceptibility_relax_time(
         if run_KR_lit:
             Xi = 1j / H_BAR * M_L + M_KR[t] / (H_BAR ** 2)
             num = M_rho0 @ rho_vec[t]
-            solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[0], chi_isothermal, chi_adiabatic, eye, True)
-            solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[1], chi_isothermal, chi_adiabatic, eye, False)
+            solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[0], chi_isothermal, chi_adiabatic, eye, True, M_L, num)
+            solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[1], chi_isothermal, chi_adiabatic, eye, False, M_L, num)
 
             if run_PSI_lit:
                 num = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + M_rho0 @ rho_vec[t]
-                solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[2], chi_isothermal, chi_adiabatic, eye, False)
+                solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[2], chi_isothermal, chi_adiabatic, eye, False, M_L, num)
 
                 if run_rho0_lit:
                     rho_vec_t = (rho_vec[t] + rho_vec_init[t]) / M_rho0_trace[t].real
                     num = (1j / H_BAR * M_PSI[t]) @ rho_vec[t] + M_rho0 @ rho_vec_t
-                    solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[3], chi_isothermal, chi_adiabatic, eye, False)
+                    solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T[3], chi_isothermal, chi_adiabatic, eye, False, M_L, num)
 
     return chi_T, relax_time_R21_T, relax_time_R41_T
 

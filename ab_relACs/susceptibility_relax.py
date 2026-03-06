@@ -972,7 +972,7 @@ def solve_susceptibility(omega_grid, Xi, num, N, t, B_e, chi_T, chi_isothermal, 
             chi_adiabatic = 1j / H_BAR * np.trace(B_e @ rho_chi) * MU_B_CM_3 
             chi_adiabatic = np.abs(chi_adiabatic.real)
             chi_T[t,k] -= chi_min
-            chi_T[t,k] /= chi_max
+            chi_T[t,k] /= (chi_max - chi_min)
             chi_T[t,k] *= (chi_isothermal[t] - chi_adiabatic)
             chi_T[t,k] += chi_adiabatic
     else:

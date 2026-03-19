@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 [relacs]
-slt_filepath = "/home/mikolaj/Sloth/Sloth/seminarium/import.slt"
+slt_filepath = ""
 number_cpus = 64
 
-orientations = [[0,0,1,1]] # [[0,0,1,0.333333333],[1,0,0,0.333333333],[0,1,0,0.333333333]]
-fields = [0.00001] # [0.02,0.03,0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8,1,2] # [0.001] 30 10 ^3 or [0.003] 35 10^3
-temperatures = [22,30] # [36,38,40,42,44,46]
-frequencies = "np.logspace(-5, 8, 1300)"
+orientations = [[0,0,1,1],[0,1,0,1]]
+fields = [0.1] 
+temperatures = [20,25]
+frequencies = "np.logspace(-1, 6, 7000)"
 
 states_number = 13
 degeneracy_tolerance = 1e-12
@@ -30,24 +30,23 @@ initial_correlation = true
 omega_loop = false
 chi_s = false
 
-n_points = [51] # more than 0.14 for 38 about 0.4 would be perfect ##### 1500 0.28, 2000 ???
+n_points = [69]
 q_ranges = [0.25,0.5]
-broadening = "gaussian" # "lorentzian" #
-fwhm = [0.0242650853264796]
+broadening = "gaussian"
+fwhm = [0.02]
 adaptive_fwhm = false
-modes_low = 1e-8 # 0.7553
-modes_high = 750
-cutoff_fwhm = 2.07729 # 3.15984 # 2.43362
+modes_low = 1e-8
+cutoff_fwhm = 2.07729
 direct = true
 
-chi_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/ac_Tb_whatever_r.dat"
-tau_21_csv_path = "/home/mikolaj/Sloth/Sloth/seminarium/tau_R21_Tb_whatever_r.dat"
-tau_41_csv_path = "" # "/home/mikolaj/Sloth/Sloth/seminarium/tau_R41_Tb_3000_whatever_r.dat"
+chi_csv_path = ""
+tau_21_csv_path = ""
+tau_41_csv_path = ""
 show_plot = true
 
 [supercell]
-xyz_path = "/home/mikolaj/Sloth/Sloth/seminarium/YCo_supercell_from_cell/dof_0_disp_0.xyz"
-group_name = "YCo_supercell"
+xyz_path = ""
+group_name = ""
 cell_params = [22.663134149075237, 22.663134149075233, 25.14851428466812, 90.0, 90.0, 120.0]
 nx = 3
 ny = 3
@@ -56,16 +55,16 @@ replace_atoms = [0]
 new_atoms = ["Tb"]
 
 [hessian]
-path = "/home/mikolaj/Sloth/Sloth/seminarium/YCo_supercell_from_cell"
-group_name = "YCo_hessian"
+path = ""
+group_name = ""
 displacement_number = 1
 step = 0.01
 accoustic_sum_rule = "symmetric"
 dos = ""
 
 [spin_phonon]
-path = "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/TbCo" # "/home/mikolaj/Data/Displacements_small_0001/DyCo_displ" # "/home/mikolaj/Ac_relacs_publication/derivatives_displacements/unit_cell_0005_single/DyCo" # 
-group_name = "TbCo_spin_phonon"
-orca_fragovl_path =  "/home/mikolaj/orca_6_1_0_avx2/orca_fragovl" # "/home/mikolaj/orca_6_1_0_avx2/orca_fragovl" #
+path = ""  
+group_name = ""
+orca_fragovl_path =  ""
 displacement_number = 1
 step = 0.0005

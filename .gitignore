@@ -45,3 +45,8 @@ generate_ll_grid.py
 build
 cos_glupiego
 pyVC
+config_example_Dy.toml
+config_example_Dy_36.toml
+config_example_Tb.toml
+config_example_Yb.toml
+config_example_raman.toml

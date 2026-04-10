@@ -16,6 +16,10 @@ from pydantic_settings import (
 from slothpy.config.paths import USER_SETTINGS_PATH
 from slothpy.types.primitive import PositiveInt
 
+# ---------------------------------------------------------------------------
+# Settings helpers
+# ---------------------------------------------------------------------------
+
 
 def _default_num_threads() -> int:
     """
@@ -39,6 +43,24 @@ def _default_settings_data() -> dict[str, int]:
         "num_processes": 1,
         "num_threads": _default_num_threads(),
     }
+
+
+def _configure(*, permanent: bool = False, **changes: Any) -> SltSettings:
+    """
+    Create a new validated global settings object with the requested changes.
+    """
+    global settings
+    data = settings.model_dump(mode="python")
+    data.update(changes)
+    settings = SltSettings(**data)
+    if permanent:
+        settings.save()
+    return settings
+
+
+# ---------------------------------------------------------------------------
+# Settings model
+# ---------------------------------------------------------------------------
 
 
 class SltSettings(BaseSettings):
@@ -119,18 +141,9 @@ class SltSettings(BaseSettings):
 
 settings = SltSettings()
 
-
-def _configure(*, permanent: bool = False, **changes: Any) -> SltSettings:
-    """
-    Create a new validated global settings object with the requested changes.
-    """
-    global settings
-    data = settings.model_dump(mode="python")
-    data.update(changes)
-    settings = SltSettings(**data)
-    if permanent:
-        settings.save()
-    return settings
+# ---------------------------------------------------------------------------
+# Settings public methods
+# ---------------------------------------------------------------------------
 
 
 def reload_settings() -> SltSettings:

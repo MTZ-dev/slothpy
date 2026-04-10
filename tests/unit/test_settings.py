@@ -282,3 +282,42 @@ def test_show_prints_human_readable_representation(
     assert "SlothPy settings:" in captured.out
     assert "num_processes = 1" in captured.out
     assert "num_threads   = 8" in captured.out
+
+
+def test_direct_assignment_to_existing_field_is_blocked(
+    isolated_settings,
+) -> None:
+    sm = isolated_settings
+
+    with pytest.raises(ValidationError) as exc:
+        sm.settings.num_processes = 10
+
+    assert exc.value.errors()[0]["type"] == "frozen_instance"
+    assert sm.settings.num_processes == 1
+
+
+def test_direct_assignment_to_new_attribute_is_blocked(
+    isolated_settings,
+) -> None:
+    sm = isolated_settings
+
+    with pytest.raises(ValidationError) as exc:
+        sm.settings.some_new_attribute = 123
+
+    assert exc.value.errors()[0]["type"] == "frozen_instance"
+    assert not hasattr(sm.settings, "some_new_attribute")
+
+
+def test_extra_fields_are_forbidden_on_model_construction(
+    isolated_settings,
+) -> None:
+    sm = isolated_settings
+
+    with pytest.raises(ValidationError) as exc:
+        sm.SltSettings(
+            num_processes=2,
+            num_threads=4,
+            some_new_attribute=123,
+        )
+
+    assert exc.value.errors()[0]["type"] == "extra_forbidden"

@@ -11,3 +11,12 @@ wheels/
 
 # Pytest
 .coverage
+
+# marimo
+__marimo__
+
+# SlothPy
+*.slt
+
+# Notebooks
+tutorial_data/

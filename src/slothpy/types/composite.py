@@ -13,12 +13,6 @@ from slothpy.types.primitive import PositiveInt
 
 
 def _current_process_cpu_count() -> int:
-    """
-    Return the number of CPUs usable by the current process.
-
-    Prefer ``os.process_cpu_count()`` when available, then fall back to
-    ``os.cpu_count()``, then finally to 1.
-    """
     process_cpu_count = getattr(os, "process_cpu_count", None)
     if process_cpu_count is not None:
         value = process_cpu_count()
@@ -61,17 +55,13 @@ def _validate_num_threads(value: int) -> int:
 type NumProcesses = Annotated[
     PositiveInt,
     BeforeValidator(_replace_zero_with_settings_num_processes),
-    Field(
-        description="Number of MPI processes to use.",
-    ),
+    Field(description="Number of MPI processes to use."),
 ]
 
 type NumThreads = Annotated[
     PositiveInt,
     BeforeValidator(_replace_zero_with_settings_num_threads),
-    Field(
-        description="Number of threads per process to use.",
-    ),
+    Field(description="Number of threads per process to use."),
     AfterValidator(_validate_num_threads),
 ]
 

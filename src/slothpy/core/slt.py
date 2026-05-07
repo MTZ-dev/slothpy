@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, MutableMapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path, PurePosixPath
@@ -13,12 +14,10 @@ from rich.console import Console
 from rich.text import Text
 from rich.tree import Tree
 
-type PathLike = str | Path
-type NodeKind = Literal["file", "group", "dataset", "coordinate", "data_variable"]
-type XarrayChunks = int | str | dict[str, Any] | None
+from slothpy import __version__
+from slothpy.types.aliases import PathLike, XarrayChunks
 
-
-SLOTHPY_FORMAT_VERSION = "0.4"
+SLOTHPY_FORMAT_VERSION = __version__
 SLOTHPY_STORAGE_MODEL = "xarray-netcdf4-hdf5"
 
 
@@ -50,9 +49,8 @@ def _rich_to_html(renderable: Any) -> str:
 
     This is used by ``_repr_html_`` for Jupyter/marimo bare-cell display.
     """
-    stream = StringIO()
     console = Console(
-        file=stream,
+        file=StringIO(),
         record=True,
         force_terminal=True,
         color_system="truecolor",
@@ -109,9 +107,9 @@ def _path_from_key(key: str | tuple[str, str]) -> str:
     --------
     ``"energies"`` becomes ``"energies"``.
 
-    ``"orca_triplets/energies"`` becomes ``"orca_triplets/energies"``.
+    ``"triplets/energies"`` becomes ``"triplets/energies"``.
 
-    ``("orca_triplets", "energies")`` becomes ``"orca_triplets/energies"``.
+    ``("triplets", "energies")`` becomes ``"triplets/energies"``.
     """
     if isinstance(key, tuple):
         if len(key) != 2:
@@ -145,23 +143,35 @@ def _split_supported_path(path: str) -> tuple[str | None, str]:
     Returns
     -------
     tuple[str | None, str]
-        ``(None, name)`` for root-level objects,
-        ``(group, dataset)`` for datasets inside root-level groups.
+        (None, name) for root-level objects,
+        (group, dataset) for datasets inside root-level groups.
     """
-    path = _path_from_key(path)
     parts = path.split("/")
 
     if len(parts) == 1:
         return None, parts[0]
 
-    return parts[0], parts[1]
+    if len(parts) == 2:
+        return parts[0], parts[1]
+
+    raise ValueError(f"HDF5 path {path!r} is too deep for SlothPy's convenience API.")
 
 
 def _xarray_group_path(path: str) -> str:
     """
     Return an xarray/netCDF group path with leading slash.
     """
-    return f"/{_normalize_hdf5_path(path)}"
+    return f"/{path}"
+
+
+def _resolve_file_path(path: PathLike) -> Path:
+    """
+    Return an absolute, expanded path.
+
+    The path does not need to exist. strict=False is intentionally used
+    because new .slt files may be opened in creation modes.
+    """
+    return Path(path).expanduser().resolve(strict=False)
 
 
 # ---------------------------------------------------------------------------
@@ -169,38 +179,22 @@ def _xarray_group_path(path: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _string_dtype() -> Any:
+def _coerce_hdf5_dataset_data(value: Any) -> Any:
     """
-    Return SlothPy's default HDF5 string dtype.
+    Coerce data for HDF5 dataset creation.
+
+    Most values are passed directly to h5py, which already handles Python
+    scalars, lists, tuples, bytes, strings, and NumPy arrays.
+
+    The only special case is an existing NumPy fixed-width Unicode array,
+    dtype kind ``"U"``, because h5py cannot write NumPy Unicode arrays
+    directly. With NumPy >= 2.0 and h5py >= 3.14, we convert it to NumPy's
+    native variable-width string dtype.
     """
-    return h5py.string_dtype(encoding="utf-8")
+    if isinstance(value, np.ndarray) and value.dtype.kind == "U":
+        return value.astype("T")
 
-
-def _prepare_dataset_data(value: Any) -> tuple[Any, Any | None]:
-    """
-    Prepare data for HDF5 dataset creation.
-
-    Strings and sequences of strings are stored as UTF-8 HDF5 strings.
-    Other values are converted through ``numpy.asarray``.
-    """
-    if isinstance(value, str):
-        return value, _string_dtype()
-
-    if (
-        isinstance(value, list | tuple)
-        and value
-        and all(isinstance(item, str) for item in value)
-    ):
-        return np.asarray(value, dtype=object), _string_dtype()
-
-    array = np.asarray(value)
-
-    if array.dtype.kind in {"U", "O"}:
-        flat = array.ravel()
-        if flat.size > 0 and all(isinstance(item, str) for item in flat):
-            return array.astype(object), _string_dtype()
-
-    return array, None
+    return value
 
 
 def _is_scalar_dataset_data(data: Any) -> bool:
@@ -208,14 +202,30 @@ def _is_scalar_dataset_data(data: Any) -> bool:
     Return True if the dataset data represents an HDF5 scalar dataset.
 
     Scalar datasets cannot be chunked or compressed.
-    """
-    if isinstance(data, str):
-        return True
 
+    This function intentionally avoids converting large Python sequences with
+    ``np.asarray`` just to inspect their shape.
+    """
     if isinstance(data, np.ndarray):
         return data.shape == ()
 
-    return np.asarray(data).shape == ()
+    if isinstance(data, np.generic):
+        return True
+
+    if isinstance(data, str | bytes):
+        return True
+
+    if isinstance(data, list | tuple | range):
+        return False
+
+    if np.isscalar(data):
+        return True
+
+    try:
+        return np.asarray(data).shape == ()
+    except Exception:
+        # Let h5py raise the real error during dataset creation.
+        return False
 
 
 def _display_dtype(dataset: h5py.Dataset) -> str:
@@ -232,7 +242,6 @@ def _create_hdf5_dataset(
     parent: h5py.File | h5py.Group,
     name: str,
     data: Any,
-    dtype: Any | None,
     *,
     chunks: bool | tuple[int, ...] | None,
     compression: str | None,
@@ -240,10 +249,9 @@ def _create_hdf5_dataset(
     """
     Create an HDF5 dataset, avoiding chunk/compression options for scalar data.
     """
-    kwargs: dict[str, Any] = {"data": data}
+    data = _coerce_hdf5_dataset_data(data)
 
-    if dtype is not None:
-        kwargs["dtype"] = dtype
+    kwargs: dict[str, Any] = {"data": data}
 
     if not _is_scalar_dataset_data(data):
         if chunks is not None:
@@ -256,7 +264,7 @@ def _create_hdf5_dataset(
 
 def _get_hdf5_item(h5: h5py.File, path: str) -> h5py.File | h5py.Group | h5py.Dataset:
     """
-    Return an HDF5 item or raise a clear KeyError.
+    Return an HDF5 item or raise a clear ``KeyError``.
     """
     if path == "/":
         return h5
@@ -264,7 +272,7 @@ def _get_hdf5_item(h5: h5py.File, path: str) -> h5py.File | h5py.Group | h5py.Da
     path = _normalize_hdf5_path(path)
 
     if path not in h5:
-        raise KeyError(f"No item {path!r} exists in file {h5.filename!r}.")
+        raise KeyError(f"No item {path!r} exists in file {h5.filename!s}.")
 
     item = h5[path]
 
@@ -275,56 +283,249 @@ def _get_hdf5_item(h5: h5py.File, path: str) -> h5py.File | h5py.Group | h5py.Da
 
 
 # ---------------------------------------------------------------------------
-# SlothPy/xarray helpers
+# xarray file-cache and HDF5 opening helpers
 # ---------------------------------------------------------------------------
 
 
-def _release_xarray_file_handles() -> None:
+def _as_resolved_path(value: Any) -> Path | None:
     """
-    Release xarray backend file handles before opening the same ``.slt`` file
-    for HDF5 writing.
+    Try to interpret a value as an absolute filesystem path.
 
-    This is mainly needed in notebooks, where lazy xarray objects or displayed
-    outputs can keep read-only backend handles alive.
+    Returns ``None`` if the value is not path-like.
+    """
+    if isinstance(value, Path):
+        try:
+            return value.expanduser().resolve(strict=False)
+        except OSError:
+            return None
+
+    if isinstance(value, str):
+        try:
+            return Path(value).expanduser().resolve(strict=False)
+        except OSError:
+            return None
+
+    return None
+
+
+def _iter_nested_values(value: Any) -> Iterator[Any]:
+    """
+    Recursively yield values from common Python containers.
+
+    xarray's file-cache keys may contain nested tuples/dicts with the filename
+    somewhere inside the opener arguments.
+    """
+    yield value
+
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield from _iter_nested_values(key)
+            yield from _iter_nested_values(item)
+        return
+
+    if isinstance(value, tuple | list | set | frozenset):
+        for item in value:
+            yield from _iter_nested_values(item)
+
+
+def _cached_file_matches_path(
+    *,
+    cache_key: Any,
+    cached_file: Any,
+    target_path: Path,
+) -> bool:
+    """
+    Return True if an xarray FILE_CACHE entry appears to belong to target_path.
+
+    The function checks both the cache key and common filename-like attributes
+    on cached backend file objects.
+    """
+    target_path = _resolve_file_path(target_path)
+
+    for value in _iter_nested_values(cache_key):
+        candidate = _as_resolved_path(value)
+        if candidate == target_path:
+            return True
+
+    filename_attrs = (
+        "filename",
+        "filepath",
+        "path",
+        "_filename",
+        "_filepath",
+        "_path",
+    )
+
+    for attr in filename_attrs:
+        try:
+            value = getattr(cached_file, attr)
+        except AttributeError:
+            continue
+        except Exception:
+            continue
+
+        if callable(value):
+            try:
+                value = value()
+            except Exception:
+                continue
+
+        candidate = _as_resolved_path(value)
+        if candidate == target_path:
+            return True
+
+    return False
+
+
+def _close_cached_file(cached_file: Any) -> None:
+    """
+    Best-effort close for an xarray cached backend file object.
+    """
+    close = getattr(cached_file, "close", None)
+    if callable(close):
+        close()
+
+
+def _release_xarray_file_handles(file_path: PathLike | None = None) -> None:
+    """
+    Release xarray backend file handles.
+
+    Parameters
+    ----------
+    file_path
+        If provided, release only cached xarray file handles that appear to
+        belong to this file. If ``None``, release all cached file handles.
 
     Notes
     -----
-    This clears xarray's global file cache. Lazy xarray objects can usually
-    reopen files when accessed again, but do not call this while a Dask graph is
-    actively reading from the same file.
+    This is mainly needed in notebooks, where lazy xarray objects or displayed
+    outputs can keep read-only backend handles alive.
+
+    The path-targeted mode is safer than clearing xarray's whole global file
+    cache. Still, do not release handles while a Dask computation is actively
+    reading from the same file.
     """
     try:
         from xarray.backends.file_manager import FILE_CACHE
     except Exception:
         return
 
-    FILE_CACHE.clear()
+    if file_path is None:
+        FILE_CACHE.clear()
+        return
+
+    target_path = _resolve_file_path(file_path)
+
+    try:
+        cache_items = list(FILE_CACHE.items())
+    except Exception:
+        FILE_CACHE.clear()
+        return
+
+    for cache_key, cached_file in cache_items:
+        if not _cached_file_matches_path(
+            cache_key=cache_key,
+            cached_file=cached_file,
+            target_path=target_path,
+        ):
+            continue
+
+        try:
+            del FILE_CACHE[cache_key]
+        except Exception:
+            pass
+
+        _close_cached_file(cached_file)
 
 
-def _truthy_attr(value: Any) -> bool:
+def _hdf5_mode_requests_write(mode: str) -> bool:
     """
-    Interpret a stored HDF5/netCDF attribute as a boolean.
+    Return True if an HDF5 open mode can write, create, or truncate.
     """
-    if isinstance(value, bytes):
-        value = value.decode("utf-8")
+    return any(flag in mode for flag in ("+", "a", "w", "x"))
 
-    if isinstance(value, bool):
-        return value
 
-    if isinstance(value, str):
-        return value.strip().lower() in {"1", "true", "yes", "y"}
+def _is_xarray_read_only_conflict(exc: OSError) -> bool:
+    """
+    Return True if an HDF5 open error likely comes from a cached xarray reader.
+    """
+    message = str(exc).lower()
+    return (
+        "already open for read-only" in message
+        or "file is already open for read-only" in message
+    )
 
-    if isinstance(value, int | np.integer):
-        return bool(value)
 
-    return False
+def _open_hdf5_handle(file_path: PathLike, mode: str) -> h5py.File:
+    """
+    Open an HDF5 file.
+
+    For write-capable modes, retry once after releasing xarray cached handles
+    for the same file if HDF5 reports a read-only open-handle conflict.
+    """
+    path = _resolve_file_path(file_path)
+
+    try:
+        return h5py.File(path, mode)
+    except OSError as exc:
+        if not _hdf5_mode_requests_write(mode):
+            raise
+
+        if not _is_xarray_read_only_conflict(exc):
+            raise
+
+    _release_xarray_file_handles(path)
+    return h5py.File(path, mode)
+
+
+@contextmanager
+def _open_hdf5_file(file_path: PathLike, mode: str) -> Iterator[h5py.File]:
+    """
+    Context-manager wrapper around ``_open_hdf5_handle``.
+    """
+    h5 = _open_hdf5_handle(file_path, mode)
+    try:
+        yield h5
+    finally:
+        h5.close()
+
+
+def _write_xarray_to_netcdf_with_retry(
+    dataset: xr.Dataset,
+    file_path: PathLike,
+    **kwargs: Any,
+) -> None:
+    """
+    Write an xarray Dataset to netCDF/HDF5.
+
+    If writing fails because xarray still has a read-only cached handle for the
+    same file, release handles for that file and retry once.
+    """
+    path = _resolve_file_path(file_path)
+
+    try:
+        dataset.to_netcdf(path, **kwargs)
+        return
+    except OSError as exc:
+        if not _is_xarray_read_only_conflict(exc):
+            raise
+
+    _release_xarray_file_handles(path)
+    dataset.to_netcdf(path, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# SlothPy/xarray helpers
+# ---------------------------------------------------------------------------
 
 
 def _attrs_mark_slothpy_group(attrs: dict[str, Any]) -> bool:
-    """
-    Return True if attributes mark a group as a SlothPy semantic xarray group.
-    """
-    return _truthy_attr(attrs.get("slt_valid", False))
+    value = attrs.get("slt_valid")
+
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+
+    return isinstance(value, str) and value.strip().lower() == "true"
 
 
 def _coerce_to_dataset(
@@ -414,8 +615,6 @@ def _is_slothpy_group(file_path: Path, path: str) -> bool:
     """
     Return True if a group is marked as a SlothPy semantic group.
     """
-    path = _normalize_hdf5_path(path)
-
     with h5py.File(file_path, "r") as h5:
         if path not in h5 or not isinstance(h5[path], h5py.Group):
             return False
@@ -556,7 +755,6 @@ def _group_node(file_path: Path, path: str) -> SltGroupNode:
     """
     Build a structured node for one HDF5 group.
     """
-    path = _normalize_hdf5_path(path)
     name = path.rsplit("/", maxsplit=1)[-1]
 
     with h5py.File(file_path, "r") as h5:
@@ -613,7 +811,7 @@ def _group_node(file_path: Path, path: str) -> SltGroupNode:
 
         coordinates = tuple(
             _variable_node(
-                coord_name,
+                str(coord_name),
                 dataset.coords[coord_name],
                 kind="coordinate",
                 primary=primary,
@@ -623,7 +821,7 @@ def _group_node(file_path: Path, path: str) -> SltGroupNode:
 
         data_variables = tuple(
             _variable_node(
-                var_name,
+                str(var_name),
                 dataset[var_name],
                 kind="data_variable",
                 primary=primary,
@@ -688,7 +886,7 @@ def _file_label(node: SltFileNode) -> Text:
 
     version = node.attrs.get("format_version")
     if version is not None:
-        text.append(f" [version={version!r}]", style="yellow")
+        text.append(f" [version={version}]", style="yellow")
 
     return text
 
@@ -709,10 +907,10 @@ def _group_label(node: SltGroupNode) -> Text:
     if node.is_slothpy:
         slt_type = node.attrs.get("slt_type")
         if slt_type is not None:
-            text.append(f" [Type={slt_type!r}]", style="yellow")
+            text.append(f" [Type={slt_type}]", style="yellow")
 
         if node.primary is not None:
-            text.append(f" [Primary={node.primary!r}]", style="yellow")
+            text.append(f" [Primary={node.primary}]", style="yellow")
     else:
         text.append(" [raw HDF5]", style="bright_black")
 
@@ -946,20 +1144,18 @@ class SltAttributes(MutableMapping[str, Any]):
         if self.item_path == "/":
             return h5
 
-        return _get_hdf5_item(h5, _normalize_hdf5_path(self.item_path))
+        return _get_hdf5_item(h5, self.item_path)
 
     def __getitem__(self, key: str) -> Any:
         with h5py.File(self.file_path, "r") as h5:
             return self._target(h5).attrs[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
-        _release_xarray_file_handles()
-        with h5py.File(self.file_path, "r+") as h5:
+        with _open_hdf5_file(self.file_path, "r+") as h5:
             self._target(h5).attrs[key] = value
 
     def __delitem__(self, key: str) -> None:
-        _release_xarray_file_handles()
-        with h5py.File(self.file_path, "r+") as h5:
+        with _open_hdf5_file(self.file_path, "r+") as h5:
             del self._target(h5).attrs[key]
 
     def __iter__(self) -> Iterator[str]:
@@ -1075,8 +1271,7 @@ class SltDataset:
         """
         Write into an existing dataset selection.
         """
-        _release_xarray_file_handles()
-        with h5py.File(self.file_path, "r+") as h5:
+        with _open_hdf5_file(self.file_path, "r+") as h5:
             item = _get_hdf5_item(h5, self.path)
             if not isinstance(item, h5py.Dataset):
                 raise TypeError(f"{self.path!r} is not a dataset.")
@@ -1196,8 +1391,7 @@ class SltGroup:
         """
         Create this raw HDF5 group if necessary and return this handle.
         """
-        _release_xarray_file_handles()
-        with h5py.File(self.file_path, "a") as h5:
+        with _open_hdf5_file(self.file_path, "a") as h5:
             if self.path in h5 and not isinstance(h5[self.path], h5py.Group):
                 raise TypeError(
                     f"Cannot create group {self.path!r}; a dataset with this "
@@ -1310,8 +1504,8 @@ class SltGroup:
 
         raise KeyError(
             f"No variable or coordinate {name!r} in group {self.path!r}. "
-            f"Available data variables: {list(dataset.data_vars)}. "
-            f"Available coordinates: {list(dataset.coords)}."
+            f"Available data variables: {[str(name) for name in dataset.data_vars]}. "
+            f"Available coordinates: {[str(name) for name in dataset.coords]}."
         )
 
     def create_dataset(
@@ -1345,10 +1539,8 @@ class SltGroup:
             )
 
         child_path = f"{self.path}/{dataset_name}"
-        prepared, dtype = _prepare_dataset_data(data)
 
-        _release_xarray_file_handles()
-        with h5py.File(self.file_path, "a") as h5:
+        with _open_hdf5_file(self.file_path, "a") as h5:
             if self.path in h5 and not isinstance(h5[self.path], h5py.Group):
                 raise TypeError(f"Parent path {self.path!r} exists but is not a group.")
 
@@ -1365,8 +1557,7 @@ class SltGroup:
             _create_hdf5_dataset(
                 group,
                 dataset_name,
-                prepared,
-                dtype,
+                data,
                 chunks=chunks,
                 compression=compression,
             )
@@ -1455,8 +1646,7 @@ class SltGroup:
 
         child_path = f"{self.path}/{child_name}"
 
-        _release_xarray_file_handles()
-        with h5py.File(self.file_path, "r+") as h5:
+        with _open_hdf5_file(self.file_path, "r+") as h5:
             if child_path not in h5:
                 raise KeyError(
                     f"No item {child_path!r} exists in file {self.file_path!s}."
@@ -1473,7 +1663,7 @@ class SltGroup:
         """
         dataset = self.to_dataset()
         try:
-            return list(dataset.data_vars)
+            return [str(name) for name in dataset.data_vars]
         finally:
             dataset.close()
 
@@ -1483,7 +1673,7 @@ class SltGroup:
         """
         dataset = self.to_dataset()
         try:
-            return list(dataset.coords)
+            return [str(name) for name in dataset.coords]
         finally:
             dataset.close()
 
@@ -1507,8 +1697,10 @@ class SltGroup:
         if self.exists and self.is_slothpy:
             dataset = self.to_dataset()
             try:
-                return list(dataset.data_vars) + [
-                    name for name in dataset.coords if name not in dataset.data_vars
+                return [str(name) for name in dataset.data_vars] + [
+                    str(name)
+                    for name in dataset.coords
+                    if name not in dataset.data_vars
                 ]
             finally:
                 dataset.close()
@@ -1517,7 +1709,7 @@ class SltGroup:
             item = _get_hdf5_item(h5, self.path)
             if not isinstance(item, h5py.Group):
                 raise TypeError(f"{self.path!r} is not a group.")
-            return list(item.keys())
+            return [str(name) for name in item.keys()]
 
     def items(self) -> dict[str, xr.DataArray | SltDataset | SltGroup]:
         """
@@ -1534,8 +1726,10 @@ class SltGroup:
         if isinstance(array, xr.Dataset):
             return array.to_dataframe(*args, **kwargs)
 
-        name = array.name or self.primary or "value"
-        return array.to_dataframe(*args, **kwargs, name=name)
+        if not args and "name" not in kwargs:
+            kwargs["name"] = array.name or self.primary or "value"
+
+        return array.to_dataframe(*args, **kwargs)
 
     def to_node(self) -> SltGroupNode:
         """
@@ -1559,7 +1753,7 @@ class SltGroup:
         if not self.exists:
             text = Text.assemble(
                 ("Proxy group", "bold blue"),
-                (f" {self.path!r}", "blue"),
+                (f" {self.path}", "blue"),
                 (" in "),
                 (str(self.file_path), "green"),
                 (" does not exist."),
@@ -1578,7 +1772,7 @@ class SltGroup:
         if not self.exists:
             text = Text.assemble(
                 ("Proxy group", "bold blue"),
-                (f" {self.path!r}", "blue"),
+                (f" {self.path}", "blue"),
                 (" in "),
                 (str(self.file_path), "green"),
                 (" does not exist."),
@@ -1654,8 +1848,7 @@ class SltFile:
 
         mode = "w" if overwrite else "x"
 
-        _release_xarray_file_handles()
-        with h5py.File(file_path, mode) as h5:
+        with _open_hdf5_file(file_path, mode) as h5:
             h5.attrs["format"] = "SlothPy"
             h5.attrs["format_version"] = SLOTHPY_FORMAT_VERSION
             h5.attrs["storage_model"] = SLOTHPY_STORAGE_MODEL
@@ -1681,10 +1874,10 @@ class SltFile:
         Open the underlying HDF5 file.
 
         This is an advanced escape hatch for direct HDF5 access.
+        Write-capable modes retry once after targeted xarray cache release if
+        HDF5 reports that this file is still open read-only.
         """
-        if any(flag in mode for flag in ("+", "a", "w", "x")):
-            _release_xarray_file_handles()
-        return h5py.File(self.path, mode)
+        return _open_hdf5_handle(self.path, mode)
 
     def group(
         self,
@@ -1734,10 +1927,8 @@ class SltFile:
         """
         path = _path_from_key(key)
         group_name, dataset_name = _split_supported_path(path)
-        prepared, dtype = _prepare_dataset_data(data)
 
-        _release_xarray_file_handles()
-        with h5py.File(self.path, "a") as h5:
+        with _open_hdf5_file(self.path, "a") as h5:
             if path in h5:
                 if not overwrite:
                     raise FileExistsError(
@@ -1768,8 +1959,7 @@ class SltFile:
             _create_hdf5_dataset(
                 parent,
                 dataset_name,
-                prepared,
-                dtype,
+                data,
                 chunks=chunks,
                 compression=compression,
             )
@@ -1829,8 +2019,7 @@ class SltFile:
             slt_type=slt_type,
         )
 
-        _release_xarray_file_handles()
-        with h5py.File(self.path, "a") as h5:
+        with _open_hdf5_file(self.path, "a") as h5:
             if group_name in h5:
                 if not overwrite:
                     raise FileExistsError(
@@ -1849,8 +2038,7 @@ class SltFile:
         if encoding is not None:
             kwargs["encoding"] = encoding
 
-        _release_xarray_file_handles()
-        dataset_to_write.to_netcdf(self.path, **kwargs)
+        _write_xarray_to_netcdf_with_retry(dataset_to_write, self.path, **kwargs)
 
         return SltGroup(self.path, group_name)
 
@@ -1929,8 +2117,7 @@ class SltFile:
         """
         path = _path_from_key(key)
 
-        _release_xarray_file_handles()
-        with h5py.File(self.path, "r+") as h5:
+        with _open_hdf5_file(self.path, "r+") as h5:
             if path not in h5:
                 raise KeyError(f"No item {path!r} exists in file {self.path!s}.")
 
@@ -1978,7 +2165,16 @@ class SltFile:
         """
         Return root-level items as SlothPy handles.
         """
-        return {key: self[key] for key in self.keys()}  # type: ignore[dict-item]
+        result: dict[str, SltGroup | SltDataset] = {}
+
+        with h5py.File(self.path, "r") as h5:
+            for name, item in h5.items():
+                if isinstance(item, h5py.Group):
+                    result[str(name)] = SltGroup(self.path, str(name))
+                elif isinstance(item, h5py.Dataset):
+                    result[str(name)] = SltDataset(self.path, str(name))
+
+        return result
 
     def to_groups(
         self,

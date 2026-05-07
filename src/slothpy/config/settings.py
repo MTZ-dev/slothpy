@@ -52,7 +52,7 @@ def _configure(*, permanent: bool = False, **changes: Any) -> SltSettings:
     global settings
     data = settings.model_dump(mode="python")
     data.update(changes)
-    settings = SltSettings(**data)
+    settings = SltSettings.model_validate(data)
     if permanent:
         settings.save()
     return settings
@@ -185,7 +185,7 @@ def reset_settings(permanent: bool = False) -> SltSettings:
     Reset settings to code defaults.
     """
     global settings
-    settings = SltSettings(**_default_settings_data())
+    settings = SltSettings.model_validate(_default_settings_data())
     if permanent:
         settings.save()
     return settings

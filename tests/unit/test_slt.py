@@ -91,6 +91,21 @@ def _safe_close(obj: Any) -> None:
         close()
 
 
+def _expect_group(value: object) -> SltGroup:
+    assert isinstance(value, SltGroup)
+    return value
+
+
+def _expect_dataset(value: object) -> SltDataset:
+    assert isinstance(value, SltDataset)
+    return value
+
+
+def _expect_dataarray(value: object) -> xr.DataArray:
+    assert isinstance(value, xr.DataArray)
+    return value
+
+
 # ---------------------------------------------------------------------------
 # Path and low-level helper tests
 # ---------------------------------------------------------------------------
@@ -161,40 +176,68 @@ def test_split_supported_path_group_dataset() -> None:
     assert slt_mod._split_supported_path("group/dataset") == ("group", "dataset")
 
 
+def test__split_supported_path_to_deep_path() -> None:
+    with pytest.raises(ValueError):
+        slt_mod._split_supported_path("group_1/group_2/dataset")
+
+
 def test_xarray_group_path_adds_leading_slash() -> None:
     assert slt_mod._xarray_group_path("group") == "/group"
 
 
-def test_string_dtype_is_utf8() -> None:
-    dtype = slt_mod._string_dtype()
-    assert h5py.check_string_dtype(dtype).encoding == "utf-8"
+def test_coerce_hdf5_dataset_data_leaves_scalar_string_unchanged() -> None:
+    value = "abc"
+
+    result = slt_mod._coerce_hdf5_dataset_data(value)
+
+    assert result is value
 
 
-def test_prepare_dataset_data_scalar_string() -> None:
-    data, dtype = slt_mod._prepare_dataset_data("abc")
-    assert data == "abc"
-    assert h5py.check_string_dtype(dtype).encoding == "utf-8"
+def test_coerce_hdf5_dataset_data_leaves_string_list_unchanged() -> None:
+    value = ["a", "b"]
+
+    result = slt_mod._coerce_hdf5_dataset_data(value)
+
+    assert result is value
 
 
-def test_prepare_dataset_data_string_list() -> None:
-    data, dtype = slt_mod._prepare_dataset_data(["a", "b"])
-    assert data.tolist() == ["a", "b"]
-    assert h5py.check_string_dtype(dtype).encoding == "utf-8"
+def test_coerce_hdf5_dataset_data_leaves_numeric_list_unchanged() -> None:
+    value = [1, 2, 3]
+
+    result = slt_mod._coerce_hdf5_dataset_data(value)
+
+    assert result is value
 
 
-def test_prepare_dataset_data_string_numpy_array() -> None:
-    data, dtype = slt_mod._prepare_dataset_data(np.array(["a", "b"]))
-    assert data.tolist() == ["a", "b"]
-    assert h5py.check_string_dtype(dtype).encoding == "utf-8"
+def test_coerce_hdf5_dataset_data_leaves_numeric_numpy_array_unchanged() -> None:
+    value = np.array([1, 2, 3])
+
+    result = slt_mod._coerce_hdf5_dataset_data(value)
+
+    assert result is value
 
 
-def test_prepare_dataset_data_numeric_array() -> None:
-    data, dtype = slt_mod._prepare_dataset_data([1, 2, 3])
-    assert data.tolist() == [1, 2, 3]
-    assert dtype is None
+def test_coerce_hdf5_dataset_data_converts_numpy_unicode_array() -> None:
+    value = np.array(["a", "b"])
+
+    result = slt_mod._coerce_hdf5_dataset_data(value)
+
+    assert isinstance(result, np.ndarray)
+    assert result.tolist() == ["a", "b"]
+    assert h5py.check_string_dtype(result.dtype).encoding == "utf-8"
 
 
-@pytest.mark.parametrize("value", ["abc", np.array(1), 1])
+def test_create_dataset_from_numpy_unicode_array_and_read(slt: SltFile) -> None:
+    dataset = slt.create_dataset("unicode_strings", np.array(["a", "b"]))
+
+    assert dataset.read().tolist() == ["a", "b"]
+    assert dataset.dtype == "str"
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["abc", np.array(1), 1, np.array(1), np.float64(1.0), np.int64(1), np.bool_(True)],
+)
 def test_is_scalar_dataset_data(value: Any) -> None:
     assert slt_mod._is_scalar_dataset_data(value)
 
@@ -202,6 +245,14 @@ def test_is_scalar_dataset_data(value: Any) -> None:
 @pytest.mark.parametrize("value", [[1, 2], np.array([1, 2])])
 def test_is_scalar_dataset_data_false(value: Any) -> None:
     assert not slt_mod._is_scalar_dataset_data(value)
+
+
+def test_is_scalar_dataset_data_returns_false_when_array_conversion_fails() -> None:
+    class BadArrayLike:
+        def __array__(self) -> np.ndarray:
+            raise RuntimeError("boom")
+
+    assert not slt_mod._is_scalar_dataset_data(BadArrayLike())
 
 
 def test_get_hdf5_item_root_and_missing(slt: SltFile) -> None:
@@ -240,25 +291,24 @@ def test_display_dtype_for_string_and_numeric(slt: SltFile) -> None:
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        (True, True),
-        (False, False),
         ("true", True),
-        ("yes", True),
-        ("1", True),
-        ("false", False),
-        (1, True),
-        (0, False),
-        (np.int64(1), True),
+        (" TRUE ", True),
         (b"true", True),
-        (object(), False),
+        (b" TRUE ", True),
+        ("false", False),
+        (b"false", False),
+        ("1", False),
+        (b"1", False),
+        (True, False),
+        (1, False),
+        (None, False),
     ],
 )
-def test_truthy_attr(value: Any, expected: bool) -> None:
-    assert slt_mod._truthy_attr(value) is expected
+def test_attrs_mark_slothpy_group(value: Any, expected: bool) -> None:
+    assert slt_mod._attrs_mark_slothpy_group({"slt_valid": value}) is expected
 
 
-def test_attrs_mark_slothpy_group() -> None:
-    assert slt_mod._attrs_mark_slothpy_group({"slt_valid": "true"})
+def test_attrs_mark_slothpy_group_empty() -> None:
     assert not slt_mod._attrs_mark_slothpy_group({})
 
 
@@ -476,8 +526,11 @@ def test_create_string_datasets_and_read(slt: SltFile) -> None:
     slt["scalar_string"] = "abc"
     slt["string_array"] = ["a", "b", "c"]
 
-    assert slt["scalar_string"].read() == "abc"  # type: ignore[union-attr]
-    assert slt["string_array"].read().tolist() == ["a", "b", "c"]  # type: ignore[union-attr]
+    scalar_string = _expect_dataset(slt["scalar_string"])
+    string_array = _expect_dataset(slt["string_array"])
+
+    assert scalar_string.read() == "abc"
+    assert string_array.read().tolist() == ["a", "b", "c"]
 
 
 def test_dataset_write(slt: SltFile) -> None:
@@ -544,8 +597,7 @@ def test_dataset_read_write_reject_non_dataset(slt: SltFile) -> None:
 
 
 def test_missing_getitem_returns_proxy_group(slt: SltFile) -> None:
-    group = slt["new_group"]
-    assert isinstance(group, SltGroup)
+    group = _expect_group(slt["new_group"])
     assert not group.exists
     assert "Proxy group" in str(group)
     assert "Proxy group" in group._repr_html_()
@@ -574,8 +626,10 @@ def test_group_create_dataset_and_access(slt: SltFile) -> None:
     group = slt.create_group("scratch")
     dataset = group.create_dataset("values", [1, 2, 3])
 
+    values = _expect_dataset(group["values"])
+
     assert isinstance(dataset, SltDataset)
-    assert group["values"].read().tolist() == [1, 2, 3]  # type: ignore[union-attr]
+    assert values.read().tolist() == [1, 2, 3]
     assert "values" in group
     assert group.keys() == ["values"]
     assert isinstance(group.items()["values"], SltDataset)
@@ -585,7 +639,9 @@ def test_group_setitem_creates_dataset(slt: SltFile) -> None:
     group = slt.create_group("scratch")
     group["values"] = [1, 2, 3]
 
-    assert group["values"].read().tolist() == [1, 2, 3]  # type: ignore[union-attr]
+    values = _expect_dataset(group["values"])
+
+    assert values.read().tolist() == [1, 2, 3]
 
 
 def test_group_create_dataset_rejects_nested_key(slt: SltFile) -> None:
@@ -608,7 +664,9 @@ def test_group_create_dataset_overwrite(slt: SltFile) -> None:
     group.create_dataset("values", [1])
     group.create_dataset("values", [2], overwrite=True)
 
-    assert group["values"].read().tolist() == [2]  # type: ignore[union-attr]
+    values = _expect_dataset(group["values"])
+
+    assert values.read().tolist() == [2]
 
 
 def test_group_getitem_rejects_nested_key(slt: SltFile) -> None:
@@ -622,8 +680,9 @@ def test_group_getitem_can_return_child_group(slt: SltFile) -> None:
     with h5py.File(slt.path, "a") as h5:
         h5.require_group("scratch/child")
 
-    child = slt["scratch"]["child"]
-    assert isinstance(child, SltGroup)
+    scratch = _expect_group(slt["scratch"])
+    child = _expect_group(scratch["child"])
+
     assert child.path == "scratch/child"
 
 
@@ -666,7 +725,9 @@ def test_group_to_node_raw_with_child_group(slt: SltFile) -> None:
         raw.create_dataset("values", data=[1, 2])
         raw.require_group("child")
 
-    node = slt["raw"].to_node()
+    group = _expect_group(slt["raw"])
+    node = group.to_node()
+
     assert node.name == "raw"
     assert not node.is_slothpy
     assert node.raw_datasets[0].name == "values"
@@ -697,9 +758,8 @@ def test_group_repr_str_html_show(
 def test_write_slothpy_group_and_read_xarray(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    group = slt_with_semantic_group["magnetisation_001"]
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
 
-    assert isinstance(group, SltGroup)
     assert group.exists
     assert group.is_slothpy
     assert group.type == "MAGNETISATION"
@@ -720,18 +780,20 @@ def test_write_slothpy_group_and_read_xarray(
 def test_semantic_group_variable_access(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    group = slt_with_semantic_group["magnetisation_001"]
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
 
-    magnetisation = group["magnetisation"]
-    temperature = group["temperature"]
-    weight = group["orientation_weight"]
-    tuple_access = slt_with_semantic_group["magnetisation_001/temperature"]
+    magnetisation = _expect_dataarray(group["magnetisation"])
+    temperature = _expect_dataarray(group["temperature"])
+    weight = _expect_dataarray(group["orientation_weight"])
+    tuple_access = _expect_dataarray(
+        slt_with_semantic_group["magnetisation_001/temperature"]
+    )
 
     try:
-        assert isinstance(magnetisation, xr.DataArray)
-        assert isinstance(temperature, xr.DataArray)
-        assert isinstance(weight, xr.DataArray)
-        assert isinstance(tuple_access, xr.DataArray)
+        assert magnetisation.name == "magnetisation"
+        assert temperature.name == "temperature"
+        assert weight.name == "orientation_weight"
+        assert tuple_access.name == "temperature"
         assert temperature.attrs["unit"] == "K"
     finally:
         _safe_close(magnetisation)
@@ -743,7 +805,7 @@ def test_semantic_group_variable_access(
 def test_semantic_group_variable_missing_raises(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    group = slt_with_semantic_group["magnetisation_001"]
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
 
     with pytest.raises(KeyError, match="No variable or coordinate"):
         group.variable("missing")
@@ -792,7 +854,7 @@ def test_semantic_group_to_xarray_missing_declared_primary_raises(
 def test_semantic_group_metadata_methods(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    group = slt_with_semantic_group["magnetisation_001"]
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
 
     assert set(group.variables()) == {
         "magnetisation",
@@ -833,7 +895,9 @@ def test_semantic_group_metadata_methods(
 def test_semantic_group_with_chunks(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    group = slt_with_semantic_group["magnetisation_001"].with_chunks({"field": 4})
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"]).with_chunks(
+        {"field": 4}
+    )
 
     assert group.chunks == {"field": 4}
 
@@ -851,7 +915,7 @@ def test_semantic_group_with_chunks(
 def test_semantic_group_to_dataframe(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    group = slt_with_semantic_group["magnetisation_001"]
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
     frame = group.to_dataframe()
 
     assert "magnetisation" in frame.columns
@@ -874,7 +938,7 @@ def test_semantic_group_to_dataframe_dataset_primary(slt: SltFile) -> None:
 def test_semantic_group_raw_mutation_is_protected(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    group = slt_with_semantic_group["magnetisation_001"]
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
 
     with pytest.raises(TypeError, match="semantic xarray group"):
         group.create_dataset("new", [1])
@@ -922,9 +986,9 @@ def test_write_slothpy_group_overwrite(slt: SltFile) -> None:
     slt._write_slothpy_group("group", ds1)
     group = slt._write_slothpy_group("group", ds2, overwrite=True)
 
-    da = group.to_xarray()
+    da = _expect_dataarray(group.to_xarray())
     try:
-        assert da.values.tolist() == [2]
+        assert da.to_numpy().tolist() == [2]
     finally:
         _safe_close(da)
 
@@ -937,7 +1001,8 @@ def test_write_slothpy_group_rejects_non_xarray(slt: SltFile) -> None:
 def test_semantic_group_to_node(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    node = slt_with_semantic_group["magnetisation_001"].to_node()
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
+    node = group.to_node()
 
     assert node.is_slothpy
     assert node.name == "magnetisation_001"
@@ -992,9 +1057,13 @@ def test_file_create_dataset_path_styles(slt: SltFile) -> None:
     slt["group/values"] = [3, 4]
     slt[("group", "more_values")] = [5, 6]
 
-    assert slt["root"].read().tolist() == [1, 2]  # type: ignore[union-attr]
-    assert slt["group/values"].read().tolist() == [3, 4]  # type: ignore[union-attr]
-    assert slt[("group", "more_values")].read().tolist() == [5, 6]  # type: ignore[union-attr]
+    root = _expect_dataset(slt["root"])
+    values = _expect_dataset(slt["group/values"])
+    more_values = _expect_dataset(slt[("group", "more_values")])
+
+    assert root.read().tolist() == [1, 2]
+    assert values.read().tolist() == [3, 4]
+    assert more_values.read().tolist() == [5, 6]
 
 
 def test_file_create_dataset_duplicate_and_overwrite(slt: SltFile) -> None:
@@ -1030,11 +1099,15 @@ def test_file_getitem_group_dataset_and_proxy(slt: SltFile) -> None:
     slt["root"] = [1]
     slt["group/values"] = [2]
 
-    assert isinstance(slt["root"], SltDataset)
-    assert isinstance(slt["group"], SltGroup)
-    assert isinstance(slt["group/values"], SltDataset)
-    assert isinstance(slt["missing"], SltGroup)
-    assert not slt["missing"].exists  # type: ignore[union-attr]
+    root = slt["root"]
+    group = slt["group"]
+    values = slt["group/values"]
+    missing = _expect_group(slt["missing"])
+
+    assert isinstance(root, SltDataset)
+    assert isinstance(group, SltGroup)
+    assert isinstance(values, SltDataset)
+    assert not missing.exists
 
 
 def test_file_contains(slt: SltFile) -> None:
@@ -1196,11 +1269,15 @@ def test_raw_attribute_write_after_lazy_xarray_open_does_not_fail(
 ) -> None:
     slt_with_semantic_group["scratch/values"] = [1, 2, 3]
 
-    lazy_array = slt_with_semantic_group["magnetisation_001"].to_xarray()
+    semantic_group = _expect_group(slt_with_semantic_group["magnetisation_001"])
+    lazy_array = semantic_group.to_xarray()
 
     try:
-        slt_with_semantic_group["scratch"]["values"].attrs["unit"] = "arb. u."
-        assert slt_with_semantic_group["scratch"]["values"].attrs["unit"] == "arb. u."
+        scratch = _expect_group(slt_with_semantic_group["scratch"])
+        values = _expect_dataset(scratch["values"])
+
+        values.attrs["unit"] = "arb. u."
+        assert values.attrs["unit"] == "arb. u."
     finally:
         _safe_close(lazy_array)
 
@@ -1208,13 +1285,482 @@ def test_raw_attribute_write_after_lazy_xarray_open_does_not_fail(
 def test_raw_dataset_write_after_lazy_xarray_open_does_not_fail(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    lazy_array = slt_with_semantic_group["magnetisation_001"].to_xarray()
+    semantic_group = _expect_group(slt_with_semantic_group["magnetisation_001"])
+    lazy_array = semantic_group.to_xarray()
 
     try:
         slt_with_semantic_group["scratch/values"] = [1, 2, 3]
-        assert slt_with_semantic_group["scratch"]["values"].read().tolist() == [1, 2, 3]  # type: ignore[union-attr]
+
+        scratch = _expect_group(slt_with_semantic_group["scratch"])
+        values = _expect_dataset(scratch["values"])
+
+        assert values.read().tolist() == [1, 2, 3]
     finally:
         _safe_close(lazy_array)
+
+
+# ---------------------------------------------------------------------------
+# Path-targeted xarray cache release and retry-opening tests
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_file_path_does_not_require_existing_file(tmp_path: Path) -> None:
+    path = tmp_path / "missing.slt"
+
+    resolved = slt_mod._resolve_file_path(path)
+
+    assert resolved.is_absolute()
+    assert resolved.name == "missing.slt"
+
+
+def test_as_resolved_path_accepts_path_and_string(tmp_path: Path) -> None:
+    path = tmp_path / "demo.slt"
+
+    assert slt_mod._as_resolved_path(path) == path.resolve(strict=False)
+    assert slt_mod._as_resolved_path(str(path)) == path.resolve(strict=False)
+    assert slt_mod._as_resolved_path(object()) is None
+
+
+def test_iter_nested_values_recurses_through_containers(tmp_path: Path) -> None:
+    path = tmp_path / "demo.slt"
+    nested = {
+        "outer": [
+            ("inner", path),
+            {"other": 1},
+        ]
+    }
+
+    values = list(slt_mod._iter_nested_values(nested))
+
+    assert nested in values
+    assert path in values
+    assert "outer" in values
+    assert "inner" in values
+    assert "other" in values
+    assert 1 in values
+
+
+def test_cached_file_matches_path_from_cache_key(tmp_path: Path) -> None:
+    target = tmp_path / "demo.slt"
+    other = tmp_path / "other.slt"
+
+    assert slt_mod._cached_file_matches_path(
+        cache_key=("open", (str(target),), {}),
+        cached_file=object(),
+        target_path=target,
+    )
+    assert not slt_mod._cached_file_matches_path(
+        cache_key=("open", (str(other),), {}),
+        cached_file=object(),
+        target_path=target,
+    )
+
+
+def test_cached_file_matches_path_from_cached_file_attribute(tmp_path: Path) -> None:
+    target = tmp_path / "demo.slt"
+
+    class CachedFile:
+        filename = str(target)
+
+    assert slt_mod._cached_file_matches_path(
+        cache_key=("no-path-here",),
+        cached_file=CachedFile(),
+        target_path=target,
+    )
+
+
+def test_cached_file_matches_path_from_callable_attribute(tmp_path: Path) -> None:
+    target = tmp_path / "demo.slt"
+
+    class CachedFile:
+        def filepath(self) -> str:
+            return str(target)
+
+    assert slt_mod._cached_file_matches_path(
+        cache_key=("no-path-here",),
+        cached_file=CachedFile(),
+        target_path=target,
+    )
+
+
+def test_cached_file_matches_path_ignores_attribute_errors(tmp_path: Path) -> None:
+    target = tmp_path / "demo.slt"
+
+    class CachedFile:
+        @property
+        def filename(self) -> str:
+            raise RuntimeError("boom")
+
+    assert not slt_mod._cached_file_matches_path(
+        cache_key=("no-path-here",),
+        cached_file=CachedFile(),
+        target_path=target,
+    )
+
+
+def test_cached_file_matches_path_ignores_callable_errors(tmp_path: Path) -> None:
+    target = tmp_path / "demo.slt"
+
+    class CachedFile:
+        def filename(self) -> str:
+            raise RuntimeError("boom")
+
+    assert not slt_mod._cached_file_matches_path(
+        cache_key=("no-path-here",),
+        cached_file=CachedFile(),
+        target_path=target,
+    )
+
+
+def test_close_cached_file_calls_close() -> None:
+    class CachedFile:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    cached_file = CachedFile()
+
+    slt_mod._close_cached_file(cached_file)
+
+    assert cached_file.closed
+
+
+def test_close_cached_file_without_close_method() -> None:
+    slt_mod._close_cached_file(object())
+
+
+def test_release_xarray_file_handles_only_releases_matching_file(
+    tmp_path: Path,
+) -> None:
+    from xarray.backends import file_manager
+
+    target = tmp_path / "target.slt"
+    other = tmp_path / "other.slt"
+
+    class CachedFile:
+        def __init__(self, filename: Path) -> None:
+            self.filename = str(filename)
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    target_cached = CachedFile(target)
+    other_cached = CachedFile(other)
+
+    old_cache = file_manager.FILE_CACHE
+    fake_cache = {
+        ("target-key", str(target)): target_cached,
+        ("other-key", str(other)): other_cached,
+    }
+
+    try:
+        file_manager.FILE_CACHE = fake_cache  # type: ignore[assignment]
+        slt_mod._release_xarray_file_handles(target)
+
+        assert ("target-key", str(target)) not in fake_cache
+        assert ("other-key", str(other)) in fake_cache
+        assert target_cached.closed
+        assert not other_cached.closed
+    finally:
+        file_manager.FILE_CACHE = old_cache  # type: ignore[assignment]
+
+
+def test_release_xarray_file_handles_without_path_clears_all(
+    tmp_path: Path,
+) -> None:
+    from xarray.backends import file_manager
+
+    old_cache = file_manager.FILE_CACHE
+    fake_cache = {"a": object(), "b": object()}
+
+    try:
+        file_manager.FILE_CACHE = fake_cache  # type: ignore[assignment]
+        slt_mod._release_xarray_file_handles()
+
+        assert fake_cache == {}
+    finally:
+        file_manager.FILE_CACHE = old_cache  # type: ignore[assignment]
+
+
+def test_release_xarray_file_handles_falls_back_to_clear_when_items_fails(
+    tmp_path: Path,
+) -> None:
+    from xarray.backends import file_manager
+
+    class BadCache:
+        def __init__(self) -> None:
+            self.cleared = False
+
+        def items(self) -> None:
+            raise RuntimeError("boom")
+
+        def clear(self) -> None:
+            self.cleared = True
+
+    old_cache = file_manager.FILE_CACHE
+    bad_cache = BadCache()
+
+    try:
+        file_manager.FILE_CACHE = bad_cache  # type: ignore[assignment]
+        slt_mod._release_xarray_file_handles(tmp_path / "demo.slt")
+
+        assert bad_cache.cleared
+    finally:
+        file_manager.FILE_CACHE = old_cache  # type: ignore[assignment]
+
+
+def test_release_xarray_file_handles_ignores_delete_errors(
+    tmp_path: Path,
+) -> None:
+    from xarray.backends import file_manager
+
+    target = tmp_path / "target.slt"
+
+    class Cache:
+        def __init__(self) -> None:
+            self.cached_file = CachedFile()
+            self.deleted = False
+
+        def items(self):
+            return [((str(target),), self.cached_file)]
+
+        def __delitem__(self, key) -> None:
+            self.deleted = True
+            raise RuntimeError("cannot delete")
+
+    class CachedFile:
+        filename = str(target)
+
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    old_cache = file_manager.FILE_CACHE
+    cache = Cache()
+
+    try:
+        file_manager.FILE_CACHE = cache  # type: ignore[assignment]
+        slt_mod._release_xarray_file_handles(target)
+
+        assert cache.deleted
+        assert cache.cached_file.closed
+    finally:
+        file_manager.FILE_CACHE = old_cache  # type: ignore[assignment]
+
+
+def test_hdf5_mode_requests_write() -> None:
+    assert not slt_mod._hdf5_mode_requests_write("r")
+    assert slt_mod._hdf5_mode_requests_write("r+")
+    assert slt_mod._hdf5_mode_requests_write("a")
+    assert slt_mod._hdf5_mode_requests_write("w")
+    assert slt_mod._hdf5_mode_requests_write("x")
+
+
+def test_is_xarray_read_only_conflict() -> None:
+    assert slt_mod._is_xarray_read_only_conflict(
+        OSError("file is already open for read-only")
+    )
+    assert slt_mod._is_xarray_read_only_conflict(
+        OSError("unable to open file: already open for read-only")
+    )
+    assert not slt_mod._is_xarray_read_only_conflict(OSError("different error"))
+
+
+def test_open_hdf5_handle_read_mode_does_not_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = []
+
+    def fake_file(path: Path, mode: str) -> h5py.File:
+        calls.append((path, mode))
+        raise OSError("file is already open for read-only")
+
+    monkeypatch.setattr(slt_mod.h5py, "File", fake_file)
+
+    with pytest.raises(OSError):
+        slt_mod._open_hdf5_handle(tmp_path / "demo.slt", "r")
+
+    assert len(calls) == 1
+
+
+def test_open_hdf5_handle_write_mode_does_not_retry_unrelated_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = []
+
+    def fake_file(path: Path, mode: str) -> h5py.File:
+        calls.append((path, mode))
+        raise OSError("permission denied")
+
+    monkeypatch.setattr(slt_mod.h5py, "File", fake_file)
+
+    with pytest.raises(OSError, match="permission denied"):
+        slt_mod._open_hdf5_handle(tmp_path / "demo.slt", "a")
+
+    assert len(calls) == 1
+
+
+def test_open_hdf5_handle_write_mode_releases_target_and_retries(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "demo.slt"
+    opened = object()
+    calls = []
+    released = []
+
+    def fake_file(path: Path, mode: str) -> object:
+        calls.append((path, mode))
+        if len(calls) == 1:
+            raise OSError("file is already open for read-only")
+        return opened
+
+    def fake_release(path: Path) -> None:
+        released.append(path)
+
+    monkeypatch.setattr(slt_mod.h5py, "File", fake_file)
+    monkeypatch.setattr(slt_mod, "_release_xarray_file_handles", fake_release)
+
+    result = slt_mod._open_hdf5_handle(target, "a")
+
+    assert result is opened
+    assert len(calls) == 2
+    assert released == [target.resolve(strict=False)]
+
+
+def test_open_hdf5_file_closes_handle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeH5:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    fake_h5 = FakeH5()
+
+    monkeypatch.setattr(
+        slt_mod,
+        "_open_hdf5_handle",
+        lambda file_path, mode: fake_h5,
+    )
+
+    with slt_mod._open_hdf5_file(tmp_path / "demo.slt", "a") as h5:
+        assert h5 is fake_h5
+        assert not fake_h5.closed
+
+    assert fake_h5.closed
+
+
+def test_write_xarray_to_netcdf_with_retry_releases_target_and_retries(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "demo.slt"
+    ds = xr.Dataset({"x": ("i", [1, 2, 3])})
+
+    calls = []
+    released = []
+
+    def fake_to_netcdf(self: xr.Dataset, path: Path, **kwargs: object) -> None:
+        calls.append((self, path, kwargs))
+        if len(calls) == 1:
+            raise OSError("file is already open for read-only")
+
+    def fake_release(path: Path) -> None:
+        released.append(path)
+
+    monkeypatch.setattr(xr.Dataset, "to_netcdf", fake_to_netcdf)
+    monkeypatch.setattr(slt_mod, "_release_xarray_file_handles", fake_release)
+
+    slt_mod._write_xarray_to_netcdf_with_retry(
+        ds,
+        target,
+        group="/group",
+        mode="a",
+        engine="h5netcdf",
+    )
+
+    assert len(calls) == 2
+    assert calls[0][0] is ds
+    assert calls[1][0] is ds
+    assert released == [target.resolve(strict=False)]
+    assert calls[0][2]["group"] == "/group"
+
+
+def test_create_different_slt_file_does_not_release_unrelated_xarray_handle(
+    tmp_path: Path,
+) -> None:
+    from xarray.backends import file_manager
+
+    first = create_slt_file(tmp_path / "first.slt", overwrite=True)
+    first._write_slothpy_group(
+        "data",
+        xr.Dataset({"x": ("i", [1, 2, 3])}),
+        primary="x",
+    )
+
+    lazy = _expect_group(first["data"]).to_xarray()
+
+    class CachedFile:
+        def __init__(self, filename: Path) -> None:
+            self.filename = str(filename)
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    cached = CachedFile(first.path)
+
+    old_cache = file_manager.FILE_CACHE
+    fake_cache = {("first", str(first.path)): cached}
+
+    try:
+        file_manager.FILE_CACHE = fake_cache  # type: ignore[assignment]
+
+        second = create_slt_file(tmp_path / "second.slt", overwrite=True)
+
+        assert second.path.name == "second.slt"
+        assert ("first", str(first.path)) in fake_cache
+        assert not cached.closed
+    finally:
+        _safe_close(lazy)
+        file_manager.FILE_CACHE = old_cache  # type: ignore[assignment]
+
+
+def test_mutating_same_slt_file_after_lazy_xarray_open_retries_and_succeeds(
+    tmp_path: Path,
+) -> None:
+    slt = create_slt_file(tmp_path / "demo.slt", overwrite=True)
+    slt._write_slothpy_group(
+        "data",
+        xr.Dataset({"x": ("i", [1, 2, 3])}),
+        primary="x",
+    )
+
+    lazy = _expect_group(slt["data"]).to_xarray()
+
+    try:
+        slt["scratch/values"] = [4, 5, 6]
+
+        scratch = _expect_group(slt["scratch"])
+        values = _expect_dataset(scratch["values"])
+
+        values.attrs["unit"] = "arb. u."
+
+        assert values.read().tolist() == [4, 5, 6]
+        assert values.attrs["unit"] == "arb. u."
+    finally:
+        _safe_close(lazy)
 
 
 # ---------------------------------------------------------------------------
@@ -1335,9 +1881,8 @@ def test_group_name_property_and_missing_type_primary(slt: SltFile) -> None:
 def test_to_dataset_decode_cf_argument(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    dataset = slt_with_semantic_group["magnetisation_001"].to_dataset(
-        decode_cf=False,
-    )
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
+    dataset = group.to_dataset(decode_cf=False)
 
     try:
         assert isinstance(dataset, xr.Dataset)
@@ -1357,12 +1902,11 @@ def test_to_xarray_can_return_primary_coordinate(slt: SltFile) -> None:
         overwrite=True,
     )
 
-    result = group.to_xarray()
+    result = _expect_dataarray(group.to_xarray())
 
     try:
-        assert isinstance(result, xr.DataArray)
         assert result.name == "temperature"
-        assert result.values.tolist() == [2.0, 5.0, 10.0]
+        assert result.to_numpy().tolist() == [2.0, 5.0, 10.0]
     finally:
         result.close()
 
@@ -1388,12 +1932,14 @@ def test_group_getitem_unsupported_item_branch(
 
     monkeypatch.setattr(slt_mod, "_get_hdf5_item", fake_get_hdf5_item)
 
+    raw = _expect_group(slt["raw"])
+
     with pytest.raises(TypeError, match="Unsupported HDF5 object"):
-        _ = slt["raw"]["anything"]
+        _ = raw["anything"]
 
 
 def test_semantic_group_walk(slt_with_semantic_group: SltFile) -> None:
-    group = slt_with_semantic_group["magnetisation_001"]
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
 
     assert group.walk() == group.to_node()
 
@@ -1408,7 +1954,7 @@ def test_write_slothpy_group_with_encoding(slt: SltFile) -> None:
         overwrite=True,
     )
 
-    result = group.to_xarray()
+    result = _expect_dataarray(group.to_xarray())
 
     try:
         assert result.dtype == np.float32
@@ -1442,7 +1988,7 @@ def test_file_getitem_root_unsupported_hdf5_object(slt: SltFile) -> None:
 def test_semantic_group_str_covers_dimension_coordinate_variable_tree_branches(
     slt_with_semantic_group: SltFile,
 ) -> None:
-    group = slt_with_semantic_group["magnetisation_001"]
+    group = _expect_group(slt_with_semantic_group["magnetisation_001"])
 
     text = str(group)
 
@@ -1466,3 +2012,93 @@ def test_file_getitem_group_path_can_return_nested_group(
 
     assert isinstance(child, SltGroup)
     assert child.path == "raw/child"
+
+
+def test_as_resolved_path_returns_none_when_path_expanduser_fails() -> None:
+    class BadPath(type(Path())):  # type: ignore[misc]
+        def expanduser(self):
+            raise OSError("boom")
+
+    assert slt_mod._as_resolved_path(BadPath("demo.slt")) is None
+
+
+def test_as_resolved_path_returns_none_when_string_path_resolution_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BadPath:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
+        def expanduser(self):
+            raise OSError("boom")
+
+    monkeypatch.setattr(slt_mod, "Path", BadPath)
+
+    assert slt_mod._as_resolved_path("demo.slt") is None
+
+
+def test_write_xarray_to_netcdf_with_retry_success_first_try(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "demo.slt"
+    ds = xr.Dataset({"x": ("i", [1, 2, 3])})
+
+    calls = []
+
+    def fake_to_netcdf(self: xr.Dataset, path: Path, **kwargs: object) -> None:
+        calls.append((self, path, kwargs))
+
+    monkeypatch.setattr(xr.Dataset, "to_netcdf", fake_to_netcdf)
+
+    slt_mod._write_xarray_to_netcdf_with_retry(
+        ds,
+        target,
+        group="/group",
+        mode="a",
+        engine="h5netcdf",
+    )
+
+    assert len(calls) == 1
+    assert calls[0][0] is ds
+    assert calls[0][1] == target.resolve(strict=False)
+    assert calls[0][2]["group"] == "/group"
+
+
+def test_write_xarray_to_netcdf_with_retry_checks_unrelated_oserror_branch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "demo.slt"
+    ds = xr.Dataset({"x": ("i", [1, 2, 3])})
+
+    calls = []
+
+    def fake_to_netcdf(self: xr.Dataset, path: Path, **kwargs: object) -> None:
+        calls.append((self, path, kwargs))
+        raise OSError("unrelated HDF5 failure")
+
+    conflict_checks = []
+
+    def fake_is_conflict(exc: OSError) -> bool:
+        conflict_checks.append(str(exc))
+        return False
+
+    monkeypatch.setattr(xr.Dataset, "to_netcdf", fake_to_netcdf)
+    monkeypatch.setattr(
+        slt_mod,
+        "_is_xarray_read_only_conflict",
+        fake_is_conflict,
+    )
+
+    with pytest.raises(OSError, match="unrelated HDF5 failure"):
+        slt_mod._write_xarray_to_netcdf_with_retry(
+            ds,
+            target,
+            group="/group",
+            mode="a",
+            engine="h5netcdf",
+        )
+
+    assert len(calls) == 1
+    assert conflict_checks == ["unrelated HDF5 failure"]

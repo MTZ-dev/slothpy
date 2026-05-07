@@ -20,3 +20,6 @@ __marimo__
 
 # Notebooks
 tutorial_data/
+
+# Data
+*.out

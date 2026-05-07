@@ -14,8 +14,52 @@ def _():
     import xarray as xr
 
     from slothpy.core.slt import create_slt_file, open_slt_file
+    from slothpy.orca_hamiltonian_reader import hamiltonian_from_orca
 
-    return Path, create_slt_file, mo, np, open_slt_file, xr
+    return (
+        Path,
+        create_slt_file,
+        hamiltonian_from_orca,
+        mo,
+        np,
+        open_slt_file,
+        xr,
+    )
+
+
+@app.cell
+def _(hamiltonian_from_orca):
+    slt = hamiltonian_from_orca(
+        "src/slothpy/Pr_minimal.out",
+        "demo.slt",
+        "orca_hamiltonian",
+        electric_dipole_momenta=True,
+        ci_basis=True,
+        overwrite=True,
+    )
+    slt["orca_hamiltonian"]["ci_coefficients_mult_1"]
+    return (slt,)
+
+
+@app.cell
+def _(np, slt):
+    from numpy.dtypes import StringDType
+
+    a = [[1,2,2], "kkkokokokok", "eoriej erogi"]
+    b = np.asarray(a, dtype=object)
+    print(b.dtype)
+    c = ["Dy", "Tb", "Yb"]
+    d = 1
+    import h5py
+
+    with h5py.File("demo.slt", "a") as f:
+        # del f["newe"]
+        print(f["newe"].value)
+    # del slt["new"]
+    # slt["new"] = a
+    # slt["new"][:]
+    type(slt["newe"])
+    return
 
 
 @app.cell
@@ -873,6 +917,14 @@ def _(mo):
 
     That combination is a strong foundation for future SlothPy workflows.
     """)
+    return
+
+
+@app.cell
+def _(slt):
+    # Add demo for del
+    del slt["notes"].attrs["kut"]
+    # del group/dataset etc.
     return
 
 

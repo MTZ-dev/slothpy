@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator, MutableMapping
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path, PurePosixPath
 from typing import Any, ClassVar, Literal
@@ -19,6 +19,23 @@ from slothpy.types.aliases import PathLike, XarrayChunks
 
 SLOTHPY_FORMAT_VERSION = __version__
 SLOTHPY_STORAGE_MODEL = "xarray-netcdf4-hdf5"
+
+
+@dataclass(frozen=True, slots=True)
+class SltResults:
+    """
+    Bundle for writing one SlothPy semantic xarray group.
+
+    Passed to :meth:`SltFile._write_slothpy_group` together with the target
+    group name. Producers supply an ``xr.Dataset`` or ``DataArray``, optional
+    ``slt_type`` and ``primary`` (stored as SlothPy dataset metadata), and
+    optional extra entries applied to the returned :class:`SltGroup` attributes.
+    """
+
+    dataset: xr.Dataset | xr.DataArray
+    slt_type: str | None = None
+    primary: str | None = None
+    attrs: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -999,11 +1016,23 @@ def _attrs_label(attrs: dict[str, Any]) -> Text:
     return text
 
 
+def _add_group_attrs_branch(group_tree: Tree, node: SltGroupNode) -> None:
+    """
+    Append an ``Attributes`` subtree (HDF5 / xarray group metadata).
+    """
+    attrs_tree = group_tree.add(Text("Attributes", style="bold yellow"))
+    if node.attrs:
+        attrs_tree.add(_attrs_label(node.attrs))
+    else:
+        attrs_tree.add(Text("(none)", style="bright_black"))
+
+
 def _add_group_to_tree(parent: Tree, node: SltGroupNode) -> None:
     """
     Add a group node to a Rich tree.
     """
     group_tree = parent.add(_group_label(node))
+    _add_group_attrs_branch(group_tree, node)
 
     if not node.readable:
         group_tree.add(Text(node.error or "Unknown error", style="bold red"))
@@ -1073,6 +1102,7 @@ def _group_tree(node: SltGroupNode) -> Tree:
     Build a Rich tree for an SltGroup node.
     """
     tree = Tree(_group_label(node))
+    _add_group_attrs_branch(tree, node)
 
     if not node.readable:
         tree.add(Text(node.error or "Unknown error", style="bold red"))
@@ -1394,7 +1424,7 @@ class SltGroup:
         with _open_hdf5_file(self.file_path, "a") as h5:
             if self.path in h5 and not isinstance(h5[self.path], h5py.Group):
                 raise TypeError(
-                    f"Cannot create group {self.path!r}; a dataset with this "
+                    f"Cannot create group {self.path!r}; a dataset or group with this "
                     "name already exists."
                 )
             h5.require_group(self.path)
@@ -1989,20 +2019,18 @@ class SltFile:
     def _write_slothpy_group(
         self,
         name: str,
-        dataset: xr.Dataset | xr.DataArray,
+        results: SltResults,
         *,
         overwrite: bool = False,
-        primary: str | None = None,
-        slt_type: str | None = None,
         encoding: dict[str, Any] | None = None,
         invalid_netcdf: bool = True,
     ) -> SltGroup:
         """
         Internal helper for SlothPy computations/readers.
 
-        Write a valid SlothPy semantic xarray group. This is intentionally
-        private: user code should normally not create SlothPy semantic groups
-        manually.
+        Write a valid SlothPy semantic xarray group from :class:`SltResults`.
+        This is intentionally private: user code should normally not create
+        SlothPy semantic groups manually.
         """
         group_name = _normalize_hdf5_path(name)
 
@@ -2012,11 +2040,11 @@ class SltFile:
                 "Use h5py for custom nested user layouts."
             )
 
-        dataset_to_write = _coerce_to_dataset(dataset)
+        dataset_to_write = _coerce_to_dataset(results.dataset)
         dataset_to_write = _dataset_with_slothpy_attrs(
             dataset_to_write,
-            primary=primary,
-            slt_type=slt_type,
+            primary=results.primary,
+            slt_type=results.slt_type,
         )
 
         with _open_hdf5_file(self.path, "a") as h5:
@@ -2040,7 +2068,10 @@ class SltFile:
 
         _write_xarray_to_netcdf_with_retry(dataset_to_write, self.path, **kwargs)
 
-        return SltGroup(self.path, group_name)
+        group = SltGroup(self.path, group_name)
+        for key, value in results.attrs.items():
+            group.attrs[key] = value
+        return group
 
     def __setitem__(self, key: str | tuple[str, str], value: Any) -> None:
         """
@@ -2294,6 +2325,7 @@ def slt_file(path: PathLike) -> SltFile:
 __all__ = [
     "SltAttributes",
     "SltDataset",
+    "SltResults",
     "SltDatasetNode",
     "SltFile",
     "SltFileNode",

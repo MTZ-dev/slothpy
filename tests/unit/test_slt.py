@@ -14,6 +14,7 @@ from slothpy.core.slt import (
     SltDataset,
     SltFile,
     SltGroup,
+    SltResults,
     create_slt_file,
     open_slt_file,
     slt_file,
@@ -77,9 +78,11 @@ def slt_with_semantic_group(
 ) -> SltFile:
     slt._write_slothpy_group(
         "magnetisation_001",
-        semantic_dataset,
-        slt_type="MAGNETISATION",
-        primary="magnetisation",
+        SltResults(
+            dataset=semantic_dataset,
+            slt_type="MAGNETISATION",
+            primary="magnetisation",
+        ),
         overwrite=True,
     )
     return slt
@@ -618,7 +621,9 @@ def test_group_require_rejects_existing_dataset(slt: SltFile) -> None:
     slt["raw"] = [1, 2, 3]
     group = SltGroup(slt.path, "raw")
 
-    with pytest.raises(TypeError, match="dataset with this name"):
+    with pytest.raises(
+        TypeError, match="dataset or group with this name already exists"
+    ):
         group.require()
 
 
@@ -817,8 +822,7 @@ def test_semantic_group_to_xarray_returns_dataset_for_dataset_primary(
     ds = xr.Dataset({"x": ("i", [1]), "y": ("i", [2])})
     group = slt._write_slothpy_group(
         "multi",
-        ds,
-        primary="__dataset__",
+        SltResults(dataset=ds, primary="__dataset__"),
         overwrite=True,
     )
 
@@ -835,7 +839,7 @@ def test_semantic_group_to_xarray_missing_declared_primary_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ds = xr.Dataset({"x": ("i", [1])})
-    group = slt._write_slothpy_group("bad_primary", ds, primary="x")
+    group = slt._write_slothpy_group("bad_primary", SltResults(dataset=ds, primary="x"))
 
     original_to_dataset = slt_mod.SltGroup.to_dataset
 
@@ -926,8 +930,7 @@ def test_semantic_group_to_dataframe_dataset_primary(slt: SltFile) -> None:
     ds = xr.Dataset({"x": ("i", [1]), "y": ("i", [2])})
     group = slt._write_slothpy_group(
         "multi",
-        ds,
-        primary="__dataset__",
+        SltResults(dataset=ds, primary="__dataset__"),
         overwrite=True,
     )
     frame = group.to_dataframe()
@@ -965,7 +968,7 @@ def test_write_slothpy_group_rejects_nested_name(slt: SltFile) -> None:
     with pytest.raises(ValueError, match="root-level"):
         slt._write_slothpy_group(
             "a/b",
-            xr.Dataset({"x": ("i", [1])}),
+            SltResults(dataset=xr.Dataset({"x": ("i", [1])}), primary="x"),
         )
 
 
@@ -973,18 +976,18 @@ def test_write_slothpy_group_rejects_duplicate_without_overwrite(
     slt: SltFile,
 ) -> None:
     ds = xr.Dataset({"x": ("i", [1])})
-    slt._write_slothpy_group("group", ds)
+    slt._write_slothpy_group("group", SltResults(dataset=ds))
 
     with pytest.raises(FileExistsError):
-        slt._write_slothpy_group("group", ds)
+        slt._write_slothpy_group("group", SltResults(dataset=ds))
 
 
 def test_write_slothpy_group_overwrite(slt: SltFile) -> None:
     ds1 = xr.Dataset({"x": ("i", [1])})
     ds2 = xr.Dataset({"x": ("i", [2])})
 
-    slt._write_slothpy_group("group", ds1)
-    group = slt._write_slothpy_group("group", ds2, overwrite=True)
+    slt._write_slothpy_group("group", SltResults(dataset=ds1))
+    group = slt._write_slothpy_group("group", SltResults(dataset=ds2), overwrite=True)
 
     da = _expect_dataarray(group.to_xarray())
     try:
@@ -995,7 +998,10 @@ def test_write_slothpy_group_overwrite(slt: SltFile) -> None:
 
 def test_write_slothpy_group_rejects_non_xarray(slt: SltFile) -> None:
     with pytest.raises(TypeError):
-        slt._write_slothpy_group("group", [1, 2, 3])  # type: ignore[arg-type]
+        slt._write_slothpy_group(
+            "group",
+            SltResults(dataset=[1, 2, 3]),  # type: ignore[arg-type]
+        )
 
 
 def test_semantic_group_to_node(
@@ -1705,8 +1711,7 @@ def test_create_different_slt_file_does_not_release_unrelated_xarray_handle(
     first = create_slt_file(tmp_path / "first.slt", overwrite=True)
     first._write_slothpy_group(
         "data",
-        xr.Dataset({"x": ("i", [1, 2, 3])}),
-        primary="x",
+        SltResults(dataset=xr.Dataset({"x": ("i", [1, 2, 3])}), primary="x"),
     )
 
     lazy = _expect_group(first["data"]).to_xarray()
@@ -1743,8 +1748,7 @@ def test_mutating_same_slt_file_after_lazy_xarray_open_retries_and_succeeds(
     slt = create_slt_file(tmp_path / "demo.slt", overwrite=True)
     slt._write_slothpy_group(
         "data",
-        xr.Dataset({"x": ("i", [1, 2, 3])}),
-        primary="x",
+        SltResults(dataset=xr.Dataset({"x": ("i", [1, 2, 3])}), primary="x"),
     )
 
     lazy = _expect_group(slt["data"]).to_xarray()
@@ -1897,8 +1901,7 @@ def test_to_xarray_can_return_primary_coordinate(slt: SltFile) -> None:
     )
     group = slt._write_slothpy_group(
         "coord_primary",
-        ds,
-        primary="temperature",
+        SltResults(dataset=ds, primary="temperature"),
         overwrite=True,
     )
 
@@ -1948,8 +1951,7 @@ def test_write_slothpy_group_with_encoding(slt: SltFile) -> None:
     ds = xr.Dataset({"x": ("i", np.array([1.0, 2.0], dtype=np.float64))})
     group = slt._write_slothpy_group(
         "encoded",
-        ds,
-        primary="x",
+        SltResults(dataset=ds, primary="x"),
         encoding={"x": {"dtype": "float32"}},
         overwrite=True,
     )

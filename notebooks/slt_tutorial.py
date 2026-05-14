@@ -14,7 +14,7 @@ def _():
     import xarray as xr
 
     from slothpy.core.slt import create_slt_file, open_slt_file
-    from slothpy.orca_hamiltonian_reader import hamiltonian_from_orca
+    from slothpy.io.readers.orca_hamiltonian_reader import hamiltonian_from_orca
 
     return (
         Path,
@@ -29,16 +29,22 @@ def _():
 
 @app.cell
 def _(hamiltonian_from_orca):
-    slt = hamiltonian_from_orca(
+    slt1 = hamiltonian_from_orca(
         "src/slothpy/Pr_minimal.out",
         "demo.slt",
         "orca_hamiltonian",
-        electric_dipole_momenta=True,
+        electric_dipole_moment_matrices=True,
         ci_basis=True,
         overwrite=True,
+        parse_ci_expansions=True,
     )
-    slt["orca_hamiltonian"]["ci_coefficients_mult_1"]
-    return (slt,)
+    return (slt1,)
+
+
+@app.cell
+def _(slt1):
+    slt1["orca_hamiltonian"]
+    return
 
 
 @app.cell
@@ -351,7 +357,9 @@ def _(mo):
     For tutorial purposes, we will use the internal helper:
 
     ```python
-    slt._write_slothpy_group(...)
+    from slothpy.core.slt import SltResults
+
+    slt._write_slothpy_group("name", SltResults(dataset=ds, slt_type="...", primary="..."))
     ```
 
     ### Important note
@@ -403,11 +411,15 @@ def _(np, xr):
 
 @app.cell
 def _(ds_mag, slt):
+    from slothpy.core.slt import SltResults
+
     mag_group = slt._write_slothpy_group(
         "magnetisation_001",
-        ds_mag,
-        slt_type="MAGNETISATION",
-        primary="magnetisation",
+        SltResults(
+            dataset=ds_mag,
+            slt_type="MAGNETISATION",
+            primary="magnetisation",
+        ),
         overwrite=True,
     )
 

@@ -17,7 +17,6 @@ from slothpy.io.readers.hamiltonian_reader import (
     add_ci_expansion_variables_to_dataset,
     hamiltonian_reader_result_to_slt_results,
     write_hamiltonian_reader_result_to_slt_group,
-    write_slt_results_to_group,
 )
 from slothpy.io.readers.orca_hamiltonian_reader import OrcaHamiltonianReaderOptions
 from slothpy.types.aliases import PathLike
@@ -55,11 +54,11 @@ def test_hamiltonian_reader_options_defaults() -> None:
     options = HamiltonianReaderOptions()
 
     assert options.parse_ci_expansions is False
-    assert options.diagonalize is True
-    assert options.shift_energies is True
-    assert options.include_spin_matrices is True
-    assert options.include_angular_momentum_matrices is True
+    assert options.shift_energies is False
+    assert options.include_spin_matrices is False
+    assert options.include_angular_momentum_matrices is False
     assert options.include_electric_dipole_moment_matrices is False
+    assert options.ci_basis is False
 
 
 def test_hamiltonian_reader_options_are_shared_via_base_type() -> None:
@@ -67,11 +66,11 @@ def test_hamiltonian_reader_options_are_shared_via_base_type() -> None:
 
     assert isinstance(options, HamiltonianReaderOptions)
     assert options.parse_ci_expansions is False
-    assert options.diagonalize is True
-    assert options.shift_energies is True
-    assert options.include_spin_matrices is True
-    assert options.include_angular_momentum_matrices is True
+    assert options.shift_energies is False
+    assert options.include_spin_matrices is False
+    assert options.include_angular_momentum_matrices is False
     assert options.include_electric_dipole_moment_matrices is False
+    assert options.ci_basis is False
 
 
 def test_slt_results_is_dataclass() -> None:
@@ -355,29 +354,6 @@ def test_compose_rejects_non_square_ci_hamiltonian_matrix() -> None:
 
     with pytest.raises(ValueError, match="must be square"):
         hamiltonian_reader_result_to_slt_results(structured)
-
-
-def test_write_slt_results_to_group(tmp_path: Path) -> None:
-    structured = _diagonal_result()
-    results = hamiltonian_reader_result_to_slt_results(structured)
-
-    path = tmp_path / "ham.slt"
-    slt = create_slt_file(path)
-
-    group = write_slt_results_to_group(
-        slt,
-        "ham_group",
-        results,
-        overwrite=False,
-    )
-
-    assert isinstance(group, SltGroup)
-
-    dataset = group.to_dataset()
-    try:
-        assert "states_energies" in dataset
-    finally:
-        dataset.close()
 
 
 def test_write_hamiltonian_reader_result_to_slt_group(tmp_path: Path) -> None:

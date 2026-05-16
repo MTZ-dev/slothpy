@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
-from dataclasses import dataclass, fields, replace
+from dataclasses import dataclass
 from pathlib import Path
 from re import IGNORECASE, MULTILINE, Pattern, compile, findall
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import numpy as np
+from pydantic import ConfigDict, Field, validate_call
 
 from .hamiltonian_reader import (
     CIDeterminantExpansion,
@@ -77,7 +78,6 @@ class OrcaHamiltonianReaderOptions(HamiltonianReaderOptions):
 
     pt2: bool = False
     ssc: bool = False
-    ci_basis: bool = False
 
 
 @dataclass(slots=True)
@@ -321,11 +321,6 @@ class OrcaHamiltonianReader(HamiltonianReader):
         if self.options.ci_basis:
             hamiltonian_matrix = soc_matrix
         else:
-            if not self.options.diagonalize:
-                raise ValueError(
-                    "diagonalize=False is only meaningful with ci_basis=True."
-                )
-
             energies, vectors = np.linalg.eigh(soc_matrix)
 
             if self.options.shift_energies:
@@ -640,6 +635,14 @@ def _consume_until_root(
     )
 
 
+def _require_ci_coefficient_buffers_for_later_root(
+    determinant_patterns: list[str] | None,
+    ci_coeffs: np.ndarray | None,
+) -> None:
+    if determinant_patterns is None or ci_coeffs is None:
+        raise RuntimeError("Internal CI parser state error.")
+
+
 def _parse_orca_spin_determinant_ci_block(
     stream: _LineStream,
     *,
@@ -681,17 +684,16 @@ def _parse_orca_spin_determinant_ci_block(
             determinant_patterns = patterns_this_root
             ci_coeffs = np.zeros((len(coeffs), nroots), dtype=np.float64)
         else:
-            if determinant_patterns is None or ci_coeffs is None:
-                raise RuntimeError("Internal CI parser state error.")
+            _require_ci_coefficient_buffers_for_later_root(
+                determinant_patterns,
+                ci_coeffs,
+            )
 
             if patterns_this_root != determinant_patterns:
                 raise ValueError(
                     f"Inconsistent determinant list for ROOT {expected_root} "
                     f"of multiplicity {multiplicity}."
                 )
-
-        if ci_coeffs is None:
-            raise RuntimeError("Internal CI parser state error.")
 
         ci_coeffs[:, expected_root] = np.asarray(coeffs, dtype=np.float64)
 
@@ -775,68 +777,72 @@ def _transform_operator_stack(
     return transformed
 
 
+@validate_call(config=ConfigDict(arbitrary_types_allowed=True, strict=True))
 def hamiltonian_from_orca(
-    orca_filepath: PathLike,
+    orca_source: PathLike | Iterable[str],
     slt_filepath: PathLike,
-    group_name: str,
+    group_name: Annotated[str, Field(min_length=1)],
     *,
-    options: OrcaHamiltonianReaderOptions | None = None,
+    shift_energies: bool = True,
+    include_spin_matrices: bool = True,
+    include_angular_momentum_matrices: bool = True,
+    include_electric_dipole_moment_matrices: bool = False,
+    ci_basis: bool = False,
+    parse_ci_expansions: bool = False,
+    pt2: bool = False,
+    ssc: bool = False,
     overwrite: bool = False,
-    reader: HamiltonianReader | None = None,
-    **reader_options: Any,
 ) -> SltFile:
     """
-    Read an ORCA output file and write a SlothPy Hamiltonian group.
+    Read an ORCA output source and write a SlothPy Hamiltonian group.
 
-    Reader options: pass ``options=`` and/or any keyword accepted by
-    :class:`OrcaHamiltonianReaderOptions` (including base
-    :class:`HamiltonianReaderOptions` fields). Keyword arguments override
-    fields on ``options`` when both are given.
-
-    For backward compatibility, ``electric_dipole_moment_matrices=`` is
-    accepted as an alias for ``include_electric_dipole_moment_matrices=``.
-
-    The reader is dependency-injected: pass any :class:`HamiltonianReader`
-    subclass via ``reader=``. In that case ``options`` and reader option
-    keywords must not be passed.
-    Writing uses :func:`write_hamiltonian_reader_result_to_slt_group`.
+    Parameters
+    ----------
+    orca_source
+        ORCA output file path or a one-pass iterable/stream of output lines.
+    slt_filepath
+        Target ``.slt`` file path. The file is created if it does not exist.
+    group_name
+        Root-level SlothPy group name for the Hamiltonian data.
+    shift_energies
+        Shift diagonalized energies so that the lowest state has energy zero.
+    include_spin_matrices
+        Parse spin matrices.
+    include_angular_momentum_matrices
+        Parse orbital angular momentum matrices.
+    include_electric_dipole_moment_matrices
+        Parse electric dipole moment matrices.
+    ci_basis
+        Store the SOC/SOC+SSC Hamiltonian in the CI basis as read. When
+        ``False``, diagonalize the matrix and store eigenstate energies.
+    parse_ci_expansions
+        Parse spin-determinant CI expansions. Requires ``ci_basis=True``.
+    pt2
+        Read the second SOC/SOC+SSC matrix occurrence, used for PT2 output.
+    ssc
+        Read the SOC+SSC matrix instead of the SOC-only matrix.
+    overwrite
+        Replace an existing SlothPy group with the same name.
     """
-    if not isinstance(group_name, str):
-        raise TypeError(f"group_name must be a string, not {type(group_name)!r}.")
+    if parse_ci_expansions and not ci_basis:
+        raise ValueError("parse_ci_expansions=True requires ci_basis=True.")
 
-    if reader is not None:
-        if options is not None or reader_options:
-            raise TypeError(
-                "When reader= is provided, options= and reader-specific keyword "
-                "arguments are not allowed."
-            )
-    else:
-        ro = dict(reader_options)
-        if "electric_dipole_moment_matrices" in ro:
-            if "include_electric_dipole_moment_matrices" in ro:
-                raise TypeError(
-                    "Pass only one of electric_dipole_moment_matrices= and "
-                    "include_electric_dipole_moment_matrices=."
-                )
-            ro["include_electric_dipole_moment_matrices"] = ro.pop(
-                "electric_dipole_moment_matrices"
-            )
-        allowed = {f.name for f in fields(OrcaHamiltonianReaderOptions)}
-        unknown = set(ro) - allowed
-        if unknown:
-            raise TypeError(
-                "Unknown reader option keyword arguments: "
-                + ", ".join(sorted(unknown))
-            )
-        if options is None:
-            opts = OrcaHamiltonianReaderOptions(**ro)
-        elif ro:
-            opts = replace(options, **ro)
-        else:
-            opts = options
-        reader = OrcaHamiltonianReader(opts)
+    reader = OrcaHamiltonianReader(
+        OrcaHamiltonianReaderOptions(
+            parse_ci_expansions=parse_ci_expansions,
+            shift_energies=shift_energies,
+            include_spin_matrices=include_spin_matrices,
+            include_angular_momentum_matrices=include_angular_momentum_matrices,
+            include_electric_dipole_moment_matrices=(
+                include_electric_dipole_moment_matrices
+            ),
+            ci_basis=ci_basis,
+            pt2=pt2,
+            ssc=ssc,
+        )
+    )
 
-    structured = reader.read(orca_filepath)
+    structured = reader.read(orca_source)
 
     try:
         slt = open_slt_file(slt_filepath)

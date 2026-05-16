@@ -24,11 +24,11 @@ class HamiltonianReaderOptions:
     """
 
     parse_ci_expansions: bool = False
-    diagonalize: bool = True
-    shift_energies: bool = True
-    include_spin_matrices: bool = True
-    include_angular_momentum_matrices: bool = True
+    shift_energies: bool = False
+    include_spin_matrices: bool = False
+    include_angular_momentum_matrices: bool = False
     include_electric_dipole_moment_matrices: bool = False
+    ci_basis: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,20 +98,6 @@ class HamiltonianReader(ABC):
         )
 
 
-def write_slt_results_to_group(
-    slt: SltFile,
-    group_name: str,
-    results: SltResults,
-    *,
-    overwrite: bool = False,
-    encoding: dict[str, Any] | None = None,
-) -> SltGroup:
-    """Write :class:`~slothpy.core.slt.SltResults` as one root-level SlothPy semantic group."""
-    return slt._write_slothpy_group(
-        group_name, results, overwrite=overwrite, encoding=encoding
-    )
-
-
 def write_hamiltonian_reader_result_to_slt_group(
     slt: SltFile,
     group_name: str,
@@ -122,9 +108,9 @@ def write_hamiltonian_reader_result_to_slt_group(
     encoding: dict[str, Any] | None = None,
 ) -> SltGroup:
     """Compose structured Hamiltonian data and write it as one SlothPy group."""
-    composed = hamiltonian_reader_result_to_slt_results(structured, slt_type=slt_type)
-    return write_slt_results_to_group(
-        slt, group_name, composed, overwrite=overwrite, encoding=encoding
+    results = hamiltonian_reader_result_to_slt_results(structured, slt_type=slt_type)
+    return slt._write_slothpy_group(
+        group_name, results, overwrite=overwrite, encoding=encoding
     )
 
 
@@ -345,5 +331,4 @@ __all__ = [
     "add_ci_expansion_variables_to_dataset",
     "hamiltonian_reader_result_to_slt_results",
     "write_hamiltonian_reader_result_to_slt_group",
-    "write_slt_results_to_group",
 ]

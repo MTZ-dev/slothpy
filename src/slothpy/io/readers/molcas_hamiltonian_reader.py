@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import h5py
 import numpy as np
@@ -12,14 +13,14 @@ from .hamiltonian_reader import (
     HamiltonianReader,
     HamiltonianReaderOptions,
     HamiltonianReaderResult,
-    write_hamiltonian_reader_result_to_slt_group,
 )
 
 try:
-    from slothpy.core.slt import SltFile, create_slt_file, open_slt_file
+    from slothpy.core.slt import SltFile, SltPathOrFile
     from slothpy.types.aliases import PathLike
 except Exception:  # pragma: no cover - for standalone parser tests outside SlothPy
     SltFile = Any  # type: ignore[misc,assignment]
+    SltPathOrFile = Any  # type: ignore[misc,assignment]
     PathLike = str | Path  # type: ignore[misc,assignment]
 
 
@@ -42,7 +43,12 @@ class MolcasHamiltonianReader(HamiltonianReader):
 
     options: MolcasHamiltonianReaderOptions = MolcasHamiltonianReaderOptions()
 
-    def read(self, source: PathLike) -> HamiltonianReaderResult:
+    def read(self, source: PathLike | Iterable[str]) -> HamiltonianReaderResult:
+        if not isinstance(source, (str, Path)):
+            raise TypeError(
+                "MOLCAS Hamiltonian reader requires a file path, not a line iterable."
+            )
+
         if self.options.ci_basis:
             raise NotImplementedError(
                 "MOLCAS Hamiltonian reader currently supports only the "
@@ -59,11 +65,11 @@ class MolcasHamiltonianReader(HamiltonianReader):
         source_path = Path(source)
 
         with h5py.File(source_path, "r") as rassi:
-            states_energies = _read_states_energies(
+            state_energies = _read_state_energies(
                 rassi,
                 shift_energies=self.options.shift_energies,
             )
-            dim = int(states_energies.shape[0])
+            dim = int(state_energies.shape[0])
 
             spin_matrices: np.ndarray | None = None
             if self.options.include_spin_matrices:
@@ -98,7 +104,7 @@ class MolcasHamiltonianReader(HamiltonianReader):
         return HamiltonianReaderResult(
             hamiltonian_interaction="SOC",
             representation="DIAGONAL",
-            states_energies=states_energies,
+            state_energies=state_energies,
             spin_matrices=spin_matrices,
             angular_momentum_matrices=angular_momentum_matrices,
             electric_dipole_moment_matrices=electric_dipole_moment_matrices,
@@ -155,7 +161,7 @@ def _read_required_dataset(rassi: h5py.File, name: str) -> h5py.Dataset:
     return dataset
 
 
-def _read_states_energies(
+def _read_state_energies(
     rassi: h5py.File,
     *,
     shift_energies: bool,
@@ -239,7 +245,7 @@ def _validate_operator_stack(name: str, arr: np.ndarray, dim: int) -> None:
 @validate_call(config=ConfigDict(arbitrary_types_allowed=True, strict=True))
 def hamiltonian_from_molcas(
     molcas_filepath: PathLike,
-    slt_filepath: PathLike,
+    slt_path_or_file: SltPathOrFile,
     group_name: Annotated[str, Field(min_length=1)],
     *,
     shift_energies: bool = True,
@@ -257,8 +263,9 @@ def hamiltonian_from_molcas(
     ----------
     molcas_filepath
         Path to the MOLCAS/OpenMolcas ``.rassi.h5`` file.
-    slt_filepath
-        Target ``.slt`` file path. The file is created if it does not exist.
+    slt_path_or_file
+        Target ``.slt`` file path or an open :class:`~slothpy.core.slt.SltFile`
+        handle. Paths open an existing file or create one if missing.
     group_name
         Root-level SlothPy group name for the Hamiltonian data.
     shift_energies
@@ -303,19 +310,10 @@ def hamiltonian_from_molcas(
         )
     )
 
-    structured = reader.read(molcas_filepath)
+    result = reader.read(molcas_filepath)
+    slt = cast(SltFile, slt_path_or_file)
 
-    try:
-        slt = open_slt_file(slt_filepath)
-    except FileNotFoundError:
-        slt = create_slt_file(slt_filepath)
-
-    write_hamiltonian_reader_result_to_slt_group(
-        slt,
-        group_name,
-        structured,
-        overwrite=overwrite,
-    )
+    result.write_to_slt_group(slt, group_name, overwrite=overwrite)
 
     return slt
 
@@ -326,5 +324,4 @@ __all__ = [
     "MolcasHamiltonianReader",
     "MolcasHamiltonianReaderOptions",
     "hamiltonian_from_molcas",
-    "write_hamiltonian_reader_result_to_slt_group",
 ]

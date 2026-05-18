@@ -15,7 +15,6 @@ from slothpy.core.slt import SltFile, SltGroup, create_slt_file, open_slt_file
 from slothpy.io.readers.hamiltonian_reader import (
     HamiltonianReader,
     HamiltonianReaderOptions,
-    hamiltonian_reader_result_to_slt_results,
 )
 from slothpy.io.readers.molcas_hamiltonian_reader import (
     MolcasHamiltonianReader,
@@ -102,6 +101,13 @@ def test_molcas_reader_is_hamiltonian_reader_subclass() -> None:
     assert isinstance(reader, HamiltonianReader)
 
 
+def test_molcas_reader_rejects_line_iterable_source() -> None:
+    reader = MolcasHamiltonianReader()
+
+    with pytest.raises(TypeError, match="requires a file path, not a line iterable"):
+        reader.read(["not", "a", "file"])
+
+
 # ---------------------------------------------------------------------------
 # Reader behavior
 # ---------------------------------------------------------------------------
@@ -117,8 +123,8 @@ def test_reader_reads_diagonal_hamiltonian_with_default_options(
     assert result.hamiltonian_interaction == "SOC"
     assert result.representation == "DIAGONAL"
     assert result.hamiltonian_matrix is None
-    assert result.states_energies is not None
-    np.testing.assert_allclose(result.states_energies, np.array([2.0, 5.0]))
+    assert result.state_energies is not None
+    np.testing.assert_allclose(result.state_energies, np.array([2.0, 5.0]))
 
     assert result.spin_matrices is None
     assert result.angular_momentum_matrices is None
@@ -140,8 +146,8 @@ def test_reader_can_shift_energies(molcas_h5_path: Path) -> None:
 
     result = reader.read(molcas_h5_path)
 
-    assert result.states_energies is not None
-    np.testing.assert_allclose(result.states_energies, np.array([0.0, 3.0]))
+    assert result.state_energies is not None
+    np.testing.assert_allclose(result.state_energies, np.array([0.0, 3.0]))
     assert result.attrs["shift_energies_applied"] is True
 
 
@@ -224,12 +230,12 @@ def test_reader_result_can_be_composed_to_slt_results(
     )
 
     result = reader.read(molcas_h5_path)
-    composed = hamiltonian_reader_result_to_slt_results(result)
+    composed = result.to_slt_results()
 
     assert composed.slt_type == "HAMILTONIAN"
-    assert composed.primary == "states_energies"
+    assert composed.primary == "state_energies"
     assert isinstance(composed.dataset, xr.Dataset)
-    assert "states_energies" in composed.dataset
+    assert "state_energies" in composed.dataset
     assert "spin_matrices" in composed.dataset
     assert "angular_momentum_matrices" in composed.dataset
     assert "electric_dipole_moment_matrices" not in composed.dataset
@@ -335,9 +341,9 @@ def test_hamiltonian_from_molcas_creates_new_slt_file(
 
     ds = group.to_dataset()
     try:
-        assert "states_energies" in ds
+        assert "state_energies" in ds
         np.testing.assert_allclose(
-            ds["states_energies"].values,
+            ds["state_energies"].values,
             np.array([0.0, 3.0]),
         )
     finally:
@@ -364,6 +370,35 @@ def test_hamiltonian_from_molcas_opens_existing_slt_file(
     assert "molcas_hamiltonian" in reopened
 
 
+def test_hamiltonian_from_molcas_accepts_open_slt_file(
+    molcas_h5_path: Path,
+    tmp_path: Path,
+) -> None:
+    slt_path = tmp_path / "open.slt"
+    opened = create_slt_file(slt_path, overwrite=True)
+
+    slt = hamiltonian_from_molcas(
+        molcas_h5_path,
+        opened,
+        "molcas_hamiltonian",
+        overwrite=True,
+    )
+
+    assert isinstance(slt, SltFile)
+    assert slt is opened
+    assert slt.path == slt_path
+    assert "molcas_hamiltonian" in slt
+
+    group = slt["molcas_hamiltonian"]
+    assert isinstance(group, SltGroup)
+
+    ds = group.to_dataset()
+    try:
+        assert "state_energies" in ds
+    finally:
+        ds.close()
+
+
 def test_hamiltonian_from_molcas_writes_requested_optional_matrices(
     molcas_h5_path: Path,
     tmp_path: Path,
@@ -385,7 +420,7 @@ def test_hamiltonian_from_molcas_writes_requested_optional_matrices(
 
     ds = group.to_dataset()
     try:
-        assert "states_energies" in ds
+        assert "state_energies" in ds
         assert "spin_matrices" in ds
         assert "angular_momentum_matrices" in ds
         assert "electric_dipole_moment_matrices" in ds
@@ -642,10 +677,10 @@ def test_reader_handles_real_molcas_hdf5_file() -> None:
     assert result.hamiltonian_interaction == "SOC"
     assert result.representation == "DIAGONAL"
     assert result.hamiltonian_matrix is None
-    assert result.states_energies is not None
+    assert result.state_energies is not None
 
     np.testing.assert_allclose(
-        result.states_energies,
+        result.state_energies,
         expected_energies - np.min(expected_energies),
     )
 
@@ -714,9 +749,9 @@ def test_hamiltonian_from_molcas_writes_real_molcas_file(
 
     dataset = group.to_dataset()
     try:
-        assert "states_energies" in dataset
+        assert "state_energies" in dataset
         np.testing.assert_allclose(
-            dataset["states_energies"].values,
+            dataset["state_energies"].values,
             expected_energies - np.min(expected_energies),
         )
 

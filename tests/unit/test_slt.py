@@ -462,6 +462,13 @@ def test_create_slt_file_accepts_path_without_suffix(tmp_path: Path) -> None:
     assert slt.path.exists()
 
 
+def test_validate_slt_path_or_file_rejects_invalid_type(slt: SltFile) -> None:
+    with pytest.raises(TypeError, match="slt_path_or_file must be a path or SltFile"):
+        slt_mod._validate_slt_path_or_file(123)
+
+    assert slt_mod._validate_slt_path_or_file(slt) is slt
+
+
 # ---------------------------------------------------------------------------
 # Attributes tests
 # ---------------------------------------------------------------------------

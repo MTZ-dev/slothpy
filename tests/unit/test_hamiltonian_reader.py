@@ -15,8 +15,6 @@ from slothpy.io.readers.hamiltonian_reader import (
     HamiltonianReaderOptions,
     HamiltonianReaderResult,
     add_ci_expansion_variables_to_dataset,
-    hamiltonian_reader_result_to_slt_results,
-    write_hamiltonian_reader_result_to_slt_group,
 )
 from slothpy.io.readers.orca_hamiltonian_reader import OrcaHamiltonianReaderOptions
 from slothpy.types.aliases import PathLike
@@ -36,7 +34,7 @@ def _diagonal_result() -> HamiltonianReaderResult:
     return HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="DIAGONAL",
-        states_energies=np.array([0.0, 1.0], dtype=np.float64),
+        state_energies=np.array([0.0, 1.0], dtype=np.float64),
         attrs={"slt_kind": "TEST", "shift_energies_applied": False},
     )
 
@@ -89,7 +87,7 @@ def test_hamiltonian_reader_read_as_slt_results() -> None:
     out = reader.read_as_slt_results(["dummy"])
 
     assert isinstance(out, SltResults)
-    assert out.primary == "states_energies"
+    assert out.primary == "state_energies"
     assert out.slt_type == "HAMILTONIAN"
     assert reader.sources == [["dummy"]]
 
@@ -107,7 +105,7 @@ def test_hamiltonian_reader_write_to_group(tmp_path: Path) -> None:
 
     dataset = group.to_dataset()
     try:
-        assert "states_energies" in dataset
+        assert "state_energies" in dataset
     finally:
         dataset.close()
 
@@ -115,32 +113,30 @@ def test_hamiltonian_reader_write_to_group(tmp_path: Path) -> None:
 def test_compose_diagonal_minimal_hamiltonian_only() -> None:
     structured = _diagonal_result()
 
-    out = hamiltonian_reader_result_to_slt_results(structured)
+    out = structured.to_slt_results()
 
-    assert out.primary == "states_energies"
+    assert out.primary == "state_energies"
     assert out.slt_type == "HAMILTONIAN"
     assert out.attrs["slt_kind"] == "TEST"
-    assert set(out.dataset.data_vars) == {"states_energies"}
+    assert set(out.dataset.data_vars) == {"state_energies"}
     assert set(out.dataset.coords) == {"state"}
-    assert out.dataset["states_energies"].attrs["unit"] == "E_h"
-    assert (
-        out.dataset["states_energies"].attrs["long_name"] == "SOC eigenstate energies"
-    )
+    assert out.dataset["state_energies"].attrs["unit"] == "E_h"
+    assert out.dataset["state_energies"].attrs["long_name"] == "SOC eigenstate energies"
 
 
 def test_compose_diagonal_shifted_energies_long_name() -> None:
     structured = HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="DIAGONAL",
-        states_energies=np.array([0.0, 1.0], dtype=np.float64),
+        state_energies=np.array([0.0, 1.0], dtype=np.float64),
         attrs={"shift_energies_applied": True},
     )
 
-    out = hamiltonian_reader_result_to_slt_results(structured)
+    out = structured.to_slt_results()
 
     assert (
         "shifted to the lowest state"
-        in out.dataset["states_energies"].attrs["long_name"]
+        in out.dataset["state_energies"].attrs["long_name"]
     )
 
 
@@ -152,14 +148,14 @@ def test_compose_diagonal_with_optional_operators() -> None:
     structured = HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="DIAGONAL",
-        states_energies=np.array([0.0, 1.0], dtype=np.float64),
+        state_energies=np.array([0.0, 1.0], dtype=np.float64),
         spin_matrices=stack,
         angular_momentum_matrices=stack,
         electric_dipole_moment_matrices=stack,
         attrs={"slt_kind": "TEST", "shift_energies_applied": False},
     )
 
-    out = hamiltonian_reader_result_to_slt_results(structured)
+    out = structured.to_slt_results()
 
     assert "spin_matrices" in out.dataset
     assert "angular_momentum_matrices" in out.dataset
@@ -170,47 +166,47 @@ def test_compose_diagonal_with_optional_operators() -> None:
     assert out.dataset["component"].values.tolist() == ["x", "y", "z"]
 
 
-def test_compose_diagonal_rejects_missing_states_energies() -> None:
+def test_compose_diagonal_rejects_missing_state_energies() -> None:
     structured = HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="DIAGONAL",
         attrs={},
     )
 
-    with pytest.raises(ValueError, match="states_energies"):
-        hamiltonian_reader_result_to_slt_results(structured)
+    with pytest.raises(ValueError, match="state_energies"):
+        structured.to_slt_results()
 
 
 def test_compose_diagonal_rejects_hamiltonian_matrix() -> None:
     structured = HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="DIAGONAL",
-        states_energies=np.array([0.0, 1.0], dtype=np.float64),
+        state_energies=np.array([0.0, 1.0], dtype=np.float64),
         hamiltonian_matrix=np.eye(2, dtype=np.complex128),
         attrs={},
     )
 
     with pytest.raises(ValueError, match="representation='DIAGONAL'"):
-        hamiltonian_reader_result_to_slt_results(structured)
+        structured.to_slt_results()
 
 
 def test_compose_rejects_bad_operator_shape() -> None:
     structured = HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="DIAGONAL",
-        states_energies=np.array([0.0, 1.0], dtype=np.float64),
+        state_energies=np.array([0.0, 1.0], dtype=np.float64),
         spin_matrices=np.zeros((2, 2, 2), dtype=np.complex128),
         attrs={},
     )
 
     with pytest.raises(ValueError, match=r"spin_matrices must have shape"):
-        hamiltonian_reader_result_to_slt_results(structured)
+        structured.to_slt_results()
 
 
 def test_compose_ci_minimal_matrix_only() -> None:
     structured = _ci_result()
 
-    out = hamiltonian_reader_result_to_slt_results(structured)
+    out = structured.to_slt_results()
 
     assert out.primary == "soc_matrix"
     assert set(out.dataset.data_vars) == {"soc_matrix"}
@@ -227,7 +223,7 @@ def test_compose_ci_soc_ssc_matrix() -> None:
         attrs={"slt_kind": "TEST"},
     )
 
-    out = hamiltonian_reader_result_to_slt_results(structured)
+    out = structured.to_slt_results()
 
     assert out.primary == "soc_ssc_matrix"
     assert set(out.dataset.data_vars) == {"soc_ssc_matrix"}
@@ -251,7 +247,7 @@ def test_compose_ci_with_optional_operators() -> None:
         attrs={},
     )
 
-    out = hamiltonian_reader_result_to_slt_results(structured)
+    out = structured.to_slt_results()
 
     assert "spin_matrices" in out.dataset
     assert "angular_momentum_matrices" in out.dataset
@@ -294,7 +290,7 @@ def test_compose_ci_with_ci_expansions() -> None:
         attrs={},
     )
 
-    out = hamiltonian_reader_result_to_slt_results(structured)
+    out = structured.to_slt_results()
 
     assert "determinant_mult_3" in out.dataset.coords
     assert "root_mult_3" in out.dataset.coords
@@ -320,17 +316,17 @@ def test_add_ci_expansion_variables_to_dataset_preserves_input_dataset() -> None
     assert "ci_alpha_occupations_mult_1" in out
 
 
-def test_compose_rejects_ci_with_states_energies() -> None:
+def test_compose_rejects_ci_with_state_energies() -> None:
     structured = HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="CI",
         hamiltonian_matrix=np.eye(2, dtype=np.complex128),
-        states_energies=np.array([0.0, 1.0], dtype=np.float64),
+        state_energies=np.array([0.0, 1.0], dtype=np.float64),
         attrs={},
     )
 
     with pytest.raises(ValueError, match="representation='CI'"):
-        hamiltonian_reader_result_to_slt_results(structured)
+        structured.to_slt_results()
 
 
 def test_compose_rejects_ci_without_hamiltonian_matrix() -> None:
@@ -341,7 +337,7 @@ def test_compose_rejects_ci_without_hamiltonian_matrix() -> None:
     )
 
     with pytest.raises(ValueError, match="hamiltonian_matrix"):
-        hamiltonian_reader_result_to_slt_results(structured)
+        structured.to_slt_results()
 
 
 def test_compose_rejects_non_square_ci_hamiltonian_matrix() -> None:
@@ -353,21 +349,16 @@ def test_compose_rejects_non_square_ci_hamiltonian_matrix() -> None:
     )
 
     with pytest.raises(ValueError, match="must be square"):
-        hamiltonian_reader_result_to_slt_results(structured)
+        structured.to_slt_results()
 
 
-def test_write_hamiltonian_reader_result_to_slt_group(tmp_path: Path) -> None:
+def test_hamiltonian_reader_result_write_to_slt_group(tmp_path: Path) -> None:
     structured = _diagonal_result()
 
     path = tmp_path / "ham.slt"
     slt = create_slt_file(path)
 
-    write_hamiltonian_reader_result_to_slt_group(
-        slt,
-        "ham_group",
-        structured,
-        overwrite=False,
-    )
+    structured.write_to_slt_group(slt, "ham_group", overwrite=False)
 
     slt2 = open_slt_file(path)
 
@@ -378,22 +369,21 @@ def test_write_hamiltonian_reader_result_to_slt_group(tmp_path: Path) -> None:
 
     dataset = group.to_dataset()
     try:
-        assert "states_energies" in dataset
+        assert "state_energies" in dataset
     finally:
         dataset.close()
 
 
-def test_write_hamiltonian_reader_result_to_slt_group_custom_slt_type(
+def test_hamiltonian_reader_result_write_to_slt_group_custom_slt_type(
     tmp_path: Path,
 ) -> None:
     structured = _diagonal_result()
 
     slt = create_slt_file(tmp_path / "ham.slt")
 
-    group = write_hamiltonian_reader_result_to_slt_group(
+    group = structured.write_to_slt_group(
         slt,
         "ham_group",
-        structured,
         overwrite=False,
         slt_type="CUSTOM_HAMILTONIAN",
     )
@@ -401,52 +391,41 @@ def test_write_hamiltonian_reader_result_to_slt_group_custom_slt_type(
     assert group.type == "CUSTOM_HAMILTONIAN"
 
 
-def test_write_hamiltonian_reader_result_to_slt_group_with_encoding(
+def test_hamiltonian_reader_result_write_to_slt_group_with_encoding(
     tmp_path: Path,
 ) -> None:
     structured = _diagonal_result()
 
     slt = create_slt_file(tmp_path / "ham.slt")
 
-    group = write_hamiltonian_reader_result_to_slt_group(
+    group = structured.write_to_slt_group(
         slt,
         "ham_group",
-        structured,
         overwrite=False,
-        encoding={"states_energies": {"dtype": "float32"}},
+        encoding={"state_energies": {"dtype": "float32"}},
     )
 
     dataset = group.to_dataset()
     try:
-        assert dataset["states_energies"].dtype == np.float32
+        assert dataset["state_energies"].dtype == np.float32
     finally:
         dataset.close()
 
 
-def test_write_hamiltonian_reader_result_to_slt_group_rejects_duplicate(
+def test_hamiltonian_reader_result_write_to_slt_group_rejects_duplicate(
     tmp_path: Path,
 ) -> None:
     structured = _diagonal_result()
 
     slt = create_slt_file(tmp_path / "ham.slt")
 
-    write_hamiltonian_reader_result_to_slt_group(
-        slt,
-        "ham_group",
-        structured,
-        overwrite=False,
-    )
+    structured.write_to_slt_group(slt, "ham_group", overwrite=False)
 
     with pytest.raises(FileExistsError):
-        write_hamiltonian_reader_result_to_slt_group(
-            slt,
-            "ham_group",
-            structured,
-            overwrite=False,
-        )
+        structured.write_to_slt_group(slt, "ham_group", overwrite=False)
 
 
-def test_write_hamiltonian_reader_result_to_slt_group_overwrite(
+def test_hamiltonian_reader_result_write_to_slt_group_overwrite(
     tmp_path: Path,
 ) -> None:
     slt = create_slt_file(tmp_path / "ham.slt")
@@ -454,28 +433,18 @@ def test_write_hamiltonian_reader_result_to_slt_group_overwrite(
     first = HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="DIAGONAL",
-        states_energies=np.array([0.0, 1.0], dtype=np.float64),
+        state_energies=np.array([0.0, 1.0], dtype=np.float64),
         attrs={"shift_energies_applied": False},
     )
     second = HamiltonianReaderResult(
         hamiltonian_interaction="SOC",
         representation="DIAGONAL",
-        states_energies=np.array([0.0, 2.0], dtype=np.float64),
+        state_energies=np.array([0.0, 2.0], dtype=np.float64),
         attrs={"shift_energies_applied": False},
     )
 
-    write_hamiltonian_reader_result_to_slt_group(
-        slt,
-        "ham_group",
-        first,
-        overwrite=False,
-    )
-    group = write_hamiltonian_reader_result_to_slt_group(
-        slt,
-        "ham_group",
-        second,
-        overwrite=True,
-    )
+    first.write_to_slt_group(slt, "ham_group", overwrite=False)
+    group = second.write_to_slt_group(slt, "ham_group", overwrite=True)
 
     xr_obj = group.to_xarray()
     try:

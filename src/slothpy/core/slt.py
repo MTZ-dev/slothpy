@@ -5,16 +5,21 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path, PurePosixPath
-from typing import Any, ClassVar, Literal
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Literal
 
 import h5py
 import numpy as np
 import xarray as xr
+from pydantic import PlainValidator
 from rich.console import Console
 from rich.text import Text
 from rich.tree import Tree
 
 from slothpy import __version__
+
+if TYPE_CHECKING:
+    from slothpy.groups.hamiltonian import SltHamiltonianGroup
+    from slothpy.groups.typed_group import SltTypedGroup
 from slothpy.types.aliases import PathLike, XarrayChunks
 
 SLOTHPY_FORMAT_VERSION = __version__
@@ -2295,6 +2300,75 @@ class SltFile:
     def __str__(self) -> str:
         return _rich_to_ansi(_file_tree(self.to_node()))
 
+    def typed_group(
+        self,
+        path: str,
+        *,
+        chunks: XarrayChunks = None,
+    ) -> SltTypedGroup:
+        from slothpy.groups.typed_group import SLT_GROUP_TYPE_REGISTRY
+
+        group = SltGroup(self.path, path, chunks=chunks)
+
+        if not group.exists:
+            raise KeyError(f"Group {path!r} does not exist in file {self.path!s}.")
+
+        attrs = group.attrs.as_dict()
+        group_type = attrs.get("slt_type")
+
+        if isinstance(group_type, bytes):
+            group_type = group_type.decode("utf-8")
+
+        if not isinstance(group_type, str):
+            raise TypeError(
+                f"Group {path!r} is not a SlothPy semantic group: "
+                "missing string attribute 'slt_type'."
+            )
+
+        key = group_type.strip().upper()
+
+        try:
+            group_cls = SLT_GROUP_TYPE_REGISTRY[key]
+        except KeyError:
+            raise TypeError(
+                f"No registered SlothPy group class for slt_type={group_type!r}."
+            ) from None
+
+        return group_cls(self.path, path, chunks=chunks)
+
+    def hamiltonian(
+        self,
+        path: str,
+        *,
+        chunks: XarrayChunks = None,
+    ) -> SltHamiltonianGroup:
+        from slothpy.groups.hamiltonian import SltHamiltonianGroup
+
+        group = self.typed_group(path, chunks=chunks)
+
+        if not isinstance(group, SltHamiltonianGroup):
+            raise TypeError(f"Group {path!r} is not a Hamiltonian group.")
+
+        return group
+
+
+def _validate_slt_path_or_file(value: object) -> SltFile:
+    if isinstance(value, SltFile):
+        return value
+    if isinstance(value, (str, Path)):
+        try:
+            return SltFile._new(value)
+        except FileNotFoundError:
+            return SltFile._create(value)
+    raise TypeError(
+        f"slt_path_or_file must be a path or SltFile, got {type(value).__name__}."
+    )
+
+
+SltPathOrFile = Annotated[
+    SltFile | PathLike, PlainValidator(_validate_slt_path_or_file)
+]
+
 
 # ---------------------------------------------------------------------------
 # Public factory functions
@@ -2329,6 +2403,7 @@ __all__ = [
     "SltDatasetNode",
     "SltFile",
     "SltFileNode",
+    "SltPathOrFile",
     "SltGroup",
     "SltGroupNode",
     "SltNodeInfo",

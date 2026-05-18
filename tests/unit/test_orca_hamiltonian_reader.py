@@ -9,7 +9,7 @@ import xarray as xr
 from pydantic import ValidationError
 
 import slothpy.io.readers.orca_hamiltonian_reader as orca_mod
-from slothpy.core.slt import SltGroup, create_slt_file, open_slt_file
+from slothpy.core.slt import SltFile, SltGroup, create_slt_file, open_slt_file
 from slothpy.io.readers.hamiltonian_reader import HamiltonianReader
 from slothpy.io.readers.orca_hamiltonian_reader import (
     OrcaHamiltonianReader,
@@ -25,7 +25,12 @@ def test_orca_hamiltonian_reader_is_hamiltonian_reader_subclass() -> None:
 
 def test_hamiltonian_from_orca_rejects_unknown_kwargs() -> None:
     with pytest.raises(ValidationError):
-        hamiltonian_from_orca("x.out", "y.slt", "ham", not_a_valid_field=True)
+        hamiltonian_from_orca(
+            "x.out",
+            "y.slt",
+            "ham",
+            not_a_valid_field=True,  # type: ignore[call-arg]
+        )
 
 
 def test_hamiltonian_from_orca_rejects_removed_reader_kw() -> None:
@@ -34,7 +39,7 @@ def test_hamiltonian_from_orca_rejects_removed_reader_kw() -> None:
             "x.out",
             "y.slt",
             "ham",
-            reader=OrcaHamiltonianReader(),
+            reader=OrcaHamiltonianReader(),  # type: ignore[call-arg]
         )
 
 
@@ -44,7 +49,7 @@ def test_hamiltonian_from_orca_rejects_removed_dipole_alias() -> None:
             "x.out",
             "y.slt",
             "ham",
-            electric_dipole_moment_matrices=True,
+            electric_dipole_moment_matrices=True,  # type: ignore[call-arg]
         )
 
 
@@ -783,9 +788,9 @@ def test_reader_parses_minimal_diagonal_hamiltonian() -> None:
 
     assert result.hamiltonian_interaction == "SOC"
     assert result.representation == "DIAGONAL"
-    assert result.states_energies is not None
+    assert result.state_energies is not None
     assert result.hamiltonian_matrix is None
-    np.testing.assert_allclose(result.states_energies, [0.0, 1.0])
+    np.testing.assert_allclose(result.state_energies, [0.0, 1.0])
     assert result.attrs["shift_energies_applied"] is True
 
 
@@ -798,8 +803,8 @@ def test_reader_parses_unshifted_diagonal_hamiltonian() -> None:
         )
     )
 
-    assert result.states_energies is not None
-    np.testing.assert_allclose(result.states_energies, [5.0, 6.0])
+    assert result.state_energies is not None
+    np.testing.assert_allclose(result.state_energies, [5.0, 6.0])
     assert result.attrs["shift_energies_applied"] is False
 
 
@@ -814,7 +819,7 @@ def test_reader_parses_ci_basis_hamiltonian() -> None:
 
     assert result.representation == "CI"
     assert result.hamiltonian_matrix is not None
-    assert result.states_energies is None
+    assert result.state_energies is None
     np.testing.assert_allclose(result.hamiltonian_matrix.real, [[1.0, 2.0], [2.0, 4.0]])
 
 
@@ -883,7 +888,7 @@ def test_reader_read_as_slt_results() -> None:
 
     results = reader.read_as_slt_results(_minimal_orca_lines())
 
-    assert results.primary == "states_energies"
+    assert results.primary == "state_energies"
     assert results.slt_type == "HAMILTONIAN"
     assert isinstance(results.dataset, xr.Dataset)
 
@@ -898,7 +903,7 @@ def test_reader_write_to_group(tmp_path: Path) -> None:
 
     dataset = group.to_dataset()
     try:
-        assert "states_energies" in dataset
+        assert "state_energies" in dataset
     finally:
         dataset.close()
 
@@ -910,8 +915,8 @@ def test_reader_accepts_text_stream(tmp_path: Path) -> None:
     with source.open(errors="replace") as stream:
         result = reader.read(stream)
 
-    assert result.states_energies is not None
-    np.testing.assert_allclose(result.states_energies, [0.0, 1.0])
+    assert result.state_energies is not None
+    np.testing.assert_allclose(result.state_energies, [0.0, 1.0])
 
 
 # ---------------------------------------------------------------------------
@@ -1020,7 +1025,7 @@ def test_hamiltonian_from_orca_creates_file_and_group(tmp_path: Path) -> None:
 
     dataset = group.to_dataset()
     try:
-        assert "states_energies" in dataset
+        assert "state_energies" in dataset
     finally:
         dataset.close()
 
@@ -1038,6 +1043,25 @@ def test_hamiltonian_from_orca_opens_existing_file(tmp_path: Path) -> None:
         include_angular_momentum_matrices=False,
     )
 
+    assert slt.path == slt_path
+    assert "hamiltonian" in slt
+
+
+def test_hamiltonian_from_orca_accepts_open_slt_file(tmp_path: Path) -> None:
+    source = _write_lines(tmp_path / "orca.out", _minimal_orca_lines())
+    slt_path = tmp_path / "open.slt"
+    opened = create_slt_file(slt_path, overwrite=True)
+
+    slt = orca_mod.hamiltonian_from_orca(
+        source,
+        opened,
+        "hamiltonian",
+        include_spin_matrices=False,
+        include_angular_momentum_matrices=False,
+    )
+
+    assert isinstance(slt, SltFile)
+    assert slt is opened
     assert slt.path == slt_path
     assert "hamiltonian" in slt
 
@@ -1107,9 +1131,9 @@ def test_real_orca_soc_fixture_from_path() -> None:
     result = reader.read(REAL_ORCA_SOC_FILE)
 
     assert result.representation == "DIAGONAL"
-    assert result.states_energies is not None
-    assert result.states_energies.ndim == 1
-    assert result.states_energies.size == int(result.attrs["states"])
+    assert result.state_energies is not None
+    assert result.state_energies.ndim == 1
+    assert result.state_energies.size == int(result.attrs["states"])
 
 
 @pytest.mark.skipif(
@@ -1123,8 +1147,8 @@ def test_real_orca_soc_fixture_from_stream() -> None:
         result = reader.read(stream)
 
     assert result.representation == "DIAGONAL"
-    assert result.states_energies is not None
-    assert result.states_energies.size == int(result.attrs["states"])
+    assert result.state_energies is not None
+    assert result.state_energies.size == int(result.attrs["states"])
 
 
 def test_reader_ignores_repeated_dimension_lines_after_info_is_cached() -> None:
@@ -1155,8 +1179,8 @@ def test_reader_ignores_repeated_dimension_lines_after_info_is_cached() -> None:
     assert result.attrs["active_orbitals"] == 2
     assert result.attrs["total_orbitals"] == 5
     assert result.attrs["inactive_orbitals"] == 3
-    assert result.states_energies is not None
-    assert result.states_energies.size == dim
+    assert result.state_energies is not None
+    assert result.state_energies.size == dim
 
 
 def test_reader_reuses_dimension_info_for_later_operator_blocks() -> None:

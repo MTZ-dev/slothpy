@@ -15,10 +15,12 @@ def _():
 
     from slothpy.core.slt import create_slt_file, open_slt_file
     from slothpy.io.readers.orca_hamiltonian_reader import hamiltonian_from_orca
+    from slothpy.io.readers.molcas_hamiltonian_reader import hamiltonian_from_molcas
 
     return (
         Path,
         create_slt_file,
+        hamiltonian_from_molcas,
         hamiltonian_from_orca,
         mo,
         np,
@@ -39,6 +41,26 @@ def _(hamiltonian_from_orca):
         parse_ci_expansions=True,
     )
     return (slt1,)
+
+
+@app.cell
+def _(hamiltonian_from_molcas):
+    slt24 = hamiltonian_from_molcas(
+        "/home/mikolaj/SlothPy/tests/data/molcas/Ce_44bpdo_optH_2M_bas2.rassi.h5",
+        "demo.slt",
+        "molcas_hamiltonian",
+        include_electric_dipole_moment_matrices=True,
+        include_angular_momentum_matrices=True,
+        include_spin_matrices=True,
+        overwrite=True,
+    )
+    return (slt24,)
+
+
+@app.cell
+def _(slt24):
+    slt24["molcas_hamiltonian"]#["angular_momentum_matrices"]
+    return
 
 
 @app.cell

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from re import IGNORECASE, MULTILINE, Pattern, compile, findall
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, cast
 
 import numpy as np
 from pydantic import ConfigDict, Field, validate_call
@@ -14,14 +14,14 @@ from .hamiltonian_reader import (
     HamiltonianReader,
     HamiltonianReaderOptions,
     HamiltonianReaderResult,
-    write_hamiltonian_reader_result_to_slt_group,
 )
 
 try:
-    from slothpy.core.slt import SltFile, create_slt_file, open_slt_file
+    from slothpy.core.slt import SltFile, SltPathOrFile
     from slothpy.types.aliases import PathLike
 except Exception:  # pragma: no cover - for standalone parser tests outside SlothPy
     SltFile = Any  # type: ignore[misc,assignment]
+    SltPathOrFile = Any  # type: ignore[misc,assignment]
     PathLike = str | Path  # type: ignore[misc,assignment]
 
 
@@ -316,7 +316,7 @@ class OrcaHamiltonianReader(HamiltonianReader):
 
         vectors: np.ndarray | None = None
         hamiltonian_matrix: np.ndarray | None = None
-        states_energies: np.ndarray | None = None
+        state_energies: np.ndarray | None = None
 
         if self.options.ci_basis:
             hamiltonian_matrix = soc_matrix
@@ -326,7 +326,7 @@ class OrcaHamiltonianReader(HamiltonianReader):
             if self.options.shift_energies:
                 energies = energies - np.min(energies)
 
-            states_energies = energies.real.astype(np.float64)
+            state_energies = energies.real.astype(np.float64)
             attrs["shift_energies_applied"] = self.options.shift_energies
 
         if vectors is not None:
@@ -349,7 +349,7 @@ class OrcaHamiltonianReader(HamiltonianReader):
             hamiltonian_interaction=interaction,
             representation=representation,
             hamiltonian_matrix=hamiltonian_matrix,
-            states_energies=states_energies,
+            state_energies=state_energies,
             spin_matrices=spin_matrices,
             angular_momentum_matrices=angular_momentum_matrices,
             electric_dipole_moment_matrices=electric_dipole_moment_matrices,
@@ -695,6 +695,7 @@ def _parse_orca_spin_determinant_ci_block(
                     f"of multiplicity {multiplicity}."
                 )
 
+        assert ci_coeffs is not None
         ci_coeffs[:, expected_root] = np.asarray(coeffs, dtype=np.float64)
 
     if determinant_patterns is None or ci_coeffs is None:
@@ -752,7 +753,7 @@ def _decode_orca_determinant_occupations(
 
 def _stack_required_operator_parts(
     name: str,
-    parts: list[np.ndarray | None],
+    parts: Sequence[np.ndarray | None],
 ) -> np.ndarray:
     missing = [idx for idx, part in enumerate(parts) if part is None]
 
@@ -780,7 +781,7 @@ def _transform_operator_stack(
 @validate_call(config=ConfigDict(arbitrary_types_allowed=True, strict=True))
 def hamiltonian_from_orca(
     orca_source: PathLike | Iterable[str],
-    slt_filepath: PathLike,
+    slt_path_or_file: SltPathOrFile,
     group_name: Annotated[str, Field(min_length=1)],
     *,
     shift_energies: bool = True,
@@ -800,8 +801,9 @@ def hamiltonian_from_orca(
     ----------
     orca_source
         ORCA output file path or a one-pass iterable/stream of output lines.
-    slt_filepath
-        Target ``.slt`` file path. The file is created if it does not exist.
+    slt_path_or_file
+        Target ``.slt`` file path or an open :class:`~slothpy.core.slt.SltFile`
+        handle. Paths open an existing file or create one if missing.
     group_name
         Root-level SlothPy group name for the Hamiltonian data.
     shift_energies
@@ -842,19 +844,10 @@ def hamiltonian_from_orca(
         )
     )
 
-    structured = reader.read(orca_source)
+    result = reader.read(orca_source)
+    slt = cast(SltFile, slt_path_or_file)
 
-    try:
-        slt = open_slt_file(slt_filepath)
-    except FileNotFoundError:
-        slt = create_slt_file(slt_filepath)
-
-    write_hamiltonian_reader_result_to_slt_group(
-        slt,
-        group_name,
-        structured,
-        overwrite=overwrite,
-    )
+    result.write_to_slt_group(slt, group_name, overwrite=overwrite)
 
     return slt
 
@@ -867,5 +860,4 @@ __all__ = [
     "OrcaHamiltonianReader",
     "OrcaHamiltonianReaderOptions",
     "hamiltonian_from_orca",
-    "write_hamiltonian_reader_result_to_slt_group",
 ]

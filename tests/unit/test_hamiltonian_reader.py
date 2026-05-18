@@ -8,7 +8,9 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from slothpy.core.slt import SltGroup, SltResults, create_slt_file, open_slt_file
+from slothpy.core.slt import create_slt_file, open_slt_file
+from slothpy.core.slt_group import SltGroup
+from slothpy.core.slt_results import SltResults
 from slothpy.io.readers.hamiltonian_reader import (
     CIDeterminantExpansion,
     HamiltonianReader,
@@ -100,7 +102,7 @@ def test_hamiltonian_reader_write_to_group(tmp_path: Path) -> None:
     group = reader.write_to_group(["dummy"], slt, "hamiltonian", overwrite=False)
 
     assert isinstance(group, SltGroup)
-    assert group.path == "hamiltonian"
+    assert group.group_name == "hamiltonian"
     assert reader.sources == [["dummy"]]
 
     dataset = group.to_dataset()

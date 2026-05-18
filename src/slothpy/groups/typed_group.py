@@ -5,7 +5,7 @@ from typing import Any, ClassVar
 
 from pydantic import ConfigDict, validate_call
 
-from slothpy.core.slt import SltGroup
+from slothpy.core.slt_group import SltGroup
 
 SLT_GROUP_TYPE_REGISTRY: dict[str, type[SltTypedGroup]] = {}
 
@@ -101,7 +101,7 @@ class SltTypedGroup(SltGroup, metaclass=SltTypedGroupMeta):
 
         if not self.exists:
             raise KeyError(
-                f"Group {self.path!r} does not exist in file {self.file_path!s}."
+                f"Group {self.group_name!r} does not exist in file {self.file_path!s}."
             )
 
         attrs = self.attrs.as_dict()
@@ -112,7 +112,7 @@ class SltTypedGroup(SltGroup, metaclass=SltTypedGroupMeta):
 
         if not isinstance(group_type, str):
             raise TypeError(
-                f"Group {self.path!r} is not a SlothPy semantic group: "
+                f"Group {self.group_name!r} is not a SlothPy semantic group: "
                 "missing string attribute 'slt_type'."
             )
 
@@ -121,6 +121,6 @@ class SltTypedGroup(SltGroup, metaclass=SltTypedGroupMeta):
 
         if actual_upper != expected_upper:
             raise TypeError(
-                f"Group {self.path!r} has slt_type={group_type!r}, "
+                f"Group {self.group_name!r} has slt_type={group_type!r}, "
                 f"expected {expected_upper!r}."
             )

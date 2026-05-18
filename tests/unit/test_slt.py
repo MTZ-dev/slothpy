@@ -8,17 +8,16 @@ import h5py
 import numpy as np
 import pytest
 import xarray as xr
+from rich.text import Text
 
-import slothpy.core.slt as slt_mod
-from slothpy.core.slt import (
-    SltDataset,
-    SltFile,
-    SltGroup,
-    SltResults,
-    create_slt_file,
-    open_slt_file,
-    slt_file,
-)
+import slothpy.core.slt_common as slt_mod
+import slothpy.core.slt_file as slt_file_mod
+import slothpy.core.slt_group as slt_group_mod
+from slothpy.core.slt import create_slt_file, open_slt_file, slt_file
+from slothpy.core.slt_dataset import SltDataset
+from slothpy.core.slt_file import SltFile
+from slothpy.core.slt_group import SltGroup
+from slothpy.core.slt_results import SltResults
 
 pytestmark = pytest.mark.filterwarnings("ignore::UserWarning")
 
@@ -405,7 +404,7 @@ def test_release_xarray_file_handles_normal_and_import_failure(
 
 
 def test_rich_render_helpers() -> None:
-    text = slt_mod.Text("hello", style="bold red")
+    text = Text("hello", style="bold red")
     ansi = slt_mod._rich_to_ansi(text)
     html = slt_mod._rich_to_html(text)
 
@@ -464,9 +463,9 @@ def test_create_slt_file_accepts_path_without_suffix(tmp_path: Path) -> None:
 
 def test_validate_slt_path_or_file_rejects_invalid_type(slt: SltFile) -> None:
     with pytest.raises(TypeError, match="slt_path_or_file must be a path or SltFile"):
-        slt_mod._validate_slt_path_or_file(123)
+        slt_file_mod._validate_slt_path_or_file(123)
 
-    assert slt_mod._validate_slt_path_or_file(slt) is slt
+    assert slt_file_mod._validate_slt_path_or_file(slt) is slt
 
 
 # ---------------------------------------------------------------------------
@@ -695,7 +694,7 @@ def test_group_getitem_can_return_child_group(slt: SltFile) -> None:
     scratch = _expect_group(slt["scratch"])
     child = _expect_group(scratch["child"])
 
-    assert child.path == "scratch/child"
+    assert child.group_name == "scratch/child"
 
 
 def test_group_contains_rejects_non_string_and_nested(slt: SltFile) -> None:
@@ -848,15 +847,15 @@ def test_semantic_group_to_xarray_missing_declared_primary_raises(
     ds = xr.Dataset({"x": ("i", [1])})
     group = slt._write_slothpy_group("bad_primary", SltResults(dataset=ds, primary="x"))
 
-    original_to_dataset = slt_mod.SltGroup.to_dataset
+    original_to_dataset = SltGroup.to_dataset
 
     def fake_to_dataset(self: SltGroup, *args: Any, **kwargs: Any) -> xr.Dataset:
         opened = original_to_dataset(self, *args, **kwargs)
-        if self.path == "bad_primary":
+        if self.group_name == "bad_primary":
             opened.attrs["slt_primary"] = "missing"
         return opened
 
-    monkeypatch.setattr(slt_mod.SltGroup, "to_dataset", fake_to_dataset)
+    monkeypatch.setattr(SltGroup, "to_dataset", fake_to_dataset)
 
     with pytest.raises(KeyError, match="declares slt_primary"):
         group.to_xarray()
@@ -1224,7 +1223,7 @@ def test_to_datatree_unavailable(
     slt: SltFile,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delattr(slt_mod.xr, "open_datatree", raising=False)
+    monkeypatch.delattr(slt_file_mod.xr, "open_datatree", raising=False)
 
     with pytest.raises(RuntimeError, match="open_datatree"):
         slt.to_datatree()
@@ -1241,7 +1240,9 @@ def test_to_datatree_available(
         assert kwargs["engine"] == "h5netcdf"
         return sentinel
 
-    monkeypatch.setattr(slt_mod.xr, "open_datatree", fake_open_datatree, raising=False)
+    monkeypatch.setattr(
+        slt_file_mod.xr, "open_datatree", fake_open_datatree, raising=False
+    )
 
     assert slt.to_datatree(chunks=None) is sentinel
 
@@ -1250,7 +1251,7 @@ def test_open_groups_unavailable(
     slt: SltFile,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delattr(slt_mod.xr, "open_groups", raising=False)
+    monkeypatch.delattr(slt_file_mod.xr, "open_groups", raising=False)
 
     with pytest.raises(RuntimeError, match="open_groups"):
         slt.open_groups()
@@ -1267,7 +1268,7 @@ def test_open_groups_available(
         assert kwargs["engine"] == "h5netcdf"
         return sentinel
 
-    monkeypatch.setattr(slt_mod.xr, "open_groups", fake_open_groups, raising=False)
+    monkeypatch.setattr(slt_file_mod.xr, "open_groups", fake_open_groups, raising=False)
 
     assert slt.open_groups(chunks=None) is sentinel
 
@@ -1940,7 +1941,7 @@ def test_group_getitem_unsupported_item_branch(
     def fake_get_hdf5_item(h5: h5py.File, path: str) -> object:
         return object()
 
-    monkeypatch.setattr(slt_mod, "_get_hdf5_item", fake_get_hdf5_item)
+    monkeypatch.setattr(slt_group_mod, "_get_hdf5_item", fake_get_hdf5_item)
 
     raw = _expect_group(slt["raw"])
 
@@ -1980,7 +1981,7 @@ def test_file_getitem_group_path_unsupported_item_branch(
     def fake_get_hdf5_item(h5: h5py.File, path: str) -> object:
         return object()
 
-    monkeypatch.setattr(slt_mod, "_get_hdf5_item", fake_get_hdf5_item)
+    monkeypatch.setattr(slt_file_mod, "_get_hdf5_item", fake_get_hdf5_item)
 
     with pytest.raises(TypeError, match="Unsupported HDF5 object"):
         _ = slt["raw/anything"]
@@ -2020,7 +2021,7 @@ def test_file_getitem_group_path_can_return_nested_group(
     child = slt["raw/child"]
 
     assert isinstance(child, SltGroup)
-    assert child.path == "raw/child"
+    assert child.group_name == "raw/child"
 
 
 def test_as_resolved_path_returns_none_when_path_expanduser_fails() -> None:

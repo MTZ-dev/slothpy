@@ -8,8 +8,10 @@ from typing import Any
 import numpy as np
 import xarray as xr
 
+from slothpy.core.slt_file import SltFile
+from slothpy.core.slt_group import SltGroup
+from slothpy.core.slt_results import SltResults
 from slothpy.groups.hamiltonian import HamiltonianCoord, HamiltonianVar
-from slothpy.core.slt import SltFile, SltGroup, SltResults
 from slothpy.types.aliases import (
     HamiltonianInteractionKind,
     HamiltonianRepresentationKind,

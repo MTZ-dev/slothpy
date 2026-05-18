@@ -9,7 +9,9 @@ import xarray as xr
 from pydantic import ValidationError
 
 import slothpy.io.readers.orca_hamiltonian_reader as orca_mod
-from slothpy.core.slt import SltFile, SltGroup, create_slt_file, open_slt_file
+from slothpy.core.slt import create_slt_file, open_slt_file
+from slothpy.core.slt_file import SltFile
+from slothpy.core.slt_group import SltGroup
 from slothpy.io.readers.hamiltonian_reader import HamiltonianReader
 from slothpy.io.readers.orca_hamiltonian_reader import (
     OrcaHamiltonianReader,

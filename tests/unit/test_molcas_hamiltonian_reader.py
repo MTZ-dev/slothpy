@@ -11,7 +11,9 @@ import xarray as xr
 from pydantic import ValidationError
 
 import slothpy.io.readers.molcas_hamiltonian_reader as molcas_mod
-from slothpy.core.slt import SltFile, SltGroup, create_slt_file, open_slt_file
+from slothpy.core.slt import create_slt_file, open_slt_file
+from slothpy.core.slt_file import SltFile
+from slothpy.core.slt_group import SltGroup
 from slothpy.io.readers.hamiltonian_reader import (
     HamiltonianReader,
     HamiltonianReaderOptions,

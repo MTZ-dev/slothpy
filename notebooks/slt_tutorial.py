@@ -59,6 +59,12 @@ def _(hamiltonian_from_molcas):
 
 @app.cell
 def _(slt24):
+    slt24.hamiltonian("molcas_hamiltonian").angular_momentum_matrices
+    return
+
+
+@app.cell
+def _(slt24):
     slt24["molcas_hamiltonian"]#["angular_momentum_matrices"]
     return
 

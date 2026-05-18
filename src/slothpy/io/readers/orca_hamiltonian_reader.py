@@ -17,7 +17,7 @@ from .hamiltonian_reader import (
 )
 
 try:
-    from slothpy.core.slt import SltFile, SltPathOrFile
+    from slothpy.core.slt_file import SltFile, SltPathOrFile
     from slothpy.types.aliases import PathLike
 except Exception:  # pragma: no cover - for standalone parser tests outside SlothPy
     SltFile = Any  # type: ignore[misc,assignment]

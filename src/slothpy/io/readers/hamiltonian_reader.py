@@ -11,7 +11,7 @@ import xarray as xr
 from slothpy.core.slt_file import SltFile
 from slothpy.core.slt_group import SltGroup
 from slothpy.core.slt_results import SltResults
-from slothpy.groups.hamiltonian import HamiltonianCoord, HamiltonianVar
+from slothpy.groups.hamiltonian_names import HamiltonianCoord, HamiltonianVar
 from slothpy.types.aliases import (
     HamiltonianInteractionKind,
     HamiltonianRepresentationKind,
@@ -109,12 +109,12 @@ class HamiltonianReaderResult:
             matrix = self.hamiltonian_matrix
             assert matrix is not None
             primary_var = (
-                HamiltonianVar.SOC_SSC_MATRIX
+                HamiltonianVar.SOC_SSC_MATRIX.value
                 if self.hamiltonian_interaction == "SOC_SSC"
-                else HamiltonianVar.SOC_MATRIX
+                else HamiltonianVar.SOC_MATRIX.value
             )
-            bra_dim = HamiltonianCoord.CI_BRA_STATE
-            ket_dim = HamiltonianCoord.CI_KET_STATE
+            bra_dim = HamiltonianCoord.CI_BRA_STATE.value
+            ket_dim = HamiltonianCoord.CI_KET_STATE.value
             long_h = (
                 "SOC+SSC matrix in CI basis"
                 if self.hamiltonian_interaction == "SOC_SSC"
@@ -135,13 +135,13 @@ class HamiltonianReaderResult:
                 )
             energies = self.state_energies
             assert energies is not None
-            primary_var = HamiltonianVar.STATE_ENERGIES
-            state_dim = HamiltonianCoord.STATE
-            bra_dim = HamiltonianCoord.BRA_STATE
-            ket_dim = HamiltonianCoord.KET_STATE
+            primary_var = HamiltonianVar.STATE_ENERGIES.value
+            state_dim = HamiltonianCoord.STATE.value
+            bra_dim = HamiltonianCoord.BRA_STATE.value
+            ket_dim = HamiltonianCoord.KET_STATE.value
             shift = bool(self.attrs.get("shift_energies_applied", False))
             data_vars = {
-                HamiltonianVar.STATE_ENERGIES: (
+                HamiltonianVar.STATE_ENERGIES.value: (
                     (state_dim,),
                     energies.astype(np.float64, copy=False),
                     {
@@ -169,17 +169,19 @@ class HamiltonianReaderResult:
             op_bra, op_ket = bra_dim, ket_dim
             coords[op_bra] = state_coord
             coords[op_ket] = state_coord
-            coords[HamiltonianCoord.COMPONENT] = np.array(["x", "y", "z"], dtype=object)
-            component = HamiltonianCoord.COMPONENT
+            coords[HamiltonianCoord.COMPONENT.value] = np.array(
+                ["x", "y", "z"], dtype=object
+            )
+            component = HamiltonianCoord.COMPONENT.value
 
             if self.spin_matrices is not None:
-                data_vars[HamiltonianVar.SPIN_MATRICES] = (
+                data_vars[HamiltonianVar.SPIN_MATRICES.value] = (
                     (component, op_bra, op_ket),
                     self.spin_matrices,
                     {"long_name": "spin matrices", "component_order": "x,y,z"},
                 )
             if self.angular_momentum_matrices is not None:
-                data_vars[HamiltonianVar.ANGULAR_MOMENTUM_MATRICES] = (
+                data_vars[HamiltonianVar.ANGULAR_MOMENTUM_MATRICES.value] = (
                     (component, op_bra, op_ket),
                     self.angular_momentum_matrices,
                     {
@@ -188,7 +190,7 @@ class HamiltonianReaderResult:
                     },
                 )
             if self.electric_dipole_moment_matrices is not None:
-                data_vars[HamiltonianVar.ELECTRIC_DIPOLE_MOMENT_MATRICES] = (
+                data_vars[HamiltonianVar.ELECTRIC_DIPOLE_MOMENT_MATRICES.value] = (
                     (component, op_bra, op_ket),
                     self.electric_dipole_moment_matrices,
                     {
@@ -207,7 +209,7 @@ class HamiltonianReaderResult:
         return SltResults(
             dataset=dataset,
             slt_type=slt_type,
-            primary=primary_var.value,
+            primary=primary_var,
             attrs=attrs,
         )
 

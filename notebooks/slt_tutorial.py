@@ -50,11 +50,23 @@ def _(hamiltonian_from_molcas):
         "demo.slt",
         "molcas_hamiltonian",
         include_electric_dipole_moment_matrices=True,
-        include_angular_momentum_matrices=True,
+        include_angular_momentum_matrices=False,
         include_spin_matrices=True,
         overwrite=True,
     )
     return (slt24,)
+
+
+@app.cell
+def _(slt24):
+    slt24.hamiltonian("molcas_hamiltonian").magnetisation()
+    return
+
+
+@app.cell
+def _(slt24):
+    slt24["molcas_hamiltonian"]["angular_momentum_matrices"]
+    return
 
 
 @app.cell

@@ -6,6 +6,7 @@ from typing import Any, ClassVar
 from pydantic import ConfigDict, validate_call
 
 from slothpy.core.slt_group import SltGroup
+from slothpy.logic.predicate import SltPredicate
 
 SLT_GROUP_TYPE_REGISTRY: dict[str, type[SltTypedGroup]] = {}
 
@@ -123,4 +124,14 @@ class SltTypedGroup(SltGroup, metaclass=SltTypedGroupMeta):
             raise TypeError(
                 f"Group {self.group_name!r} has slt_type={group_type!r}, "
                 f"expected {expected_upper!r}."
+            )
+
+    def has_variable(self, variable: str) -> bool:
+        return variable in self.to_dataset().data_vars
+
+    def require(self, rule: SltPredicate, function_name: str) -> None:
+        if not rule(self):
+            raise ValueError(
+                f"Group {self.group_name!r} does not satisfy rule {rule.name!r}: {{{rule!r}}}"
+                f"for function {function_name!r}."
             )

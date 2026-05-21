@@ -35,4 +35,4 @@ class SltHamiltonianGroup(SltTypedGroup):
         return self.to_dataset()[HamiltonianVar.ELECTRIC_DIPOLE_MOMENT_MATRICES.value]
 
     def magnetisation(self) -> xr.DataArray:
-        self.require(has_zeeman_matrix, "magnetisation")
+        self.require_rule(has_zeeman_matrix, "magnetisation")

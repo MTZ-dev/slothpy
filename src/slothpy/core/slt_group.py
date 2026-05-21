@@ -24,6 +24,8 @@ from slothpy.core.slt_common import (
     _xarray_group_path,
 )
 from slothpy.core.slt_dataset import SltDataset
+from slothpy.core.slt_results import SltResults
+from slothpy.logic.predicate import SltPredicate
 from slothpy.types.aliases import XarrayChunks
 
 # ---------------------------------------------------------------------------
@@ -190,6 +192,17 @@ class SltGroup:
         raise KeyError(
             f"Group {self.group_name!r} declares slt_primary={primary!r}, "
             "but this variable or coordinate is missing."
+        )
+
+    def to_slt_results(self) -> SltResults:
+        """
+        Return this SlothPy semantic group as a SlothPy Results object.
+        """
+        return SltResults(
+            self.to_dataset(),
+            slt_type=self.type,
+            primary=self.primary,
+            attrs=self.attrs.as_dict(),
         )
 
     def variable(
@@ -500,3 +513,13 @@ class SltGroup:
             return _rich_to_ansi(text)
 
         return _rich_to_ansi(_group_tree(self.to_node()))
+
+    def has_variable(self, variable: str) -> bool:
+        return variable in self.to_dataset().data_vars
+
+    def require_rule(self, rule: SltPredicate, function_name: str) -> None:
+        if not rule(self):
+            raise ValueError(
+                f"Group {self.group_name!r} does not satisfy rule {rule.name!r}: {{{rule!r}}}"
+                f"for function {function_name!r}."
+            )

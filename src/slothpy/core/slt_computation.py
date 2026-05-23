@@ -18,7 +18,7 @@ from slothpy.core.slt import (
     open_slt_file,
 )
 from slothpy.core.slt_group import SltGroup
-from slothpy.core.slt_results import SltResults
+from slothpy.core.slt_results import SltResults, SltResultView, to_typed_slt_results
 from slothpy.types.aliases import PathLike
 
 _VALIDATE_CONFIG = ConfigDict(arbitrary_types_allowed=True)
@@ -79,7 +79,7 @@ class SltSessionProtocol(Protocol):
 
 
 @dataclass(slots=True)
-class SltComputation[OptionsT](ABC):
+class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
     """
     Base class for SlothPy computations.
 
@@ -88,7 +88,7 @@ class SltComputation[OptionsT](ABC):
     1. holds input source(s), options, and resource request;
     2. computes an in-memory ``SltResults`` object;
     3. can optionally save that result as a SlothPy semantic group;
-    4. can later be submitted to ``SltSession`` without changing the public API.
+    4. can be submitted to ``SltSession`` for asynchronous execution.
 
     Subclasses should usually implement only ``_compute`` and optionally
     ``_before_run`` / ``_after_success``.
@@ -108,6 +108,7 @@ class SltComputation[OptionsT](ABC):
         init=False,
     )
     _result: SltResults | None = field(default=None, init=False)
+    _wrapped_result: ResultViewT | None = field(default=None, init=False)
     _saved_group: SltGroup | None = field(default=None, init=False)
     _failure: SltComputationFailure | None = field(default=None, init=False)
 
@@ -203,7 +204,7 @@ class SltComputation[OptionsT](ABC):
         return self._result
 
     @validate_call(config=_VALIDATE_CONFIG)
-    def run(self, *, force: bool = False, save: bool | None = None) -> SltResults:
+    def run(self, *, force: bool = False, save: bool | None = None) -> ResultViewT:
         """
         Execute the computation synchronously and return in-memory results.
 
@@ -219,10 +220,9 @@ class SltComputation[OptionsT](ABC):
             raise RuntimeError(f"{self.computation_name} is already running.")
 
         if self._status == SltComputationStatus.FINISHED and not force:
-            result = self.result
             if save is True and self._saved_group is None:
                 self.save()
-            return result
+            return self._wrap_results(self.result)
 
         if self._status == SltComputationStatus.CANCELLED and not force:
             raise RuntimeError(
@@ -239,7 +239,6 @@ class SltComputation[OptionsT](ABC):
             self._before_run()
 
             result = self._compute()
-            self._validate_result(result)
 
             self._result = result
             self._status = SltComputationStatus.FINISHED
@@ -251,7 +250,7 @@ class SltComputation[OptionsT](ABC):
             if should_save:
                 self.save()
 
-            return result
+            return self._wrap_results(result)
 
         except BaseException as exc:
             self._status = SltComputationStatus.FAILED
@@ -332,7 +331,7 @@ class SltComputation[OptionsT](ABC):
         self._status = SltComputationStatus.CANCELLED
         self._set_progress(None, "Computation cancelled.")
 
-    def to_dataset(self, *, copy: bool = False) -> xr.Dataset:
+    def to_dataset(self, *, copy: bool = False) -> xr.Dataset | xr.DataArray:
         """
         Return the computed xarray Dataset.
         """
@@ -363,6 +362,7 @@ class SltComputation[OptionsT](ABC):
 
     def _reset_runtime_state(self) -> None:
         self._result = None
+        self._wrapped_result = None
         self._saved_group = None
         self._failure = None
         self._progress = None
@@ -393,10 +393,18 @@ class SltComputation[OptionsT](ABC):
     def _compute(self) -> SltResults:
         """
         Perform the actual computation and return SltResults.
-
-        Subclasses decide whether this is pure NumPy/Numba, MPI-backed,
-        stream-based, or delegated to a worker process.
         """
+
+    def _wrap_results(self, results: SltResults) -> ResultViewT:
+        """
+        Wrap the raw results into a view.
+        """
+        if self._wrapped_result is not None:
+            return self._wrapped_result
+
+        wrapped = to_typed_slt_results(results)
+        self._wrapped_result = wrapped  # type: ignore[assignment]
+        return wrapped  # type: ignore[return-value]
 
     def _resolve_output_slt(self, slt: SltFile | PathLike | None) -> SltFile:
         if slt is not None:

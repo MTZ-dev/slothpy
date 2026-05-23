@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from slothpy.logic.predicate import rule
 from slothpy.logic.rules import (
     has_angular_momentum_matrices,

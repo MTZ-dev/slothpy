@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from slothpy.groups.typed_group import SltTypedGroup
 
 import h5py
 import xarray as xr
@@ -516,6 +519,15 @@ class SltGroup:
 
     def has_variable(self, variable: str) -> bool:
         return variable in self.to_dataset().data_vars
+
+    def to_typed_group(self) -> SltTypedGroup:
+        """
+        Return the registered :class:`~slothpy.groups.typed_group.SltTypedGroup`
+        subclass for this group's ``slt_type`` attribute.
+        """
+        from slothpy.groups.typed_group import to_typed_slt_group
+
+        return to_typed_slt_group(self)
 
     def require_rule(self, rule: SltPredicate, function_name: str) -> None:
         if not rule(self):

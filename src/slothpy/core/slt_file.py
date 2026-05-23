@@ -33,6 +33,7 @@ from slothpy.core.slt_common import (
 from slothpy.core.slt_dataset import SltDataset
 from slothpy.core.slt_group import SltGroup
 from slothpy.core.slt_results import SltResults
+from slothpy.groups.computational_groups import SltMagnetisationGroup
 from slothpy.groups.hamiltonian import SltHamiltonianGroup
 from slothpy.groups.typed_group import SltTypedGroup
 from slothpy.types.aliases import PathLike, XarrayChunks
@@ -527,8 +528,9 @@ class SltFile:
         *,
         chunks: XarrayChunks = None,
     ) -> SltTypedGroup:
-        from slothpy.groups.typed_group import SLT_GROUP_TYPE_REGISTRY
-
+        """
+        Return a typed group view for an existing semantic group in this file.
+        """
         group = SltGroup(self.path, group_name, chunks=chunks)
 
         if not group.exists:
@@ -536,28 +538,7 @@ class SltFile:
                 f"Group {group_name!r} does not exist in file {self.path!s}."
             )
 
-        attrs = group.attrs.as_dict()
-        group_type = attrs.get("slt_type")
-
-        if isinstance(group_type, bytes):
-            group_type = group_type.decode("utf-8")
-
-        if not isinstance(group_type, str):
-            raise TypeError(
-                f"Group {group_name!r} is not a SlothPy semantic group: "
-                "missing string attribute 'slt_type'."
-            )
-
-        key = group_type.strip().upper()
-
-        try:
-            group_cls = SLT_GROUP_TYPE_REGISTRY[key]
-        except KeyError:
-            raise TypeError(
-                f"No registered SlothPy group class for slt_type={group_type!r}."
-            ) from None
-
-        return group_cls(self.path, group_name, chunks=chunks)
+        return group.to_typed_group()
 
     def hamiltonian(
         self,
@@ -567,6 +548,14 @@ class SltFile:
     ) -> SltHamiltonianGroup:
 
         return SltHamiltonianGroup(self.path, group_name, chunks=chunks)
+
+    def magnetisation(
+        self,
+        group_name: str,
+        *,
+        chunks: XarrayChunks = None,
+    ) -> SltMagnetisationGroup:
+        return SltMagnetisationGroup(self.path, group_name, chunks=chunks)
 
 
 def _validate_slt_path_or_file(value: object) -> SltFile:

@@ -23,3 +23,9 @@ type XarrayChunks = int | str | dict[str, Any] | None
 
 type HamiltonianInteractionKind = Literal["SOC", "SOC_SSC"]
 type HamiltonianRepresentationKind = Literal["CI", "DIAGONAL"]
+
+# ---------------------------------------------------------------------------
+# Array aliases
+# ---------------------------------------------------------------------------
+
+type ArrayOrder = Literal["C", "F"]

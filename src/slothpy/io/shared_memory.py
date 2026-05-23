@@ -6,15 +6,13 @@ from dataclasses import asdict, dataclass, field, replace
 from inspect import signature
 from multiprocessing.shared_memory import SharedMemory
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import h5py
 import numpy as np
 from numpy.typing import DTypeLike
 
-PathLike = str | Path
-ArrayOrder = Literal["C", "F"]
-
+from slothpy.types.aliases import ArrayOrder, PathLike
 
 _SHARED_MEMORY_SUPPORTS_TRACK = "track" in signature(SharedMemory).parameters
 _MANIFEST_VERSION = 1
@@ -197,7 +195,7 @@ class SharedNumpyArray:
     spec: SharedArraySpec
     _shm: SharedMemory
     _array: np.ndarray
-    owns_memory: bool = False
+    _owns_memory: bool = False
     _closed: bool = False
     _unlinked: bool = False
 
@@ -265,7 +263,7 @@ class SharedNumpyArray:
             spec=spec,
             _shm=shm,
             _array=array,
-            owns_memory=True,
+            _owns_memory=True,
         )
 
     @classmethod
@@ -412,7 +410,7 @@ class SharedNumpyArray:
             spec=spec,
             _shm=shm,
             _array=array,
-            owns_memory=False,
+            _owns_memory=False,
         )
 
     def set_readonly(self, readonly: bool = True) -> None:
@@ -437,7 +435,7 @@ class SharedNumpyArray:
         if self._unlinked:
             return
 
-        if not self.owns_memory:
+        if not self._owns_memory:
             raise RuntimeError(
                 f"Shared memory block {self.spec.name!r} is not owned by this process."
             )
@@ -449,7 +447,7 @@ class SharedNumpyArray:
         """
         Close and, if owned, unlink this shared-memory block.
         """
-        if self.owns_memory and not self._unlinked:
+        if self._owns_memory and not self._unlinked:
             self.unlink()
         self.close()
 
@@ -457,7 +455,7 @@ class SharedNumpyArray:
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
-        self.release() if self.owns_memory else self.close()
+        self.release() if self._owns_memory else self.close()
 
 
 @dataclass(frozen=True, slots=True)
@@ -478,12 +476,12 @@ class SharedArrayBundle(MutableMapping[str, SharedNumpyArray]):
     """
     Named collection of shared arrays.
 
-    Use this as the object passed around by parent-side computation setup.
+    This is used as the object passed around by parent-side computation setup.
     Rank 0 reconstructs an attached bundle from the JSON manifest.
     """
 
     arrays: dict[str, SharedNumpyArray] = field(default_factory=dict)
-    owns_memory: bool = True
+    _owns_memory: bool = True
 
     def __getitem__(self, key: str) -> SharedNumpyArray:
         return self.arrays[key]
@@ -493,7 +491,7 @@ class SharedArrayBundle(MutableMapping[str, SharedNumpyArray]):
 
     def __delitem__(self, key: str) -> None:
         array = self.arrays.pop(key)
-        array.release() if array.owns_memory else array.close()
+        array.release() if array._owns_memory else array.close()
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.arrays)
@@ -597,7 +595,7 @@ class SharedArrayBundle(MutableMapping[str, SharedNumpyArray]):
                 f"expected {_MANIFEST_VERSION}."
             )
 
-        bundle = cls(owns_memory=False)
+        bundle = cls(_owns_memory=False)
 
         arrays = manifest.get("arrays")
         if not isinstance(arrays, Mapping):
@@ -678,12 +676,12 @@ class SharedArrayBundle(MutableMapping[str, SharedNumpyArray]):
 
     def unlink(self) -> None:
         for array in self.arrays.values():
-            if array.owns_memory:
+            if array._owns_memory:
                 array.unlink()
 
     def release(self) -> None:
         for array in self.arrays.values():
-            array.release() if array.owns_memory else array.close()
+            array.release() if array._owns_memory else array.close()
 
     def copies(self) -> dict[str, np.ndarray]:
         return {key: array.copy() for key, array in self.arrays.items()}

@@ -37,10 +37,14 @@ class SltPredicate[T]:
     def __invert__(self) -> SltPredicate[T]:
         return SltPredicate[T](lambda object: not self(object), f"not ({self!r})")
 
-    def __eq__(self, other: SltPredicate[T]) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SltPredicate):
+            return False
         return self.fn == other.fn
 
-    def __ne__(self, other: SltPredicate) -> bool:
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, SltPredicate):
+            return True
         return self.fn != other.fn
 
 

@@ -13,62 +13,15 @@ from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from enum import IntEnum, StrEnum
 from inspect import signature
-from io import StringIO
 from multiprocessing.shared_memory import SharedMemory
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import numpy as np
-from rich.console import Console, Group
-from rich.panel import Panel
-from rich.table import Table
-from rich.text import Text
 
-# ---------------------------------------------------------------------------
-# Rich rendering helpers
-# ---------------------------------------------------------------------------
-
-
-def _rich_to_ansi(renderable: Any) -> str:
-    stream = StringIO()
-    console = Console(
-        file=stream,
-        force_terminal=True,
-        color_system="auto",
-        width=140,
-    )
-    console.print(renderable)
-    return stream.getvalue().rstrip()
-
-
-def _rich_to_html(renderable: Any) -> str:
-    console = Console(
-        file=StringIO(),
-        record=True,
-        force_terminal=True,
-        color_system="truecolor",
-        width=140,
-    )
-    console.print(renderable)
-
-    return console.export_html(
-        inline_styles=True,
-        code_format=(
-            "<pre style='white-space: pre; "
-            "font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "
-            "Liberation Mono, monospace; margin: 0;'>{code}</pre>"
-        ),
-    ).rstrip()
-
-
-def _progress_bar(fraction: float | None, *, width: int = 24) -> str:
-    if fraction is None:
-        return "░" * width
-
-    fraction = max(0.0, min(1.0, fraction))
-    filled = int(round(width * fraction))
-    return "█" * filled + "░" * (width - filled)
-
+if TYPE_CHECKING:
+    from rich.console import Console
+    from rich.panel import Panel
 
 # ---------------------------------------------------------------------------
 # Status enums
@@ -1148,6 +1101,12 @@ class SltSession[ResultT]:
 
         refresh = mo.ui.refresh(default_interval="500ms")
         mo.vstack([refresh, mo.Html(session.dashboard_html())])
+
+    For terminal scripts, use :meth:`run_dashboard` (blocking) or
+    :meth:`run_dashboard_async` (non-blocking refresh loop)::
+
+        session.run_dashboard(exit_when_done=True)
+        await session.run_dashboard_async(interval=0.25)
     """
 
     resource_pool: SltResourcePool | None = None
@@ -1461,14 +1420,39 @@ class SltSession[ResultT]:
     # Rich dashboard
     # ------------------------------------------------------------------
 
-    def to_rich(self) -> Panel:
-        return _session_snapshot_to_rich(self.snapshot())
+    def to_rich(self, *, width: int | None = None) -> Panel:
+        from slothpy.core.slt_dashboard import session_snapshot_to_rich
+
+        return session_snapshot_to_rich(self.snapshot(), width=width)
+
+    def print_rich(
+        self,
+        *,
+        console: Console | None = None,
+        width: int | None = None,
+    ) -> None:
+        """
+        Print the Rich terminal dashboard (tree/tables).
+
+        Use this in terminals; notebooks use HTML via ``_repr_html_`` / ``dashboard()``.
+        """
+        from slothpy.core.slt_common import print_rich_renderable
+
+        print_rich_renderable(self.to_rich(width=width), console=console)
+
+    def show(
+        self,
+        *,
+        console: Console | None = None,
+        width: int | None = None,
+    ) -> None:
+        """Alias for :meth:`print_rich`."""
+        self.print_rich(console=console, width=width)
 
     def dashboard_html(self) -> str:
-        return _rich_to_html(self.to_rich())
+        from slothpy.core.slt_dashboard import session_snapshot_to_html
 
-    def dashboard_text(self) -> str:
-        return _rich_to_ansi(self.to_rich())
+        return session_snapshot_to_html(self.snapshot())
 
     def dashboard(self, refresh: Any = None) -> str:
         """
@@ -1482,6 +1466,81 @@ class SltSession[ResultT]:
         """
         _ = refresh
         return self.dashboard_html()
+
+    def dashboard_text(self) -> str:
+        from slothpy.core.slt_dashboard import session_snapshot_to_text
+
+        return session_snapshot_to_text(self.snapshot())
+
+    def run_dashboard(
+        self,
+        *,
+        interval: float = 0.5,
+        once: bool = False,
+        exit_when_done: bool = False,
+        jobs: Sequence[SltJob[Any]] | None = None,
+        console: Console | None = None,
+        width: int | None = None,
+    ) -> None:
+        """
+        Print a live Rich dashboard to the terminal (blocking).
+
+        Parameters
+        ----------
+        interval
+            Seconds between refreshes. Ignored when ``once=True``.
+        once
+            Print a single frame and return (no :class:`rich.live.Live` loop).
+        exit_when_done
+            Stop the live loop once tracked jobs have finished. When ``jobs``
+            is omitted, all jobs known to the session are tracked.
+        jobs
+            Jobs to watch for ``exit_when_done``. Defaults to all session jobs.
+        console
+            Rich console for output. Defaults to a new :class:`~rich.console.Console`.
+        width
+            Optional width passed to :meth:`to_rich`.
+        """
+        from slothpy.core.slt_dashboard import run_session_dashboard
+
+        run_session_dashboard(
+            self,
+            interval=interval,
+            once=once,
+            exit_when_done=exit_when_done,
+            jobs=jobs,
+            console=console,
+            width=width,
+        )
+
+    async def run_dashboard_async(
+        self,
+        *,
+        interval: float = 0.5,
+        once: bool = False,
+        exit_when_done: bool = False,
+        jobs: Sequence[SltJob[Any]] | None = None,
+        console: Console | None = None,
+        width: int | None = None,
+    ) -> None:
+        """
+        Print a live Rich dashboard to the terminal (async).
+
+        Same options as :meth:`run_dashboard`, but uses ``asyncio.sleep`` between
+        refreshes so other coroutines can run concurrently.
+        """
+
+        from slothpy.core.slt_dashboard import run_session_dashboard_async
+
+        await run_session_dashboard_async(
+            self,
+            interval=interval,
+            once=once,
+            exit_when_done=exit_when_done,
+            jobs=jobs,
+            console=console,
+            width=width,
+        )
 
     def _repr_html_(self) -> str:
         return self.dashboard_html()
@@ -1501,140 +1560,6 @@ class SltSession[ResultT]:
             hard_cancel=True,
             wait=True,
         )
-
-
-# ---------------------------------------------------------------------------
-# Dashboard rendering
-# ---------------------------------------------------------------------------
-
-
-def _status_style(status: SltJobStatus) -> str:
-    if status == SltJobStatus.QUEUED:
-        return "yellow"
-    if status == SltJobStatus.RUNNING:
-        return "green"
-    if status == SltJobStatus.CANCELLING:
-        return "orange1"
-    if status == SltJobStatus.CANCELLED:
-        return "bright_black"
-    if status == SltJobStatus.FINISHED:
-        return "bold green"
-    if status == SltJobStatus.FAILED:
-        return "bold red"
-    return "default"
-
-
-def _resource_table(snapshot: SltSessionSnapshot) -> Table:
-    table = Table(title="Resources", expand=True)
-    table.add_column("Node", style="cyan", no_wrap=True)
-    table.add_column("Total cores", justify="right")
-    table.add_column("Used", justify="right")
-    table.add_column("Free", justify="right")
-    table.add_column("Usage", justify="left")
-    table.add_column("Exclusive", justify="center")
-
-    for node in snapshot.resources:
-        fraction = node.used_cores / node.total_cores if node.total_cores > 0 else None
-
-        table.add_row(
-            node.node_name,
-            str(node.total_cores),
-            str(node.used_cores),
-            str(node.free_cores),
-            _progress_bar(fraction),
-            "yes" if node.exclusive else "",
-        )
-
-    return table
-
-
-def _job_allocation_text(allocation: SltAllocation | None) -> str:
-    if allocation is None:
-        return ""
-
-    parts = [
-        f"{node.node_name}: {node.ranks}×{node.threads_per_rank}"
-        for node in allocation.nodes
-    ]
-    return ", ".join(parts)
-
-
-def _job_progress_text(job: SltJobSnapshot) -> str:
-    if job.status == SltJobStatus.FINISHED:
-        return f"{_progress_bar(1.0)} 100.0%"
-
-    progress = job.progress
-    if progress is None:
-        return _progress_bar(None)
-
-    percent = progress.percent
-    if percent is None:
-        return f"{_progress_bar(None)} {progress.done}/{progress.total}"
-
-    return (
-        f"{_progress_bar(progress.fraction)} "
-        f"{percent:5.1f}% "
-        f"({progress.done}/{progress.total})"
-    )
-
-
-def _jobs_table(snapshot: SltSessionSnapshot) -> Table:
-    table = Table(title="Jobs", expand=True)
-    table.add_column("Job id", style="cyan", no_wrap=True)
-    table.add_column("Computation", style="magenta")
-    table.add_column("Status", justify="center")
-    table.add_column("Resources")
-    table.add_column("Progress", no_wrap=True)
-    table.add_column("Exception", style="red")
-
-    for job in snapshot.jobs:
-        table.add_row(
-            job.job_id,
-            job.name,
-            Text(job.status.value, style=_status_style(job.status)),
-            _job_allocation_text(job.allocation),
-            _job_progress_text(job),
-            job.exception or "",
-        )
-
-    if not snapshot.jobs:
-        table.add_row("", "", Text("no jobs", style="bright_black"), "", "", "")
-
-    return table
-
-
-def _summary_text(snapshot: SltSessionSnapshot) -> Text:
-    status = "closed" if snapshot.closed else "active"
-
-    return Text.assemble(
-        ("SlothPy session", "bold red"),
-        ("  "),
-        (f"[{status}]", "bright_black"),
-        ("\n"),
-        (f"queued={snapshot.queued}", "yellow"),
-        ("  "),
-        (f"running={snapshot.running}", "green"),
-        ("  "),
-        (f"cancelling={snapshot.cancelling}", "orange1"),
-        ("  "),
-        (f"finished={snapshot.finished}", "bold green"),
-        ("  "),
-        (f"failed={snapshot.failed}", "bold red"),
-        ("  "),
-        (f"cancelled={snapshot.cancelled}", "bright_black"),
-    )
-
-
-def _session_snapshot_to_rich(snapshot: SltSessionSnapshot) -> Panel:
-    return Panel(
-        Group(
-            _summary_text(snapshot),
-            _resource_table(snapshot),
-            _jobs_table(snapshot),
-        ),
-        title="SlothPy compute session",
-        border_style="red",
-    )
 
 
 __all__ = [

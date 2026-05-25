@@ -26,6 +26,20 @@ SLOTHPY_STORAGE_MODEL = "xarray-netcdf4-hdf5"
 # ---------------------------------------------------------------------------
 
 
+def print_rich_renderable(
+    renderable: Any,
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Print a Rich renderable to the terminal.
+
+    Notebook cells use HTML via ``_repr_html_``; call this (or ``show()``) when
+    you want the tree/table Rich view in a terminal or marimo console.
+    """
+    (console or Console()).print(renderable)
+
+
 def _rich_to_ansi(renderable: Any) -> str:
     """
     Render a Rich renderable to an ANSI-colored string.

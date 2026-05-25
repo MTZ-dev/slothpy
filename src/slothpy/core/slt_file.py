@@ -6,6 +6,8 @@ from typing import Annotated, Any, ClassVar
 import h5py
 import xarray as xr
 from pydantic import PlainValidator
+from rich.console import Console
+from rich.tree import Tree
 
 from slothpy.core.slt_attributes import SltAttributes
 from slothpy.core.slt_common import (
@@ -26,12 +28,13 @@ from slothpy.core.slt_common import (
     _open_hdf5_handle,
     _path_from_key,
     _rich_to_ansi,
-    _rich_to_html,
     _split_supported_path,
     _write_xarray_to_netcdf_with_retry,
+    print_rich_renderable,
 )
 from slothpy.core.slt_dataset import SltDataset
 from slothpy.core.slt_group import SltGroup
+from slothpy.core.slt_html import file_node_to_html
 from slothpy.core.slt_results import SltResults
 from slothpy.groups.hamiltonian import SltHamiltonianGroup
 from slothpy.groups.typed_group import SltTypedGroup
@@ -507,14 +510,20 @@ class SltFile:
         """
         return self.to_node()
 
-    def show(self) -> None:
-        """
-        Pretty-print this file.
-        """
-        print(self)
+    def to_rich(self) -> Tree:
+        """Rich tree for terminal display."""
+        return _file_tree(self.to_node())
+
+    def print_rich(self, *, console: Console | None = None) -> None:
+        """Print the Rich terminal view (not HTML)."""
+        print_rich_renderable(self.to_rich(), console=console)
+
+    def show(self, *, console: Console | None = None) -> None:
+        """Alias for :meth:`print_rich`."""
+        self.print_rich(console=console)
 
     def _repr_html_(self) -> str:
-        return _rich_to_html(_file_tree(self.to_node()))
+        return file_node_to_html(self.to_node())
 
     def __repr__(self) -> str:
         return f"SltFile(path={self.path!s})"

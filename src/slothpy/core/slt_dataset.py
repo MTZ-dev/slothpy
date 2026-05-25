@@ -6,6 +6,8 @@ from typing import Any
 
 import h5py
 import numpy as np
+from rich.console import Console
+from rich.text import Text
 
 from slothpy.core.slt_attributes import SltAttributes
 from slothpy.core.slt_common import (
@@ -17,8 +19,9 @@ from slothpy.core.slt_common import (
     _open_hdf5_file,
     _path_from_key,
     _rich_to_ansi,
-    _rich_to_html,
+    print_rich_renderable,
 )
+from slothpy.core.slt_html import dataset_node_to_html
 
 # ---------------------------------------------------------------------------
 # Raw dataset handle
@@ -121,14 +124,20 @@ class SltDataset:
             array = array.copy()
         return array
 
-    def show(self) -> None:
-        """
-        Pretty-print this dataset handle.
-        """
-        print(self)
+    def to_rich(self) -> Text:
+        """Rich label for terminal display."""
+        return _dataset_label(self.to_node())
+
+    def print_rich(self, *, console: Console | None = None) -> None:
+        """Print the Rich terminal view (not HTML)."""
+        print_rich_renderable(self.to_rich(), console=console)
+
+    def show(self, *, console: Console | None = None) -> None:
+        """Alias for :meth:`print_rich`."""
+        self.print_rich(console=console)
 
     def _repr_html_(self) -> str:
-        return _rich_to_html(_dataset_label(self.to_node()))
+        return dataset_node_to_html(self.to_node())
 
     def __repr__(self) -> str:
         return f"SltDataset(file_path={self.file_path!s}, path={self.path!r})"

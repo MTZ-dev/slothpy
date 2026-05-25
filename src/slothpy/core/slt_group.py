@@ -9,7 +9,9 @@ if TYPE_CHECKING:
 
 import h5py
 import xarray as xr
+from rich.console import Console
 from rich.text import Text
+from rich.tree import Tree
 
 from slothpy.core.slt_attributes import SltAttributes
 from slothpy.core.slt_common import (
@@ -23,10 +25,11 @@ from slothpy.core.slt_common import (
     _open_hdf5_file,
     _primary_name,
     _rich_to_ansi,
-    _rich_to_html,
     _xarray_group_path,
+    print_rich_renderable,
 )
 from slothpy.core.slt_dataset import SltDataset
+from slothpy.core.slt_html import group_node_to_html, proxy_group_to_html
 from slothpy.core.slt_results import SltResults
 from slothpy.logic.predicate import SltPredicate
 from slothpy.types.aliases import XarrayChunks
@@ -479,24 +482,34 @@ class SltGroup:
         """
         return self.to_node()
 
-    def show(self) -> None:
-        """
-        Pretty-print this group.
-        """
-        print(self)
-
-    def _repr_html_(self) -> str:
+    def to_rich(self) -> Text | Tree:
+        """Rich tree for terminal display."""
         if not self.exists:
-            text = Text.assemble(
+            return Text.assemble(
                 ("Proxy group", "bold blue"),
                 (f" {self.group_name}", "blue"),
                 (" in "),
                 (str(self.file_path), "green"),
                 (" does not exist."),
             )
-            return _rich_to_html(text)
+        return _group_tree(self.to_node())
 
-        return _rich_to_html(_group_tree(self.to_node()))
+    def print_rich(self, *, console: Console | None = None) -> None:
+        """Print the Rich terminal view (not HTML)."""
+        print_rich_renderable(self.to_rich(), console=console)
+
+    def show(self, *, console: Console | None = None) -> None:
+        """Alias for :meth:`print_rich`."""
+        self.print_rich(console=console)
+
+    def _repr_html_(self) -> str:
+        if not self.exists:
+            return proxy_group_to_html(
+                group_name=self.group_name,
+                file_path=self.file_path,
+            )
+
+        return group_node_to_html(self.to_node())
 
     def __repr__(self) -> str:
         return (

@@ -148,8 +148,11 @@ class SltResultView(metaclass=SltResultViewMeta):
             )
 
     @property
-    def dataset(self) -> xr.Dataset | xr.DataArray:
-        return self.results.dataset
+    def dataset(self) -> xr.Dataset:
+        data = self.results.dataset
+        if isinstance(data, xr.Dataset):
+            return data
+        return data.to_dataset()
 
     @property
     def slt_type(self) -> str | None:

@@ -25,6 +25,9 @@ class MagnetisationOptions:
     states_cutoff: tuple[int, int] = (0, 0)
     rotation: np.ndarray | None = None
     electric_field_vector: np.ndarray | None = None
+    steps_per_task: int = 8
+    sleep_seconds: float = 0.05
+    progress_interval_steps: int = 1
 
 
 class MagnetisationVar(StrEnum):
@@ -46,24 +49,20 @@ class MagnetisationDataMixin:
     expected_slt_type: ClassVar[str] = MAGNETISATION_SLT_TYPE
 
     @property
-    def dataset(self) -> xr.Dataset:
-        raise NotImplementedError
-
-    @property
     def magnetisation(self) -> xr.DataArray:
-        return self.dataset[MagnetisationVar.MAGNETISATION]
+        return self.dataset[MagnetisationVar.MAGNETISATION]  # type: ignore[attr-defined]
 
     @property
     def temperatures(self) -> xr.DataArray:
-        return self.dataset[MagnetisationCoord.TEMPERATURE]
+        return self.dataset[MagnetisationCoord.TEMPERATURE]  # type: ignore[attr-defined]
 
     @property
     def magnetic_fields(self) -> xr.DataArray:
-        return self.dataset[MagnetisationCoord.FIELD]
+        return self.dataset[MagnetisationCoord.FIELD]  # type: ignore[attr-defined]
 
     @property
     def orientations(self) -> xr.DataArray | None:
-        dataset = self.dataset
+        dataset = self.dataset  # type: ignore[attr-defined]
         if MagnetisationVar.ORIENTATIONS in dataset:
             return dataset[MagnetisationVar.ORIENTATIONS]
         return None

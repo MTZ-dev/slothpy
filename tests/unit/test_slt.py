@@ -413,6 +413,28 @@ def test_rich_render_helpers() -> None:
     assert "<pre" in html
 
 
+def test_structure_html_uses_shared_styles(slt: SltFile) -> None:
+    from slothpy.core.slt_html import structure_css
+
+    slt.attrs["tag"] = "demo"
+    html = slt.attrs._repr_html_()
+
+    assert "slt-structure" in html
+    assert "slt-card" in html
+    assert "slt-table" in html
+    assert "tag" in html
+    assert structure_css() in html
+
+
+def test_file_html_includes_groups_and_datasets(slt_with_semantic_group: SltFile) -> None:
+    html = slt_with_semantic_group._repr_html_()
+
+    assert "SltFile" in html
+    assert "slt-structure" in html
+    assert "Groups" in html
+    assert "magnetisation_001" in html
+
+
 # ---------------------------------------------------------------------------
 # File creation/opening tests
 # ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@ from __future__ import annotations
 from inspect import isfunction
 from typing import Any, ClassVar
 
+import xarray as xr
 from pydantic import ConfigDict, validate_call
 
 from slothpy.core.slt_group import SltGroup
@@ -92,6 +93,16 @@ class SltTypedGroup(SltGroup, metaclass=SltTypedGroupMeta):
     def __post_init__(self) -> None:
         super().__post_init__()
         self._validate_expected_slt_type()
+
+    @property
+    def dataset(self) -> xr.Dataset:
+        """
+        Eager xarray Dataset for this semantic group (via :meth:`~slothpy.core.slt_group.SltGroup.to_dataset`).
+        """
+        data = self.to_dataset()
+        if isinstance(data, xr.Dataset):
+            return data
+        return data.to_dataset()
 
     def _validate_expected_slt_type(self) -> None:
         expected = self.expected_slt_type

@@ -6,14 +6,17 @@ from pathlib import Path
 from typing import Any
 
 import h5py
+from rich.console import Console
+from rich.text import Text
 
 from slothpy.core.slt_common import (
     _attrs_label,
     _get_hdf5_item,
     _open_hdf5_file,
     _rich_to_ansi,
-    _rich_to_html,
+    print_rich_renderable,
 )
+from slothpy.core.slt_html import attrs_mapping_to_html
 
 # ---------------------------------------------------------------------------
 # Attributes
@@ -74,14 +77,26 @@ class SltAttributes(MutableMapping[str, Any]):
         with h5py.File(self.file_path, "r") as h5:
             return dict(self._target(h5).attrs.items())
 
-    def show(self) -> None:
-        """
-        Pretty-print attributes.
-        """
-        print(self)
+    def to_rich(self) -> Text:
+        """Rich label for terminal display."""
+        return _attrs_label(self.as_dict())
+
+    def print_rich(self, *, console: Console | None = None) -> None:
+        """Print the Rich terminal view (not HTML)."""
+        print_rich_renderable(self.to_rich(), console=console)
+
+    def show(self, *, console: Console | None = None) -> None:
+        """Alias for :meth:`print_rich`."""
+        self.print_rich(console=console)
 
     def _repr_html_(self) -> str:
-        return _rich_to_html(_attrs_label(self.as_dict()))
+        subtitle = self.file_path.as_posix()
+        if self.item_path != "/":
+            subtitle = f"{subtitle} · {self.item_path}"
+        return attrs_mapping_to_html(
+            self.as_dict(),
+            subtitle=subtitle,
+        )
 
     def __repr__(self) -> str:
         return (

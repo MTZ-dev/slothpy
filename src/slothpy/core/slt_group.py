@@ -525,9 +525,35 @@ class SltGroup:
         Return the registered :class:`~slothpy.groups.typed_group.SltTypedGroup`
         subclass for this group's ``slt_type`` attribute.
         """
-        from slothpy.groups.typed_group import to_typed_slt_group
+        from slothpy.groups.typed_group import SLT_GROUP_TYPE_REGISTRY
 
-        return to_typed_slt_group(self)
+        if not self.exists:
+            raise KeyError(
+                f"Group {self.group_name!r} does not exist in file {self.file_path!s}."
+            )
+
+        attrs = self.attrs.as_dict()
+        group_type = attrs.get("slt_type")
+
+        if isinstance(group_type, bytes):
+            group_type = group_type.decode("utf-8")
+
+        if not isinstance(group_type, str):
+            raise TypeError(
+                f"Group {self.group_name!r} is not a SlothPy semantic group: "
+                "missing string attribute 'slt_type'."
+            )
+
+        key = group_type.strip().upper()
+
+        try:
+            group_cls = SLT_GROUP_TYPE_REGISTRY[key]
+        except KeyError:
+            raise TypeError(
+                f"No registered SlothPy group class for slt_type={group_type!r}."
+            ) from None
+
+        return group_cls(self.file_path, self.group_name, chunks=self.chunks)
 
     def require_rule(self, rule: SltPredicate, function_name: str) -> None:
         if not rule(self):

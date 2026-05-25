@@ -18,7 +18,7 @@ from slothpy.core.slt import (
     open_slt_file,
 )
 from slothpy.core.slt_group import SltGroup
-from slothpy.core.slt_results import SltResults, SltResultView, to_typed_slt_results
+from slothpy.core.slt_results import SltResults, SltResultView
 from slothpy.types.aliases import PathLike
 
 _VALIDATE_CONFIG = ConfigDict(arbitrary_types_allowed=True)
@@ -402,7 +402,7 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
         if self._wrapped_result is not None:
             return self._wrapped_result
 
-        wrapped = to_typed_slt_results(results)
+        wrapped = results.to_typed_slt_results()
         self._wrapped_result = wrapped  # type: ignore[assignment]
         return wrapped  # type: ignore[return-value]
 

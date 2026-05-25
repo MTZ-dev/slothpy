@@ -97,7 +97,20 @@ class SltResults:
         """
         Return the registered :class:`SltResultView` for this bundle's ``slt_type``.
         """
-        return to_typed_slt_results(self)
+        slt_type = self.slt_type
+        if slt_type is None:
+            raise TypeError("Cannot wrap SltResults without slt_type.")
+
+        key = slt_type.strip().upper()
+
+        try:
+            view_cls = SLT_RESULT_VIEW_REGISTRY[key]
+        except KeyError:
+            raise TypeError(
+                f"No registered SltResultView for slt_type={slt_type!r}."
+            ) from None
+
+        return view_cls(self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,29 +164,9 @@ class SltResultView(metaclass=SltResultViewMeta):
         return self.results.attrs
 
 
-def to_typed_slt_results(results: SltResults) -> SltResultView:
-    """
-    Construct the registered :class:`SltResultView` for ``results.slt_type``.
-    """
-    slt_type = results.slt_type
-    if slt_type is None:
-        raise TypeError("Cannot wrap SltResults without slt_type.")
-
-    key = slt_type.strip().upper()
-    try:
-        view_cls = SLT_RESULT_VIEW_REGISTRY[key]
-    except KeyError:
-        raise TypeError(
-            f"No registered SltResultView for slt_type={slt_type!r}."
-        ) from None
-
-    return view_cls(results)
-
-
 __all__ = [
     "SLT_RESULT_VIEW_REGISTRY",
     "SltResultView",
     "SltResultViewMeta",
     "SltResults",
-    "to_typed_slt_results",
 ]

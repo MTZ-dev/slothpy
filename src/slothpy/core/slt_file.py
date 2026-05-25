@@ -33,9 +33,9 @@ from slothpy.core.slt_common import (
 from slothpy.core.slt_dataset import SltDataset
 from slothpy.core.slt_group import SltGroup
 from slothpy.core.slt_results import SltResults
-from slothpy.groups.computational_groups import SltMagnetisationGroup
 from slothpy.groups.hamiltonian import SltHamiltonianGroup
 from slothpy.groups.typed_group import SltTypedGroup
+from slothpy.specs.magnetisation import SltMagnetisationGroup
 from slothpy.types.aliases import PathLike, XarrayChunks
 
 # ---------------------------------------------------------------------------

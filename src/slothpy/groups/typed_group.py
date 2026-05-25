@@ -124,37 +124,3 @@ class SltTypedGroup(SltGroup, metaclass=SltTypedGroupMeta):
                 f"Group {self.group_name!r} has slt_type={group_type!r}, "
                 f"expected {expected_upper!r}."
             )
-
-
-def to_typed_slt_group(group: SltGroup) -> SltTypedGroup:
-    """
-    Return the registered :class:`SltTypedGroup` subclass for this handle's
-    ``slt_type`` attribute.
-    """
-    if not group.exists:
-        raise KeyError(
-            f"Group {group.group_name!r} does not exist in file {group.file_path!s}."
-        )
-
-    attrs = group.attrs.as_dict()
-    group_type = attrs.get("slt_type")
-
-    if isinstance(group_type, bytes):
-        group_type = group_type.decode("utf-8")
-
-    if not isinstance(group_type, str):
-        raise TypeError(
-            f"Group {group.group_name!r} is not a SlothPy semantic group: "
-            "missing string attribute 'slt_type'."
-        )
-
-    key = group_type.strip().upper()
-
-    try:
-        group_cls = SLT_GROUP_TYPE_REGISTRY[key]
-    except KeyError:
-        raise TypeError(
-            f"No registered SlothPy group class for slt_type={group_type!r}."
-        ) from None
-
-    return group_cls(group.file_path, group.group_name, chunks=group.chunks)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, ClassVar
@@ -9,74 +8,25 @@ from typing import Any, ClassVar
 import numpy as np
 import xarray as xr
 from numpy.typing import ArrayLike
-from pydantic import ConfigDict
+from pydantic import ConfigDict, validate_call
 
 from slothpy.compute.mpi_job import MPIJobResources, MPIJobRunner, MPIJobSpec
 from slothpy.core.slt_computation import (
     SltComputation,
     SltComputationResources,
 )
-from slothpy.core.slt_results import SltResults, SltResultView
+from slothpy.core.slt_results import SltResults
 from slothpy.groups.hamiltonian import SltHamiltonianGroup
 from slothpy.io.shared_memory import SharedArrayBundle
+from slothpy.specs.magnetisation import (
+    MAGNETISATION_SLT_TYPE,
+    MagnetisationCoord,
+    MagnetisationOptions,
+    MagnetisationVar,
+    SltMagnetisationResult,
+)
 
 _VALIDATE_CONFIG = ConfigDict(arbitrary_types_allowed=True)
-
-
-@dataclass(frozen=True, slots=True)
-class MagnetisationOptions:
-    magnetic_fields: np.ndarray
-    orientations: np.ndarray
-    temperatures: np.ndarray
-    states_cutoff: tuple[int, int] = (0, 0)
-    rotation: np.ndarray | None = None
-    electric_field_vector: np.ndarray | None = None
-
-
-class MagnetisationVar(StrEnum):
-    MAGNETISATION = "magnetisation"
-    ORIENTATIONS = "orientations"
-
-
-class MagnetisationCoord(StrEnum):
-    TEMPERATURE = "temperature"
-    FIELD = "field"
-    ORIENTATION = "orientation"
-
-
-class MagnetisationDataMixin:
-    expected_slt_type: ClassVar[str] = "MAGNETISATION"
-
-    @property
-    def dataset(self) -> xr.Dataset:
-        raise NotImplementedError
-
-    @property
-    def magnetisation(self) -> xr.DataArray:
-        return self.dataset[MagnetisationVar.MAGNETISATION]
-
-    @property
-    def temperatures(self) -> xr.DataArray:
-        return self.dataset[MagnetisationCoord.TEMPERATURE]
-
-    @property
-    def magnetic_fields(self) -> xr.DataArray:
-        return self.dataset[MagnetisationCoord.FIELD]
-
-    @property
-    def orientations(self) -> xr.DataArray | None:
-        dataset = self.dataset
-        if MagnetisationVar.ORIENTATIONS in dataset:
-            return dataset[MagnetisationVar.ORIENTATIONS]
-        return None
-
-    def to_dataframe(self) -> Any:
-        return self.magnetisation.to_dataframe()
-
-
-@dataclass(frozen=True, slots=True)
-class SltMagnetisationResult(MagnetisationDataMixin, SltResultView):
-    expected_slt_type: ClassVar[str] = "MAGNETISATION"
 
 
 @dataclass(slots=True)
@@ -144,9 +94,6 @@ class SltMagnetisationComputation(
 
         bundle = SharedArrayBundle()
 
-        # These paths assume xarray/h5netcdf writes variables directly under
-        # the semantic group. If your final constants are different, keep them
-        # in one HamiltonianVar enum and use it here.
         group_path = source.group_name
 
         bundle.add_hdf5_dataset(
@@ -284,12 +231,13 @@ class SltMagnetisationComputation(
 
         return SltResults(
             dataset=dataset,
-            slt_type="MAGNETISATION",
+            slt_type=MAGNETISATION_SLT_TYPE,
             primary=MagnetisationVar.MAGNETISATION,
             attrs=dict(dataset.attrs),
         )
 
 
+@validate_call(config=_VALIDATE_CONFIG)
 def magnetisation(
     source: SltHamiltonianGroup,
     magnetic_fields: ArrayLike,

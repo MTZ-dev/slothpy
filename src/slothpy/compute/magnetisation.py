@@ -23,7 +23,6 @@ from slothpy.groups.hamiltonian import SltHamiltonianGroup
 from slothpy.groups.hamiltonian_names import HamiltonianVar
 from slothpy.io.readers.hamiltonian_reader import HamiltonianReaderResult
 from slothpy.io.shared_memory import SharedArrayBundle
-from slothpy.types.aliases import PathLike
 from slothpy.specs.magnetisation import (
     MAGNETISATION_SLT_TYPE,
     MagnetisationCoord,
@@ -31,6 +30,7 @@ from slothpy.specs.magnetisation import (
     MagnetisationVar,
     SltMagnetisationResult,
 )
+from slothpy.types.aliases import PathLike
 
 _VALIDATE_CONFIG = ConfigDict(arbitrary_types_allowed=True)
 

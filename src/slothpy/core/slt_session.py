@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 import signal
+import socket
 import subprocess
 import sys
 import threading
@@ -12,12 +13,13 @@ from collections.abc import Mapping, Sequence
 from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from enum import IntEnum, StrEnum
-from inspect import signature
 from multiprocessing.shared_memory import SharedMemory
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 import numpy as np
+
+from slothpy.io.shared_memory import _open_shared_memory
 
 if TYPE_CHECKING:
     from rich.console import Console
@@ -63,34 +65,13 @@ _PROGRESS_ERROR_CODE = 5
 _PROGRESS_RESERVED_0 = 6
 _PROGRESS_RESERVED_1 = 7
 
-_SHARED_MEMORY_SUPPORTS_TRACK = "track" in signature(SharedMemory).parameters
-
-
-def _open_shared_memory(
-    *,
-    name: str | None = None,
-    create: bool = False,
-    size: int = 0,
-    track: bool = True,
-) -> SharedMemory:
-    kwargs: dict[str, Any] = {
-        "name": name,
-        "create": create,
-        "size": size,
-    }
-
-    if _SHARED_MEMORY_SUPPORTS_TRACK:
-        kwargs["track"] = track
-
-    return SharedMemory(**kwargs)
-
 
 @dataclass(frozen=True, slots=True)
 class SltProgressSpec:
     """
     JSON-serializable description of a progress shared-memory block.
 
-    This can be stored inside your MPI job-spec payload or shared-memory
+    This can be stored inside MPI job-spec payload or shared-memory
     manifest. Worker rank 0 can attach using this spec.
     """
 
@@ -224,32 +205,32 @@ class SltProgressTracker:
     def set_total(self, total: int) -> None:
         if total < 0:
             raise ValueError("total must be >= 0.")
-        self.array[_PROGRESS_TOTAL] = int(total)
+        self.array[_PROGRESS_TOTAL] = np.int64(total)
         self.touch()
 
     def set_done(self, done: int) -> None:
-        self.array[_PROGRESS_DONE] = int(max(done, 0))
+        self.array[_PROGRESS_DONE] = np.int64(max(done, 0))
         self.touch()
 
     def advance(self, delta: int = 1) -> None:
-        self.array[_PROGRESS_DONE] += int(delta)
+        self.array[_PROGRESS_DONE] += np.int64(delta)
         self.touch()
 
     def set_status(self, status: SltProgressStatus) -> None:
-        self.array[_PROGRESS_STATUS] = int(status)
+        self.array[_PROGRESS_STATUS] = np.int64(status)
         self.touch()
 
     def set_running(self) -> None:
         self.set_status(SltProgressStatus.RUNNING)
 
     def set_finished(self) -> None:
-        total = int(self.array[_PROGRESS_TOTAL])
+        total = np.int64(self.array[_PROGRESS_TOTAL])
         if total > 0:
             self.array[_PROGRESS_DONE] = total
         self.set_status(SltProgressStatus.FINISHED)
 
     def set_failed(self, *, error_code: int = 1) -> None:
-        self.array[_PROGRESS_ERROR_CODE] = int(error_code)
+        self.array[_PROGRESS_ERROR_CODE] = np.int64(error_code)
         self.set_status(SltProgressStatus.FAILED)
 
     def request_cancel(self) -> None:
@@ -264,7 +245,7 @@ class SltProgressTracker:
         return bool(self.array[_PROGRESS_CANCEL_REQUESTED])
 
     def touch(self) -> None:
-        self.array[_PROGRESS_HEARTBEAT_NS] = time.monotonic_ns()
+        self.array[_PROGRESS_HEARTBEAT_NS] = np.int64(time.monotonic_ns())
 
     def close(self) -> None:
         if self._closed:
@@ -344,6 +325,46 @@ def update_mpi_progress(
 # ---------------------------------------------------------------------------
 
 
+def _normalize_hostname(name: str) -> str:
+    return name.strip().lower().split(".")[0]
+
+
+def resolve_control_node_name(
+    nodes: Sequence[SltNodeResources],
+    *,
+    control_node_name: str | None = None,
+) -> str:
+    """
+    Resolve the node where the session parent runs (MPI rank 0 must land here).
+
+    Rank 0 attaches to POSIX shared memory created by the parent process, so it
+    must be scheduled on the same machine.
+    """
+    names = {node.name for node in nodes}
+
+    if control_node_name is not None:
+        if control_node_name not in names:
+            raise ValueError(
+                f"control_node_name {control_node_name!r} is not in the resource pool: "
+                f"{sorted(names)}."
+            )
+        return control_node_name
+
+    host_short = _normalize_hostname(socket.gethostname())
+    for node in nodes:
+        if _normalize_hostname(node.name) == host_short:
+            return node.name
+
+    fqdn = socket.getfqdn()
+    if fqdn in names:
+        return fqdn
+
+    if "localhost" in names:
+        return "localhost"
+
+    return nodes[0].name
+
+
 @dataclass(frozen=True, slots=True)
 class SltNodeResources:
     """
@@ -420,8 +441,38 @@ class SltNodeAllocation:
 
 @dataclass(frozen=True, slots=True)
 class SltAllocation:
+    """
+    Concrete resources reserved for one computation.
+
+    The first node is always the session control node. OpenMPI assigns global
+    rank 0 to the first slot on the first host in the hostfile, so rank 0 runs
+    where the parent can share memory.
+    """
+
     request: SltResourceRequest
     nodes: tuple[SltNodeAllocation, ...]
+    control_node_name: str
+
+    def __post_init__(self) -> None:
+        if not self.nodes:
+            raise ValueError("SltAllocation requires at least one node.")
+
+        if self.nodes[0].node_name != self.control_node_name:
+            raise ValueError(
+                "The first allocated node must be the session control node "
+                f"({self.control_node_name!r}) so MPI rank 0 can attach to "
+                "parent shared memory."
+            )
+
+        if self.nodes[0].ranks < 1:
+            raise ValueError(
+                f"Control node {self.control_node_name!r} must host at least one "
+                "MPI rank."
+            )
+
+    @property
+    def rank0_node_name(self) -> str:
+        return self.nodes[0].node_name
 
     @property
     def num_processes(self) -> int:
@@ -444,6 +495,12 @@ class SltAllocation:
         return self.node_names == ("localhost",)
 
     def write_openmpi_hostfile(self, path: str | Path) -> Path:
+        """
+        Write an OpenMPI hostfile.
+
+        Nodes are written in allocation order; the first host receives MPI
+        rank 0 (the session control node).
+        """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -456,13 +513,20 @@ class SltAllocation:
         return path
 
     def openmpi_extra_args(self, hostfile: str | Path) -> tuple[str, ...]:
+        """
+        OpenMPI hostfile / mapping options for multi-node launches.
+
+        Uses ``--bind-to none`` so each rank sees the node CPUs; per-rank thread
+        counts come from the job environment (see :func:`build_mpi_environment`).
+        """
+        from slothpy.core.mpi_launch import openmpi_bind_extra_args
+
         return (
             "--hostfile",
             str(hostfile),
             "--map-by",
             f"slot:PE={self.num_threads}",
-            "--bind-to",
-            "core",
+            *openmpi_bind_extra_args("none"),
         )
 
 
@@ -477,10 +541,24 @@ class SltResourceNodeSnapshot:
 
 class SltResourcePool:
     """
-    Thread-safe local resource allocator.
+    Thread-safe resource allocator.
+
+    The control node is where the session parent runs. MPI rank 0 is always
+    placed on that node so it can attach to parent-owned shared memory.
+
+    MPI workers are launched with ``--bind-to none`` (see
+    :mod:`slothpy.core.mpi_launch`); this pool tracks how many logical cores are
+    reserved on each node. Per-rank thread limits are set in the worker environment
+    by :func:`build_mpi_environment`.
     """
 
-    def __init__(self, nodes: Sequence[SltNodeResources]) -> None:
+    def __init__(
+        self,
+        nodes: Sequence[SltNodeResources],
+        *,
+        control_node_name: str | None = None,
+        parent_reserved_cores: int = 1,
+    ) -> None:
         if not nodes:
             raise ValueError("SltResourcePool requires at least one node.")
 
@@ -488,13 +566,35 @@ class SltResourcePool:
         if len(names) != len(set(names)):
             raise ValueError("Node names must be unique.")
 
+        if parent_reserved_cores < 0:
+            raise ValueError("parent_reserved_cores must be >= 0.")
+
         self._nodes = tuple(nodes)
+        self._control_node_name = resolve_control_node_name(
+            self._nodes,
+            control_node_name=control_node_name,
+        )
+        self._parent_reserved_cores = parent_reserved_cores
         self._used_cores: dict[str, int] = {node.name: 0 for node in self._nodes}
         self._exclusive_nodes: set[str] = set()
         self._lock = threading.Lock()
 
+        control_node = self._node_by_name(self._control_node_name)
+        if control_node.cores < parent_reserved_cores + 1:
+            raise ValueError(
+                f"Control node {self._control_node_name!r} must have enough cores "
+                f"for the session parent (reserved {parent_reserved_cores}) and at "
+                "least one MPI rank."
+            )
+
     @classmethod
-    def local(cls, *, cores: int | None = None) -> SltResourcePool:
+    def local(
+        cls,
+        *,
+        cores: int | None = None,
+        parent_reserved_cores: int = 1,
+    ) -> SltResourcePool:
+        # Machine-wide logical CPUs (not the parent's affinity mask).
         detected = os.cpu_count() or 1
         return cls(
             [
@@ -502,12 +602,28 @@ class SltResourcePool:
                     name="localhost",
                     cores=detected if cores is None else cores,
                 )
-            ]
+            ],
+            control_node_name="localhost",
+            parent_reserved_cores=parent_reserved_cores,
         )
 
     @classmethod
-    def from_tuples(cls, nodes: Sequence[tuple[str, int]]) -> SltResourcePool:
-        return cls([SltNodeResources(name, cores) for name, cores in nodes])
+    def from_tuples(
+        cls,
+        nodes: Sequence[tuple[str, int]],
+        *,
+        control_node_name: str | None = None,
+        parent_reserved_cores: int = 1,
+    ) -> SltResourcePool:
+        return cls(
+            [SltNodeResources(name, cores) for name, cores in nodes],
+            control_node_name=control_node_name,
+            parent_reserved_cores=parent_reserved_cores,
+        )
+
+    @property
+    def control_node_name(self) -> str:
+        return self._control_node_name
 
     @property
     def nodes(self) -> tuple[SltNodeResources, ...]:
@@ -551,10 +667,26 @@ class SltResourcePool:
                 if node_allocation.exclusive:
                     self._exclusive_nodes.discard(node_allocation.node_name)
 
+    def _node_by_name(self, node_name: str) -> SltNodeResources:
+        for node in self._nodes:
+            if node.name == node_name:
+                return node
+        raise KeyError(node_name)
+
+    def _nodes_in_allocation_order(self) -> tuple[SltNodeResources, ...]:
+        control = self._node_by_name(self._control_node_name)
+        others = tuple(node for node in self._nodes if node.name != control.name)
+        return (control, *others)
+
     def _free_cores_unlocked(self, node: SltNodeResources) -> int:
         if node.name in self._exclusive_nodes:
             return 0
-        return node.cores - self._used_cores[node.name]
+
+        free = node.cores - self._used_cores[node.name]
+        if node.name == self._control_node_name:
+            free -= self._parent_reserved_cores
+
+        return max(free, 0)
 
     def _rank_capacity_unlocked(
         self,
@@ -578,7 +710,7 @@ class SltResourcePool:
         ranks_left = request.num_processes
         allocations: list[SltNodeAllocation] = []
 
-        for node in self._nodes:
+        for node in self._nodes_in_allocation_order():
             capacity = self._rank_capacity_unlocked(node, request)
             ranks_on_node = min(ranks_left, capacity)
 
@@ -609,7 +741,7 @@ class SltResourcePool:
         if ranks_left != 0:
             return None
 
-        return SltAllocation(request=request, nodes=tuple(allocations))
+        return self._finalize_allocation(request, allocations)
 
     def _try_allocate_exact_nodes_unlocked(
         self,
@@ -617,16 +749,26 @@ class SltResourcePool:
     ) -> SltAllocation | None:
         assert request.num_nodes is not None
 
+        control = self._node_by_name(self._control_node_name)
+        if self._rank_capacity_unlocked(control, request) < 1:
+            return None
+
         candidate_nodes = [
             node
             for node in self._nodes
             if self._rank_capacity_unlocked(node, request) >= 1
         ]
 
+        if control.name not in {node.name for node in candidate_nodes}:
+            return None
+
         if len(candidate_nodes) < request.num_nodes:
             return None
 
-        selected_nodes = candidate_nodes[: request.num_nodes]
+        other_candidates = [
+            node for node in candidate_nodes if node.name != control.name
+        ]
+        selected_nodes = (control, *other_candidates[: request.num_nodes - 1])
 
         capacities = {
             node.name: self._rank_capacity_unlocked(node, request)
@@ -671,7 +813,25 @@ class SltResourcePool:
                 )
             )
 
-        return SltAllocation(request=request, nodes=tuple(allocations))
+        return self._finalize_allocation(request, allocations)
+
+    def _finalize_allocation(
+        self,
+        request: SltResourceRequest,
+        allocations: list[SltNodeAllocation],
+    ) -> SltAllocation:
+        ordered = sorted(
+            allocations,
+            key=lambda node_allocation: (
+                0 if node_allocation.node_name == self._control_node_name else 1,
+                node_allocation.node_name,
+            ),
+        )
+        return SltAllocation(
+            request=request,
+            nodes=tuple(ordered),
+            control_node_name=self._control_node_name,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -764,6 +924,7 @@ def start_mpi_process(
     mpi_executable: str = "mpirun",
     python_executable: str = sys.executable,
     extra_mpi_args: Sequence[str] = (),
+    mpi_bind_to: str | None = "none",
     cwd: str | Path | None = None,
     env: dict[str, str] | None = None,
     capture_output: bool = True,
@@ -771,8 +932,13 @@ def start_mpi_process(
     """
     Launch:
 
-        mpirun -np N python -m worker_module --job-spec job_spec_path
+        mpirun --bind-to none -np N python -m worker_module --job-spec job_spec_path
+
+    CPU placement is left to :class:`SltResourcePool` (cores reserved per job) and
+  ``build_mpi_environment`` (thread caps per rank). Pass ``mpi_bind_to=None`` to
+    skip ``--bind-to`` for non-OpenMPI launchers.
     """
+    from slothpy.core.mpi_launch import resolve_mpi_launch_args
     if allocation is None:
         num_processes = 1
         num_threads = 1
@@ -780,11 +946,13 @@ def start_mpi_process(
         num_processes = allocation.num_processes
         num_threads = allocation.num_threads
 
+    launch_args = resolve_mpi_launch_args(extra_mpi_args, bind_to=mpi_bind_to)
+
     command = (
         mpi_executable,
+        *launch_args,
         "-np",
         str(num_processes),
-        *tuple(extra_mpi_args),
         python_executable,
         "-m",
         worker_module,
@@ -1107,10 +1275,22 @@ class SltSession[ResultT]:
 
         session.run_dashboard(exit_when_done=True)
         await session.run_dashboard_async(interval=0.25)
+
+    Ctrl+C / SIGTERM (when :attr:`install_signal_handlers` is true, the default)
+    hard-cancels all jobs via the MPI process group (SIGTERM, then SIGKILL on a
+    second interrupt). Cooperative cancel alone is available through
+    :meth:`request_cancel`; use :meth:`terminate`, :meth:`kill`, or
+    :meth:`kill_all` when workers must stop immediately.
+
+    MPI rank 0 always runs on :attr:`control_node_name` (the machine where this
+    session creates shared memory). The resource pool reserves
+    ``parent_reserved_cores`` on that node for the parent process.
     """
 
     resource_pool: SltResourcePool | None = None
     max_running_jobs: int = 16
+    install_signal_handlers: bool = True
+    interrupt_grace_seconds: float = 5.0
 
     _executor: ThreadPoolExecutor = field(init=False)
     _scheduler_thread: threading.Thread = field(init=False)
@@ -1121,6 +1301,7 @@ class SltSession[ResultT]:
     _pending: list[SltJob[Any]] = field(default_factory=list, init=False)
     _jobs: dict[str, SltJob[Any]] = field(default_factory=dict, init=False)
     _closed: bool = field(default=False, init=False)
+    _interrupt_handlers_registered: bool = field(default=False, init=False)
 
     def __post_init__(self) -> None:
         if self.resource_pool is None:
@@ -1141,16 +1322,33 @@ class SltSession[ResultT]:
         )
         self._scheduler_thread.start()
 
+        if self.install_signal_handlers:
+            from slothpy.core.slt_interrupt import register_session_interrupt_handlers
+
+            register_session_interrupt_handlers(
+                self,
+                grace_seconds=self.interrupt_grace_seconds,
+            )
+            self._interrupt_handlers_registered = True
+
     @classmethod
     def local(
         cls,
         *,
         cores: int | None = None,
+        parent_reserved_cores: int = 1,
         max_running_jobs: int = 16,
+        install_signal_handlers: bool = True,
+        interrupt_grace_seconds: float = 5.0,
     ) -> SltSession:
         return cls(
-            resource_pool=SltResourcePool.local(cores=cores),
+            resource_pool=SltResourcePool.local(
+                cores=cores,
+                parent_reserved_cores=parent_reserved_cores,
+            ),
             max_running_jobs=max_running_jobs,
+            install_signal_handlers=install_signal_handlers,
+            interrupt_grace_seconds=interrupt_grace_seconds,
         )
 
     @classmethod
@@ -1158,7 +1356,11 @@ class SltSession[ResultT]:
         cls,
         nodes: Sequence[SltNodeResources | tuple[str, int]],
         *,
+        control_node_name: str | None = None,
+        parent_reserved_cores: int = 1,
         max_running_jobs: int = 16,
+        install_signal_handlers: bool = True,
+        interrupt_grace_seconds: float = 5.0,
     ) -> SltSession:
         node_resources = [
             node if isinstance(node, SltNodeResources) else SltNodeResources(*node)
@@ -1166,9 +1368,26 @@ class SltSession[ResultT]:
         ]
 
         return cls(
-            resource_pool=SltResourcePool(node_resources),
+            resource_pool=SltResourcePool(
+                node_resources,
+                control_node_name=control_node_name,
+                parent_reserved_cores=parent_reserved_cores,
+            ),
             max_running_jobs=max_running_jobs,
+            install_signal_handlers=install_signal_handlers,
+            interrupt_grace_seconds=interrupt_grace_seconds,
         )
+
+    @property
+    def control_node_name(self) -> str:
+        """
+        Node where this session parent runs.
+
+        MPI rank 0 is always scheduled on this node so it can attach to
+        parent-owned shared memory.
+        """
+        assert self.resource_pool is not None
+        return self.resource_pool.control_node_name
 
     def submit(
         self,
@@ -1280,6 +1499,29 @@ class SltSession[ResultT]:
         with self._condition:
             self._condition.notify_all()
 
+    def kill_all(self) -> None:
+        """
+        Forcibly SIGKILL every MPI process group for non-finished jobs.
+
+        Use on a second Ctrl+C or when cooperative / SIGTERM cancellation is too slow.
+        """
+        with self._condition:
+            jobs = list(self._jobs.values())
+
+        for job in jobs:
+            if job.done():
+                continue
+
+            if job.status == SltJobStatus.QUEUED:
+                job._cancel_requested.set()
+                job._set_status(SltJobStatus.CANCELLED)
+                job._safe_set_exception(CancelledError())
+            else:
+                job.kill()
+
+        with self._condition:
+            self._condition.notify_all()
+
     def prune_finished(self) -> None:
         with self._condition:
             removable = [
@@ -1305,6 +1547,12 @@ class SltSession[ResultT]:
         grace_seconds: float = 5.0,
         wait: bool = True,
     ) -> None:
+        if self._interrupt_handlers_registered:
+            from slothpy.core.slt_interrupt import unregister_session_interrupt_handlers
+
+            unregister_session_interrupt_handlers(self)
+            self._interrupt_handlers_registered = False
+
         if cancel_running:
             self.cancel_all(hard=hard_cancel, grace_seconds=grace_seconds)
 

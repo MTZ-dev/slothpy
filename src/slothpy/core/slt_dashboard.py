@@ -105,6 +105,7 @@ def run_session_dashboard(
             time.sleep(interval)
     except KeyboardInterrupt:
         interrupted = True
+        _interrupt_session_on_keyboard_interrupt(session)
     finally:
         terminal.show_cursor(True)
 
@@ -154,11 +155,23 @@ async def run_session_dashboard_async(
             await asyncio.sleep(interval)
     except KeyboardInterrupt:
         interrupted = True
+        _interrupt_session_on_keyboard_interrupt(session)
     finally:
         terminal.show_cursor(True)
 
     if interrupted:
         raise KeyboardInterrupt
+
+
+def _interrupt_session_on_keyboard_interrupt(session: SltSession[Any]) -> None:
+    """
+    Ensure MPI workers are killed when the dashboard loop catches KeyboardInterrupt.
+
+    If signal handlers are installed, they usually run first; this call is idempotent.
+    """
+    from slothpy.core.slt_interrupt import interrupt_session
+
+    interrupt_session(session, hard=True)
 
 
 # ---------------------------------------------------------------------------

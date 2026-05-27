@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from slothpy.core.mpi_launch import resolve_mpi_launch_args
 from slothpy.types.aliases import PathLike
 
 
@@ -31,6 +32,7 @@ class MPIJobResources:
     mpi_executable: str = "mpirun"
     python_executable: str = sys.executable
     extra_mpi_args: tuple[str, ...] = ()
+    mpi_bind_to: str | None = "none"
 
     def __post_init__(self) -> None:
         if self.num_processes < 1:
@@ -118,11 +120,15 @@ class MPIJobRunner:
     capture_output: bool = True
 
     def command(self, spec: MPIJobSpec, job_spec_path: PathLike) -> tuple[str, ...]:
+        launch_args = resolve_mpi_launch_args(
+            self.resources.extra_mpi_args,
+            bind_to=self.resources.mpi_bind_to,
+        )
         return (
             self.resources.mpi_executable,
+            *launch_args,
             "-np",
             str(self.resources.num_processes),
-            *self.resources.extra_mpi_args,
             self.resources.python_executable,
             "-m",
             spec.worker_module,

@@ -199,7 +199,9 @@ def main(argv: list[str] | None = None) -> int:
 
     except KeyboardInterrupt:
         console.print("\n[bold yellow]Interrupted. Shutting down session.[/bold yellow]")
-        session.cancel_all(hard=True)
+        from slothpy.core.slt_interrupt import interrupt_session
+
+        interrupt_session(session, hard=True)
         return 130
 
     finally:

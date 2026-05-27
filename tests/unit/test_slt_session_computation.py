@@ -52,7 +52,11 @@ def test_computation_resource_request_resolves_zeros() -> None:
 
 
 def test_session_submit_computation() -> None:
-    session = SltSession.local(cores=4, max_running_jobs=2)
+    session = SltSession.local(
+        cores=4,
+        max_running_jobs=2,
+        install_signal_handlers=False,
+    )
 
     try:
         computation = _EchoComputation(

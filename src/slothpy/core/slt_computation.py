@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import subprocess
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from concurrent.futures import CancelledError
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -65,6 +66,9 @@ class SltComputationResources:
     num_threads: int = 0
     nodes: int = 1
     exclusive_nodes: bool = False
+    mpi_executable: str = "mpirun"
+    extra_mpi_args: tuple[str, ...] = ()
+    mpi_bind_to: str | None = "none"
 
     def __post_init__(self) -> None:
         if self.num_processes < 0:
@@ -129,6 +133,7 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
     _cancel_requested: bool = field(default=False, init=False)
     _progress_tracker: SltProgressTracker | None = field(default=None, init=False)
     _mpi_handle: MPIProcessHandle | None = field(default=None, init=False)
+    _autotune_result: Any = field(default=None, init=False)
 
     computation_name: ClassVar[str] = "SltComputation"
 
@@ -276,8 +281,24 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
             heartbeat_ns=0,
         )
 
+    @property
+    def autotune_result(self) -> Any:
+        """
+        Result of the most recent :meth:`autotune` call, if any.
+        """
+        return self._autotune_result
+
     @validate_call(config=_VALIDATE_CONFIG)
-    def run(self, *, force: bool = False, save: bool | None = None) -> ResultViewT:
+    def run(
+        self,
+        *,
+        force: bool = False,
+        save: bool | None = None,
+        autotune: bool = False,
+        session: Any | None = None,
+        autotune_config: Any | None = None,
+        **autotune_kwargs: Any,
+    ) -> ResultViewT:
         """
         Execute the computation synchronously on the local machine.
 
@@ -288,7 +309,22 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
         save
             If ``True``, save after computing. If ``None``, save automatically
             when ``save_as`` was provided.
+        autotune
+            When ``True``, run :meth:`autotune` before computing so MPI rank and
+            per-rank thread counts are chosen from a short local benchmark.
+        session
+            Optional session used to resolve node/core counts for autotune.
+        autotune_config
+            Optional :class:`~slothpy.compute.autotune.AutotuneConfig`.
+        **autotune_kwargs
+            Forwarded to :meth:`autotune` (for example ``nodes``, ``cores``).
         """
+        if autotune:
+            self.autotune(
+                session=session,
+                config=autotune_config,
+                **autotune_kwargs,
+            )
         return self._execute(
             allocation=self._local_allocation(),
             force=force,
@@ -534,6 +570,7 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
                     exclusive=request.exclusive_nodes,
                 ),
             ),
+            control_node_name="localhost",
         )
 
     def _ensure_progress_tracker(self, *, total: int) -> SltProgressTracker:
@@ -581,7 +618,9 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
             worker_module=spec.worker_module,
             job_spec_path=job_spec_path,
             allocation=allocation,
-            extra_mpi_args=extra_mpi_args,
+            mpi_executable=self.resources.mpi_executable,
+            extra_mpi_args=(*extra_mpi_args, *self.resources.extra_mpi_args),
+            mpi_bind_to=self.resources.mpi_bind_to,
         )
         self._mpi_handle = handle
 
@@ -590,7 +629,7 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
                 handle.terminate(grace_seconds=0.0)
                 raise CancelledError()
 
-            returncode = handle.wait()
+            returncode = self._wait_for_mpi_handle(handle)
 
             if self._cancel_requested:
                 raise CancelledError()
@@ -608,6 +647,32 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
             self._mpi_handle = None
             if hostfile_dir is not None:
                 hostfile_dir.cleanup()
+
+    def _wait_for_mpi_handle(self, handle: MPIProcessHandle) -> int:
+        """
+        Poll the MPI subprocess so cancellation does not wait for a blocking wait().
+
+        Soft cancel only sets a flag; hard cancel / signals call terminate/kill on the
+        handle from another thread while this loop is running.
+        """
+        poll_seconds = 0.25
+        terminate_sent = False
+
+        while handle.running:
+            try:
+                return handle.wait(timeout=poll_seconds)
+            except subprocess.TimeoutExpired:
+                if not self._cancel_requested:
+                    continue
+
+                if not terminate_sent:
+                    handle.terminate(grace_seconds=0.0)
+                    terminate_sent = True
+                    continue
+
+                handle.kill()
+
+        return int(handle.returncode or 0)
 
     def _reset_runtime_state(self) -> None:
         self._result = None
@@ -642,6 +707,142 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
             total = int(self._progress_tracker.snapshot().total)
             if total > 0:
                 self._progress_tracker.set_done(int(round(progress * total)))
+
+    def _autotune_n_parallel_tasks(self) -> int:
+        """
+        Number of independent parallel tasks (for example field/orientation count).
+        """
+        task_count = getattr(self, "_task_count", None)
+        if callable(task_count):
+            return int(task_count())
+        raise NotImplementedError(
+            f"{type(self).__name__} must implement _task_count() or override "
+            "_autotune_n_parallel_tasks()."
+        )
+
+    def _autotune_total_work_units(self) -> int:
+        """
+        Total progress steps used for autotune time estimation.
+        """
+        work_units = getattr(self, "_total_work_units", None)
+        if callable(work_units):
+            return int(work_units())
+        return self._autotune_n_parallel_tasks()
+
+    def _default_autotune_config(
+        self,
+        config: Any | None,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Build :class:`~slothpy.compute.autotune.AutotuneConfig` for this computation.
+        """
+        from slothpy.compute.autotune import AutotuneConfig
+
+        if config is not None:
+            if kwargs:
+                raise TypeError(
+                    "Pass either config=AutotuneConfig(...) or keyword overrides, "
+                    "not both."
+                )
+            return config
+
+        hints = dict(kwargs)
+        options = self.options
+        for name in ("steps_per_task", "sleep_seconds", "progress_interval_steps"):
+            if name not in hints and hasattr(options, name):
+                hints[name] = getattr(options, name)
+
+        return AutotuneConfig(**hints)
+
+    def autotune(
+        self,
+        *,
+        session: Any | None = None,
+        nodes: int | None = None,
+        cores: int | None = None,
+        config: Any | None = None,
+        force: bool = False,
+        apply_settings: bool = False,
+        permanent: bool = False,
+        update_resources: bool = True,
+        verbose: bool | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Benchmark MPI rank and per-rank thread counts for this computation.
+
+        The search runs on the local control node (homogeneous cluster assumption)
+        and sets :attr:`resources` by default.
+
+        Parameters
+        ----------
+        session
+            Optional :class:`~slothpy.core.slt_session.SltSession` used to resolve
+            per-node core counts when ``cores`` is omitted.
+        nodes
+            Number of cluster nodes. Defaults to :attr:`resources.nodes`.
+        cores
+            Cores per node when ``nodes`` is set, otherwise total core budget.
+        config
+            Full autotune configuration object.
+        apply_settings
+            When ``True``, also write the result into global SlothPy settings.
+        permanent
+            Persist settings to disk when ``apply_settings`` is True.
+        force
+            Run autotune even when the computation already finished.
+        update_resources
+            When ``True`` (default), assign tuned values to :attr:`resources`.
+        verbose
+            Override benchmark logging. Defaults to the config value.
+        **kwargs
+            Additional :class:`~slothpy.compute.autotune.AutotuneConfig` fields.
+        """
+        from slothpy.compute.autotune import (
+            apply_autotune_result,
+            autotune_mpi_threading,
+        )
+
+        if self.is_finished and not force:
+            print(
+                f"{type(self).__name__} already finished; autotune has no effect."
+            )
+            return self._autotune_result
+
+        resolved_nodes = nodes if nodes is not None else self.resources.nodes
+        cores_per_node: int | None = None
+        total_cores: int | None = None
+        if cores is not None:
+            if resolved_nodes > 1:
+                cores_per_node = int(cores)
+            else:
+                total_cores = int(cores)
+
+        autotune_config = self._default_autotune_config(config, **kwargs)
+        if verbose is not None:
+            autotune_config = replace(autotune_config, verbose=verbose)
+
+        result = autotune_mpi_threading(
+            n_parallel_tasks=self._autotune_n_parallel_tasks(),
+            total_work_units=self._autotune_total_work_units(),
+            config=autotune_config,
+            session=session,
+            nodes=resolved_nodes,
+            cores_per_node=cores_per_node,
+            total_cores=total_cores,
+        )
+        self._autotune_result = result
+
+        if update_resources:
+            self.resources = result.to_computation_resources(
+                exclusive_nodes=self.resources.exclusive_nodes,
+            )
+
+        if apply_settings:
+            apply_autotune_result(result, permanent=permanent)
+
+        return result
 
     def _before_run(self) -> None:
         """

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import atexit
 import json
-from collections.abc import Iterator, Mapping, MutableMapping
+import threading
+from collections.abc import Callable, Iterator, Mapping, MutableMapping
 from dataclasses import asdict, dataclass, field, replace
 from inspect import signature
 from multiprocessing.shared_memory import SharedMemory
@@ -17,13 +19,51 @@ from slothpy.types.aliases import ArrayOrder, PathLike
 _SHARED_MEMORY_SUPPORTS_TRACK = "track" in signature(SharedMemory).parameters
 _MANIFEST_VERSION = 1
 
+_PARENT_OWNED_RELEASES: dict[str, Callable[[], None]] = {}
+_PARENT_OWNED_LOCK = threading.Lock()
+_PARENT_ATEXIT_REGISTERED = False
+
+
+def register_parent_owned_shared_block(name: str, release: Callable[[], None]) -> None:
+    """
+    Track a parent-created shared-memory block for process-exit cleanup.
+
+    Callers should unregister via :func:`unregister_parent_owned_shared_block` or
+    by invoking ``release`` during normal teardown.
+    """
+    global _PARENT_ATEXIT_REGISTERED
+
+    with _PARENT_OWNED_LOCK:
+        _PARENT_OWNED_RELEASES[name] = release
+        if not _PARENT_ATEXIT_REGISTERED:
+            atexit.register(release_all_parent_owned_shared_blocks)
+            _PARENT_ATEXIT_REGISTERED = True
+
+
+def unregister_parent_owned_shared_block(name: str) -> None:
+    with _PARENT_OWNED_LOCK:
+        _PARENT_OWNED_RELEASES.pop(name, None)
+
+
+def release_all_parent_owned_shared_blocks() -> None:
+    """Best-effort unlink of parent-owned blocks still registered."""
+    with _PARENT_OWNED_LOCK:
+        releases = list(_PARENT_OWNED_RELEASES.items())
+        _PARENT_OWNED_RELEASES.clear()
+
+    for _name, release in releases:
+        try:
+            release()
+        except Exception:
+            pass
+
 
 def _open_shared_memory(
     *,
     name: str | None = None,
     create: bool = False,
     size: int = 0,
-    track: bool = True,
+    track: bool = False,
 ) -> SharedMemory:
     kwargs: dict[str, Any] = {
         "name": name,
@@ -230,7 +270,7 @@ class SharedNumpyArray:
         order: ArrayOrder = "C",
         readonly: bool = False,
         name: str | None = None,
-        track: bool = True,
+        track: bool = False,
     ) -> SharedNumpyArray:
         shape = _normalise_shape(shape)
         dtype_obj = np.dtype(dtype)
@@ -259,12 +299,14 @@ class SharedNumpyArray:
         )
         array.setflags(write=not readonly)
 
-        return cls(
+        shared = cls(
             spec=spec,
             _shm=shm,
             _array=array,
             _owns_memory=True,
         )
+        register_parent_owned_shared_block(shm.name, shared.release)
+        return shared
 
     @classmethod
     def from_array(
@@ -275,7 +317,7 @@ class SharedNumpyArray:
         order: ArrayOrder = "C",
         readonly: bool = True,
         name: str | None = None,
-        track: bool = True,
+        track: bool = False,
     ) -> SharedNumpyArray:
         dtype_obj = np.dtype(array.dtype if dtype is None else dtype)
 
@@ -307,7 +349,7 @@ class SharedNumpyArray:
         order: ArrayOrder = "C",
         readonly: bool = True,
         name: str | None = None,
-        track: bool = True,
+        track: bool = False,
     ) -> SharedNumpyArray:
         """
         Create a shared array and read an HDF5 dataset directly into it.
@@ -447,6 +489,8 @@ class SharedNumpyArray:
         """
         Close and, if owned, unlink this shared-memory block.
         """
+        if self._owns_memory:
+            unregister_parent_owned_shared_block(self.spec.name)
         if self._owns_memory and not self._unlinked:
             self.unlink()
         self.close()
@@ -513,7 +557,7 @@ class SharedArrayBundle(MutableMapping[str, SharedNumpyArray]):
         dtype: DTypeLike,
         order: ArrayOrder = "C",
         readonly: bool = False,
-        track: bool = True,
+        track: bool = False,
     ) -> SharedNumpyArray:
         return self.add(
             key,
@@ -534,7 +578,7 @@ class SharedArrayBundle(MutableMapping[str, SharedNumpyArray]):
         dtype: DTypeLike | None = None,
         order: ArrayOrder = "C",
         readonly: bool = True,
-        track: bool = True,
+        track: bool = False,
     ) -> SharedNumpyArray:
         return self.add(
             key,
@@ -557,7 +601,7 @@ class SharedArrayBundle(MutableMapping[str, SharedNumpyArray]):
         source_sel: Any = None,
         shape: tuple[int, ...] | None = None,
         readonly: bool = True,
-        track: bool = True,
+        track: bool = False,
     ) -> SharedNumpyArray:
         return self.add(
             key,
@@ -636,7 +680,7 @@ class SharedArrayBundle(MutableMapping[str, SharedNumpyArray]):
         file_path: PathLike,
         requests: Mapping[str, str | Hdf5SharedArrayRequest],
         *,
-        track: bool = True,
+        track: bool = False,
     ) -> SharedArrayBundle:
         """
         Create a bundle by reading several HDF5 datasets directly into shared memory.

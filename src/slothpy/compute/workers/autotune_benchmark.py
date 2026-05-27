@@ -17,9 +17,9 @@ from mpi4py import MPI
 
 from slothpy.compute.mpi_job import read_mpi_job_spec_from_cli
 from slothpy.compute.mpi_progress import (
-    THREAD_PROGRESS_KEY,
     attach_worker_progress,
     publish_mpi_thread_progress,
+    worker_thread_progress_view,
 )
 from slothpy.io.shared_memory import SharedArrayBundle
 
@@ -115,15 +115,9 @@ def main() -> None:
                 spec.shared_memory_manifest,
                 track=False,
             )
-            thread_progress = (
-                bundle[THREAD_PROGRESS_KEY].array
-                if THREAD_PROGRESS_KEY in bundle
-                else None
-            )
+            thread_progress = worker_thread_progress_view(bundle, rank=rank)
         else:
             thread_progress = None
-
-        thread_progress = comm.bcast(thread_progress, root=0)
 
         chunk = _rank_chunk(n_tasks, size, rank)
         local_thread_done = np.zeros(num_threads, dtype=np.int64)

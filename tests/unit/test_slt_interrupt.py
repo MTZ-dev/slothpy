@@ -54,7 +54,7 @@ def test_kill_all_invokes_job_kill() -> None:
     try:
         session.kill_all()
     finally:
-        session.shutdown(wait=False)
+        session.shutdown(wait=False, cancel_running=False)
 
     running_job.kill.assert_called_once_with()
     finished_job.kill.assert_not_called()

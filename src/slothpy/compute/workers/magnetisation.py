@@ -9,9 +9,9 @@ from mpi4py import MPI
 
 from slothpy.compute.mpi_job import read_mpi_job_spec_from_cli
 from slothpy.compute.mpi_progress import (
-    THREAD_PROGRESS_KEY,
     attach_worker_progress,
     publish_mpi_thread_progress,
+    worker_thread_progress_view,
 )
 from slothpy.io.shared_memory import SharedArrayBundle
 
@@ -164,17 +164,12 @@ def main() -> None:
                 "orientations": np.asarray(bundle["orientations"].array),
                 "temperatures": np.asarray(bundle["temperatures"].array),
             }
-            thread_progress = (
-                bundle[THREAD_PROGRESS_KEY].array
-                if THREAD_PROGRESS_KEY in bundle
-                else None
-            )
+            thread_progress = worker_thread_progress_view(bundle, rank=rank)
         else:
             arrays = {}
             thread_progress = None
 
         arrays = comm.bcast(arrays, root=0)
-        thread_progress = comm.bcast(thread_progress, root=0)
 
         n_fields = int(payload["n_fields"])
         n_orientations = int(payload["n_orientations"])

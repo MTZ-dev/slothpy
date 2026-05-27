@@ -335,6 +335,15 @@ def _job_allocation_text(allocation: SltAllocation | None) -> str:
     return ", ".join(parts)
 
 
+def _job_resources_text(job: SltJobSnapshot) -> str:
+    allocation_text = _job_allocation_text(job.allocation)
+    if job.autotune_note:
+        if allocation_text:
+            return f"{allocation_text} ({job.autotune_note})"
+        return job.autotune_note
+    return allocation_text
+
+
 def _job_progress_text(job: SltJobSnapshot) -> str:
     if job.status == SltJobStatus.FINISHED:
         return f"{_progress_bar(1.0)} 100.0%"
@@ -380,7 +389,7 @@ def _jobs_table(snapshot: SltSessionSnapshot) -> Table:
             job.job_id,
             job.name,
             Text(job.status.value, style=_status_style(job.status), no_wrap=True),
-            _job_allocation_text(job.allocation),
+            _job_resources_text(job),
             _job_progress_text(job),
             job.exception or "",
         )
@@ -521,7 +530,7 @@ def _jobs_html(snapshot: SltSessionSnapshot) -> str:
             f"<td class='slt-mono'>{_html_escape(job.job_id)}</td>"
             f"<td class='slt-cell-wrap'>{_html_escape(job.name)}</td>"
             f"<td><span class='slt-status {status_class}'>{_html_escape(job.status.value)}</span></td>"
-            f"<td class='slt-muted slt-cell-wrap'>{_html_escape(_job_allocation_text(job.allocation))}</td>"
+            f"<td class='slt-muted slt-cell-wrap'>{_html_escape(_job_resources_text(job))}</td>"
             f"<td>{_job_progress_html(job)}</td>"
             f"<td><div class='slt-exception slt-cell-wrap'>{_html_escape(job.exception or '')}</div></td>"
             "</tr>"

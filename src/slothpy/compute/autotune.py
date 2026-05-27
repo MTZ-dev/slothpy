@@ -20,12 +20,12 @@ import signal
 import subprocess
 import sys
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from numpy import median
@@ -33,8 +33,9 @@ from numpy import median
 from slothpy.compute.mpi_job import MPIJobResources, MPIJobRunner, MPIJobSpec
 from slothpy.compute.mpi_progress import THREAD_PROGRESS_KEY, thread_progress_shape
 from slothpy.core.slt_computation import SltComputationResources
-from slothpy.core.slt_session import SltProgressStatus, SltProgressTracker
+from slothpy.core.slt_progress import SltProgressStatus, SltProgressTracker
 from slothpy.io.shared_memory import SharedArrayBundle
+from slothpy.types.composite import AutotuneDisplay
 
 if TYPE_CHECKING:
     from slothpy.core.slt_session import SltSession
@@ -45,11 +46,85 @@ _DEFAULT_MEASUREMENT_PROGRESS = 5
 _DEFAULT_WORSE_STOP_COUNT = 3
 _DEFAULT_MAX_THREADS = 64
 _DEFAULT_MAX_PROCESSES = 4096
+_DEFAULT_TRIAL_TIMEOUT_SECONDS = 120.0
+
+AutotuneDisplayMode = AutotuneDisplay
+AutotuneSearchStatus = Literal["searching", "done", "aborted"]
+
+AUTOTUNE_CONFIG_FIELD_NAMES = frozenset(
+    {
+        "num_cpu",
+        "parent_reserved_cores",
+        "n_parallel_tasks",
+        "total_work_units",
+        "steps_per_task",
+        "sleep_seconds",
+        "compute_size",
+        "progress_interval_steps",
+        "publish_interval_steps",
+        "min_tasks_per_process",
+        "measurement_progress",
+        "worse_stop_count",
+        "max_threads",
+        "max_processes",
+        "timeout_seconds",
+        "mpi_executable",
+        "python_executable",
+        "extra_mpi_args",
+        "mpi_bind_to",
+        "verbose",
+        "display",
+    }
+)
+
+
+def autotune_keyword_overrides(**keywords: Any) -> dict[str, Any]:
+    """
+    Collect explicit autotune keyword arguments for :class:`AutotuneConfig`.
+
+    ``None`` means "leave default"; ``False`` and ``0`` are forwarded as overrides.
+    """
+    return {
+        key: value
+        for key, value in keywords.items()
+        if key in AUTOTUNE_CONFIG_FIELD_NAMES and value is not None
+    }
+
+
+def merge_autotune_config(
+    *,
+    base: AutotuneConfig | None = None,
+    overrides: Mapping[str, Any] | None = None,
+    option_defaults: Mapping[str, Any] | None = None,
+) -> AutotuneConfig:
+    """Build an :class:`AutotuneConfig` from optional base, keywords, and computation options."""
+    explicit = dict(overrides or {})
+    if base is not None:
+        return replace(base, **explicit) if explicit else base
+
+    hints = dict(explicit)
+    if option_defaults is not None:
+        for name in ("steps_per_task", "sleep_seconds", "progress_interval_steps"):
+            if name not in hints and name in option_defaults:
+                hints[name] = option_defaults[name]
+    return AutotuneConfig(**hints)
 
 
 @dataclass(frozen=True, slots=True)
 class AutotuneConfig:
-    """Parameters controlling the MPI/thread search."""
+    """
+    Parameters controlling the MPI/thread search.
+
+    Progress reporting is controlled by ``display`` and ``verbose``:
+
+    * ``display="print"`` — plain trial lines;
+    * ``display="rich"`` — live Rich panel (session-dashboard style);
+    * ``display="html"`` — live HTML in Jupyter/marimo;
+    * ``display="none"`` — silent.
+
+    When ``display`` is unset, ``verbose=True`` selects ``print`` and
+    ``verbose=False`` selects ``none``.
+    """
 
     num_cpu: int | None = None
     parent_reserved_cores: int = 1
@@ -71,6 +146,7 @@ class AutotuneConfig:
     extra_mpi_args: tuple[str, ...] = ()
     mpi_bind_to: str | None = "none"
     verbose: bool = True
+    display: AutotuneDisplay | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,6 +189,110 @@ class AutotuneResult:
             nodes=self.nodes,
             exclusive_nodes=exclusive_nodes,
         )
+
+    def to_rich(self, *, width: int | None = None) -> Any:
+        from slothpy.compute.autotune_dashboard import autotune_result_to_rich
+
+        return autotune_result_to_rich(self, width=width)
+
+    def print_rich(
+        self,
+        *,
+        console: Any | None = None,
+        width: int | None = None,
+    ) -> None:
+        from slothpy.core.slt_common import print_rich_renderable
+
+        print_rich_renderable(self.to_rich(width=width), console=console)
+
+    def show(self, *, console: Any | None = None, width: int | None = None) -> None:
+        """Alias for :meth:`print_rich`."""
+        self.print_rich(console=console, width=width)
+
+    def dashboard_html(self) -> str:
+        from slothpy.compute.autotune_dashboard import autotune_result_to_html
+
+        return autotune_result_to_html(self)
+
+    def dashboard(self) -> str:
+        """HTML summary for notebooks (marimo/Jupyter)."""
+        return self.dashboard_html()
+
+    def dashboard_text(self, *, width: int | None = None) -> str:
+        from slothpy.compute.autotune_dashboard import autotune_result_to_text
+
+        return autotune_result_to_text(self, width=width)
+
+    def _repr_html_(self) -> str:
+        return self.dashboard_html()
+
+    def __rich__(self) -> Any:
+        return self.to_rich()
+
+    def notebook_output(
+        self,
+        *,
+        title_md: str | None = None,
+        summary_md: str | None = None,
+    ) -> Any:
+        """
+        Marimo/Jupyter cell value that keeps the autotune dashboard visible.
+
+        In marimo, the cell's **last expression** becomes its output; a trailing
+        ``mo.md(...)`` replaces live ``mo.output.replace`` updates. Return this
+        helper (or put it last) after :meth:`~slothpy.core.slt_computation.SltComputation.autotune`::
+
+            tune_result = comp.autotune(..., display="rich")
+            tune_result.notebook_output(summary_md="...")
+        """
+        from slothpy.compute.autotune_display import autotune_notebook_output
+
+        return autotune_notebook_output(
+            self,
+            title_md=title_md,
+            summary_md=summary_md,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class AutotuneSearchSnapshot:
+    """Live or final view of an MPI/thread autotune search."""
+
+    num_cpu: int
+    nodes: int
+    trials: tuple[AutotuneTrial, ...]
+    best_processes: int
+    best_threads: int
+    best_time: float
+    status: AutotuneSearchStatus = "searching"
+    current_processes: int | None = None
+    current_threads: int | None = None
+    message: str | None = None
+
+    def to_result(self) -> AutotuneResult:
+        return AutotuneResult(
+            num_processes=self.best_processes,
+            num_threads=self.best_threads,
+            estimated_seconds=self.best_time,
+            num_cpu=self.num_cpu,
+            trials=self.trials,
+            nodes=self.nodes,
+        )
+
+
+def resolve_autotune_display_mode(config: AutotuneConfig) -> AutotuneDisplay:
+    """
+    Choose how autotune reports progress.
+
+    When ``display`` is unset, plain ``print`` logging follows ``verbose``;
+    otherwise ``display`` takes precedence.
+    """
+    if config.display is not None:
+        display = config.display
+        if not isinstance(display, AutotuneDisplay):
+            display = AutotuneDisplay(display)
+        return display
+    return AutotuneDisplay.PRINT if config.verbose else AutotuneDisplay.NONE
 
 
 def _ordered_pool_nodes(session: SltSession) -> list[Any]:
@@ -236,6 +416,19 @@ def iter_mpi_thread_configs(
             yield num_processes, max(1, num_threads)
 
 
+def _trial_timeout_seconds(config: AutotuneConfig) -> float:
+    """
+    Wall-clock budget for one MPI benchmark trial (warmup + measurement).
+
+    ``AutotuneConfig.timeout_seconds`` defaults to infinity; comparisons against
+    ``perf_counter() + inf`` never succeed, so a finite fallback is required.
+    """
+    timeout = float(config.timeout_seconds)
+    if timeout > 0 and np.isfinite(timeout):
+        return timeout
+    return _DEFAULT_TRIAL_TIMEOUT_SECONDS
+
+
 def max_tasks_per_process(
     n_parallel_tasks: int,
     num_processes: int,
@@ -276,22 +469,9 @@ def _estimate_runtime_seconds(
 
 
 def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
-    if process.poll() is not None:
-        return
+    from slothpy.core.process_tree import terminate_subprocess
 
-    try:
-        os.killpg(process.pid, signal.SIGTERM)
-    except ProcessLookupError:
-        return
-
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        process.wait()
+    terminate_subprocess(process, grace_seconds=5.0)
 
 
 @contextmanager
@@ -339,10 +519,13 @@ def _run_benchmark_trial(
         manifest_path = tmpdir_path / "shared_memory.json"
         job_spec_path = tmpdir_path / "mpi_job.json"
 
+        from slothpy.compute.autotune_runtime import begin_autotune_trial, end_autotune_trial
+
+        trial_scope = begin_autotune_trial()
         progress = SltProgressTracker.create(
             total=total_work_units,
             status=SltProgressStatus.QUEUED,
-            track=True,
+            track=False,
         )
         bundle = SharedArrayBundle()
         bundle.add_empty(
@@ -350,8 +533,10 @@ def _run_benchmark_trial(
             shape,
             dtype=np.int64,
             readonly=False,
-            track=True,
+            track=False,
         )
+        trial_scope.register_release(bundle.release)
+        trial_scope.register_release(progress.release)
 
         try:
             bundle.write_manifest(manifest_path)
@@ -396,9 +581,12 @@ def _run_benchmark_trial(
                     stderr=subprocess.PIPE,
                     start_new_session=True,
                 )
+            from slothpy.compute.autotune_runtime import bind_autotune_process
+
+            bind_autotune_process(process)
 
             try:
-                warmup_deadline = time.perf_counter() + config.timeout_seconds
+                trial_deadline = time.perf_counter() + _trial_timeout_seconds(config)
                 while (
                     int(thread_board.sum()) <= num_processes
                     and progress.snapshot().done <= num_processes
@@ -411,7 +599,8 @@ def _run_benchmark_trial(
                             improved=False,
                             skip_reason="MPI benchmark exited before reporting progress.",
                         )
-                    if time.perf_counter() >= warmup_deadline:
+                    if time.perf_counter() >= trial_deadline:
+                        _terminate_process_group(process)
                         return AutotuneTrial(
                             num_processes=num_processes,
                             num_threads=num_threads,
@@ -435,6 +624,15 @@ def _run_benchmark_trial(
                 ) and np.all(rank_progress < max_steps):
                     if process.poll() is not None:
                         break
+                    if time.perf_counter() >= trial_deadline:
+                        _terminate_process_group(process)
+                        return AutotuneTrial(
+                            num_processes=num_processes,
+                            num_threads=num_threads,
+                            estimated_seconds=float("inf"),
+                            improved=False,
+                            timed_out=True,
+                        )
                     stop_time = time.perf_counter_ns()
                     rank_progress = np.array(thread_board, copy=True).sum(axis=1)
                     aggregate_done = progress.snapshot().done
@@ -483,12 +681,16 @@ def _run_benchmark_trial(
                 except subprocess.TimeoutExpired:
                     stdout, stderr = b"", b""
                 if process.returncode not in (0, -signal.SIGTERM, -15):
-                    if config.verbose and stderr:
+                    if (
+                        resolve_autotune_display_mode(config) is AutotuneDisplay.PRINT
+                        and stderr
+                    ):
                         print(stderr.decode(errors="replace"))
 
         finally:
+            end_autotune_trial(trial_scope)
             bundle.release()
-            progress.close()
+            progress.release()
 
 
 def autotune_mpi_threading(
@@ -540,115 +742,18 @@ def autotune_mpi_threading(
     if total_work is None:
         total_work = n_parallel_tasks * steps_per_task
 
-    best_time = float("inf")
-    best_processes = max(1, min(num_cpu, n_parallel_tasks))
-    best_threads = max(1, num_cpu // best_processes)
-    worse_counter = 0
-    trials: list[AutotuneTrial] = []
-    aborted = False
+    from slothpy.compute.autotune_display import run_autotune_search_with_display
 
-    for raw_processes, raw_threads in iter_mpi_thread_configs(
-        num_cpu,
-        n_parallel_tasks=n_parallel_tasks,
-        max_threads=cfg.max_threads,
-        max_processes=cfg.max_processes,
-    ):
-        num_processes, num_threads = normalize_process_thread_pair(
-            num_cpu,
-            raw_processes,
-            raw_threads,
-            n_parallel_tasks=n_parallel_tasks,
-        )
-
-        trial = _run_benchmark_trial(
-            num_processes=num_processes,
-            num_threads=num_threads,
-            n_tasks=n_parallel_tasks,
-            steps_per_task=steps_per_task,
-            total_work_units=total_work,
-            config=cfg,
-        )
-
-        if trial.skipped:
-            if cfg.verbose and trial.skip_reason:
-                print(
-                    f"Skipping processes={num_processes}, "
-                    f"threads={num_threads}: {trial.skip_reason}"
-                )
-            trials.append(trial)
-            if trial.skip_reason and "tasks per MPI rank" in trial.skip_reason:
-                aborted = True
-                break
-            continue
-
-        if trial.timed_out:
-            if cfg.verbose:
-                print("Autotune timeout reached during warmup.")
-            trials.append(trial)
-            aborted = True
-            break
-
-        improved = trial.estimated_seconds < best_time
-        if improved:
-            best_time = trial.estimated_seconds
-            best_processes = num_processes
-            best_threads = num_threads
-            worse_counter = 0
-        else:
-            worse_counter += 1
-
-        recorded = AutotuneTrial(
-            num_processes=num_processes,
-            num_threads=num_threads,
-            estimated_seconds=trial.estimated_seconds,
-            improved=improved,
-            skip_reason=trial.skip_reason,
-        )
-        trials.append(recorded)
-
-        if cfg.verbose:
-            marker = "best" if improved else "worse"
-            estimate = trial.estimated_seconds
-            estimate_text = (
-                f"{estimate:.2f} s ({marker})"
-                if np.isfinite(estimate)
-                else "unreliable"
-            )
-            print(
-                f"processes={num_processes}, threads={num_threads}: "
-                f"estimated main-loop time {estimate_text}"
-            )
-
-        if trial.skip_reason and "too little" in trial.skip_reason.lower():
-            if cfg.verbose:
-                print("Benchmark progress too fast to measure; stopping search.")
-            aborted = True
-            break
-
-        if worse_counter > cfg.worse_stop_count:
-            if cfg.verbose:
-                print(
-                    f"Stopping after {cfg.worse_stop_count} worsening trials. "
-                    f"Best estimate: {best_time:.2f} s."
-                )
-            break
-
-    if cfg.verbose and not aborted:
-        print(
-            f"Selected {best_processes} MPI rank(s) x {best_threads} thread(s) "
-            f"({best_processes * best_threads} logical CPUs)."
-        )
-        if np.isfinite(best_time):
-            print(f"Estimated main-loop time: {best_time:.2f} s.")
-
-    return AutotuneResult(
-        num_processes=best_processes,
-        num_threads=best_threads,
-        estimated_seconds=best_time,
+    finished = run_autotune_search_with_display(
+        config=cfg,
         num_cpu=num_cpu,
-        trials=tuple(trials),
         nodes=resolved_nodes,
+        n_parallel_tasks=n_parallel_tasks,
+        steps_per_task=steps_per_task,
+        total_work=total_work,
+        session=session,
     )
+    return finished.to_result()
 
 
 def apply_autotune_result(
@@ -708,12 +813,28 @@ __all__ = [
     "AutotuneConfig",
     "AutotuneResult",
     "AutotuneTrial",
+    "AUTOTUNE_CONFIG_FIELD_NAMES",
     "apply_autotune_result",
     "autotune_computation_resources",
+    "autotune_keyword_overrides",
     "autotune_mpi_threading",
     "default_autotune_config_from_settings",
+    "merge_autotune_config",
     "iter_mpi_thread_configs",
     "max_tasks_per_process",
     "normalize_process_thread_pair",
     "resolve_autotune_num_cpu",
+]
+
+# Re-export dashboard helpers for convenience.
+from slothpy.compute.autotune_dashboard import (  # noqa: E402
+    autotune_result_to_html,
+    autotune_result_to_rich,
+    autotune_result_to_text,
+)
+
+__all__ += [
+    "autotune_result_to_html",
+    "autotune_result_to_rich",
+    "autotune_result_to_text",
 ]

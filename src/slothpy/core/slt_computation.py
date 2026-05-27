@@ -24,15 +24,19 @@ from slothpy.core.slt import (
 from slothpy.core.slt_group import SltGroup
 from slothpy.core.slt_results import SltResults, SltResultView
 from slothpy.types.aliases import PathLike
-from slothpy.types.composite import NUM_PROCESSES_ADAPTER, NUM_THREADS_ADAPTER
+from slothpy.types.composite import (
+    NUM_PROCESSES_ADAPTER,
+    NUM_THREADS_ADAPTER,
+    AutotuneDisplay,
+)
+from slothpy.types.primitive import NonNegativeInt, PositiveInt
 
 if TYPE_CHECKING:
+    from slothpy.core.slt_progress import SltProgressSnapshot, SltProgressTracker
     from slothpy.core.slt_session import (
         MPIProcessHandle,
         SltAllocation,
         SltJob,
-        SltProgressSnapshot,
-        SltProgressTracker,
         SltResourceRequest,
         SltSession,
     )
@@ -252,7 +256,7 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
         """
         Snapshot for :class:`~slothpy.core.slt_session.SltSession` dashboards.
         """
-        from slothpy.core.slt_session import SltProgressSnapshot, SltProgressStatus
+        from slothpy.core.slt_progress import SltProgressSnapshot, SltProgressStatus
 
         if self._progress_tracker is not None:
             return self._progress_tracker.snapshot()
@@ -296,8 +300,30 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
         save: bool | None = None,
         autotune: bool = False,
         session: Any | None = None,
-        autotune_config: Any | None = None,
-        **autotune_kwargs: Any,
+        config: Any | None = None,
+        nodes: int | None = None,
+        cores: PositiveInt | None = None,
+        num_cpu: PositiveInt | None = None,
+        parent_reserved_cores: NonNegativeInt | None = None,
+        n_parallel_tasks: PositiveInt | None = None,
+        total_work_units: PositiveInt | None = None,
+        steps_per_task: PositiveInt | None = None,
+        sleep_seconds: float | None = None,
+        compute_size: PositiveInt | None = None,
+        progress_interval_steps: PositiveInt | None = None,
+        publish_interval_steps: PositiveInt | None = None,
+        min_tasks_per_process: PositiveInt | None = None,
+        measurement_progress: PositiveInt | None = None,
+        worse_stop_count: PositiveInt | None = None,
+        max_threads: PositiveInt | None = None,
+        max_processes: PositiveInt | None = None,
+        timeout_seconds: float | None = None,
+        mpi_executable: str | None = None,
+        python_executable: str | None = None,
+        extra_mpi_args: tuple[str, ...] | None = None,
+        mpi_bind_to: str | None = None,
+        verbose: bool | None = None,
+        display: AutotuneDisplay | None = None,
     ) -> ResultViewT:
         """
         Execute the computation synchronously on the local machine.
@@ -312,19 +338,73 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
         autotune
             When ``True``, run :meth:`autotune` before computing so MPI rank and
             per-rank thread counts are chosen from a short local benchmark.
-        session
-            Optional session used to resolve node/core counts for autotune.
-        autotune_config
-            Optional :class:`~slothpy.compute.autotune.AutotuneConfig`.
-        **autotune_kwargs
-            Forwarded to :meth:`autotune` (for example ``nodes``, ``cores``).
+        session, config, nodes, cores, num_cpu, display, verbose, ...
+            Forwarded to :meth:`autotune` when ``autotune=True``.
         """
         if autotune:
+            from slothpy.compute.autotune import resolve_autotune_display_mode
+
+            preview_config = self._build_autotune_config(
+                config=config,
+                num_cpu=num_cpu,
+                parent_reserved_cores=parent_reserved_cores,
+                n_parallel_tasks=n_parallel_tasks,
+                total_work_units=total_work_units,
+                steps_per_task=steps_per_task,
+                sleep_seconds=sleep_seconds,
+                compute_size=compute_size,
+                progress_interval_steps=progress_interval_steps,
+                publish_interval_steps=publish_interval_steps,
+                min_tasks_per_process=min_tasks_per_process,
+                measurement_progress=measurement_progress,
+                worse_stop_count=worse_stop_count,
+                max_threads=max_threads,
+                max_processes=max_processes,
+                timeout_seconds=timeout_seconds,
+                mpi_executable=mpi_executable,
+                python_executable=python_executable,
+                extra_mpi_args=extra_mpi_args,
+                mpi_bind_to=mpi_bind_to,
+                verbose=verbose,
+                display=display,
+            )
+            display_mode = resolve_autotune_display_mode(preview_config)
+            if display_mode is AutotuneDisplay.PRINT:
+                print(
+                    f"{self.computation_name}: autotuning MPI ranks and threads "
+                    "(short benchmarks)..."
+                )
             self.autotune(
                 session=session,
-                config=autotune_config,
-                **autotune_kwargs,
+                config=config,
+                nodes=nodes,
+                cores=cores,
+                num_cpu=num_cpu,
+                parent_reserved_cores=parent_reserved_cores,
+                n_parallel_tasks=n_parallel_tasks,
+                total_work_units=total_work_units,
+                steps_per_task=steps_per_task,
+                sleep_seconds=sleep_seconds,
+                compute_size=compute_size,
+                progress_interval_steps=progress_interval_steps,
+                publish_interval_steps=publish_interval_steps,
+                min_tasks_per_process=min_tasks_per_process,
+                measurement_progress=measurement_progress,
+                worse_stop_count=worse_stop_count,
+                max_threads=max_threads,
+                max_processes=max_processes,
+                timeout_seconds=timeout_seconds,
+                mpi_executable=mpi_executable,
+                python_executable=python_executable,
+                extra_mpi_args=extra_mpi_args,
+                mpi_bind_to=mpi_bind_to,
+                verbose=verbose,
+                display=display,
             )
+            if display_mode is AutotuneDisplay.PRINT:
+                print(
+                    f"{self.computation_name}: autotune finished, running computation."
+                )
         return self._execute(
             allocation=self._local_allocation(),
             force=force,
@@ -574,7 +654,7 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
         )
 
     def _ensure_progress_tracker(self, *, total: int) -> SltProgressTracker:
-        from slothpy.core.slt_session import SltProgressStatus, SltProgressTracker
+        from slothpy.core.slt_progress import SltProgressStatus, SltProgressTracker
 
         if self._progress_tracker is None:
             self._progress_tracker = SltProgressTracker.create(
@@ -685,6 +765,20 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
         self._finished_perf_counter = None
         self._cancel_requested = False
 
+    def release_runtime_resources(self) -> None:
+        """
+        Release MPI handles and parent-owned progress shared memory.
+
+        Safe to call from :class:`~slothpy.core.slt_session.SltSession` shutdown.
+        """
+        if self._mpi_handle is not None and self._mpi_handle.running:
+            try:
+                self._mpi_handle.kill()
+            except Exception:
+                pass
+        self._mpi_handle = None
+        self._release_progress_tracker()
+
     def _release_progress_tracker(self) -> None:
         if self._progress_tracker is None:
             return
@@ -729,75 +823,120 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
             return int(work_units())
         return self._autotune_n_parallel_tasks()
 
-    def _default_autotune_config(
+    def _build_autotune_config(
         self,
-        config: Any | None,
-        **kwargs: Any,
+        *,
+        config: Any | None = None,
+        num_cpu: PositiveInt | None = None,
+        parent_reserved_cores: NonNegativeInt | None = None,
+        n_parallel_tasks: PositiveInt | None = None,
+        total_work_units: PositiveInt | None = None,
+        steps_per_task: PositiveInt | None = None,
+        sleep_seconds: float | None = None,
+        compute_size: PositiveInt | None = None,
+        progress_interval_steps: PositiveInt | None = None,
+        publish_interval_steps: PositiveInt | None = None,
+        min_tasks_per_process: PositiveInt | None = None,
+        measurement_progress: PositiveInt | None = None,
+        worse_stop_count: PositiveInt | None = None,
+        max_threads: PositiveInt | None = None,
+        max_processes: PositiveInt | None = None,
+        timeout_seconds: float | None = None,
+        mpi_executable: str | None = None,
+        python_executable: str | None = None,
+        extra_mpi_args: tuple[str, ...] | None = None,
+        mpi_bind_to: str | None = None,
+        verbose: bool | None = None,
+        display: AutotuneDisplay | None = None,
     ) -> Any:
         """
-        Build :class:`~slothpy.compute.autotune.AutotuneConfig` for this computation.
+        Build :class:`~slothpy.compute.autotune.AutotuneConfig` from explicit keywords.
         """
-        from slothpy.compute.autotune import AutotuneConfig
+        from slothpy.compute.autotune import (
+            AutotuneConfig,
+            autotune_keyword_overrides,
+            merge_autotune_config,
+        )
 
-        if config is not None:
-            if kwargs:
-                raise TypeError(
-                    "Pass either config=AutotuneConfig(...) or keyword overrides, "
-                    "not both."
-                )
-            return config
+        if config is not None and not isinstance(config, AutotuneConfig):
+            raise TypeError("config must be AutotuneConfig or None.")
 
-        hints = dict(kwargs)
+        overrides = autotune_keyword_overrides(
+            num_cpu=num_cpu,
+            parent_reserved_cores=parent_reserved_cores,
+            n_parallel_tasks=n_parallel_tasks,
+            total_work_units=total_work_units,
+            steps_per_task=steps_per_task,
+            sleep_seconds=sleep_seconds,
+            compute_size=compute_size,
+            progress_interval_steps=progress_interval_steps,
+            publish_interval_steps=publish_interval_steps,
+            min_tasks_per_process=min_tasks_per_process,
+            measurement_progress=measurement_progress,
+            worse_stop_count=worse_stop_count,
+            max_threads=max_threads,
+            max_processes=max_processes,
+            timeout_seconds=timeout_seconds,
+            mpi_executable=mpi_executable,
+            python_executable=python_executable,
+            extra_mpi_args=extra_mpi_args,
+            mpi_bind_to=mpi_bind_to,
+            verbose=verbose,
+            display=display,
+        )
+        option_defaults: dict[str, Any] = {}
         options = self.options
         for name in ("steps_per_task", "sleep_seconds", "progress_interval_steps"):
-            if name not in hints and hasattr(options, name):
-                hints[name] = getattr(options, name)
+            if hasattr(options, name):
+                option_defaults[name] = getattr(options, name)
+        return merge_autotune_config(
+            base=config,
+            overrides=overrides,
+            option_defaults=option_defaults,
+        )
 
-        return AutotuneConfig(**hints)
-
+    @validate_call(config=_VALIDATE_CONFIG)
     def autotune(
         self,
         *,
         session: Any | None = None,
         nodes: int | None = None,
-        cores: int | None = None,
+        cores: PositiveInt | None = None,
         config: Any | None = None,
         force: bool = False,
         apply_settings: bool = False,
         permanent: bool = False,
         update_resources: bool = True,
+        num_cpu: PositiveInt | None = None,
+        parent_reserved_cores: NonNegativeInt | None = None,
+        n_parallel_tasks: PositiveInt | None = None,
+        total_work_units: PositiveInt | None = None,
+        steps_per_task: PositiveInt | None = None,
+        sleep_seconds: float | None = None,
+        compute_size: PositiveInt | None = None,
+        progress_interval_steps: PositiveInt | None = None,
+        publish_interval_steps: PositiveInt | None = None,
+        min_tasks_per_process: PositiveInt | None = None,
+        measurement_progress: PositiveInt | None = None,
+        worse_stop_count: PositiveInt | None = None,
+        max_threads: PositiveInt | None = None,
+        max_processes: PositiveInt | None = None,
+        timeout_seconds: float | None = None,
+        mpi_executable: str | None = None,
+        python_executable: str | None = None,
+        extra_mpi_args: tuple[str, ...] | None = None,
+        mpi_bind_to: str | None = None,
         verbose: bool | None = None,
-        **kwargs: Any,
+        display: AutotuneDisplay | None = None,
     ) -> Any:
         """
         Benchmark MPI rank and per-rank thread counts for this computation.
 
+        Pass tuning and display options as keywords (validated by Pydantic), for
+        example ``autotune(num_cpu=4, display="rich", verbose=False)``.
+
         The search runs on the local control node (homogeneous cluster assumption)
         and sets :attr:`resources` by default.
-
-        Parameters
-        ----------
-        session
-            Optional :class:`~slothpy.core.slt_session.SltSession` used to resolve
-            per-node core counts when ``cores`` is omitted.
-        nodes
-            Number of cluster nodes. Defaults to :attr:`resources.nodes`.
-        cores
-            Cores per node when ``nodes`` is set, otherwise total core budget.
-        config
-            Full autotune configuration object.
-        apply_settings
-            When ``True``, also write the result into global SlothPy settings.
-        permanent
-            Persist settings to disk when ``apply_settings`` is True.
-        force
-            Run autotune even when the computation already finished.
-        update_resources
-            When ``True`` (default), assign tuned values to :attr:`resources`.
-        verbose
-            Override benchmark logging. Defaults to the config value.
-        **kwargs
-            Additional :class:`~slothpy.compute.autotune.AutotuneConfig` fields.
         """
         from slothpy.compute.autotune import (
             apply_autotune_result,
@@ -819,9 +958,30 @@ class SltComputation[OptionsT, ResultViewT: SltResultView](ABC):
             else:
                 total_cores = int(cores)
 
-        autotune_config = self._default_autotune_config(config, **kwargs)
-        if verbose is not None:
-            autotune_config = replace(autotune_config, verbose=verbose)
+        autotune_config = self._build_autotune_config(
+            config=config,
+            num_cpu=num_cpu,
+            parent_reserved_cores=parent_reserved_cores,
+            n_parallel_tasks=n_parallel_tasks,
+            total_work_units=total_work_units,
+            steps_per_task=steps_per_task,
+            sleep_seconds=sleep_seconds,
+            compute_size=compute_size,
+            progress_interval_steps=progress_interval_steps,
+            publish_interval_steps=publish_interval_steps,
+            min_tasks_per_process=min_tasks_per_process,
+            measurement_progress=measurement_progress,
+            worse_stop_count=worse_stop_count,
+            max_threads=max_threads,
+            max_processes=max_processes,
+            timeout_seconds=timeout_seconds,
+            mpi_executable=mpi_executable,
+            python_executable=python_executable,
+            extra_mpi_args=extra_mpi_args,
+            mpi_bind_to=mpi_bind_to,
+            verbose=verbose,
+            display=display,
+        )
 
         result = autotune_mpi_threading(
             n_parallel_tasks=self._autotune_n_parallel_tasks(),

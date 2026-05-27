@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import os
+from enum import StrEnum
 from typing import Annotated, Any, Final
 
 from pydantic import AfterValidator, BeforeValidator, Field, TypeAdapter
 
-from slothpy.types.primitive import PositiveInt
+from slothpy.types.primitive import NonNegativeInt, PositiveInt
 
 # ---------------------------------------------------------------------------
 # Composite type helpers
@@ -52,6 +53,21 @@ def _validate_num_threads(value: int) -> int:
 # Composite types
 # ---------------------------------------------------------------------------
 
+
+class AutotuneDisplay(StrEnum):
+    """How :meth:`~slothpy.core.slt_computation.SltComputation.autotune` reports progress."""
+
+    PRINT = "print"
+    RICH = "rich"
+    HTML = "html"
+    NONE = "none"
+
+
+AUTOTUNE_DISPLAY_ADAPTER: Final[TypeAdapter[AutotuneDisplay]] = TypeAdapter(
+    AutotuneDisplay
+)
+
+
 type NumProcesses = Annotated[
     PositiveInt,
     BeforeValidator(_replace_zero_with_settings_num_processes),
@@ -76,6 +92,8 @@ NUM_THREADS_ADAPTER: Final[TypeAdapter[NumThreads]] = TypeAdapter(NumThreads)
 #     DOUBLE = "double"
 
 __all__ = [
+    "AUTOTUNE_DISPLAY_ADAPTER",
+    "AutotuneDisplay",
     "NumProcesses",
     "NumThreads",
     "NUM_PROCESSES_ADAPTER",

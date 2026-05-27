@@ -5,15 +5,17 @@ When a session registers handlers (default), SIGINT (Ctrl+C) and SIGTERM propaga
 all session jobs: first interrupt requests hard cancellation (SIGTERM to the MPI
 process group), a second interrupt within a short window SIGKILLs survivors and
 re-raises :exc:`KeyboardInterrupt`.
+
+``SltSession`` uses ``slots=True``, so registrations keep a strong reference keyed
+by ``id(session)`` until :func:`unregister_session_interrupt_handlers` runs from
+:meth:`~slothpy.core.slt_session.SltSession.shutdown`.
 """
 
 from __future__ import annotations
 
 import signal
-import sys
 import threading
 import time
-import weakref
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -37,7 +39,7 @@ if hasattr(signal, "SIGTERM"):
 
 @dataclass(frozen=True, slots=True)
 class _SessionInterruptRegistration:
-    session_ref: weakref.ReferenceType[SltSession]
+    session: Any
     grace_seconds: float
     raise_keyboard_interrupt: bool
 
@@ -59,7 +61,7 @@ def register_session_interrupt_handlers(
 
     with _INTERRUPT_LOCK:
         _SESSION_OPTIONS[id(session)] = _SessionInterruptRegistration(
-            session_ref=weakref.ref(session),
+            session=session,
             grace_seconds=grace_seconds,
             raise_keyboard_interrupt=raise_keyboard_interrupt,
         )
@@ -137,21 +139,8 @@ def _restore_handlers_locked() -> None:
     _HANDLERS_INSTALLED = False
 
 
-def _active_sessions_locked() -> list[SltSession]:
-    sessions: list[SltSession] = []
-    stale_ids: list[int] = []
-
-    for session_id, registration in _SESSION_OPTIONS.items():
-        session = registration.session_ref()
-        if session is None:
-            stale_ids.append(session_id)
-        else:
-            sessions.append(session)
-
-    for session_id in stale_ids:
-        _SESSION_OPTIONS.pop(session_id, None)
-
-    return sessions
+def _active_sessions_locked() -> list[Any]:
+    return [registration.session for registration in _SESSION_OPTIONS.values()]
 
 
 def _handle_signal(signum: int, frame: object | None) -> None:

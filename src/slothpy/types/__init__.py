@@ -1,4 +1,10 @@
-from .composite import NumProcesses, NumThreads
-from .primitive import PositiveInt
+from .composite import AutotuneDisplay, NumProcesses, NumThreads
+from .primitive import NonNegativeInt, PositiveInt
 
-__all__ = ["PositiveInt", "NumProcesses", "NumThreads"]
+__all__ = [
+    "AutotuneDisplay",
+    "NonNegativeInt",
+    "NumProcesses",
+    "NumThreads",
+    "PositiveInt",
+]

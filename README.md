@@ -11,6 +11,10 @@ https://stackoverflow.com/questions/tagged/slothpy)
 [![Journal Paper](https://img.shields.io/badge/DOI-your-paper-doi-blue)](
 https://doi.org/your-paper-doi)
 
+# Note
+
+This is branch 0.3.X, which contains **ab_relACs** extension and related **scripts** for first-principles magnetic a.c. susceptibility computations together with all tools for phonon-related simulations (DOI: 10.1103/f744-f6bq). The base SlothPy version included here is under reconstruction and supports only those parts needed for dynamical properties; thus, it is not able to simulate static magnetic properties (DOI: 10.1021/acs.inorgchem.4c02793). A stable version for those is 0.2.X or main. Only the future 0.4.X version will combine both functionalities under one stable, modern, redesigned architecture and API.
+
 SlothPy is a comprehensive package for computational molecular magnetism.
 
 - **Website:** [website](https://slothpy.org/)
@@ -20,8 +24,6 @@ SlothPy is a comprehensive package for computational molecular magnetism.
 - **Source code:** [GitHub](https://github.com/MTZ-dev/slothpy)
 - **Bug reports:** [GitHub Issues](https://github.com/MTZ-dev/slothpy/issues)
 - **Requests** [GitHub Pull Requests](https://github.com/MTZ-dev/slothpy/pulls)
-
-
 
 # SlothPy
 
@@ -62,6 +64,12 @@ If you use SlothPy in your research, please cite it as follows:
 
 ```
 Zychowicz, M.; Dzielak, H.; Rzepiela, J.; & Chorazy, S. (2024). "Synergy of Experiment and Broadened Exploration of Ab Initio Calculations for Understanding of Lanthanide–Pentacyanidocobaltate Molecular Nanomagnets and Their Optical Properties." Inorganic Chemistry, 63(41), 19213-19226. DOI: 10.1021/acs.inorgchem.4c02793
+```
+
+The ab_relACs part:
+
+```
+Zychowicz, M.; Zakrzewski, J. J.; Chorazy, S.; & Lunghi, A. (2026). "First-principles linear response theory for open quantum systems and its application to Orbach relaxation and direct magnetic relaxation in 𝐿⁢𝑛-based coordination polymers." Phys. Rev. B, DOI: 10.1103/f744-f6bq
 ```
 
 ## Contributing

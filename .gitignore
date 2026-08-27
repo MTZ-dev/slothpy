@@ -63,3 +63,4 @@ relacs_markov_in_memory.py
 relacs_markov.py
 relax_time.py
 config_example_raman.toml
+generate_orca_disp_lanthanides_0.py

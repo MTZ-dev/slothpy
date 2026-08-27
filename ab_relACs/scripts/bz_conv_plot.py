@@ -19,21 +19,21 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence, Tuple
+from typing import Sequence, Tuple
 
-import math
-import numpy as np
-import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter, LogLocator, FuncFormatter
-
+import numpy as np
+import pandas as pd
+from matplotlib.ticker import FuncFormatter, LogLocator, ScalarFormatter
 
 # ---------------------------------------------------------------------------
 # Minimal JCP-like style (safe defaults, no external deps)
 # ---------------------------------------------------------------------------
+
 
 def single_column_size(height_ratio: float = 0.82) -> Tuple[float, float]:
     """Return (width, height) for a one-column figure. Width ≈ 3.37 in."""
@@ -84,8 +84,14 @@ def set_jcp_style(*, figsize: Tuple[float, float] | None = None) -> None:
     mpl.rcParams.update(rc)
 
 
-def savefig_pub(fig: plt.Figure, path: str | Path, *, dpi: int = 600,
-                formats: Sequence[str] = ("pdf",), bbox: str = "tight") -> None:
+def savefig_pub(
+    fig: plt.Figure,
+    path: str | Path,
+    *,
+    dpi: int = 600,
+    formats: Sequence[str] = ("pdf",),
+    bbox: str = "tight",
+) -> None:
     """Save a figure in vector formats suitable for publication."""
     path = Path(path)
     for ext in formats:
@@ -121,7 +127,9 @@ def _pretty_log_ticks(ax: plt.Axes, *, plain_until: float = 1e5) -> None:
     """Major ticks at 10^n; labels as plain numbers up to plain_until, else 10^n."""
     ax.set_xscale("log")
     ax.xaxis.set_major_locator(LogLocator(base=10, numticks=12))
-    ax.xaxis.set_minor_locator(LogLocator(base=10, subs=tuple(np.arange(2, 10) * 0.1), numticks=12))
+    ax.xaxis.set_minor_locator(
+        LogLocator(base=10, subs=tuple(np.arange(2, 10) * 0.1), numticks=12)
+    )
 
     def _fmt(val, pos):
         if val <= 0:
@@ -138,9 +146,11 @@ def _pretty_log_ticks(ax: plt.Axes, *, plain_until: float = 1e5) -> None:
 # Reading + convergence logic
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True, slots=True)
 class BZConvergenceSummary:
     """Per-FWHM converged outcome."""
+
     fwhm: float
     n_points_conv: int
     log10_nu_peak_conv: float
@@ -203,8 +213,17 @@ def read_bz_convergence_csv(
 
     _rename_if_present("fwhm", "fwhm", "FWHM")
     _rename_if_present("n_points", "n_points", "npoints", "Npoints", "nPoints")
-    _rename_if_present("log10_peak", "log10_peak", "log10_nu_peak", "log10_nu", "log10_peak_nu")
-    _rename_if_present("peak_freq_hz", "peak_freq_hz", "nu_peak_hz", "nu_peak", "peak_hz", "peak_frequency_hz")
+    _rename_if_present(
+        "log10_peak", "log10_peak", "log10_nu_peak", "log10_nu", "log10_peak_nu"
+    )
+    _rename_if_present(
+        "peak_freq_hz",
+        "peak_freq_hz",
+        "nu_peak_hz",
+        "nu_peak",
+        "peak_hz",
+        "peak_frequency_hz",
+    )
     _rename_if_present("thr_log10", "thr_log10", "threshold_log10", "thr", "thrlog10")
 
     if "fwhm" not in df.columns or "n_points" not in df.columns:
@@ -212,7 +231,9 @@ def read_bz_convergence_csv(
 
     if "log10_peak" not in df.columns:
         if "peak_freq_hz" in df.columns:
-            df["log10_peak"] = np.log10(pd.to_numeric(df["peak_freq_hz"], errors="coerce"))
+            df["log10_peak"] = np.log10(
+                pd.to_numeric(df["peak_freq_hz"], errors="coerce")
+            )
         else:
             raise ValueError("CSV must contain log10_peak or peak_freq_hz.")
 
@@ -287,7 +308,9 @@ def summarize_bz_convergence(
         if finite_idx.size == 0:
             ref = float("nan")
             n_conv = int(n_all[-1]) if n_all.size else 0
-            out.append(BZConvergenceSummary(float(fwhm), int(n_conv), float(ref), float("nan")))
+            out.append(
+                BZConvergenceSummary(float(fwhm), int(n_conv), float(ref), float("nan"))
+            )
             continue
 
         streak_vals: list[float] = []
@@ -326,12 +349,19 @@ def summarize_bz_convergence(
         if np.isfinite(best_ref):
             log10_tau = -math.log10(2.0 * math.pi) - best_ref
 
-        out.append(BZConvergenceSummary(float(fwhm), int(best_n), float(best_ref), float(log10_tau)))
+        out.append(
+            BZConvergenceSummary(
+                float(fwhm), int(best_n), float(best_ref), float(log10_tau)
+            )
+        )
 
     return out
+
+
 # ---------------------------------------------------------------------------
 # Plotting
 # ---------------------------------------------------------------------------
+
 
 def plot_bz_convergence(
     paths_or_df: str | Path | Sequence[str | Path] | pd.DataFrame,
@@ -349,6 +379,8 @@ def plot_bz_convergence(
     color: str = "k",
     label: str | None = None,
     fwhm_unit: str = r"$\mathrm{cm^{-1}}$",
+    y_min: float = None,
+    y_max: float = None,
 ) -> tuple[plt.Axes, pd.DataFrame]:
     """
     Publication-ready plot: x=FWHM, y=log10(tau), annotate with n_points_conv.
@@ -360,7 +392,9 @@ def plot_bz_convergence(
         fwhm, n_points_conv, log10_nu_peak_conv, log10_tau_conv
     """
     if ax is None:
-        fig, ax = plt.subplots(figsize=single_column_size(0.82), constrained_layout=True)
+        fig, ax = plt.subplots(
+            figsize=single_column_size(0.82), constrained_layout=True
+        )
 
     if isinstance(paths_or_df, pd.DataFrame):
         df_long = paths_or_df.copy()
@@ -369,12 +403,17 @@ def plot_bz_convergence(
 
     summaries = summarize_bz_convergence(df_long, tail_k=tail_k, thr_log10=thr_log10)
 
-    summ_df = pd.DataFrame([{
-        "fwhm": s.fwhm,
-        "n_points_conv": s.n_points_conv,
-        "log10_nu_peak_conv": s.log10_nu_peak_conv,
-        "log10_tau_conv": s.log10_tau_conv,
-    } for s in summaries]).sort_values("fwhm")
+    summ_df = pd.DataFrame(
+        [
+            {
+                "fwhm": s.fwhm,
+                "n_points_conv": s.n_points_conv,
+                "log10_nu_peak_conv": s.log10_nu_peak_conv,
+                "log10_tau_conv": s.log10_tau_conv,
+            }
+            for s in summaries
+        ]
+    ).sort_values("fwhm")
 
     x = summ_df["fwhm"].to_numpy(float)
     y = summ_df["log10_tau_conv"].to_numpy(float)
@@ -391,10 +430,12 @@ def plot_bz_convergence(
             ax.set_xlim(xmin / xpad, xmax * xpad)
 
         ypad = 0.16
-        ax.set_ylim(ymin - ypad, ymax + ypad)
+        if y_min is not None and y_max is not None:
+            ax.set_ylim(y_min, y_max)
+        else:
+            ax.set_ylim(ymin - ypad, ymax + ypad)
 
-
-    c0 =  "#69A6D7"
+    c0 = "#69A6D7"
     c1 = "#F1B960"
 
     first = True
@@ -403,7 +444,8 @@ def plot_bz_convergence(
             continue
         ci = c0 if (i % 2 == 0) else c1
         ax.plot(
-            xx, yy,
+            xx,
+            yy,
             ls="",
             marker=marker,
             ms=ms,
@@ -412,7 +454,6 @@ def plot_bz_convergence(
         )
         first = False
 
-
     if xscale:
         ax.set_xscale(xscale)
         if pretty_logx and xscale == "log":
@@ -420,10 +461,9 @@ def plot_bz_convergence(
 
     ax.set_xlabel(r"$\mathrm{FWHM}$ / " + fwhm_unit)
     ax.set_ylabel(r"$\log_{10}\,\tau$ / $\mathrm{s}$")
-    ax.set_title('BZ grid vs FWHM convergence')
+    ax.set_title("BZ grid vs FWHM convergence")
     _apply_axis_format(ax)
 
-    
     if annotate:
         dx, dy = annotate_offset_pts
         for i, (xx, yy, nn) in enumerate(zip(x, y, nconv)):
@@ -440,7 +480,7 @@ def plot_bz_convergence(
                 ha="center",
                 va="bottom" if sgn > 0 else "top",
                 fontsize=4.5,
-                color=ci,          # <- NEW
+                color=ci,  # <- NEW
             )
 
     if label:
@@ -456,16 +496,38 @@ def plot_bz_convergence(
 if __name__ == "__main__":
     import argparse
 
-    ap = argparse.ArgumentParser(description="Plot BZ convergence: FWHM vs log10(tau) annotated by n_points_conv.")
+    ap = argparse.ArgumentParser(
+        description="Plot BZ convergence: FWHM vs log10(tau) annotated by n_points_conv."
+    )
     ap.add_argument("csv", nargs="+", help="One or more summary CSV files.")
-    ap.add_argument("--out", default="bz_convergence", help="Output basename (default: bz_convergence)")
-    ap.add_argument("--tail-k", type=int, default=5, help="Tail window for reference (default: 5)")
-    ap.add_argument("--thr-log10", type=float, default=None, help="Convergence threshold in log10 space")
+    ap.add_argument(
+        "--out",
+        default="bz_convergence",
+        help="Output basename (default: bz_convergence)",
+    )
+    ap.add_argument(
+        "--tail-k", type=int, default=5, help="Tail window for reference (default: 5)"
+    )
+    ap.add_argument(
+        "--thr-log10",
+        type=float,
+        default=None,
+        help="Convergence threshold in log10 space",
+    )
+    ap.add_argument("--y-max", type=float, default=None, help="Y-axis limit max.")
+    ap.add_argument("--y-min", type=float, default=None, help="Y-axis limit min.")
     args = ap.parse_args()
 
     set_jcp_style(figsize=single_column_size(0.82))
     fig, ax = plt.subplots(figsize=single_column_size(0.82), constrained_layout=True)
-    ax, summ = plot_bz_convergence(args.csv, ax=ax, tail_k=args.tail_k, thr_log10=args.thr_log10)
+    ax, summ = plot_bz_convergence(
+        args.csv,
+        ax=ax,
+        tail_k=args.tail_k,
+        thr_log10=args.thr_log10,
+        y_min=args.y_min,
+        y_max=args.y_max,
+    )
     savefig_pub(fig, args.out, formats=("pdf",))
     print("Saved:", str(Path(args.out).with_suffix(".pdf")))
     print(summ.to_string(index=False))

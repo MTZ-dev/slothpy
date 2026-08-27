@@ -49,4 +49,17 @@ config_example_Dy.toml
 config_example_Dy_36.toml
 config_example_Tb.toml
 config_example_Yb.toml
+config_example_raman.tomlEr.ipynb
+Gpu.ipynb
+SlothPy_tutorial_turbo_pres.ipynb
+TODO.txt
+Untitled1.ipynb
+Untitled2.ipynb
+out.txt
+perturbation_at_the_end.ipynb
+relacs.py
+relacs_sus.py
+relacs_markov_in_memory.py
+relacs_markov.py
+relax_time.py
 config_example_raman.toml

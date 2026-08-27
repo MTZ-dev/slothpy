@@ -1078,8 +1078,8 @@ class SltPhononDispersion(_MultiProcessed):
         })
 
         # ── broken-axis limits (adjust if you want tighter) ───────────────────────
-        y_low_max  = 750
-        y_high_min = 2050
+        y_low_max  = 2200
+        y_high_min = 2900
 
         # ── helper: insert NaNs where x does not increase (break segments) ────────
         def break_on_nonincreasing_x(x, y, atol=1e-12):
@@ -1119,12 +1119,97 @@ class SltPhononDispersion(_MultiProcessed):
         # ── ticks: start from your labels, then enforce the two combined symbols ──
         labels = [r"$\Gamma$" if lbl == "G" else rf"$\mathrm{{{lbl}}}$" for lbl in self._x_labels]
 
-        labels[7]  = ""
-        labels[8]  = r"$\mathrm{A}\,|\,\mathrm{L}$"
-        labels[9]  = ""
-        labels[10] = r"$\mathrm{M}\,|\,\mathrm{K}$"
+        #### Manual symmetry group hexagonal #######
+        # labels[7]  = ""
+        # labels[8]  = r"$\mathrm{A}\,|\,\mathrm{L}$"
+        # labels[9]  = ""
+        # labels[10] = r"$\mathrm{M}\,|\,\mathrm{K}$"
 
-        ax_bot.set_xticks(self._x_coords, labels)
+        # ax_bot.set_xticks(self._x_coords, labels)
+        import re
+        import numpy as np
+        from matplotlib.transforms import ScaledTranslation
+
+        def fmt_klabel(lbl):
+            if lbl == "G":
+                return r"$\Gamma$"
+            m = re.fullmatch(r"([A-Za-z]+)(\d+)", lbl)
+            if m:
+                return rf"$\mathrm{{{m.group(1)}}}_{{{m.group(2)}}}$"
+            return rf"$\mathrm{{{lbl}}}$"
+
+        def merge_kpoint_ticks(x_coords, x_labels, atol=1e-10):
+            """
+            Merge consecutive k-point ticks that are at the same x position.
+            Examples:
+            ['H','C'] at same x -> 'H|C'
+            ['M','M'] at same x -> 'M'
+            """
+            x_coords = np.asarray(x_coords, dtype=float)
+
+            merged_x = []
+            merged_labels = []
+
+            i = 0
+            n = len(x_coords)
+
+            while i < n:
+                x0 = x_coords[i]
+                same = [x_labels[i]]
+                j = i + 1
+
+                while j < n and abs(x_coords[j] - x0) <= atol:
+                    same.append(x_labels[j])
+                    j += 1
+
+                # remove consecutive duplicates while preserving order
+                uniq = []
+                for s in same:
+                    if not uniq or uniq[-1] != s:
+                        uniq.append(s)
+
+                if len(uniq) == 1:
+                    label = fmt_klabel(uniq[0])
+                else:
+                    label = r"$" + r"\,|\,".join(
+                        [rf"\Gamma" if u == "G"
+                        else (rf"\mathrm{{{m.group(1)}}}_{{{m.group(2)}}}" if (m := re.fullmatch(r'([A-Za-z]+)(\d+)', u))
+                            else rf"\mathrm{{{u}}}")
+                        for u in uniq]
+                    ) + r"$"
+
+                merged_x.append(x0)
+                merged_labels.append(label)
+                i = j
+
+            return np.array(merged_x), merged_labels
+
+        xticks = np.asarray(self._x_coords, dtype=float)
+        labels = [fmt_klabel(lbl) for lbl in self._x_labels]
+
+        xticks, labels = merge_kpoint_ticks(self._x_coords, self._x_labels)
+        ax_bot.set_xticks(xticks)
+        tick_texts = ax_bot.set_xticklabels(labels)
+        ax_bot.set_xlim(xticks[0], xticks[-1])
+
+        # Shift labels apart if neighboring ticks are too close
+        xspan = xticks[-1] - xticks[0]
+        crowd_tol = 0.025 * xspan   # tune this if needed
+
+        for i in range(1, len(xticks)):
+            if xticks[i] - xticks[i - 1] < crowd_tol:
+                tick_texts[i - 1].set_ha("right")
+                tick_texts[i].set_ha("left")
+
+                tick_texts[i - 1].set_transform(
+                    tick_texts[i - 1].get_transform() +
+                    ScaledTranslation(-3/72, 0, fig.dpi_scale_trans)
+                )
+                tick_texts[i].set_transform(
+                    tick_texts[i].get_transform() +
+                    ScaledTranslation(+3/72, 0, fig.dpi_scale_trans)
+                )
+
         ax_bot.set_xlim(self._x_coords[0], self._x_coords[-1])
 
         # ── broken y-axis limits ──────────────────────────────────────────────────

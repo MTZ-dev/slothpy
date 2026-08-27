@@ -11,9 +11,11 @@ https://stackoverflow.com/questions/tagged/slothpy)
 [![Journal Paper](https://img.shields.io/badge/DOI-your-paper-doi-blue)](
 https://doi.org/your-paper-doi)
 
-# Note
+# Note !
 
 This is branch 0.3.X, which contains **ab_relACs** extension and related **scripts** for first-principles magnetic a.c. susceptibility computations together with all tools for phonon-related simulations (DOI: 10.1103/f744-f6bq). The base SlothPy version included here is under reconstruction and supports only those parts needed for dynamical properties; thus, it is not able to simulate static magnetic properties (DOI: 10.1021/acs.inorgchem.4c02793). A stable version for those is 0.2.X or main. Only the future 0.4.X version will combine both functionalities under one stable, modern, redesigned architecture and API.
+
+-------------------------------------------------
 
 SlothPy is a comprehensive package for computational molecular magnetism.
 

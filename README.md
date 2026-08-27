@@ -15,6 +15,8 @@ https://doi.org/your-paper-doi)
 
 This is branch 0.3.X, which contains **ab_relACs** extension and related **scripts** for first-principles magnetic a.c. susceptibility computations together with all tools for phonon-related simulations (DOI: 10.1103/f744-f6bq). The base SlothPy version included here is under reconstruction and supports only those parts needed for dynamical properties; thus, it is not able to simulate static magnetic properties (DOI: 10.1021/acs.inorgchem.4c02793). A stable version for those is 0.2.X or main. Only the future 0.4.X version will combine both functionalities under one modern, redesigned architecture and a stable, publicly documented API.
 
+The development of the 0.3.X branch with the **ab_relACs** extension for first-principles magnetic a.c. susceptibility and other related dynamical spin-phonon simulations was supported by the National Science Center of Poland within the PRELUDIUM-20 project (grant no. 2021/41/N/ST4/04432).
+
 -------------------------------------------------
 
 SlothPy is a comprehensive package for computational molecular magnetism.
